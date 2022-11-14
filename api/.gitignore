@@ -1,0 +1,11 @@
+node_modules
+/dist/**
+.env.*
+.env
+/ssl/**
+/certs/**
+*.bat
+/.idea/vcs.xml
+/.idea/workspace.xml
+/documents/**
+/temp/**
