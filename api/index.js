@@ -31,23 +31,21 @@ let bcrypt = require('bcrypt');
 let mongoose = require('mongoose');
 let User = require('./models/user.model');
 
-const client = mongoose.connect('mongodb://localhost:27017/purpose360');
-
-client.then(() => {
-  logger.success('Mongoose connected to MongoDB.');
-});
-
 let secure_port = process.env.HTTP_SECURE_PORT || 443;
 let port = process.env.HTTP_PORT || 80;
 
-(async () => {
+const client = mongoose.connect('mongodb://127.0.0.1:27017/threereco');
+
+client.then(async () => {
+  logger.success('Mongoose connected to MongoDB.');
+
   fs.readdirSync(process.cwd() + '/temp').forEach((path) =>
     fs.unlinkSync(process.cwd() + '/temp/' + path)
   );
 
   logger.success(`OP MODE: ${devmode ? 'DEV' : 'PROD'}`);
 
-  const adminFound = await User.findOne({ email: 'admin@purposeapp' });
+  const adminFound = await User.findOne({ email: 'admin@3recoapp' });
 
   if (!adminFound) {
     logger.warning('Admin user does not exist, creating them now.');
@@ -57,7 +55,7 @@ let port = process.env.HTTP_PORT || 80;
         firstName: 'Purpose',
         lastName: 'Admin',
       },
-      email: 'admin@purposeapp',
+      email: 'admin@3recoapp',
       password: bcrypt.hashSync(process.env.ROOT_PASSWORD, 2048),
       agreedToTerms: true,
       completedProfile: true,
@@ -98,22 +96,16 @@ let port = process.env.HTTP_PORT || 80;
 
   let morganMiddleware = morgan(function (tokens, req, res) {
     return [
-      chalk.hex('#c7e057').bold(tokens.method(req, res) + '\t'),
+      chalk.hex('#10b981').bold(tokens.method(req, res) + '\t'),
       chalk.hex('#ffffff').bold(tokens.status(req, res) + '\t'),
       chalk.hex('#262626').bold(tokens.url(req, res) + '\t\t\t'),
-      chalk.hex('#c7e057').bold(tokens['response-time'](req, res) + ' ms'),
+      chalk.hex('#10b981').bold(tokens['response-time'](req, res) + ' ms'),
     ].join(' ');
   });
 
   app.use(morganMiddleware);
   app.use(
-    cors({
-      origin: [
-        'https://purpose360.co.za',
-        'https://purpose.lone-wolf.software',
-        'http://localhost:3000',
-      ],
-    })
+    cors("*")
   );
   app.use(compression());
   app.use(json({ limit: '50mb' }));
@@ -181,4 +173,4 @@ let port = process.env.HTTP_PORT || 80;
       logger.success(`HTTPS listening on https://localhost:${secure_port}`)
     );
   }
-})();
+});
