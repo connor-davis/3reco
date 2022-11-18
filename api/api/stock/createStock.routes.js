@@ -39,7 +39,7 @@ router.post('/', async (request, response) => {
 
   try {
     const newStock = new Stock({
-      owner: user.email,
+      owner: user.phoneNumber,
       stockName: body.stockName,
       stockDescription: body.stockDescription || 'No description.',
       stockWeight: parseFloat(body.stockWeight),

@@ -56,7 +56,30 @@ const SetupProfile = () => {
       .catch((error) => {});
   };
 
-  const completeBusinessProfile = () => {};
+  const completeBusinessProfile = () => {
+    axios
+      .put(
+        apiUrl + '/users',
+        {
+          _id: userState._id,
+          completedProfile: true,
+          businessName: businessName(),
+          businessRegistrationNumber: businessRegistrationNumber(),
+          streetAddress: streetAddress(),
+          city: city(),
+          areaCode: areaCode(),
+          province: province(),
+          userType: userType(),
+        },
+        { headers: { Authorization: 'Bearer ' + authState.token } }
+      )
+      .then((response) => {
+        updateUserState({ ...response.data.data });
+
+        navigate('/');
+      })
+      .catch((error) => {});
+  };
 
   return (
     <div class="flex flex-col w-full h-full space-y-3 justify-center items-center bg-gray-100">

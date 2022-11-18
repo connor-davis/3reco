@@ -30,7 +30,7 @@ router.post('/', async (request, response) => {
 
   try {
     const newMaterial = new Material({
-      owner: user.email,
+      owner: user.phoneNumber,
       type: body.type,
       value: parseFloat(body.value),
     });

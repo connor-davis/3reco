@@ -27,7 +27,7 @@ router.get(
   '/',
   passport.authenticate('jwt', { session: false }),
   async (request, response) => {
-    const found = await Stock.find({ owner: request.user.email });
+    const found = await Stock.find({ owner: request.user.phoneNumber });
 
     if (!found)
       return response
@@ -64,13 +64,13 @@ router.get(
     let { limit } = request.query;
     if (!limit) limit = 10;
     
-    const found = await Stock.find({ owner: request.user.email });
+    const found = await Stock.find({ owner: request.user.phoneNumber });
 
     if (!found) return response.status(200).json({ pages: 0 });
     else {
       let pageList = [];
 
-      let result = await Stock.find({ owner: request.user.email })
+      let result = await Stock.find({ owner: request.user.phoneNumber })
         .skip(pageList.length * limit)
         .limit(limit);
 
@@ -81,7 +81,7 @@ router.get(
           }),
         ]);
 
-        result = await Stock.find({ owner: request.user.email })
+        result = await Stock.find({ owner: request.user.phoneNumber })
           .skip(pageList.length * limit)
           .limit(limit);
       }
@@ -117,7 +117,7 @@ router.get(
     let { limit } = request.query;
     if (!limit) limit = 10;
 
-    const found = await Stock.find({ owner: request.user.email })
+    const found = await Stock.find({ owner: request.user.phoneNumber })
       .skip((page - 1) * limit > 0 ? (page - 1) * limit : 0)
       .limit(limit);
 
