@@ -27,6 +27,8 @@ router.put('/', async (request, response) => {
 
   delete body.__v;
 
+  console.log(body);
+
   if (!found)
     return response
       .status(200)
@@ -36,6 +38,8 @@ router.put('/', async (request, response) => {
       await Stock.updateOne({ _id: body._id }, body);
 
       const stockData = await Stock.findOne({ _id: body._id });
+
+      console.log(stockData);
 
       return response.status(200).json({ data: { ...stockData.toJSON() } });
     } catch (error) {

@@ -31,7 +31,7 @@ router.post('/', async (request, response) => {
     encoding: 'utf-8',
   });
 
-  const found = await User.findOne({ email: body.email });
+  const found = await User.findOne({ phoneNumber: body.phoneNumber });
 
   if (!found)
     return response
@@ -40,13 +40,11 @@ router.post('/', async (request, response) => {
   else {
     let data = found.toJSON();
 
-    if (data.email === 'admin@purposeapp') data.type = 'admin';
-
     if (bcrypt.compareSync(body.password, data.password)) {
       let token = jwt.sign(
         {
           sub: data.id,
-          email: data.email,
+          phoneNumber: data.phoneNumber,
         },
         privateKey,
         { expiresIn: '1d', algorithm: 'RS256' }

@@ -9,7 +9,8 @@ import useState from '../hooks/state';
 const AuthGuard = ({ children }) => {
   const navigate = useNavigate();
 
-  const [authState, updateAuthState] = useState('authState');
+  const [authState, updateAuthState, clearAuthState] = useState('authState');
+  const [userState, updateUserState, clearUserState] = useState('userState');
   const [statusMessage, setStatusMessage] = createSignal(
     'Checking authentication.'
   );
@@ -25,17 +26,27 @@ const AuthGuard = ({ children }) => {
         })
         .then((response) => {
           setStatusMessage('You are authenticated.');
+          
+          updateAuthState({
+            authenticated: true,
+            token: response.data.data.authenticationToken,
+          });
+
+          delete response.data.data.authenticationToken;
+
+          updateUserState({
+            ...response.data.data,
+          });
 
           setTimeout(() => setLoading(false), 1000);
-
-          // navigate("/");
         })
         .catch((error) => {
           setStatusMessage('You are not authenticated.');
 
           setTimeout(() => setLoading(false), 1000);
 
-          updateAuthState({ authenticated: false, token: undefined });
+          clearAuthState();
+          clearUserState();
 
           navigate("/auth");
         });

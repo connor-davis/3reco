@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 const Materials = require('../../models/material.model');
+const Stock = require('../../models/stock.model');
 
 /**
  * @openapi
@@ -26,14 +27,25 @@ router.delete('/:id', async (request, response) => {
   const found = await Materials.findOne({ _id: params.id });
 
   if (!found)
-    return response
-      .status(200)
-      .json({ message: 'Material item not found.', error: 'material-not-found' });
+    return response.status(200).json({
+      message: 'Material item not found.',
+      error: 'material-not-found',
+    });
   else {
     try {
-      await Materials.deleteOne({ _id: params.id });
+      const stockFound = await Stock.find({ stockType: found.type });
 
-      return response.status(200).send('success');
+      if (stockFound.length === 0) {
+        await Materials.deleteOne({ _id: params.id });
+
+        return response.status(200).send('success');
+      } else {
+        return response.status(200).json({
+          message:
+            'Stock still exists related to the material. Please delete the stock first.',
+          error: 'stock-found',
+        });
+      }
     } catch (error) {
       return response
         .status(200)

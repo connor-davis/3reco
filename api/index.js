@@ -1,38 +1,39 @@
 'use strict';
-let dotenv = require('dotenv');
+const dotenv = require('dotenv');
 dotenv.config();
 
-let logger = require('./utils/logger');
-let express = require('express');
-let app = express();
-let fs = require('fs');
-let path = require('path');
-let http = require('http').createServer(app);
-let devmode = process.env.DEV_MODE === 'true';
+const logger = require('./utils/logger');
+const express = require('express');
+const app = express();
+const fs = require('fs');
+const path = require('path');
+const http = require('http').createServer(app);
+const devmode = process.env.DEV_MODE === 'true';
 let https;
-let compression = require('compression');
-let cors = require('cors');
-let { json, urlencoded } = require('body-parser');
-let passport = require('passport');
-let JwtStrategy = require('./strategies/jwt');
-let session = require('express-session');
-let swaggerJsdoc = require('swagger-jsdoc');
-let swaggerUi = require('swagger-ui-express');
-let morgan = require('morgan');
-let chalk = require('chalk');
-let io = require('socket.io')(http, {
+const compression = require('compression');
+const cors = require('cors');
+const { json, urlencoded } = require('body-parser');
+const passport = require('passport');
+const JwtStrategy = require('./strategies/jwt');
+const session = require('express-session');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
+const morgan = require('morgan');
+const chalk = require('chalk');
+const io = require('socket.io')(http, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
   },
 });
-let apiRoutes = require('./api');
-let bcrypt = require('bcrypt');
-let mongoose = require('mongoose');
-let User = require('./models/user.model');
+const apiRoutes = require('./api');
+const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
+const User = require('./models/user.model');
+const userTypes = require('./types/user.types');
 
-let secure_port = process.env.HTTP_SECURE_PORT || 443;
-let port = process.env.HTTP_PORT || 80;
+const secure_port = process.env.HTTP_SECURE_PORT || 443;
+const port = process.env.HTTP_PORT || 80;
 
 const client = mongoose.connect('mongodb://127.0.0.1:27017/threereco');
 
@@ -51,15 +52,13 @@ client.then(async () => {
     logger.warning('Admin user does not exist, creating them now.');
 
     const newAdmin = new User({
-      personalDetails: {
-        firstName: 'Purpose',
-        lastName: 'Admin',
-      },
-      email: 'admin@3recoapp',
+      firstName: '3rEco',
+      lastName: 'Admin',
+      phoneNumber: 'admin',
       password: bcrypt.hashSync(process.env.ROOT_PASSWORD, 2048),
       agreedToTerms: true,
       completedProfile: true,
-      businessType: 'admin',
+      userType: userTypes.ADMIN,
     });
 
     try {

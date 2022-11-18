@@ -23,6 +23,7 @@
     "rxjs": "^7.5.5",
     "solid-js": "^1.5.1",
     "solid-transition-group": "^0.0.8",
-    "tw-elements": "1.0.0-alpha12"
+    "tw-elements": "1.0.0-alpha12",
+    "uuid": "^9.0.0"
   }
 }

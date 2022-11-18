@@ -14,7 +14,7 @@ let options = {
 };
 
 module.exports = new Strategy(options, async (payload, done) => {
-  const found = await User.findOne({ email: payload.email });
+  const found = await User.findOne({ phoneNumber: payload.phoneNumber });
   
   if (!found) return done("Unauthorized", null);
   else return done(null, found.toJSON());

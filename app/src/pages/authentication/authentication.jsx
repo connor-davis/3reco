@@ -29,8 +29,10 @@ const LoginForm = ({ setRegister }) => {
   const navigate = useNavigate();
 
   const [authState, updateAuthState] = useState('authState');
+  const [userState, updateUserState] = useState('userState');
+
   const [message, setMessage] = createStore({}, { name: 'message' });
-  const [email, setEmail] = createSignal('');
+  const [phoneNumber, setPhoneNumber] = createSignal('');
   const [password, setPassword] = createSignal('');
 
   const login = () => {
@@ -38,7 +40,7 @@ const LoginForm = ({ setRegister }) => {
       .post(
         apiUrl + '/auth/login',
         {
-          email: email(),
+          phoneNumber: phoneNumber(),
           password: password(),
         },
         {
@@ -48,19 +50,32 @@ const LoginForm = ({ setRegister }) => {
         }
       )
       .then((response) => {
-        setMessage({
-          type: 'success',
-          value: 'You are logged in.',
-        });
-
-        setTimeout(() => {
-          updateAuthState({
-            authenticated: true,
-            token: response.data.data.authenticationToken,
+        if (response.data.error) {
+          setMessage({
+            type: 'error',
+            value: response.data.message,
+          });
+        } else {
+          setMessage({
+            type: 'success',
+            value: 'You are logged in.',
           });
 
-          navigate('/');
-        }, 1000);
+          setTimeout(() => {
+            updateAuthState({
+              authenticated: true,
+              token: response.data.data.authenticationToken,
+            });
+
+            delete response.data.data.authenticationToken;
+
+            updateUserState({
+              ...response.data.data,
+            });
+
+            navigate('/');
+          }, 1000);
+        }
       })
       .catch((error) => {
         setMessage({
@@ -100,16 +115,16 @@ const LoginForm = ({ setRegister }) => {
       <div class="flex flex-col space-y-4 w-96 h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
         <div class="flex flex-col justify-start space-y-2">
           <div>
-            Email <span class="text-red-500">*</span>
+            Phone Number <span class="text-red-500">*</span>
           </div>
           <input
-            type="email"
-            placeholder="Your email"
-            value={email()}
-            onChange={(event) => setEmail(event.target.value)}
+            type="tel"
+            placeholder="Your phone number"
+            value={phoneNumber()}
+            onChange={(event) => setPhoneNumber(event.target.value)}
             class="w-full h-auto px-3 py-2 rounded-lg bg-gray-200 outline-none"
           />
-          <div class="text-sm text-gray-500">We'll never share your email.</div>
+          <div class="text-sm text-gray-500">We'll never share your phone number.</div>
         </div>
 
         <div class="flex flex-col justify-start space-y-2">
@@ -140,7 +155,9 @@ const RegisterForm = ({ setRegister }) => {
   const navigate = useNavigate();
 
   const [authState, updateAuthState] = useState('authState');
-  const [email, setEmail] = createSignal('');
+  const [userState, updateUserState] = useState('userState');
+
+  const [phoneNumber, setPhoneNumber] = createSignal('');
   const [password, setPassword] = createSignal('');
   const [confirmPassword, setConfirmPassword] = createSignal('');
   const [message, setMessage] = createStore({}, { name: 'message' });
@@ -158,7 +175,7 @@ const RegisterForm = ({ setRegister }) => {
 
   const register = () => {
     if (
-      email().length === 0 ||
+      phoneNumber().length === 0 ||
       password().length === 0 ||
       confirmPassword().length === 0
     )
@@ -178,7 +195,7 @@ const RegisterForm = ({ setRegister }) => {
         .post(
           apiUrl + '/auth/register',
           {
-            email: email(),
+            phoneNumber: phoneNumber(),
             password: password(),
           },
           {
@@ -188,19 +205,32 @@ const RegisterForm = ({ setRegister }) => {
           }
         )
         .then((response) => {
-          setMessage({
-            type: 'success',
-            value: 'You are logged in.',
-          });
-
-          setTimeout(() => {
-            updateAuthState({
-              authenticated: true,
-              token: response.data.data.authenticationToken,
+          if (response.data.error) {
+            setMessage({
+              type: 'error',
+              value: response.data.message,
+            });
+          } else {
+            setMessage({
+              type: 'success',
+              value: 'You are logged in.',
             });
 
-            navigate('/');
-          }, 1000);
+            setTimeout(() => {
+              updateAuthState({
+                authenticated: true,
+                token: response.data.data.authenticationToken,
+              });
+
+              delete response.data.data.authenticationToken;
+
+              updateUserState({
+                ...response.data.data,
+              });
+
+              navigate('/');
+            }, 1000);
+          }
         })
         .catch(() => {
           setMessage({
@@ -256,16 +286,16 @@ const RegisterForm = ({ setRegister }) => {
       <div class="flex flex-col space-y-4 w-96 h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
         <div class="flex flex-col justify-start space-y-2">
           <div>
-            Email <span class="text-red-500">*</span>
+            Phone Number <span class="text-red-500">*</span>
           </div>
           <input
-            type="email"
-            placeholder="Your email"
-            value={email()}
-            onKeyUp={(event) => setEmail(event.target.value)}
+            type="tel"
+            placeholder="Your phone number"
+            value={phoneNumber()}
+            onKeyUp={(event) => setPhoneNumber(event.target.value)}
             class="w-full h-auto px-3 py-2 rounded-lg bg-gray-200 outline-none"
           />
-          <div class="text-sm text-gray-500">We'll never share your email.</div>
+          <div class="text-sm text-gray-500">We'll never share your phone number.</div>
         </div>
 
         <div class="flex flex-col justify-start space-y-2">
@@ -345,7 +375,7 @@ const RegisterForm = ({ setRegister }) => {
             confirmPassword() === password() &&
             confirmPassword().length > 0 &&
             password().length > 0 &&
-            email().length > 0
+            phoneNumber().length > 0
               ? 'cursor-pointer'
               : 'cursor-no-drop'
           }`}
@@ -354,7 +384,7 @@ const RegisterForm = ({ setRegister }) => {
               confirmPassword() === password() &&
               confirmPassword().length > 0 &&
               password().length > 0 &&
-              email().length > 0
+              phoneNumber().length > 0
             ) {
               register();
             }

@@ -1,9 +1,12 @@
-let { Router } = require('express');
-let router = Router();
-let passport = require('passport');
+const { Router } = require('express');
+const router = Router();
+const passport = require('passport');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
+const User = require('../../models/user.model');
 
-let registerRoutes = require('./register.routes');
-let loginRoutes = require('./login.routes');
+const registerRoutes = require('./register.routes');
+const loginRoutes = require('./login.routes');
 
 /**
  * @openapi
@@ -25,7 +28,32 @@ router.get(
   '/check',
   passport.authenticate('jwt', { session: false }),
   async (request, response) => {
-    return response.status(200).send('Authorized');
+    const privateKey = fs.readFileSync('certs/privateKey.pem', {
+      encoding: 'utf-8',
+    });
+
+    const phoneNumber = request.user.phoneNumber;
+    const data = await User.findOne({ phoneNumber });
+
+    if (!data) return response.status(401).send('Unauthorized');
+    else {
+      const token = jwt.sign(
+        {
+          sub: data._id,
+          phoneNumber: data.phoneNumber,
+        },
+        privateKey,
+        { expiresIn: '1d', algorithm: 'RS256' }
+      );
+
+      return response.status(200).json({
+        data: {
+          ...data.toJSON(),
+          password: undefined,
+          authenticationToken: token,
+        },
+      });
+    }
   }
 );
 

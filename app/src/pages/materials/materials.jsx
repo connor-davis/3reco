@@ -1,14 +1,18 @@
 import { createSignal, onMount } from 'solid-js';
 
 import AddMaterialModal from '../../components/modals/materials/add';
+import EditMaterialModal from '../../components/modals/materials/edit';
 import Paged from '../../components/paged/paged';
 import apiUrl from '../../apiUrl';
 import axios from 'axios';
 import { createStore } from 'solid-js/store';
+import useNotifications from '../../hooks/notifications';
 import useState from '../../hooks/state';
 
 const Materials = () => {
   const [authState] = useState('authState');
+  const [notifications, addNotification, deleteNotification, clear] =
+    useNotifications();
 
   const [isLoading, setLoading] = createSignal(true);
   const [statusMessage, setStatusMessage] = createSignal('Loading materials.');
@@ -56,6 +60,7 @@ const Materials = () => {
       })
       .then((response) => {
         setPageData([...response.data.pageData]);
+
         setLoading(false);
       })
       .catch((error) => {});
@@ -74,6 +79,19 @@ const Materials = () => {
       .catch((error) => {});
   };
 
+  const editMaterial = (id, data) => {
+    axios
+      .put(
+        apiUrl + '/materials/',
+        { _id: id, ...data },
+        { headers: { Authorization: 'Bearer ' + authState.token } }
+      )
+      .then((response) => {
+        getMaterialsPages();
+      })
+      .catch((error) => {});
+  };
+
   const deleteMaterial = (id) => {
     axios
       .delete(apiUrl + '/materials/' + id, {
@@ -81,8 +99,12 @@ const Materials = () => {
           Authorization: 'Bearer ' + authState.token,
         },
       })
-      .then((_) => {
-        getMaterialsPages();
+      .then((response) => {
+        if (response.data.error) {
+          addNotification('Materials', response.data.message);
+        } else {
+          getMaterialsPages();
+        }
       })
       .catch((error) => {});
   };
@@ -143,28 +165,39 @@ const Materials = () => {
                   </thead>
                   <tbody>
                     {pageData.length > 0 &&
-                      pageData.map((data, i) => (
-                        <tr
-                          class={`bg-gray-100 border-b border-gray-300 transition duration-300 ease-in-out hover:bg-gray-200`}
-                        >
-                          <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                            {data.type}
-                          </td>
-                          <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
-                            R {data.value}/kg
-                          </td>
-                          <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer">
-                              Edit
-                            </div>
-                            <div
-                              class="flex items-center justify-center px-3 py-1 bg-red-500 rounded-md cursor-pointer"
-                              onClick={() => deleteMaterial(data._id)}
-                            >
-                              Delete
-                            </div>
-                          </td>
-                        </tr>
+                      pageData.map((material, i) => (
+                        <>
+                          <EditMaterialModal
+                            data={material}
+                            onEdit={(data) => editMaterial(material._id, data)}
+                          />
+
+                          <tr
+                            class={`bg-gray-100 border-b border-gray-300 transition duration-300 ease-in-out hover:bg-gray-200`}
+                          >
+                            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                              {material.type}
+                            </td>
+                            <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
+                              R {material.value}/kg
+                            </td>
+                            <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                              <div
+                                class="flex items-center justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer"
+                                data-bs-toggle="modal"
+                                data-bs-target={`#editMaterialModal-${material._id}`}
+                              >
+                                Edit
+                              </div>
+                              <div
+                                class="flex items-center justify-center px-3 py-1 bg-red-500 rounded-md cursor-pointer"
+                                onClick={() => deleteMaterial(material._id)}
+                              >
+                                Delete
+                              </div>
+                            </td>
+                          </tr>
+                        </>
                       ))}
                   </tbody>
                 </table>

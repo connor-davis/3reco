@@ -1,6 +1,7 @@
 import { createSignal, onMount } from 'solid-js';
 
 import AddStockModal from '../../components/modals/stock/add';
+import EditStockModal from '../../components/modals/stock/edit';
 import Paged from '../../components/paged/paged';
 import apiUrl from '../../apiUrl';
 import axios from 'axios';
@@ -102,6 +103,26 @@ const Stock = () => {
       .catch((error) => {});
   };
 
+  const editStock = (id, data) => {
+    axios
+      .put(
+        apiUrl + '/stock/',
+        {
+          _id: id,
+          stockName: data.name,
+          stockDescription: data.description,
+          stockWeight: data.weight,
+          stockType: data.type,
+          stockValue: data.value,
+        },
+        { headers: { Authorization: 'Bearer ' + authState.token } }
+      )
+      .then((response) => {
+        getStockPages();
+      })
+      .catch((error) => {});
+  };
+
   const deleteStock = (id) => {
     axios
       .delete(apiUrl + '/stock/' + id, {
@@ -188,37 +209,49 @@ const Stock = () => {
                   </thead>
                   <tbody>
                     {pageData.length > 0 &&
-                      pageData.map((data, i) => (
-                        <tr
-                          class={`bg-gray-100 border-b border-gray-300 transition duration-300 ease-in-out hover:bg-gray-200`}
-                        >
-                          <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                            {data.stockName}
-                          </td>
-                          <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
-                            {data.stockDescription}
-                          </td>
-                          <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                            {data.stockWeight}
-                          </td>
-                          <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                            {data.stockValue}
-                          </td>
-                          <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                            {data.stockType}
-                          </td>
-                          <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer">
-                              Edit
-                            </div>
-                            <div
-                              class="flex items-center justify-center px-3 py-1 bg-red-500 rounded-md cursor-pointer"
-                              onClick={() => deleteStock(data._id)}
-                            >
-                              Delete
-                            </div>
-                          </td>
-                        </tr>
+                      pageData.map((stock, i) => (
+                        <>
+                          <EditStockModal
+                            data={stock}
+                            materials={materials}
+                            onEdit={(data) => editStock(stock._id, data)}
+                          />
+
+                          <tr
+                            class={`bg-gray-100 border-b border-gray-300 transition duration-300 ease-in-out hover:bg-gray-200`}
+                          >
+                            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                              {stock.stockName}
+                            </td>
+                            <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
+                              {stock.stockDescription}
+                            </td>
+                            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                              {stock.stockWeight} kg
+                            </td>
+                            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                              R {stock.stockValue}
+                            </td>
+                            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                              {stock.stockType}
+                            </td>
+                            <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                              <div
+                                class="flex items-center justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer"
+                                data-bs-toggle="modal"
+                                data-bs-target={`#editStockModal-${stock._id}`}
+                              >
+                                Edit
+                              </div>
+                              <div
+                                class="flex items-center justify-center px-3 py-1 bg-red-500 rounded-md cursor-pointer"
+                                onClick={() => deleteStock(stock._id)}
+                              >
+                                Delete
+                              </div>
+                            </td>
+                          </tr>
+                        </>
                       ))}
                   </tbody>
                 </table>

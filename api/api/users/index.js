@@ -24,7 +24,7 @@ router.get(
   '/',
   passport.authenticate('jwt', { session: false }),
   async (request, response) => {
-    const found = await User.findOne({ email: request.user.email });
+    const found = await User.findOne({ _id: request.user._id });
 
     if (!found)
       return response

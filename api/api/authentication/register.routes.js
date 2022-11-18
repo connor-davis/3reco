@@ -4,7 +4,7 @@ let uuid = require('uuid');
 let bcrypt = require('bcrypt');
 let jwt = require('jsonwebtoken');
 let fs = require('fs');
-let User = require("../../models/user.model");
+let User = require('../../models/user.model');
 
 /**
  * @openapi
@@ -33,28 +33,29 @@ router.post('/', async (request, response) => {
   });
 
   let data = {
-    email: body.email,
+    phoneNumber: body.phoneNumber,
     password: bcrypt.hashSync(body.password, 2048),
   };
 
   let token = jwt.sign(
     {
       sub: data.id,
-      email: data.email,
+      phoneNumber: data.phoneNumber,
     },
     privateKey,
     { expiresIn: '1d', algorithm: 'RS256' }
   );
 
-  const found = await User.findOne({ email: data.email });
+  const found = await User.findOne({ phoneNumber: data.phoneNumber });
 
   if (found)
-    return response.status(500).json({
-      message: 'Email already in use. Please use a different email.',
+    return response.status(200).json({
+      message: 'Phone number already in use. Please use a different phone number.',
+      error: 'number-already-used',
     });
   else {
     const newUser = new User({
-      email: data.email,
+      phoneNumber: data.phoneNumber,
       password: data.password,
       agreedToTerms: true,
       completedProfile: false,
@@ -75,7 +76,7 @@ router.post('/', async (request, response) => {
       });
     } catch (error) {
       return response
-        .status(500)
+        .status(200)
         .json({ message: 'Error while registering a new user.', error });
     }
   }

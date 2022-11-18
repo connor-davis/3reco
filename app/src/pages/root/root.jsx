@@ -1,25 +1,83 @@
 import { Link, Outlet } from '@solidjs/router';
 
+import Logo from '../../assets/3rEco-x512.png';
+import { onMount } from 'solid-js';
+import { useNavigate } from '@solidjs/router';
+import useState from '../../hooks/state';
+
 const Root = ({ children }) => {
+  const [notificationsState, updateNotificationsState] =
+    useState('notificationsState');
+
+  const navigate = useNavigate();
+
+  const [userState] = useState('userState');
+
+  const getUserImage = () => {
+    if (!userState.image) {
+      if (userState.userType === 'business') {
+        if (userState.businessName) {
+          const businessNameSplit = userState.businessName.split(' ');
+
+          return (
+            businessNameSplit[0] + businessNameSplit[businessNameSplit.length]
+          );
+        } else return 'B';
+      } else if (userState.userType === 'standard') {
+        if (userState.firstName && userState.lastName) {
+          const firstNameSplit = userState.firstName.split('');
+          const lastNameSplit = userState.lastName.split('');
+
+          return firstNameSplit[0] + lastNameSplit[0];
+        } else return 'S';
+      } else {
+        return 'A';
+      }
+    } else return userState.image;
+  };
+
+  onMount(() => {
+    setTimeout(() => {
+      updateNotificationsState({ notifications: [] });
+      
+      if (!userState.completedProfile) navigate('/setupProfile');
+    }, 300);
+  });
+
   return (
     <>
       <div class="flex flex-col lg:hidden w-full h-full overflow-hidden">
-        Mobile
+        <div class="flex flex-col space-y-10 w-full h-full justify-center items-center">
+          <div class="text-2xl">
+            <img src={Logo} class="w-32 h-32" />
+          </div>
+
+          <div class="flex flex-col space-y-4 max-w-96 h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+            This part of the app is under development.
+          </div>
+        </div>
       </div>
       <div class="hidden lg:flex w-full h-full overflow-hidden">
-        <div class="flex flex-col items-center w-24 h-full border-r border-gray-300 bg-gray-100">
+        <div class="flex flex-col items-center w-24 h-full border-r border-gray-300 bg-gray-100 dark:bg-gray-900">
           <div class="pt-4 pb-2 px-6">
-            <a href="/">
+            <Link href="/profile">
               <div class="flex items-center">
                 <div class="shrink-0">
-                  <img
-                    src="https://mdbcdn.b-cdn.net/img/new/avatars/8.webp"
-                    class="rounded-full w-10"
-                    alt="Avatar"
-                  />
+                  {getUserImage().length > 2 && (
+                    <img
+                      src={getUserImage()}
+                      class="rounded-full w-10 h-10 bg-emerald-500"
+                    />
+                  )}
+
+                  {getUserImage().length <= 2 && (
+                    <div class="flex flex-col justify-center items-center rounded-full w-10 h-10 bg-emerald-500">
+                      {getUserImage()}
+                    </div>
+                  )}
                 </div>
               </div>
-            </a>
+            </Link>
           </div>
           <ul class="flex flex-col items-center w-full h-full">
             <li class="relative">
