@@ -66,7 +66,7 @@ const Root = ({ children }) => {
                   {getUserImage().length > 2 && (
                     <img
                       src={getUserImage()}
-                      class="rounded-full w-10 h-10 bg-emerald-500"
+                      class="rounded-full w-10 h-10 bg-emerald-500 object-cover"
                     />
                   )}
 
