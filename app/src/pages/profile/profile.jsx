@@ -62,7 +62,7 @@ const Profile = () => {
 
         setTimeout(() => {
           setImage(userState.image);
-          
+
           setFirstName(userState.firstName);
           setLastName(userState.lastName);
           setIdNumber(userState.idNumber);
@@ -245,28 +245,32 @@ const Profile = () => {
                           {image() !== '' && (
                             <img
                               src={image()}
-                              class="flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 cursor-pointer object-cover"
+                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 ${
+                                editingImage() ? 'cursor-pointer' : ''
+                              } object-cover`}
                               onClick={() => {
-                                let inputElement =
-                                  document.createElement('input');
+                                if (editingImage()) {
+                                  let inputElement =
+                                    document.createElement('input');
 
-                                inputElement.setAttribute('type', 'file');
+                                  inputElement.setAttribute('type', 'file');
 
-                                inputElement.click();
+                                  inputElement.click();
 
-                                inputElement.addEventListener(
-                                  'change',
-                                  (event) => {
-                                    let file = event.target.files[0];
-                                    let reader = new FileReader();
+                                  inputElement.addEventListener(
+                                    'change',
+                                    (event) => {
+                                      let file = event.target.files[0];
+                                      let reader = new FileReader();
 
-                                    reader.readAsDataURL(file);
+                                      reader.readAsDataURL(file);
 
-                                    reader.onload = (_) => {
-                                      setImage(reader.result);
-                                    };
-                                  }
-                                );
+                                      reader.onload = (_) => {
+                                        setImage(reader.result);
+                                      };
+                                    }
+                                  );
+                                }
                               }}
                             />
                           )}
