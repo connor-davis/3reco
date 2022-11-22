@@ -23,7 +23,7 @@ div[placeholder]:empty:before {
 ::-webkit-scrollbar-thumb {
   background: #a3a3a3;
   border-radius: 5px;
-  cursor: pointer;
+  cursor: pointer !important;
 }
 
 /* Handle on hover */

@@ -39,8 +39,9 @@ const Root = ({ children }) => {
   onMount(() => {
     setTimeout(() => {
       updateNotificationsState({ notifications: [] });
-      
-      if (!userState.completedProfile) navigate('/setupProfile');
+
+      if (!userState.completedProfile)
+        navigate('/setupProfile', { replace: true });
     }, 300);
   });
 
@@ -52,8 +53,10 @@ const Root = ({ children }) => {
             <img src={Logo} class="w-32 h-32" />
           </div>
 
-          <div class="flex flex-col space-y-4 max-w-96 h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
-            This part of the app is under development.
+          <div class="flex flex-col space-y-4 max-w-96 h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300 mx-20">
+            We're sorry to say that the mobile version of the 3rEco app is not
+            supported yet. Please use the app on a laptop/desktop device or a
+            device that has a similar screen size.
           </div>
         </div>
       </div>
@@ -155,7 +158,7 @@ const Root = ({ children }) => {
               </Link>
               <Link
                 class="flex items-center space-x-2 text-sm py-4 px-6 h-12 overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
-                href="/"
+                href="/inbox"
                 data-mdb-ripple="true"
                 data-mdb-ripple-color="#10b981"
                 data-bs-toggle="tooltip"

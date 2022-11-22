@@ -73,7 +73,7 @@ const LoginForm = ({ setRegister }) => {
               ...response.data.data,
             });
 
-            navigate('/');
+            navigate('/', { replace: true });
           }, 1000);
         }
       })
@@ -124,7 +124,9 @@ const LoginForm = ({ setRegister }) => {
             onChange={(event) => setPhoneNumber(event.target.value)}
             class="w-full h-auto px-3 py-2 rounded-lg bg-gray-200 outline-none"
           />
-          <div class="text-sm text-gray-500">We'll never share your phone number.</div>
+          <div class="text-sm text-gray-500">
+            We'll never share your phone number.
+          </div>
         </div>
 
         <div class="flex flex-col justify-start space-y-2">
@@ -228,7 +230,7 @@ const RegisterForm = ({ setRegister }) => {
                 ...response.data.data,
               });
 
-              navigate('/');
+              navigate('/', { replace: true });
             }, 1000);
           }
         })
@@ -295,7 +297,9 @@ const RegisterForm = ({ setRegister }) => {
             onKeyUp={(event) => setPhoneNumber(event.target.value)}
             class="w-full h-auto px-3 py-2 rounded-lg bg-gray-200 outline-none"
           />
-          <div class="text-sm text-gray-500">We'll never share your phone number.</div>
+          <div class="text-sm text-gray-500">
+            We'll never share your phone number.
+          </div>
         </div>
 
         <div class="flex flex-col justify-start space-y-2">

@@ -5,7 +5,8 @@ const authenticationRoutes = require('./authentication');
 const usersRoutes = require('./users');
 const adminRoutes = require('./admin');
 const stockRoutes = require('./stock');
-const materialsRoutes = require("./materials");
+const materialsRoutes = require('./materials');
+const inboxRoutes = require('./inbox');
 
 /**
  * @openapi
@@ -32,5 +33,6 @@ router.use('/users', usersRoutes);
 router.use('/admin', adminRoutes);
 router.use('/stock', stockRoutes);
 router.use('/materials', materialsRoutes);
+router.use('/inbox', inboxRoutes);
 
 module.exports = router;

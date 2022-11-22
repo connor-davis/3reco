@@ -26,7 +26,7 @@ const AuthGuard = ({ children }) => {
         })
         .then((response) => {
           setStatusMessage('You are authenticated.');
-          
+
           updateAuthState({
             authenticated: true,
             token: response.data.data.authenticationToken,
@@ -48,7 +48,7 @@ const AuthGuard = ({ children }) => {
           clearAuthState();
           clearUserState();
 
-          navigate("/auth");
+          navigate('/auth', { replace: true });
         });
     }, 1000);
   });

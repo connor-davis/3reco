@@ -3,12 +3,13 @@ import { Route, Routes } from '@solidjs/router';
 import AuthGuard from './guards/authGuard';
 import Authentication from './pages/authentication/authentication';
 import Dashboard from './pages/dashboard/dashboard';
+import Inbox from './pages/inbox/inbox';
+import InboxView from './pages/inbox/view';
 import Materials from './pages/materials/materials';
 import Profile from './pages/profile/profile';
 import Root from './pages/root/root';
 import SetupProfile from './pages/profile/setup';
 import Stock from './pages/stock/stock';
-import { onMount } from 'solid-js';
 import useNotifications from './hooks/notifications';
 import useState from './hooks/state';
 import useThemeToggler from './hooks/themeToggler';
@@ -73,6 +74,8 @@ function App() {
                     <Route path="/profile" element={Profile} />
                     <Route path="/stock" element={Stock} />
                     <Route path="/materials" element={Materials} />
+                    <Route path="/inbox" element={Inbox} />
+                    <Route path="/inbox/:id" element={InboxView} />
                   </Route>
                   <Route path="/setupProfile" element={SetupProfile} />
                 </>
