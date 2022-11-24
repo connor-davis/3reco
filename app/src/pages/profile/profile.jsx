@@ -61,13 +61,13 @@ const Profile = () => {
         updateUserState({ ...response.data.data });
 
         setTimeout(() => {
-          setImage(userState.image);
+          setImage(userState.image || '');
 
           setFirstName(userState.firstName);
           setLastName(userState.lastName);
           setIdNumber(userState.idNumber);
           setBusinessName(userState.businessName);
-          setBusinessRegistrationNumber(userState.businessName);
+          setBusinessRegistrationNumber(userState.businessRegistrationNumber);
 
           setStreetAddress(userState.streetAddress);
           setCity(userState.city);
@@ -94,10 +94,10 @@ const Profile = () => {
         if (!response.data.error) {
           updateUserState({ ...response.data.data });
 
-          console.log(userState);
-
           setTimeout(() => {
-            setImage(userState.image);
+            console.log(userState.image);
+
+            setImage(userState.image || '');
 
             setFirstName(userState.firstName);
             setLastName(userState.lastName);
@@ -125,9 +125,14 @@ const Profile = () => {
         if (userState.businessName) {
           const businessNameSplit = userState.businessName.split(' ');
 
-          return (
-            businessNameSplit[0] + businessNameSplit[businessNameSplit.length]
-          );
+          if (businessNameSplit.length > 1) {
+            return (
+              businessNameSplit[0].substring(0, 1) +
+              businessNameSplit[businessNameSplit.length - 1].substring(0, 1)
+            );
+          } else {
+            return userState.businessName.substring(0, 1);
+          }
         } else return 'B';
       } else if (userState.userType === 'standard') {
         if (userState.firstName && userState.lastName) {
@@ -237,7 +242,7 @@ const Profile = () => {
                         </div>
                         <div class="flex items-center justify-center">
                           {image() === '' && (
-                            <div class="flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 cursor-pointer">
+                            <div class="flex flex-col justify-center items-center w-32 h-32 rounded-full bg-emerald-500 border-l border-t border-r border-b border-gray-300 cursor-pointer text-4xl">
                               {getUserInitials()}
                             </div>
                           )}
@@ -245,7 +250,7 @@ const Profile = () => {
                           {image() !== '' && (
                             <img
                               src={image()}
-                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 ${
+                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 bg-gray-200 ${
                                 editingImage() ? 'cursor-pointer' : ''
                               } object-cover`}
                               onClick={() => {
@@ -397,7 +402,77 @@ const Profile = () => {
                   </div>
                 ) : (
                   <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-3">
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg"></div>
+                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                      <div class="flex flex-col justify-start space-y-2">
+                        <div class="flex justify-between items-center">
+                          <div>Your Profile Image</div>
+                          {editingImage() ? (
+                            <div
+                              class="flex items-center space-x-2 text-sm py-2 px-3 rounded-md overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
+                              data-mdb-ripple="true"
+                              data-mdb-ripple-color="#10b981"
+                              onClick={() => {
+                                setEditingImage(false);
+                                updateProfile('image', image());
+                              }}
+                            >
+                              Finish
+                            </div>
+                          ) : (
+                            <div
+                              class="flex items-center space-x-2 text-sm py-2 px-3 rounded-md overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
+                              data-mdb-ripple="true"
+                              data-mdb-ripple-color="#10b981"
+                              onClick={() => {
+                                setEditingImage(true);
+                              }}
+                            >
+                              Edit
+                            </div>
+                          )}
+                        </div>
+                        <div class="flex items-center justify-center">
+                          {image() === '' && (
+                            <div class="flex flex-col justify-center items-center w-32 h-32 rounded-full bg-emerald-500 border-l border-t border-r border-b border-gray-300 cursor-pointer text-4xl">
+                              {getUserInitials()}
+                            </div>
+                          )}
+
+                          {image() !== '' && (
+                            <img
+                              src={image()}
+                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 bg-gray-200 ${
+                                editingImage() ? 'cursor-pointer' : ''
+                              } object-cover`}
+                              onClick={() => {
+                                if (editingImage()) {
+                                  let inputElement =
+                                    document.createElement('input');
+
+                                  inputElement.setAttribute('type', 'file');
+
+                                  inputElement.click();
+
+                                  inputElement.addEventListener(
+                                    'change',
+                                    (event) => {
+                                      let file = event.target.files[0];
+                                      let reader = new FileReader();
+
+                                      reader.readAsDataURL(file);
+
+                                      reader.onload = (_) => {
+                                        setImage(reader.result);
+                                      };
+                                    }
+                                  );
+                                }
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">

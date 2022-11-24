@@ -19,9 +19,13 @@ const Root = ({ children }) => {
         if (userState.businessName) {
           const businessNameSplit = userState.businessName.split(' ');
 
-          return (
-            businessNameSplit[0] + businessNameSplit[businessNameSplit.length]
-          );
+          if (businessNameSplit.length > 1) {
+            return (
+              businessNameSplit[0].substring(0, 1) + businessNameSplit[businessNameSplit.length - 1].substring(0, 1)
+            );
+          } else {
+            return userState.businessName.substring(0, 1);
+          }
         } else return 'B';
       } else if (userState.userType === 'standard') {
         if (userState.firstName && userState.lastName) {
@@ -63,13 +67,13 @@ const Root = ({ children }) => {
       <div class="hidden lg:flex w-full h-full overflow-hidden">
         <div class="flex flex-col items-center w-24 h-full border-r border-gray-300 bg-gray-100 dark:bg-gray-900">
           <div class="pt-4 pb-2 px-6">
-            <Link href="/profile">
+            <Link href="/profile" title="Profile">
               <div class="flex items-center">
                 <div class="shrink-0">
                   {getUserImage().length > 2 && (
                     <img
                       src={getUserImage()}
-                      class="rounded-full w-10 h-10 bg-emerald-500 object-cover"
+                      class="rounded-full w-10 h-10 bg-gray-200 object-cover"
                     />
                   )}
 

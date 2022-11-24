@@ -63,7 +63,7 @@ const Inbox = () => {
         },
       })
       .then((response) => {
-        setPageData([...response.data.pageData]);
+        setPageData([...response.data.pageData].reverse());
         setLoading(false);
       })
       .catch((error) => {});
@@ -90,9 +90,14 @@ const Inbox = () => {
         if (user.businessName) {
           const businessNameSplit = user.businessName.split(' ');
 
-          return (
-            businessNameSplit[0] + businessNameSplit[businessNameSplit.length]
-          );
+          if (businessNameSplit.length > 1) {
+            return (
+              businessNameSplit[0].substring(0, 1) +
+              businessNameSplit[businessNameSplit.length - 1].substring(0, 1)
+            );
+          } else {
+            return userState.businessName.substring(0, 1);
+          }
         } else return 'B';
       } else if (user.userType === 'standard') {
         if (user.firstName && user.lastName) {
@@ -138,7 +143,7 @@ const Inbox = () => {
             </div>
           </div>
           <div class="flex flex-col w-full h-full overflow-hidden">
-            <div class="flex flex-col w-full h-full p-3 border-l border-t border-r border-gray-300 rounded-t-lg bg-gray-200 overflow-y-auto">
+            <div class="flex flex-col w-full h-full p-3 border-l border-t border-r border-gray-300 rounded-t-lg bg-gray-200 overflow-y-auto space-y-2">
               {pageData.length > 0 &&
                 pageData.map((item, i) => (
                   <>
@@ -146,13 +151,13 @@ const Inbox = () => {
 
                     <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md">
                       <div class="flex items-center space-x-5 border-gray-300 p-3">
-                        <div class="flex items-center w-full space-x-2">
-                          <div class="flex items-center">
+                        <div class="flex items-center w-full space-x-10">
+                          <div class="flex items-center space-x-2">
                             <div class="shrink-0">
                               {getUserImage(item.sender).length > 2 && (
                                 <img
                                   src={getUserImage(item.sender)}
-                                  class="rounded-full w-10 h-10 bg-emerald-500 object-cover"
+                                  class="rounded-full w-10 h-10 bg-gray-200 object-cover"
                                 />
                               )}
 
@@ -162,11 +167,20 @@ const Inbox = () => {
                                 </div>
                               )}
                             </div>
+                            <div class="text-lg font-semibold">
+                              {item.sender.userType === 'standard'
+                                ? item.sender.firstName +
+                                  ' ' +
+                                  item.sender.lastName
+                                : item.sender.businessName}
+                            </div>
                           </div>
-                          <div class="text-lg">{item.title}</div>
-                          <div class="text-lg">-</div>
-                          <div class="text-lg w-full max-w-2xl truncate text-gray-400">
-                            {item.content}
+                          <div class="flex items-center space-x-2">
+                            <div class="text-lg shrink-0">{item.title}</div>
+                            <div class="text-lg text-gray-400">-</div>
+                            <div class="text-lg w-full max-w-2xl truncate text-gray-400">
+                              {item.content}
+                            </div>
                           </div>
                         </div>
                         <div class="flex items-center space-x-2">

@@ -4,13 +4,13 @@ import { createSignal } from 'solid-js';
 import useNotifications from '../../../hooks/notifications';
 import useState from '../../../hooks/state';
 
-const ComposeModal = () => {
+const ComposeModal = ({ data = {} }) => {
   const [authState, updateAuthState, clearAuthState] = useState('authState');
   const [notificationsState, addNotification, deleteNotification, clear] =
     useNotifications();
 
-  const [phoneNumber, setPhoneNumber] = createSignal('');
-  const [title, setTitle] = createSignal('');
+  const [phoneNumber, setPhoneNumber] = createSignal(data.phoneNumber || '');
+  const [title, setTitle] = createSignal(data.title || '');
   const [content, setContent] = createSignal('');
 
   const sendMessage = () => {

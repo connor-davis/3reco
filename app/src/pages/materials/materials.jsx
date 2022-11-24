@@ -130,7 +130,9 @@ const Materials = () => {
           <div class="flex justify-between items-center">
             <div class="text-xl">Your Materials</div>
             <div
-              class="flex items-center justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer"
+              class="flex items-center justify-center px-3 py-1 rounded-md hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
+              data-mdb-ripple="true"
+              data-mdb-ripple-color="#10b981"
               data-bs-toggle="modal"
               data-bs-target="#addMaterialModal"
             >
