@@ -1,10 +1,11 @@
 import apiUrl from '../../../apiUrl';
 import axios from 'axios';
 import { createSignal } from 'solid-js';
+import inboxTypes from '../../../types/inbox.types';
 import useNotifications from '../../../hooks/notifications';
 import useState from '../../../hooks/state';
 
-const ComposeModal = ({ data = {} }) => {
+const ComposeModal = ({ id = 'composeModal', data = {} }) => {
   const [authState, updateAuthState, clearAuthState] = useState('authState');
   const [notificationsState, addNotification, deleteNotification, clear] =
     useNotifications();
@@ -21,6 +22,7 @@ const ComposeModal = ({ data = {} }) => {
           phoneNumber: phoneNumber(),
           title: title(),
           content: content(),
+          attachments: data.attachments,
         },
         { headers: { Authorization: 'Bearer ' + authState.token } }
       )
@@ -37,9 +39,9 @@ const ComposeModal = ({ data = {} }) => {
   return (
     <div
       class="modal fade fixed top-0 left-0 hidden w-full h-full outline-none overflow-x-hidden overflow-y-auto"
-      id="composeModal"
+      id={id}
       tabindex="-1"
-      aria-labelledby="composeModal"
+      aria-labelledby={id}
       aria-modal="true"
       role="dialog"
     >

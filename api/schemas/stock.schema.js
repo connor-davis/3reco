@@ -25,6 +25,11 @@ const StockSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  isOffered: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
 });
 
 module.exports = StockSchema;

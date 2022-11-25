@@ -103,7 +103,7 @@ const Profile = () => {
             setLastName(userState.lastName);
             setIdNumber(userState.idNumber);
             setBusinessName(userState.businessName);
-            setBusinessRegistrationNumber(userState.businessName);
+            setBusinessRegistrationNumber(userState.businessRegistrationNumber);
 
             setStreetAddress(userState.streetAddress);
             setCity(userState.city);
@@ -242,7 +242,35 @@ const Profile = () => {
                         </div>
                         <div class="flex items-center justify-center">
                           {image() === '' && (
-                            <div class="flex flex-col justify-center items-center w-32 h-32 rounded-full bg-emerald-500 border-l border-t border-r border-b border-gray-300 cursor-pointer text-4xl">
+                            <div
+                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-emerald-500 border-l border-t border-r border-b border-gray-300 text-4xl ${
+                                editingImage() ? 'cursor-pointer' : ''
+                              }`}
+                              onClick={() => {
+                                if (editingImage()) {
+                                  let inputElement =
+                                    document.createElement('input');
+
+                                  inputElement.setAttribute('type', 'file');
+
+                                  inputElement.click();
+
+                                  inputElement.addEventListener(
+                                    'change',
+                                    (event) => {
+                                      let file = event.target.files[0];
+                                      let reader = new FileReader();
+
+                                      reader.readAsDataURL(file);
+
+                                      reader.onload = (_) => {
+                                        setImage(reader.result);
+                                      };
+                                    }
+                                  );
+                                }
+                              }}
+                            >
                               {getUserInitials()}
                             </div>
                           )}
@@ -250,7 +278,7 @@ const Profile = () => {
                           {image() !== '' && (
                             <img
                               src={image()}
-                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 bg-gray-200 ${
+                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full border-l border-t border-r border-b border-gray-300 bg-gray-200 ${
                                 editingImage() ? 'cursor-pointer' : ''
                               } object-cover`}
                               onClick={() => {
@@ -402,6 +430,7 @@ const Profile = () => {
                   </div>
                 ) : (
                   <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-3">
+                    {`${editingImage()}`}
                     <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
@@ -433,7 +462,35 @@ const Profile = () => {
                         </div>
                         <div class="flex items-center justify-center">
                           {image() === '' && (
-                            <div class="flex flex-col justify-center items-center w-32 h-32 rounded-full bg-emerald-500 border-l border-t border-r border-b border-gray-300 cursor-pointer text-4xl">
+                            <div
+                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-emerald-500 border-l border-t border-r border-b border-gray-300 text-4xl ${
+                                editingImage() ? 'cursor-pointer' : ''
+                              }`}
+                              onClick={() => {
+                                if (editingImage()) {
+                                  let inputElement =
+                                    document.createElement('input');
+
+                                  inputElement.setAttribute('type', 'file');
+
+                                  inputElement.click();
+
+                                  inputElement.addEventListener(
+                                    'change',
+                                    (event) => {
+                                      let file = event.target.files[0];
+                                      let reader = new FileReader();
+
+                                      reader.readAsDataURL(file);
+
+                                      reader.onload = (_) => {
+                                        setImage(reader.result);
+                                      };
+                                    }
+                                  );
+                                }
+                              }}
+                            >
                               {getUserInitials()}
                             </div>
                           )}
@@ -441,7 +498,7 @@ const Profile = () => {
                           {image() !== '' && (
                             <img
                               src={image()}
-                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full bg-gray-200 border-l border-t border-r border-b border-gray-300 bg-gray-200 ${
+                              class={`flex flex-col justify-center items-center w-32 h-32 rounded-full border-l border-t border-r border-b border-gray-300 bg-gray-200 ${
                                 editingImage() ? 'cursor-pointer' : ''
                               } object-cover`}
                               onClick={() => {

@@ -2,9 +2,11 @@ import { createSignal, onMount } from 'solid-js';
 import { useNavigate, useParams } from '@solidjs/router';
 
 import ComposeModal from '../../components/modals/compose/compose';
+import OfferAttachment from './attachment/offer';
 import apiUrl from '../../apiUrl';
 import axios from 'axios';
 import { createStore } from 'solid-js/store';
+import inboxTypes from '../../types/inbox.types';
 import useNotifications from '../../hooks/notifications';
 import useState from '../../hooks/state';
 
@@ -102,6 +104,7 @@ const InboxView = () => {
             data={{
               phoneNumber: pageData.sender && pageData.sender.phoneNumber,
               title: `Re: ${pageData.title.replace('Re: ', '')}`,
+              attachments: [...pageData.attachments],
             }}
           />
           <div class="flex flex-col w-full h-full space-y-2 animate-fade-in overflow-hidden">
@@ -220,6 +223,14 @@ const InboxView = () => {
                   </>
                 ))}
               </div>
+              {pageData.attachments.length > 0 &&
+                pageData.attachments.map((attachment) => (
+                  <>
+                    {attachment.type === inboxTypes.OFFER && (
+                      <OfferAttachment id={attachment.offerId} />
+                    )}
+                  </>
+                ))}
             </div>
           </div>
         </>

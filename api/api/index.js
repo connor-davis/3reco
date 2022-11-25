@@ -7,6 +7,7 @@ const adminRoutes = require('./admin');
 const stockRoutes = require('./stock');
 const materialsRoutes = require('./materials');
 const inboxRoutes = require('./inbox');
+const offersRoutes = require('./offers');
 
 /**
  * @openapi
@@ -34,5 +35,6 @@ router.use('/admin', adminRoutes);
 router.use('/stock', stockRoutes);
 router.use('/materials', materialsRoutes);
 router.use('/inbox', inboxRoutes);
+router.use('/offers', offersRoutes);
 
 module.exports = router;
