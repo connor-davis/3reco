@@ -27,7 +27,9 @@ const SetupProfile = () => {
   const [province, setProvince] = createSignal('');
 
   onMount(() => {
-    if (userState.completedProfile) navigate('/');
+    setTimeout(() => {
+      if (userState.completedProfile) navigate('/', { replace: true });
+    }, 300);
   });
 
   const completeStandardProfile = () => {

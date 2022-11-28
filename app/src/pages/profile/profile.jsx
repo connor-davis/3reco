@@ -430,7 +430,6 @@ const Profile = () => {
                   </div>
                 ) : (
                   <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-3">
-                    {`${editingImage()}`}
                     <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">

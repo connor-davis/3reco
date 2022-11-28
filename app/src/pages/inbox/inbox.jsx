@@ -112,6 +112,13 @@ const Inbox = () => {
     } else return user.image;
   };
 
+  var stringToHTML = function (str) {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(str, 'text/html');
+
+    return doc.body;
+  };
+
   return (
     <div class="flex flex-col w-full h-full overflow-y-auto">
       <ComposeModal />
@@ -176,19 +183,25 @@ const Inbox = () => {
                             </div>
                           </div>
                           <div class="flex items-center space-x-2">
-                            <div class="text-lg shrink-0">{item.title}</div>
+                            <div class="text-lg shrink-0">
+                              {stringToHTML(item.title)}
+                            </div>
                             <div class="text-lg text-gray-400">-</div>
-                            <div class="text-lg w-full max-w-2xl truncate text-gray-400">
-                              {item.content}
+                            <div class="text-lg w-full max-w-lg truncate text-gray-400">
+                              {item.content
+                                .replaceAll('<br />', '')
+                                .replaceAll('<span class="font-semibold">', '')
+                                .replaceAll('</span>', '')}
                             </div>
                           </div>
                         </div>
-                        <div class="flex items-center space-x-2">
+                        <div class="flex flex-none items-center space-x-2">
                           <div
                             class="flex items-center space-x-2 text-sm py-2 px-3 rounded-md overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
                             data-mdb-ripple="true"
                             data-mdb-ripple-color="#10b981"
                             onClick={() => navigate('/inbox/' + item._id)}
+                            title="View"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -216,6 +229,7 @@ const Inbox = () => {
                             data-mdb-ripple-color="#ef4444"
                             data-bs-toggle="modal"
                             data-bs-target="#deleteInboxModal"
+                            title="Delete"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"

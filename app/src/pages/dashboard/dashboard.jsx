@@ -1,5 +1,6 @@
 import { createSignal, onMount } from 'solid-js';
 
+import AcquireOfferModal from '../../components/modals/acquireOffer/acquireOffer';
 import ComposeModal from '../../components/modals/compose/compose';
 import DeleteOfferModal from '../../components/modals/deleteOffer/deleteOffer';
 import Paged from '../../components/paged/paged';
@@ -321,6 +322,8 @@ const Dashboard = () => {
                         }}
                       />
 
+                      <AcquireOfferModal data={data} />
+
                       <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md">
                         <div class="flex justify-between items-center border-b border-gray-300 p-3">
                           <div class="text-lg">{data.stock.stockName}</div>
@@ -329,7 +332,8 @@ const Dashboard = () => {
                               class="flex items-center space-x-2 text-sm py-2 px-3 rounded-md overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
                               data-mdb-ripple="true"
                               data-mdb-ripple-color="#10b981"
-                              onClick={() => {}}
+                              data-bs-toggle="modal"
+                              data-bs-target={`#acquireOfferModal-${data._id}`}
                             >
                               Acquire
                             </div>

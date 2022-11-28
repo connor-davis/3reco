@@ -33,7 +33,7 @@ router.delete('/:id', async (request, response) => {
     });
   else {
     try {
-      const stockFound = await Stock.find({ stockType: found.type });
+      const stockFound = await Stock.find({ owner: request.user.phoneNumber, stockType: found.type });
 
       if (stockFound.length === 0) {
         await Materials.deleteOne({ _id: params.id });

@@ -8,6 +8,7 @@ const logger = require('../../utils/logger');
 
 const createOfferRoutes = require('./createOffer.routes');
 const deleteOfferRoutes = require('./deleteOffer.routes');
+const acquireOfferRoutes = require('./acquireOffer.routes');
 
 /**
  * @openapi
@@ -232,6 +233,12 @@ router.use(
   '/',
   passport.authenticate('jwt', { session: false }),
   deleteOfferRoutes
+);
+
+router.use(
+  '/acquire',
+  passport.authenticate('jwt', { session: false }),
+  acquireOfferRoutes
 );
 
 module.exports = router;

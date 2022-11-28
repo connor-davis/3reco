@@ -1,6 +1,7 @@
 import { createSignal, onMount } from 'solid-js';
 import { useNavigate, useParams } from '@solidjs/router';
 
+import AcquisitionRequestAttachment from './attachment/acquisitionRequest';
 import ComposeModal from '../../components/modals/compose/compose';
 import OfferAttachment from './attachment/offer';
 import apiUrl from '../../apiUrl';
@@ -82,6 +83,13 @@ const InboxView = () => {
         return 'A';
       }
     } else return user.image;
+  };
+
+  var stringToHTML = function (str) {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(str, 'text/html');
+
+    return doc.body;
   };
 
   return (
@@ -219,7 +227,7 @@ const InboxView = () => {
               <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-3">
                 {pageData.content.split('\n').map((content) => (
                   <>
-                    <p>{content || <br />}</p>
+                    <p>{stringToHTML(content) || <br />}</p>
                   </>
                 ))}
               </div>
@@ -228,6 +236,13 @@ const InboxView = () => {
                   <>
                     {attachment.type === inboxTypes.OFFER && (
                       <OfferAttachment id={attachment.offerId} />
+                    )}
+
+                    {attachment.type === inboxTypes.ACQUISITION_REQUEST && (
+                      <AcquisitionRequestAttachment
+                        id={attachment.id}
+                        offerer={attachment.offererId === userState._id}
+                      />
                     )}
                   </>
                 ))}
