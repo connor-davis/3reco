@@ -78,6 +78,8 @@ client.then(async () => {
       },
       app
     );
+  } else {
+    require('https').createServer({}, app);
   }
 
   let options = {
@@ -103,9 +105,7 @@ client.then(async () => {
   });
 
   app.use(morganMiddleware);
-  app.use(
-    cors("*")
-  );
+  app.use(cors('*'));
   app.use(compression());
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: false }));
@@ -165,6 +165,10 @@ client.then(async () => {
   });
 
   http.listen(port, () =>
+    logger.success(`HTTP listening on http://localhost:${port}`)
+  );
+
+  https.listen(secure_port, () =>
     logger.success(`HTTP listening on http://localhost:${port}`)
   );
 

@@ -1,3 +1,5 @@
 ssh
 node_modules
 .mongodb
+.zip
+app/dist.zip
