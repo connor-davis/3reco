@@ -148,6 +148,7 @@ client.then(async () => {
   });
 
   io.on('connection', (socket) => {
+    // TODO
     logger.success('a user connected to socket io');
 
     // socket.on('announcement', (data) => {
