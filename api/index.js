@@ -78,8 +78,6 @@ client.then(async () => {
       },
       app
     );
-  } else {
-    require('https').createServer({}, app);
   }
 
   let options = {
@@ -165,10 +163,6 @@ client.then(async () => {
   });
 
   http.listen(port, () =>
-    logger.success(`HTTP listening on http://localhost:${port}`)
-  );
-
-  https.listen(secure_port, () =>
     logger.success(`HTTP listening on http://localhost:${port}`)
   );
 
