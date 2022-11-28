@@ -13,6 +13,9 @@ const RejectAcquisitionRequestModal = ({ id, type }) => {
   const [reason, setReason] = createSignal('');
 
   const rejectRequest = () => {
+    if (reason() === '' || reason() === undefined)
+      setReason('No reason given.');
+
     axios
       .post(
         apiUrl + '/offers/acquire/reject/' + type,
