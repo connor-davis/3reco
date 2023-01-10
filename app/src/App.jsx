@@ -1,28 +1,19 @@
-import {Route, Routes, useNavigate} from '@solidjs/router';
+import {useNavigate, useRoutes} from '@solidjs/router';
 
-import AuthGuard from './guards/authGuard';
-import Authentication from './pages/authentication/authentication';
-import Dashboard from './pages/dashboard/dashboard';
-import Inbox from './pages/inbox/inbox';
-import InboxView from './pages/inbox/view';
-import Materials from './pages/materials/materials';
-import Profile from './pages/profile/profile';
-import Root from './pages/root/root';
-import SetupProfile from './pages/profile/setup';
-import Stock from './pages/stock/stock';
 import useNotifications from './hooks/notifications';
 import useState from './hooks/state';
 import useThemeToggler from './hooks/themeToggler';
-import AdminRoot from "./pages/admin/root/root";
-import AdminDashboard from "./pages/admin/dahboard/dashboard";
-import AdminUsers from "./pages/admin/users/users";
-import AdminMaterials from "./pages/admin/materials/materials";
-import ResetPassword from "./pages/resetPassword/resetPassword";
-import {createSignal, onMount} from "solid-js";
+import {createSignal, lazy, onMount} from "solid-js";
 import axios from "axios";
 import apiUrl from "./apiUrl";
 
+import {AdminRoutes, UserRoutes, PublicRoutes} from "./routes";
+
 function App() {
+    const User = useRoutes(UserRoutes);
+    const Public = useRoutes(PublicRoutes);
+    const Admin = useRoutes(AdminRoutes);
+
     const [notificationsState, addNotification, deleteNotification, clear] =
         useNotifications();
     const [theme, toggleTheme] = useThemeToggler();
@@ -117,33 +108,9 @@ function App() {
                                 </div>
                             ))}
                     </div>
-                    <Routes>
-                        <Route path="/auth" element={Authentication}/>
-
-                        {userState.userType === 'admin' && (
-                            <Route path="/" component={AdminRoot}>
-                                <Route path="/" element={AdminDashboard}/>
-                                <Route path="/users" element={AdminUsers}/>
-                                <Route path="/materials" element={AdminMaterials}/>
-                            </Route>
-                        )}
-
-                        {userState.userType !== 'admin' && (
-                            <>
-                                <Route path="/" component={Root}>
-                                    <Route path="/" element={Dashboard}/>
-                                    <Route path="/profile" element={Profile}/>
-                                    <Route path="/stock" element={Stock}/>
-                                    <Route path="/materials" element={Materials}/>
-                                    <Route path="/inbox" element={Inbox}/>
-                                    <Route path="/inbox/:id" element={InboxView}/>
-                                </Route>
-                                <Route path="/setupProfile" element={SetupProfile}/>
-                            </>
-                        )}
-
-                        <Route path="/resetPassword" element={ResetPassword}/>
-                    </Routes>
+                    {!authState.token && <Public/>}
+                    {authState.token && userState.userType === "admin" && <Admin/>}
+                    {authState.token && userState.userType !== "admin" && <User/>}
                 </div>
             </div>
         </div>

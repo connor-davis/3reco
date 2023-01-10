@@ -5,7 +5,7 @@ let path = require('path');
 let bcrypt = require('bcrypt');
 let passport = require('passport');
 let User = require('../../models/user.model');
-let crypto = require('crypto-js');
+let uuid = require("uuid");
 let UserType = require("../../types/user.types");
 
 /**
@@ -27,28 +27,16 @@ let UserType = require("../../types/user.types");
 router.post('/', async (request, response) => {
     let {newPassword, token} = request.body;
 
-    let hash = '#';
-    let regex = new RegExp(hash, 'g');
-
-    token = token.replace(regex, '/');
-
-    let decryptTokenBytes = crypto.AES.decrypt(
-        token,
-        fs.readFileSync(path.join(process.cwd(), 'certs', 'privateKey.pem'), {
-            encoding: 'utf-8',
-        })
-    );
-    let phoneNumber = decryptTokenBytes.toString(crypto.enc.Utf8);
-
-    if (!fs.existsSync(path.join(process.cwd(), 'temp', phoneNumber + '-pwrs.txt')))
+    if (!fs.existsSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt')))
         return response.status(401).send('Unauthorized');
 
     let password = bcrypt.hashSync(newPassword, 2048);
+    const pwrsData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt')));
 
     try {
-        await User.updateOne({phoneNumber: phoneNumber}, {password});
+        await User.updateOne({phoneNumber: pwrsData.phoneNumber}, {password});
 
-        fs.unlinkSync(path.join(process.cwd(), 'temp', phoneNumber + '-pwrs.txt'));
+        fs.unlinkSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt'));
 
         return response
             .status(200)
@@ -99,25 +87,15 @@ router.get(
             if (!fs.existsSync(path.join(process.cwd(), 'temp')))
                 fs.mkdirSync(path.join(process.cwd(), 'temp'));
 
-            let tokenGen = crypto.AES.encrypt(
-                data.phoneNumber,
-                fs.readFileSync(path.join(process.cwd(), 'certs', 'privateKey.pem'), {
-                    encoding: 'utf-8',
-                })
-            ).toString();
-
-            let slash = '/';
-            let regex = new RegExp(slash, 'g');
-
-            tokenGen = tokenGen.replace(regex, '#');
+            const token = uuid.v4();
 
             let passwordResetData = {
-                token: tokenGen,
+                token: token,
                 user: data,
             };
 
             fs.writeFileSync(
-                path.join(process.cwd(), 'temp', data.phoneNumber + '-pwrs.txt'),
+                path.join(process.cwd(), 'temp', token + '-pwrs.txt'),
                 JSON.stringify(passwordResetData),
                 {encoding: 'utf-8'}
             );
