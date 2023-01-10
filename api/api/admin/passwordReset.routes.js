@@ -102,7 +102,7 @@ router.get(
 
             return response.status(200).json({
                 data: {
-                    link: 'https://3reco.co.za/resetPassword?token=' + passwordResetData.token,
+                    link: 'https://3reco.co.za/resetPassword.html?token=' + passwordResetData.token,
                 },
             });
         }
