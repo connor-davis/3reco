@@ -71,12 +71,12 @@ router.get(
     '/',
     passport.authenticate('jwt', {session: false}),
     async (request, response) => {
-        const foundData = await User.find();
+        const foundData = await User.find({userType: {$ne: UserType.ADMIN}});
 
         const data = foundData.map((user) => {
             const obj = user.toJSON();
 
-            if (user.userType !== UserType.ADMIN) return {
+            return {
                 _id: obj._id.toString(),
                 firstName: obj.firstName,
                 lastName: obj.lastName,
@@ -120,17 +120,15 @@ router.get(
         let {limit} = request.query;
         if (!limit) limit = 10;
 
-        const found = await User.find();
+        const found = await User.find({userType: {$ne: UserType.ADMIN}});
 
         if (!found) return response.status(200).json({pages: 0});
         else {
             let pageList = [];
 
-            let result = await User.find()
+            let result = await User.find({userType: {$ne: UserType.ADMIN}})
                 .skip(pageList.length * limit)
                 .limit(limit);
-
-            result = result.filter((user) => user.userType !== UserType.ADMIN)
 
             while (result.length > 0) {
                 pageList.push([
@@ -139,11 +137,9 @@ router.get(
                     }),
                 ]);
 
-                result = await User.find()
+                result = await User.find({userType: {$ne: UserType.ADMIN}})
                     .skip(pageList.length * limit)
                     .limit(limit);
-
-                result = result.filter((user) => user.userType !== UserType.ADMIN)
             }
 
             let pages = pageList.length;
@@ -177,11 +173,9 @@ router.get(
         let {limit} = request.query;
         if (!limit) limit = 10;
 
-        let found = await User.find()
+        let found = await User.find({userType: {$ne: UserType.ADMIN}})
             .skip((page - 1) * limit > 0 ? (page - 1) * limit : 0)
             .limit(limit);
-
-        found = found.filter((user) => user.userType !== UserType.ADMIN);
 
         if (!found) return response.status(200).json({pageData: []});
         else
