@@ -124,7 +124,7 @@ router.get(
 
             return response.status(200).json({
                 data: {
-                    link: 'http://localhost:5173/resetPassword/' + passwordResetData.token,
+                    link: 'https://3reco.co.za/resetPassword/' + passwordResetData.token,
                 },
             });
         }
