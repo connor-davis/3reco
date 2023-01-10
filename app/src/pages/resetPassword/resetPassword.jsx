@@ -4,14 +4,13 @@ import Logo from '../../assets/3rEco-x512.png';
 import apiUrl from '../../apiUrl';
 import axios from 'axios';
 import useNotifications from "../../hooks/notifications";
+import {useLocation} from "@solidjs/router";
 
 const ResetPassword = () => {
     const [notificationsState, addNotification, deleteNotification, clear] =
         useNotifications();
 
-    let href = document.location.href;
-    let hrefSize = href.split('/').length;
-    let token = href.split('/')[hrefSize - 1];
+    const location = useLocation();
 
     const [password, setPassword] = createSignal('');
     const [confirmPassword, setConfirmPassword] = createSignal('');
@@ -22,7 +21,7 @@ const ResetPassword = () => {
                 apiUrl + '/admin/passwordReset/',
                 {
                     newPassword: password(),
-                    token: token
+                    token: location.query.token
                 }
             )
             .then((response) => {

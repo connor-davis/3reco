@@ -17,7 +17,7 @@ import AdminRoot from "./pages/admin/root/root";
 import AdminDashboard from "./pages/admin/dahboard/dashboard";
 import AdminUsers from "./pages/admin/users/users";
 import AdminMaterials from "./pages/admin/materials/materials";
-import ResetPassword from "./pages/resetPassword.jsx/resetPassword";
+import ResetPassword from "./pages/resetPassword/resetPassword";
 import {createSignal, onMount} from "solid-js";
 import axios from "axios";
 import apiUrl from "./apiUrl";
@@ -118,7 +118,6 @@ function App() {
                             ))}
                     </div>
                     <Routes>
-
                         <Route path="/auth" element={Authentication}/>
 
                         {userState.userType === 'admin' && (
@@ -143,7 +142,7 @@ function App() {
                             </>
                         )}
 
-                        <Route path="/resetPassword/:token" element={ResetPassword}/>
+                        <Route path="/resetPassword" element={ResetPassword}/>
                     </Routes>
                 </div>
             </div>

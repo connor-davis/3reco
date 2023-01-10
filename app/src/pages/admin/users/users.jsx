@@ -79,7 +79,7 @@ const AdminUsers = () => {
                 } else {
                     addNotification('Success', 'The password reset link has been copied to your clipboard. You can send it to the user.');
 
-                    navigator.clipboard.writeText(response.data.link);
+                    navigator.clipboard.writeText(response.data.data.link);
                 }
             })
             .catch((error) => {
