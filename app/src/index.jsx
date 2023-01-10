@@ -3,14 +3,29 @@ import './index.css';
 
 import App from './App';
 import { Router } from '@solidjs/router';
+import { registerSW } from 'virtual:pwa-register';
 /* @refresh reload */
 import { render } from 'solid-js/web';
 
-render(
-  () => (
+if (typeof global === 'undefined') {
+  window.global = window;
+}
+
+let Routed = () => {
+  return (
     <Router>
       <App />
     </Router>
-  ),
-  document.getElementById('root')
-);
+  );
+};
+
+render(Routed, document.getElementById('root'));
+
+const updateSW = registerSW({
+  onNeedRefresh() {},
+  onOfflineReady() {},
+});
+
+if (typeof window !== 'undefined') {
+  import('./sw');
+}
