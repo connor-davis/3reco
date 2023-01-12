@@ -16,6 +16,7 @@ const EditMaterialModal = ({ data, onEdit = (data) => {} }) => {
     'Mercury',
     'Cardboard',
     'E-Waste',
+    'Mixed Waste'
   ]);
 
   const [value, setValue] = createSignal(data.value);

@@ -16,6 +16,7 @@ const AddMaterialModal = ({ onAdd = (data) => {} }) => {
     'Mercury',
     'Cardboard',
     'E-Waste',
+    'Mixed Waste'
   ]);
 
   const [value, setValue] = createSignal('');
