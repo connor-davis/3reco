@@ -72,7 +72,7 @@ const AdminDashboard = () => {
             {!isLoading() && (
                 <div class="flex flex-col w-full h-full space-y-2 animate-fade-in">
                     <div class="text-xl">Dashboard</div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="flex flex-col w-full justify-center items-center py-20 bg-emerald-100 text-emerald-500 border-l border-t border-r border-b border-emerald-200 rounded-md">{usersCount()} users</div>
                         <div class="flex flex-col w-full justify-center items-center py-20 bg-emerald-100 text-emerald-500 border-l border-t border-r border-b border-emerald-200 rounded-md">{materialsCount()} materials</div>
                     </div>

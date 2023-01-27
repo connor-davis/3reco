@@ -186,8 +186,8 @@ const Dashboard = () => {
       {!isLoading() && (
         <div class="flex flex-col w-full h-full space-y-2 animate-fade-in">
           <div class="text-xl">Dashboard</div>
-          <div class="flex items-center w-full h-full space-x-2 overflow-hidden">
-            <div class="flex flex-col w-1/2 h-full border-l border-t border-r border-b border-gray-300 rounded-lg">
+          <div class="flex flex-col md:flex-row items-center w-full h-full space-y-2 md:space-y-0 md:space-x-2 overflow-hidden">
+            <div class="flex flex-col w-full md:w-1/2 h-full border-l border-t border-r border-b border-gray-300 rounded-lg">
               <div class="flex justify-between items-center px-3 py-2">
                 Your Stock
               </div>
@@ -299,7 +299,7 @@ const Dashboard = () => {
                 </nav>
               </div>
             </div>
-            <div class="flex flex-col w-1/2 h-full border-l border-t border-r border-b border-gray-300 rounded-lg">
+            <div class="flex flex-col w-full md:w-1/2 h-full border-l border-t border-r border-b border-gray-300 rounded-lg">
               <div class="flex justify-between items-center px-3 py-2">
                 Market
               </div>

@@ -38,7 +38,7 @@ const EditMaterialModal = ({ data, onEdit = (data) => {} }) => {
               class="text-xl font-medium leading-normal text-gray-800"
               id="exampleModalCenteredScrollableLabel"
             >
-              Add Stock
+              Edit Material
             </h5>
             <button
               type="button"

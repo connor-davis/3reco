@@ -86,40 +86,38 @@ function App() {
     <div class={theme()}>
       <div class="w-screen h-screen bg-gray-100 dark:bg-gray-900 select-none">
         <div class="flex flex-col w-full h-full">
-          <div class="absolute w-96 flex flex-col space-y-2 h-auto top-0 right-0 p-5">
-            {notificationsState.notifications &&
-              notificationsState.notifications.map((notification) => (
-                <div
-                  class={`bg-white shadow-lg mx-auto w-96 max-w-full text-sm pointer-events-auto bg-clip-padding rounded-lg  ${
-                    notification.shown
-                      ? 'animate-fade-in block'
-                      : 'animate-fade-out hidden'
+          {notificationsState.notifications && notificationsState.notifications.length > 0 && <div style="pointer-events: none;" class={`absolute w-96 flex flex-col space-y-2 h-auto top-0 right-0 p-5`}>
+            {notificationsState.notifications.map((notification) => (
+              <div
+                class={`bg-white shadow-lg mx-auto w-96 max-w-full text-sm pointer-events-auto bg-clip-padding rounded-lg  ${notification.shown
+                  ? 'animate-fade-in block'
+                  : 'animate-fade-out hidden'
                   }`}
-                  id="static-example"
-                  role="alert"
-                  aria-live="assertive"
-                  aria-atomic="true"
-                  data-mdb-autohide="false"
-                >
-                  <div class=" bg-white flex justify-between items-center py-2 px-3 bg-clip-padding border-b border-gray-200 rounded-t-lg">
-                    <p class="font-bold text-gray-500">{notification.title}</p>
-                    <div class="flex items-center">
-                      {/* <p class="text-gray-600 text-xs">11 mins ago</p> */}
-                      <button
-                        type="button"
-                        class=" btn-close box-content w-4 h-4 ml-2 text-black border-none rounded-none opacity-50 focus:shadow-none focus:outline-none focus:opacity-100 hover:text-black hover:opacity-75 hover:no-underline"
-                        data-mdb-dismiss="toast"
-                        aria-label="Close"
-                        onClick={() => deleteNotification(notification.id)}
-                      ></button>
-                    </div>
-                  </div>
-                  <div class="p-3 bg-white rounded-b-lg break-words text-gray-700">
-                    {notification.body}
+                id="static-example"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+                data-mdb-autohide="false"
+              >
+                <div class=" bg-white flex justify-between items-center py-2 px-3 bg-clip-padding border-b border-gray-200 rounded-t-lg">
+                  <p class="font-bold text-gray-500">{notification.title}</p>
+                  <div class="flex items-center">
+                    {/* <p class="text-gray-600 text-xs">11 mins ago</p> */}
+                    <button
+                      type="button"
+                      class=" btn-close box-content w-4 h-4 ml-2 text-black border-none rounded-none opacity-50 focus:shadow-none focus:outline-none focus:opacity-100 hover:text-black hover:opacity-75 hover:no-underline"
+                      data-mdb-dismiss="toast"
+                      aria-label="Close"
+                      onClick={() => deleteNotification(notification.id)}
+                    ></button>
                   </div>
                 </div>
-              ))}
-          </div>
+                <div class="p-3 bg-white rounded-b-lg break-words text-gray-700">
+                  {notification.body}
+                </div>
+              </div>
+            ))}
+          </div>}
           <AuthGuard>
             <Routes>
               <Route path="/auth" element={Authentication} />

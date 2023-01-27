@@ -1,7 +1,7 @@
 import useState from "../../../hooks/state";
 import useNotifications from "../../../hooks/notifications";
-import {createSignal, onMount} from "solid-js";
-import {createStore} from "solid-js/store";
+import { createSignal, onMount } from "solid-js";
+import { createStore } from "solid-js/store";
 import axios from "axios";
 import apiUrl from "../../../apiUrl";
 
@@ -15,8 +15,8 @@ const AdminUsers = () => {
 
     const [usersPages, setUsersPages] = createSignal(0);
     const [currentUsersPage, setCurrentUsersPage] = createSignal(1);
-    const [pageData, setPageData] = createStore([], {name: 'page-data'});
-    const [paged, setPaged] = createStore([], {name: 'paged-list'});
+    const [pageData, setPageData] = createStore([], { name: 'page-data' });
+    const [paged, setPaged] = createStore([], { name: 'paged-list' });
 
     onMount(() => {
         setTimeout(() => {
@@ -113,62 +113,62 @@ const AdminUsers = () => {
                             {pageData.length > 0 && (
                                 <table>
                                     <thead class="bg-gray-100 border-b border-gray-300">
-                                    <tr>
-                                        <th
-                                            scope="col"
-                                            class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
-                                        >
-                                            First Name
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
-                                        >
-                                            Last Name
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
-                                        >
-                                            Phone Number
-                                        </th
-                                        >
-                                        <th
-                                            scope="col"
-                                            class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
-                                        >
-                                        </th>
-                                    </tr>
+                                        <tr>
+                                            <th
+                                                scope="col"
+                                                class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                                            >
+                                                First Name
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                                            >
+                                                Last Name
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                                            >
+                                                Phone Number
+                                            </th
+                                            >
+                                            <th
+                                                scope="col"
+                                                class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                                            >
+                                            </th>
+                                        </tr>
                                     </thead>
                                     <tbody>
-                                    {pageData.length > 0 &&
-                                        pageData.map((user, i) => (
-                                            <>
-                                                <tr
-                                                    class={`bg-gray-100 border-b border-gray-300 transition duration-300 ease-in-out hover:bg-gray-200`}
-                                                >
-                                                    <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                                                        {user.firstName}
-                                                    </td>
-                                                    <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
-                                                        {user.lastName}
-                                                    </td>
-                                                    <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
-                                                        {user.phoneNumber}
-                                                    </td>
-                                                    <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
-                                                        <div
-                                                            class="flex items-center justify-center px-3 py-1 rounded-md hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
-                                                            data-mdb-ripple="true"
-                                                            data-mdb-ripple-color="#10b981"
-                                                            onClick={() => resetPassword(user._id)}
-                                                        >
-                                                            Reset Password
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </>
-                                        ))}
+                                        {pageData.length > 0 &&
+                                            pageData.map((user, i) => (
+                                                <>
+                                                    <tr
+                                                        class={`bg-gray-100 border-b border-gray-300 transition duration-300 ease-in-out hover:bg-gray-200`}
+                                                    >
+                                                        <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                                                            {user.firstName}
+                                                        </td>
+                                                        <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
+                                                            {user.lastName}
+                                                        </td>
+                                                        <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
+                                                            {user.phoneNumber}
+                                                        </td>
+                                                        <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                                                            <div
+                                                                class="flex items-center justify-center px-3 py-1 rounded-md hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
+                                                                data-mdb-ripple="true"
+                                                                data-mdb-ripple-color="#10b981"
+                                                                onClick={() => resetPassword(user._id)}
+                                                            >
+                                                                Reset Password
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </>
+                                            ))}
                                     </tbody>
                                 </table>
                             )}
@@ -200,22 +200,109 @@ const AdminUsers = () => {
                                     </li>
 
                                     {usersPages() > 0 &&
+                                        paged.length < 6 ?
                                         paged.map((paged) => (
-                                                <div
-                                                    class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 ${
-                                                        currentUsersPage() === paged ? 'bg-emerald-400' : 'bg-transparent'
+                                            <div
+                                                class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 ${currentPage() === paged ? 'bg-emerald-400' : 'bg-transparent'
                                                     } outline-none transition-all duration-300 text-gray-800 hover:text-emerald-500 hover:bg-emerald-100 focus:shadow-none cursor-pointer`}
+                                                onClick={() => onPageClick(paged)}
+                                                data-mdb-ripple="true"
+                                                data-mdb-ripple-color="#10b981"
+                                            >
+                                                {paged}
+                                            </div>
+                                        )) :
+                                        <div class="flex items-center space-x-2">
+                                            {currentUsersPage() > 1 &&
+                                                <div
+                                                    class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 outline-none transition-all duration-300 text-gray-800 hover:text-emerald-500 hover:bg-emerald-100 focus:shadow-none cursor-pointer`}
                                                     onClick={() => {
-                                                        setCurrentUsersPage(paged);
+                                                        setCurrentUsersPage(1);
                                                         getUsersPage();
                                                     }}
                                                     data-mdb-ripple="true"
                                                     data-mdb-ripple-color="#10b981"
                                                 >
-                                                    {paged}
+                                                    1
                                                 </div>
-                                            )
-                                        )}
+                                            }
+                                            {currentUsersPage() > 2 &&
+                                                <div class="flex items-center space-x-2">
+                                                    <div>...</div>
+                                                </div>
+                                            }
+                                            {
+                                                currentUsersPage() < paged.length - 3 && paged.slice(currentUsersPage() - 1, currentUsersPage() + 3).map((paged, index) => (
+                                                    <div
+                                                        class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 ${currentUsersPage() === paged ? 'bg-emerald-400' : 'bg-transparent'
+                                                            } outline-none transition-all duration-300 text-gray-800 hover:text-emerald-500 hover:bg-emerald-100 focus:shadow-none cursor-pointer`}
+                                                        onClick={() => {
+                                                            setCurrentUsersPage(paged);
+                                                            getUsersPage();
+                                                        }}
+                                                        data-mdb-ripple="true"
+                                                        data-mdb-ripple-color="#10b981"
+                                                    >
+                                                        {paged}
+                                                    </div>
+                                                ))
+                                            }
+                                            {
+                                                currentUsersPage() > paged.length - 4 && <div class="flex items-center space-x-2">
+                                                    <div class="flex items-center space-x-2">
+                                                        <div
+                                                            class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 ${currentUsersPage() === paged.length - 3 ? 'bg-emerald-400' : 'bg-transparent'
+                                                                } outline-none transition-all duration-300 text-gray-800 hover:text-emerald-500 hover:bg-emerald-100 focus:shadow-none cursor-pointer`}
+                                                            onClick={() => {
+                                                                setCurrentUsersPage(paged.length - 3);
+                                                                getUsersPage();
+                                                            }}
+                                                            data-mdb-ripple="true"
+                                                            data-mdb-ripple-color="#10b981"
+                                                        >
+                                                            {paged.length - 3}
+                                                        </div>
+                                                        <div
+                                                            class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 ${currentUsersPage() === paged.length - 2 ? 'bg-emerald-400' : 'bg-transparent'
+                                                                } outline-none transition-all duration-300 text-gray-800 hover:text-emerald-500 hover:bg-emerald-100 focus:shadow-none cursor-pointer`}
+                                                            onClick={() => {
+                                                                setCurrentUsersPage(paged.length - 2);
+                                                                getUsersPage();
+                                                            }}
+                                                            data-mdb-ripple="true"
+                                                            data-mdb-ripple-color="#10b981"
+                                                        >
+                                                            {paged.length - 2}
+                                                        </div>
+                                                        <div
+                                                            class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 ${currentUsersPage() === paged.length - 1 ? 'bg-emerald-400' : 'bg-transparent'
+                                                                } outline-none transition-all duration-300 text-gray-800 hover:text-emerald-500 hover:bg-emerald-100 focus:shadow-none cursor-pointer`}
+                                                            onClick={() => {
+                                                                setCurrentUsersPage(paged.length - 1);
+                                                                getUsersPage();
+                                                            }}
+                                                            data-mdb-ripple="true"
+                                                            data-mdb-ripple-color="#10b981"
+                                                        >
+                                                            {paged.length - 1}
+                                                        </div>
+                                                        <div
+                                                            class={`flex flex-col justify-center items-center py-1.5 px-3 rounded-md border-0 ${currentUsersPage() === paged.length ? 'bg-emerald-400' : 'bg-transparent'
+                                                                } outline-none transition-all duration-300 text-gray-800 hover:text-emerald-500 hover:bg-emerald-100 focus:shadow-none cursor-pointer`}
+                                                            onClick={() => {
+                                                                setCurrentUsersPage(paged.length);
+                                                                getUsersPage();
+                                                            }}
+                                                            data-mdb-ripple="true"
+                                                            data-mdb-ripple-color="#10b981"
+                                                        >
+                                                            {paged.length}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
 
                                     <li class="page-item">
                                         <div
