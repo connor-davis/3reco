@@ -53,7 +53,7 @@ const Root = ({ children }) => {
 
   return (
     <div class="flex flex-col lg:flex-row w-full h-full overflow-hidden">
-      <div class="flex lg:hidden justify-between items-center bg-neutral-100 border-b border-neutral-300 p-3">
+      <div class="flex lg:hidden justify-between items-center bg-neutral-100 border-b border-neutral-300 p-1 md:p-3">
         <Link href="/profile" title="Profile" class="cursor-pointer">
           <div class="flex items-center">
             <div class="shrink-0">
@@ -74,7 +74,7 @@ const Root = ({ children }) => {
         </Link>
 
         <div
-          class="flex items-center cursor-pointer p-3 space-x-2 text-sm overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
+          class="flex items-center cursor-pointer p-1 md:p-3 space-x-2 text-sm overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
           data-mdb-ripple="true"
           data-mdb-ripple-color="#10b981"
           data-bs-toggle="tooltip"
@@ -88,13 +88,13 @@ const Root = ({ children }) => {
       </div>
 
       {navbarShown() &&
-        <div class={navbarShown() && "absolute top-0 left-0 w-screen h-screen bg-neutral-100 p-3 flex flex-col space-y-5 z-50"}>
+        <div class={navbarShown() && "absolute top-0 left-0 w-screen h-screen bg-neutral-100 p-1 md:p-3 flex flex-col space-y-5 z-50"}>
           <div class="flex justify-between items-center w-full">
             <div class="text-2xl">
               <img src={Logo} class="w-10 h-10" />
             </div>
             <div
-              class="flex items-center cursor-pointer p-3 space-x-2 text-sm overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
+              class="flex items-center cursor-pointer p-1 md:p-3 space-x-2 text-sm overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
               data-mdb-ripple="true"
               data-mdb-ripple-color="#10b981"
               data-bs-toggle="tooltip"
@@ -338,8 +338,8 @@ const Root = ({ children }) => {
           </li>
         </ul>
       </div>
-      <div class="flex flex-col w-full h-full px-2 pt-2 bg-gray-200">
-        <div class="flex flex-col w-full h-full bg-gray-100 rounded-t-2xl border-l border-t border-r border-gray-300 p-4">
+      <div class="flex flex-col w-full h-full px-1 pt-1 md:px-2 md:pt-2 bg-gray-200">
+        <div class="flex flex-col w-full h-full bg-gray-100 rounded-t-2xl border-l border-t border-r border-gray-300 p-2 md:p-4">
           <Outlet />
         </div>
       </div>

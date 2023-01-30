@@ -139,11 +139,11 @@ const AcceptAcquisitionRequestModal = ({ id }) => {
                     Please choose what stock you want to add new stock to.
                   </div>
                   <div class="flex flex-col w-full h-auto">
-                    <div class="flex flex-col w-full h-60 overflow-y-auto border-l border-t border-r border-b border-neutral-300 bg-neutral-200 p-3 rounded-t-lg">
+                    <div class="flex flex-col w-full h-60 overflow-y-auto border-l border-t border-r border-b border-neutral-300 bg-neutral-200 p-1 md:p-3 rounded-t-lg">
                       {pageData.length > 0 &&
                         pageData.map((stock, i) => (
                           <div
-                            class={`flex items-center justify-between cursor-pointer border-l border-t border-r border-b border-neutral-300 p-3 rounded-lg transition duration-300 ease-in-out hover:text-emerald-500 hover:bg-emerald-200 ${
+                            class={`flex items-center justify-between cursor-pointer border-l border-t border-r border-b border-neutral-300 p-1 md:p-3 rounded-lg transition duration-300 ease-in-out hover:text-emerald-500 hover:bg-emerald-200 ${
                               stock._id === selectedStock()
                                 ? 'bg-emerald-500 text-white'
                                 : 'bg-neutral-100'
@@ -161,7 +161,7 @@ const AcceptAcquisitionRequestModal = ({ id }) => {
                         </div>
                       )}
                     </div>
-                    <div class="flex justify-center items-center w-full border-l border-r border-b border-gray-300 bg-gray-100 p-3 rounded-b-lg">
+                    <div class="flex justify-center items-center w-full border-l border-r border-b border-gray-300 bg-gray-100 p-1 md:p-3 rounded-b-lg">
                       <nav>
                         <ul class="flex list-style-none space-x-2">
                           <li class="page-item">

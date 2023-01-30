@@ -166,7 +166,7 @@ const Profile = () => {
 
       {isLoading() && (
         <div class="flex flex-col w-full h-full justify-center items-center bg-gray-100">
-          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md md:rounded-2xl shadow-2xl p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
             <div>{statusMessage()}</div>
             <div
               class="spinner-border animate-spin text-emerald-500 inline-block w-4 h-4 border-2 rounded-full"
@@ -197,7 +197,7 @@ const Profile = () => {
               }`}
             >
               <div
-                class={`flex justify-between items-center p-3 bg-gray-100 cursor-pointer ${
+                class={`flex justify-between items-center p-1 md:p-3 bg-gray-100 cursor-pointer ${
                   currentStep() === 1
                     ? 'rounded-t-lg border-b border-gray-300'
                     : 'rounded-lg'
@@ -210,8 +210,8 @@ const Profile = () => {
 
               {currentStep() === 1 &&
                 (userState.userType === 'standard' ? (
-                  <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-3">
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                  <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-1 md:p-3">
+                    <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
                           <div>Your Profile Image</div>
@@ -310,7 +310,7 @@ const Profile = () => {
                         </div>
                       </div>
                     </div>
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                    <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
                           <div>Your First Name</div>
@@ -349,7 +349,7 @@ const Profile = () => {
                         />
                       </div>
                     </div>
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                    <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
                           <div>Your Last Name</div>
@@ -388,7 +388,7 @@ const Profile = () => {
                         />
                       </div>
                     </div>
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                    <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
                           <div>Your ID Number</div>
@@ -429,8 +429,8 @@ const Profile = () => {
                     </div>
                   </div>
                 ) : (
-                  <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-3">
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                  <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-1 md:p-3">
+                    <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
                           <div>Your Profile Image</div>
@@ -529,7 +529,7 @@ const Profile = () => {
                         </div>
                       </div>
                     </div>
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                    <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
                           <div>Your Business Name</div>
@@ -570,7 +570,7 @@ const Profile = () => {
                         />
                       </div>
                     </div>
-                    <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                    <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                       <div class="flex flex-col justify-start space-y-2">
                         <div class="flex justify-between items-center">
                           <div>Your Business Registration Number</div>
@@ -624,7 +624,7 @@ const Profile = () => {
               }`}
             >
               <div
-                class={`flex justify-between items-center p-3 bg-gray-100 cursor-pointer ${
+                class={`flex justify-between items-center p-1 md:p-3 bg-gray-100 cursor-pointer ${
                   currentStep() === 2
                     ? 'rounded-t-lg border-b border-gray-300'
                     : 'rounded-lg'
@@ -636,8 +636,8 @@ const Profile = () => {
               </div>
 
               {currentStep() === 2 && (
-                <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-3">
-                  <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                <div class="flex flex-col w-full h-full overflow-y-auto space-y-2 p-1 md:p-3">
+                  <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                     <div class="flex flex-col justify-start space-y-2">
                       <div class="flex justify-between items-center">
                         <div>Your Street Address</div>
@@ -678,7 +678,7 @@ const Profile = () => {
                       />
                     </div>
                   </div>
-                  <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                  <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                     <div class="flex flex-col justify-start space-y-2">
                       <div class="flex justify-between items-center">
                         <div>Your City</div>
@@ -717,7 +717,7 @@ const Profile = () => {
                       />
                     </div>
                   </div>
-                  <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                  <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                     <div class="flex flex-col justify-start space-y-2">
                       <div class="flex justify-between items-center">
                         <div>Your Area Code</div>
@@ -756,7 +756,7 @@ const Profile = () => {
                       />
                     </div>
                   </div>
-                  <div class="flex flex-col w-full h-auto p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
+                  <div class="flex flex-col w-full h-auto p-1 md:p-3 border-l border-t border-r border-b border-gray-300 bg-gray-100 rounded-lg">
                     <div class="flex flex-col justify-start space-y-2">
                       <div class="flex justify-between items-center">
                         <div>Your Province</div>

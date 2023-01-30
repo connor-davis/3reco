@@ -49,7 +49,7 @@ const ResetPassword = () => {
             <div class="text-xl">Reset Password</div>
             <div class="flex items-center space-x-2 w-96">
                 <div
-                    class="flex flex-col space-y-5 w-96 h-auto border-l border-t border-r border-b border-gray-300 rounded-lg p-5 bg-white">
+                    class="flex flex-col space-y-5 w-96 h-auto border-l border-t border-r border-b border-gray-300 rounded-lg p-3 md:p-5 bg-white">
                     <div class="flex flex-col justify-start space-y-2">
                         <div>
                             Password <span class="text-red-500">*</span>

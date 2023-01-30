@@ -106,7 +106,7 @@ const AdminUsers = () => {
     <div class="flex flex-col w-full h-full overflow-y-auto">
       {isLoading() && (
         <div class="flex flex-col w-full h-full justify-center items-center bg-gray-100">
-          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md md:rounded-2xl shadow-2xl p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
             <div>{statusMessage()}</div>
             <div
               class="spinner-border animate-spin text-emerald-500 inline-block w-4 h-4 border-2 rounded-full"
@@ -152,25 +152,25 @@ const AdminUsers = () => {
                     <tr>
                       <th
                         scope="col"
-                        class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                        class="text-sm font-medium text-gray-900 px-2 md:px-6 py-2 md:py-4 text-left"
                       >
                         First Name
                       </th>
                       <th
                         scope="col"
-                        class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                        class="text-sm font-medium text-gray-900 px-2 md:px-6 py-2 md:py-4 text-left"
                       >
                         Last Name
                       </th>
                       <th
                         scope="col"
-                        class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                        class="text-sm font-medium text-gray-900 px-2 md:px-6 py-2 md:py-4 text-left"
                       >
                         Phone Number
                       </th>
                       <th
                         scope="col"
-                        class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                        class="text-sm font-medium text-gray-900 px-2 md:px-6 py-2 md:py-4 text-left"
                       ></th>
                     </tr>
                   </thead>
@@ -181,16 +181,16 @@ const AdminUsers = () => {
                           <tr
                             class={`bg-gray-100 border-b border-gray-300 transition duration-300 ease-in-out hover:bg-gray-200`}
                           >
-                            <td class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                            <td class="text-sm text-gray-900 font-light px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                               {user.firstName}
                             </td>
-                            <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
+                            <td class="text-sm text-gray-900 font-light px-2 md:px-6 py-2 md:py-4 max-w-xs truncate">
                               {user.lastName}
                             </td>
-                            <td class="text-sm text-gray-900 font-light px-6 py-4 max-w-xs truncate">
+                            <td class="text-sm text-gray-900 font-light px-2 md:px-6 py-2 md:py-4 max-w-xs truncate">
                               {user.phoneNumber}
                             </td>
-                            <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap">
+                            <td class="flex justify-end space-x-2 text-sm text-gray-900 font-light px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                               <div
                                 class="flex items-center justify-center px-3 py-1 rounded-md hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
                                 data-mdb-ripple="true"
@@ -214,7 +214,7 @@ const AdminUsers = () => {
               )}
             </div>
 
-            <div class="flex justify-center items-center w-full border-t border-gray-300 bg-gray-100 p-3">
+            <div class="flex justify-center items-center w-full border-t border-gray-300 bg-gray-100 p-1 md:p-3">
               <nav>
                 <ul class="flex list-style-none space-x-2">
                   <li class="page-item">

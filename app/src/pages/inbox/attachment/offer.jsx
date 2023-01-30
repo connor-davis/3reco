@@ -37,7 +37,7 @@ const OfferAttachment = ({ id }) => {
   return (
     <>
       {loading() && (
-        <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+        <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
           <div>Loading offer attachment.</div>
           <div
             class="spinner-border animate-spin text-emerald-500 inline-block w-4 h-4 border-2 rounded-full"
@@ -48,13 +48,13 @@ const OfferAttachment = ({ id }) => {
 
       {!loading() && (
         <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md">
-          <div class="flex justify-between items-center border-b border-gray-300 p-3">
+          <div class="flex justify-between items-center border-b border-gray-300 p-1 md:p-3">
             <div class="text-lg">{data.stock.stockName}</div>
           </div>
-          <div class="flex flex-col w-full h-auto p-3">
+          <div class="flex flex-col w-full h-auto p-1 md:p-3">
             {data.stock.stockDescription}
           </div>
-          <div class="flex justify-between items-center border-t border-gray-300 p-3">
+          <div class="flex justify-between items-center border-t border-gray-300 p-1 md:p-3">
             <div></div>
             <div class="flex space-x-2 items-center">
               <span class="text-xs inline-block py-1 px-2.5 leading-none text-center whitespace-nowrap align-baseline font-bold bg-emerald-500 rounded-full">

@@ -9,7 +9,7 @@ let TermsAndConditionsModal = ({ onAgree, onDisagree, onClose }) => {
         <div class="flex justify-center items-center w-full h-full p-2">
           <div class="flex flex-col w-full lg:w-1/2 h-full p-1 bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg z-50">
             <div class="flex flex-col w-full h-full space-y-3 bg-white dark:bg-gray-800 text-black dark:text-white">
-              <div class="flex flex-col w-full h-full space-y-2 bg-gray-100 rounded-lg p-3 overflow-y-auto text-justify">
+              <div class="flex flex-col w-full h-full space-y-2 bg-gray-100 rounded-lg p-1 md:p-3 overflow-y-auto text-justify">
                 <p class="text-center w-full mb-2">
                   <strong class="text-2xl text-center w-full">
                     USE IT WASTE BENEFICIATION (RF) NPC WEBSITE(S) AND USER SYSTEM

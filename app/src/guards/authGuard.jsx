@@ -57,7 +57,7 @@ const AuthGuard = ({ children }) => {
     <div class="flex flex-col w-full h-full overflow-y-auto">
       {isLoading() && (
         <div class="flex flex-col w-full h-full justify-center items-center">
-          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md md:rounded-md md:rounded-2xl shadow-2xl p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
             <div>{statusMessage()}</div>
             <div
               class="spinner-border animate-spin text-emerald-500 inline-block w-4 h-4 border-2 rounded-full"

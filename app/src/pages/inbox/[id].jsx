@@ -96,7 +96,7 @@ const InboxView = () => {
     <div class="flex flex-col w-full h-full overflow-y-auto">
       {isLoading() && (
         <div class="flex flex-col w-full h-full justify-center items-center bg-gray-100">
-          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md md:rounded-2xl shadow-2xl p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
             <div>{statusMessage()}</div>
             <div
               class="spinner-border animate-spin text-emerald-500 inline-block w-4 h-4 border-2 rounded-full"
@@ -188,11 +188,11 @@ const InboxView = () => {
                 </div>
               </div>
             </div>
-            <div class="flex flex-col w-full h-full overflow-y-auto border-l border-t border-r border-b border-gray-300 bg-gray-200 rounded-lg p-3 px-96 space-y-2">
-              <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-3 text-2xl">
+            <div class="flex flex-col w-full h-full overflow-y-auto border-l border-t border-r border-b border-gray-300 bg-gray-200 rounded-lg p-1 md:p-3 md:px-96 space-y-2">
+              <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-1 md:p-3text-lg md:text-2xl">
                 {pageData.title}
               </div>
-              <div class="flex space-x-3 w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-3">
+              <div class="flex space-x-3 w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-1 md:p-3">
                 <div class="flex items-center">
                   <div class="shrink-0">
                     {getUserImage(pageData.sender).length > 2 && (
@@ -209,7 +209,7 @@ const InboxView = () => {
                     )}
                   </div>
                 </div>
-                <div class="flex flex-col w-full">
+                <div class="flex flex-col w-full text-sm md:text-normal truncate">
                   {pageData.sender.userType === 'standard' ? (
                     <div>
                       {`${pageData.sender.firstName} ${pageData.sender.lastName}`}{' '}
@@ -224,7 +224,7 @@ const InboxView = () => {
                   <div class="text-gray-400">to me</div>
                 </div>
               </div>
-              <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-3">
+              <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-1 md:p-3">
                 {pageData.content.split('\n').map((content) => (
                   <>
                     <p>{stringToHTML(content) || <br />}</p>

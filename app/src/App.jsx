@@ -86,7 +86,7 @@ function App() {
     <div class={theme()}>
       <div class="w-screen h-screen bg-gray-100 dark:bg-gray-900 select-none">
         <div class="flex flex-col w-full h-full">
-          {notificationsState.notifications && notificationsState.notifications.length > 0 && <div style="pointer-events: none;" class={`absolute w-96 flex flex-col space-y-2 h-auto top-0 right-0 p-5`}>
+          {notificationsState.notifications && notificationsState.notifications.length > 0 && <div style="pointer-events: none;" class={`absolute w-96 flex flex-col space-y-2 h-auto top-0 right-0 p-3 md:p-5`}>
             {notificationsState.notifications.map((notification) => (
               <div
                 class={`bg-white shadow-lg mx-auto w-96 max-w-full text-sm pointer-events-auto bg-clip-padding rounded-lg  ${notification.shown

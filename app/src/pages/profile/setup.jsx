@@ -117,7 +117,7 @@ const SetupProfile = () => {
           3
         </div>
       </div>
-      <div class="flex flex-col space-y-5 w-96 h-auto border-l border-t border-r border-b border-gray-300 rounded-lg p-5">
+      <div class="flex flex-col space-y-5 w-96 h-auto border-l border-t border-r border-b border-gray-300 rounded-lg p-3 md:p-5">
         {currentStep() === 1 && (
           <div class="flex flex-col space-y-3 animate-fade-in">
             <div

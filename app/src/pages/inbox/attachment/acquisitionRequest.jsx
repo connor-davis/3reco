@@ -50,7 +50,7 @@ const AcquisitionRequestAttachment = ({ id, offerer = false }) => {
       <AcceptAcquisitionRequestModal id={id} />
 
       {loading() && (
-        <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+        <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
           <div>Loading acquisition request attachment.</div>
           <div
             class="spinner-border animate-spin text-emerald-500 inline-block w-4 h-4 border-2 rounded-full"
@@ -60,7 +60,7 @@ const AcquisitionRequestAttachment = ({ id, offerer = false }) => {
       )}
 
       {!loading() && (
-        <div class="flex items-center space-x-3 w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-3">
+        <div class="flex items-center space-x-3 w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md p-1 md:p-3">
           <div
             class="flex items-center w-full justify-center px-3 py-1 bg-red-500 rounded-md cursor-pointer"
             data-bs-toggle="modal"

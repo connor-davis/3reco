@@ -112,7 +112,7 @@ const LoginForm = ({ setRegister }) => {
         </div>
       )}
 
-      <div class="flex flex-col space-y-4 w-96 h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+      <div class="flex flex-col space-y-4 w-96 h-auto rounded-md md:rounded-2xl shadow-2xl p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
         <div class="flex flex-col justify-start space-y-2">
           <div>
             Phone Number <span class="text-red-500">*</span>
@@ -285,7 +285,7 @@ const RegisterForm = ({ setRegister }) => {
         </div>
       )}
 
-      <div class="flex flex-col space-y-4 w-96 h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+      <div class="flex flex-col space-y-4 w-96 h-auto rounded-md md:rounded-2xl shadow-2xl p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
         <div class="flex flex-col justify-start space-y-2">
           <div>
             Phone Number <span class="text-red-500">*</span>

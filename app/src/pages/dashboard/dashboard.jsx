@@ -173,7 +173,7 @@ const Dashboard = () => {
     <div class="flex flex-col w-full h-full overflow-y-auto">
       {isLoading() && (
         <div class="flex flex-col w-full h-full justify-center items-center bg-gray-100">
-          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-2xl shadow-2xl p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+          <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md md:rounded-2xl shadow-2xl p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
             <div>{statusMessage()}</div>
             <div
               class="spinner-border animate-spin text-emerald-500 inline-block w-4 h-4 border-2 rounded-full"
@@ -195,7 +195,7 @@ const Dashboard = () => {
                 {pageData.length > 0 &&
                   pageData.map((data) => (
                     <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md">
-                      <div class="flex justify-between items-center border-b border-gray-300 p-3">
+                      <div class="flex justify-between items-center border-b border-gray-300 p-1 md:p-3">
                         <div class="text-lg">{data.stockName}</div>
                         {data.isOffered ? (
                           <>
@@ -225,10 +225,10 @@ const Dashboard = () => {
                           </div>
                         )}
                       </div>
-                      <div class="flex flex-col w-full h-auto p-3">
+                      <div class="flex flex-col w-full h-auto p-1 md:p-3">
                         {data.stockDescription}
                       </div>
-                      <div class="flex justify-between items-center border-t border-gray-300 p-3">
+                      <div class="flex justify-between items-center border-t border-gray-300 p-1 md:p-3">
                         <div></div>
                         <div class="flex space-x-2 items-center">
                           <span class="text-xs inline-block py-1 px-2.5 leading-none text-center whitespace-nowrap align-baseline font-bold bg-emerald-500 rounded-full">
@@ -325,7 +325,7 @@ const Dashboard = () => {
                       <AcquireOfferModal data={data} />
 
                       <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md">
-                        <div class="flex justify-between items-center border-b border-gray-300 p-3">
+                        <div class="flex justify-between items-center border-b border-gray-300 p-1 md:p-3">
                           <div class="text-lg">{data.stock.stockName}</div>
                           <div class="flex items-center space-x-2">
                             <div
@@ -363,10 +363,10 @@ const Dashboard = () => {
                             </div>
                           </div>
                         </div>
-                        <div class="flex flex-col w-full h-auto p-3">
+                        <div class="flex flex-col w-full h-auto p-1 md:p-3">
                           {data.stock.stockDescription}
                         </div>
-                        <div class="flex justify-between items-center border-t border-gray-300 p-3">
+                        <div class="flex justify-between items-center border-t border-gray-300 p-1 md:p-3">
                           <div class="flex items-center space-x-2">
                             <div class="shrink-0">
                               {getUserImage(data.user).length > 2 && (
