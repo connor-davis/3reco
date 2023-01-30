@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 const Stock = require('../../models/stock.model');
+const Offer = require('../../models/offer.model');
 
 /**
  * @openapi
@@ -25,12 +26,18 @@ router.delete('/:id', async (request, response) => {
 
   const found = await Stock.findOne({ _id: params.id });
 
-  if (!found)
+  if (!found) {
     return response
       .status(200)
       .json({ message: 'Stock item not found.', error: 'stock-not-found' });
-  else {
+  } else {
     try {
+      const offerFound = await Offer.findOne({ stockId: found._id });
+
+      console.log(offerFound.toJSON());
+
+      if (offerFound) await Offer.deleteOne({ _id: offerFound._id });
+
       await Stock.deleteOne({ _id: params.id });
 
       return response.status(200).send('success');
