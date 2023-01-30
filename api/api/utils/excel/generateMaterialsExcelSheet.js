@@ -13,9 +13,49 @@ const generateMaterialsExcelSheet = async (materialsData, callback) => {
     workbook.modified = new Date();
 
     let materialsSheet = workbook.addWorksheet('Materials', {
-      headerFooter: { firstHeader: 'Profile' },
+      headerFooter: { firstHeader: 'Owner' },
     });
-  } catch (error) {}
+
+    materialsSheet.columns = [
+      { header: 'Owner', key: 'owner' },
+      { header: 'Type', key: 'type' },
+      { header: 'Value', key: 'value' },
+    ];
+
+    materialsData.forEach((material) => {
+      materialsSheet.addRow({
+        owner: material.owner || 'Unspecified',
+        type: material.type || 'Unspecified',
+        value: 'R ' + material.value || 'Unspecified',
+      });
+    });
+
+    materialsSheet.columns.forEach((column) => {
+      const lengths = column.values.map((v) => v.toString().length);
+      column.width = Math.max(...lengths.filter((v) => typeof v === 'number'));
+    });
+
+    workbook.xlsx
+      .writeFile(
+        path.join(
+          process.cwd(),
+          'temp',
+          'materials.xlsx'
+        )
+      )
+      .then(() => {
+        callback(
+          path.join(
+            process.cwd(),
+            'temp',
+            'materials.xlsx'
+          ),
+          'materials.xlsx'
+        );
+      });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 module.exports = generateMaterialsExcelSheet;

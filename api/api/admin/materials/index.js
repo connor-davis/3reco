@@ -1,10 +1,10 @@
-let {Router} = require('express');
+let { Router } = require('express');
 let router = Router();
 let passport = require('passport');
 
-let Material = require("../../../models/material.model");
+let Material = require('../../../models/material.model');
 
-let UserType = require("../../../types/user.types");
+let UserType = require('../../../types/user.types');
 
 /**
  * @openapi
@@ -23,32 +23,29 @@ let UserType = require("../../../types/user.types");
  *         description: Returns "Unauthorized".
  */
 router.get(
-    '/count',
-    passport.authenticate(
-        'jwt',
-        {session: false}
-    ),
-    async (request, response) => {
-        let {user} = request;
+  '/count',
+  passport.authenticate('jwt', { session: false }),
+  async (request, response) => {
+    let { user } = request;
 
-        if (user.userType !== UserType.ADMIN) return response.status(401);
+    if (user.userType !== UserType.ADMIN) return response.status(401);
 
-        try {
-            if ((await Material.count()) > 1) {
-                const found = await Material.count();
+    try {
+      if ((await Material.count()) > 1) {
+        const found = await Material.count();
 
-                return response.status(200).json({
-                    data: found,
-                });
-            } else {
-                return response.status(200).json({data: 0});
-            }
-        } catch (error) {
-            return response
-                .status(200)
-                .json({message: 'Error while retrieving users count.', error});
-        }
+        return response.status(200).json({
+          data: found,
+        });
+      } else {
+        return response.status(200).json({ data: 0 });
+      }
+    } catch (error) {
+      return response
+        .status(200)
+        .json({ message: 'Error while retrieving users count.', error });
     }
+  }
 );
 
 /**
@@ -68,32 +65,33 @@ router.get(
  *         description: Returns "Unauthorized".
  */
 router.get(
-    '/',
-    passport.authenticate('jwt', {session: false}),
-    async (request, response) => {
-        const foundData = await Material.find();
+  '/',
+  passport.authenticate('jwt', { session: false }),
+  async (request, response) => {
+    const foundData = await Material.find();
 
-        const data = foundData.map((material) => {
-            const obj = material.toJSON();
+    const data = foundData.map((material) => {
+      const obj = material.toJSON();
 
-            return {
-                _id: obj._id.toString(),
-                owner: obj.owner,
-                type: obj.type,
-                value: obj.value
-            };
+      return {
+        _id: obj._id.toString(),
+        owner: obj.owner,
+        type: obj.type,
+        value: obj.value,
+      };
+    });
+
+    if (!data)
+      return response
+        .status(200)
+        .json({
+          message: 'Materials not found.',
+          error: 'materials-not-found',
         });
-
-        if (!data)
-            return response
-                .status(200)
-                .json({message: 'Materials not found.', error: 'materials-not-found'});
-        else {
-            return response
-                .status(200)
-                .json({data: Array.from(data)});
-        }
+    else {
+      return response.status(200).json({ data: Array.from(data) });
     }
+  }
 );
 
 /**
@@ -113,39 +111,39 @@ router.get(
  *         description: Returns "Unauthorized".
  */
 router.get(
-    '/pages',
-    passport.authenticate('jwt', {session: false}),
-    async (request, response) => {
-        let {limit} = request.query;
-        if (!limit) limit = 10;
+  '/pages',
+  passport.authenticate('jwt', { session: false }),
+  async (request, response) => {
+    let { limit } = request.query;
+    if (!limit) limit = 10;
 
-        const found = await Material.find();
+    const found = await Material.find();
 
-        if (!found) return response.status(200).json({pages: 0});
-        else {
-            let pageList = [];
+    if (!found) return response.status(200).json({ pages: 0 });
+    else {
+      let pageList = [];
 
-            let result = await Material.find()
-                .skip(pageList.length * limit)
-                .limit(limit);
+      let result = await Material.find()
+        .skip(pageList.length * limit)
+        .limit(limit);
 
-            while (result.length > 0) {
-                pageList.push([
-                    ...result.map((item) => {
-                        return item;
-                    }),
-                ]);
+      while (result.length > 0) {
+        pageList.push([
+          ...result.map((item) => {
+            return item;
+          }),
+        ]);
 
-                result = await Material.find()
-                    .skip(pageList.length * limit)
-                    .limit(limit);
-            }
+        result = await Material.find()
+          .skip(pageList.length * limit)
+          .limit(limit);
+      }
 
-            let pages = pageList.length;
+      let pages = pageList.length;
 
-            return response.status(200).json({pages});
-        }
+      return response.status(200).json({ pages });
     }
+  }
 );
 
 /**
@@ -165,25 +163,25 @@ router.get(
  *         description: Returns "Unauthorized".
  */
 router.get(
-    '/page/:page',
-    passport.authenticate('jwt', {session: false}),
-    async (request, response) => {
-        const {page} = request.params;
-        let {limit} = request.query;
-        if (!limit) limit = 10;
+  '/page/:page',
+  passport.authenticate('jwt', { session: false }),
+  async (request, response) => {
+    const { page } = request.params;
+    let { limit } = request.query;
+    if (!limit) limit = 10;
 
-        const found = await Material.find()
-            .skip((page - 1) * limit > 0 ? (page - 1) * limit : 0)
-            .limit(limit);
+    const found = await Material.find()
+      .skip((page - 1) * limit > 0 ? (page - 1) * limit : 0)
+      .limit(limit);
 
-        if (!found) return response.status(200).json({pageData: []});
-        else
-            return response.status(200).json({
-                pageData: found.map((item) => {
-                    return item;
-                }),
-            });
-    }
+    if (!found) return response.status(200).json({ pageData: [] });
+    else
+      return response.status(200).json({
+        pageData: found.map((item) => {
+          return item;
+        }),
+      });
+  }
 );
 
 /**
@@ -203,22 +201,22 @@ router.get(
  *         description: Returns "Unauthorized".
  */
 router.get(
-    '/:id',
-    passport.authenticate('jwt', {session: false}),
-    async (request, response) => {
-        const {id} = request.params;
+  '/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (request, response) => {
+    const { id } = request.params;
 
-        const found = await Material.findOne({_id: id});
+    const found = await Material.findOne({ _id: id });
 
-        if (!found)
-            return response.status(200).json({
-                message: 'Material item not found.',
-                error: 'material-item-not-found',
-            });
-        else {
-            return response.status(200).json({data: {...found.toJSON()}});
-        }
+    if (!found)
+      return response.status(200).json({
+        message: 'Material item not found.',
+        error: 'material-item-not-found',
+      });
+    else {
+      return response.status(200).json({ data: { ...found.toJSON() } });
     }
+  }
 );
 
 module.exports = router;
