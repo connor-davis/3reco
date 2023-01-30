@@ -225,6 +225,13 @@ router.post('/accept/requester', async (request, response) => {
     const offererStockFound = await Stock.findOne({
       _id: acquisitionRequestFound.stockId,
     });
+
+    if (!offererStockFound)
+      return response.status(200).json({
+        message: 'Offerer stock not found.',
+        error: 'offerer-stock-not-found',
+      });
+
     const offererMaterialFound = await Material.findOne({
       owner: offererFound.phoneNumber,
       type: offererStockFound.stockType,
@@ -234,68 +241,128 @@ router.post('/accept/requester', async (request, response) => {
       type: offererStockFound.stockType,
     });
 
-    if (!offererFound)
-      return response.status(200).json({
-        message: 'Offerer stock not found.',
-        error: 'offerer-stock-not-found',
+    // If adding to existing stock
+    if (body.addingTo === 'existing') {
+      await Stock.updateOne(
+        { _id: acquisitionRequestFound.stockId },
+        {
+          stockWeight:
+            parseFloat(offererStockFound.stockWeight) -
+            parseFloat(acquisitionRequestFound.weight),
+          stockValue:
+            (parseFloat(offererStockFound.stockWeight) -
+              parseFloat(acquisitionRequestFound.weight)) *
+            parseFloat(offererMaterialFound.value),
+        }
+      );
+
+      const requesterStockFound = await Stock.findOne({
+        _id: body.selectedStock,
       });
 
-    console.log(offererMaterialFound.value, requesterMaterialFound.value);
+      if (!requesterStockFound)
+        return response.status(200).json({
+          message: 'Requester stock not found.',
+          error: 'requester-stock-not-found',
+        });
 
-    await Stock.updateOne(
-      { _id: acquisitionRequestFound.stockId },
-      {
-        stockWeight:
-          offererStockFound.stockWeight - acquisitionRequestFound.weight,
-        stockValue:
-          (offererStockFound.stockWeight - acquisitionRequestFound.weight) *
-          offererMaterialFound.value,
-      }
-    );
+      await Stock.updateOne(
+        { _id: body.selectedStock },
+        {
+          stockWeight:
+            parseFloat(requesterStockFound.stockWeight) +
+            parseFloat(acquisitionRequestFound.weight),
+          stockValue:
+            (parseFloat(requesterStockFound.stockWeight) +
+              parseFloat(acquisitionRequestFound.weight)) *
+            parseFloat(requesterMaterialFound.value),
+        }
+      );
 
-    const newData = offererStockFound.toJSON();
+      await AcquisitionRequest.deleteOne({ _id: body.id });
 
-    delete newData._id;
-    delete newData.__v;
+      const newInboxItem = new Inbox({
+        sender: {
+          ...requesterFound.toJSON(),
+          password: undefined,
+        },
+        recipient: offererFound.phoneNumber,
+        title: `Acquisition Accepted: ${acquisitionRequestFound.stockName}`,
+        content: `Hello ${
+          offererFound.userType === 'standard'
+            ? `${offererFound.firstName} ${offererFound.lastName}`
+            : offererFound.businessName
+        },\n<br />I would like to inform you that my request for <span class="font-semibold">${
+          acquisitionRequestFound.weight
+        } kg</span> of your ${
+          acquisitionRequestFound.stockName
+        } stock has been accepted.\n<br />Best Regards,\n${
+          requesterFound.userType === 'standard'
+            ? `${requesterFound.firstName} ${requesterFound.lastName}`
+            : requesterFound.businessName
+        }`,
+        attachments: [],
+      });
 
-    newData.owner = user.phoneNumber;
-    newData.stockWeight = acquisitionRequestFound.weight;
-    newData.stockValue = newData.stockWeight * requesterMaterialFound.value;
+      newInboxItem.save();
 
-    const newStock = new Stock(newData);
+      return response.status(200).json({ message: 'Acquisiton accept sent.' });
+    }
+    // If Creating new stock
+    else {
+      await Stock.updateOne(
+        { _id: acquisitionRequestFound.stockId },
+        {
+          stockWeight:
+            offererStockFound.stockWeight - acquisitionRequestFound.weight,
+          stockValue:
+            (offererStockFound.stockWeight - acquisitionRequestFound.weight) *
+            offererMaterialFound.value,
+        }
+      );
 
-    newStock.save();
+      const newData = offererStockFound.toJSON();
 
-    await AcquisitionRequest.deleteOne({ _id: body.id });
+      delete newData._id;
+      delete newData.__v;
 
-    const newInboxItem = new Inbox({
-      sender: {
-        ...requesterFound.toJSON(),
-        password: undefined,
-      },
-      recipient: offererFound.phoneNumber,
-      title: `Acquisition Accepted: ${acquisitionRequestFound.stockName}`,
-      content: `Hello ${
-        offererFound.userType === 'standard'
-          ? `${offererFound.firstName} ${offererFound.lastName}`
-          : offererFound.businessName
-      },\n<br />I would like to inform you that my request for <span class="font-semibold">${
-        acquisitionRequestFound.weight
-      } kg</span> of your ${
-        acquisitionRequestFound.stockName
-      } stock has been accepted.\n<br /><span class="font-semibold">Reason:</span> ${
-        body.reason
-      }\n<br />Best Regards,\n${
-        requesterFound.userType === 'standard'
-          ? `${requesterFound.firstName} ${requesterFound.lastName}`
-          : requesterFound.businessName
-      }`,
-      attachments: [],
-    });
+      newData.owner = user.phoneNumber;
+      newData.stockWeight = acquisitionRequestFound.weight;
+      newData.stockValue = newData.stockWeight * requesterMaterialFound.value;
 
-    newInboxItem.save();
+      const newStock = new Stock(newData);
 
-    return response.status(200).json({ message: 'Acquisiton accept sent.' });
+      newStock.save();
+
+      await AcquisitionRequest.deleteOne({ _id: body.id });
+
+      const newInboxItem = new Inbox({
+        sender: {
+          ...requesterFound.toJSON(),
+          password: undefined,
+        },
+        recipient: offererFound.phoneNumber,
+        title: `Acquisition Accepted: ${acquisitionRequestFound.stockName}`,
+        content: `Hello ${
+          offererFound.userType === 'standard'
+            ? `${offererFound.firstName} ${offererFound.lastName}`
+            : offererFound.businessName
+        },\n<br />I would like to inform you that my request for <span class="font-semibold">${
+          acquisitionRequestFound.weight
+        } kg</span> of your ${
+          acquisitionRequestFound.stockName
+        } stock has been accepted.\n<br />Best Regards,\n${
+          requesterFound.userType === 'standard'
+            ? `${requesterFound.firstName} ${requesterFound.lastName}`
+            : requesterFound.businessName
+        }`,
+        attachments: [],
+      });
+
+      newInboxItem.save();
+
+      return response.status(200).json({ message: 'Acquisiton accept sent.' });
+    }
   } catch (error) {
     console.log(error);
 

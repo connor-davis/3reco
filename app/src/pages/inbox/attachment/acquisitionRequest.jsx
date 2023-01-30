@@ -6,6 +6,7 @@ import axios from 'axios';
 import { createStore } from 'solid-js/store';
 import useNotifications from '../../../hooks/notifications';
 import useState from '../../../hooks/state';
+import AcceptAcquisitionRequestModal from '../../../components/modals/acquisition/acceptAcquisition';
 
 const AcquisitionRequestAttachment = ({ id, offerer = false }) => {
   const [authState, updateAuthState, clearAuthState] = useState('authState');
@@ -23,8 +24,6 @@ const AcquisitionRequestAttachment = ({ id, offerer = false }) => {
 
   const acceptRequest = () => {
     const type = offerer ? 'offerer' : 'requester';
-
-    console.log(type);
 
     axios
       .post(
@@ -48,6 +47,8 @@ const AcquisitionRequestAttachment = ({ id, offerer = false }) => {
         type={offerer ? 'offerer' : 'requester'}
       />
 
+      <AcceptAcquisitionRequestModal id={id} />
+
       {loading() && (
         <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
           <div>Loading acquisition request attachment.</div>
@@ -67,12 +68,22 @@ const AcquisitionRequestAttachment = ({ id, offerer = false }) => {
           >
             Reject
           </div>
-          <div
-            class="flex items-center w-full justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer"
-            onClick={() => acceptRequest()}
-          >
-            Accept
-          </div>
+          {offerer ? (
+            <div
+              class="flex items-center w-full justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer"
+              onClick={() => acceptRequest()}
+            >
+              Accept
+            </div>
+          ) : (
+            <div
+              class="flex items-center w-full justify-center px-3 py-1 bg-emerald-500 rounded-md cursor-pointer"
+              data-bs-toggle="modal"
+              data-bs-target="#acceptAcquisitionRequestModal"
+            >
+              Accept
+            </div>
+          )}
         </div>
       )}
     </>
