@@ -34,13 +34,16 @@ router.delete('/:id', async (request, response) => {
     try {
       const offerFound = await Offer.findOne({ stockId: found._id });
 
-      console.log(offerFound.toJSON());
+      if (offerFound) {
+        await Offer.deleteOne({ stockId: found._id });
+        await Stock.deleteOne({ _id: params.id });
 
-      if (offerFound) await Offer.deleteOne({ _id: offerFound._id });
+        return response.status(200).send('success');
+      } else {
+        await Stock.deleteOne({ _id: params.id });
 
-      await Stock.deleteOne({ _id: params.id });
-
-      return response.status(200).send('success');
+        return response.status(200).send('success');
+      }
     } catch (error) {
       return response
         .status(200)

@@ -37,6 +37,32 @@ const Stock = require('../../models/stock.model');
 router.post('/', async (request, response) => {
   let { body, user } = request;
 
+  if (!body.stockName)
+    return response.status(200).json({
+      message: 'Please make sure that your stock has a name.',
+      error: 'no-stock-name',
+    });
+  if (!body.stockDescription)
+    return response.status(200).json({
+      message: 'Please make sure that your stock has a description.',
+      error: 'no-stock-description',
+    });
+  if (!body.stockWeight)
+    return response.status(200).json({
+      message: 'Please make sure that your stock has a weight.',
+      error: 'no-stock-weight',
+    });
+  if (!body.stockValue)
+    return response.status(200).json({
+      message: 'Please make sure that your stock has a value.',
+      error: 'no-stock-value',
+    });
+  if (!body.stockType)
+    return response.status(200).json({
+      message: 'Please make sure that your stock has a material.',
+      error: 'no-stock-material',
+    });
+
   try {
     const newStock = new Stock({
       owner: user.phoneNumber,
