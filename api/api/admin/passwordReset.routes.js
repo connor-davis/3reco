@@ -45,7 +45,8 @@ router.post('/', async (request, response) => {
 
         const doc = await User.findOne({ phoneNumber: pwrsData.phoneNumber });
 
-        console.log(doc.password !== pwrsData.password);
+        console.log(pwrsData);
+        console.log(doc.toJSON());
 
         fs.unlinkSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt'));
 
