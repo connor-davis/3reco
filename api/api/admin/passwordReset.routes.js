@@ -41,9 +41,9 @@ router.post('/', async (request, response) => {
     const pwrsData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt')));
 
     try {
-        await User.updateOne({phoneNumber: pwrsData.phoneNumber}, {$set:{password: passwordHash}});
+        await User.updateOne({phoneNumber: pwrsData.user.phoneNumber}, {$set:{password: passwordHash}});
 
-        const doc = await User.findOne({ phoneNumber: pwrsData.phoneNumber });
+        const doc = await User.findOne({ phoneNumber: pwrsData.user.phoneNumber });
 
         console.log(pwrsData);
         console.log(doc.toJSON());
