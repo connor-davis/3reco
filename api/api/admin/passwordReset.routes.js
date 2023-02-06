@@ -27,14 +27,25 @@ let UserType = require("../../types/user.types");
 router.post('/', async (request, response) => {
     let {newPassword, token} = request.body;
 
+    console.log(request.body);
+
     if (!fs.existsSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt')))
         return response.status(401).send('Unauthorized');
 
-    let password = bcrypt.hashSync(newPassword, 2048);
+    console.log(fs.readFileSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt')));
+
+    let passwordHash = bcrypt.hashSync(newPassword, 2048);
+
+    console.log(passwordHash);
+
     const pwrsData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt')));
 
     try {
-        await User.updateOne({phoneNumber: pwrsData.phoneNumber}, {password});
+        await User.updateOne({phoneNumber: pwrsData.phoneNumber}, {$set:{password: passwordHash}});
+
+        const doc = await User.findOne({ phoneNumber: pwrsData.phoneNumber });
+
+        console.log(doc.password !== pwrsData.password);
 
         fs.unlinkSync(path.join(process.cwd(), 'temp', token + '-pwrs.txt'));
 
