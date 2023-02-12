@@ -1,11 +1,11 @@
 import { createSignal, onMount } from 'solid-js';
 
+import axios from 'axios';
+import { createStore } from 'solid-js/store';
+import apiUrl from '../../apiUrl';
 import AddStockModal from '../../components/modals/stock/add';
 import EditStockModal from '../../components/modals/stock/edit';
 import Paged from '../../components/paged/paged';
-import apiUrl from '../../apiUrl';
-import axios from 'axios';
-import { createStore } from 'solid-js/store';
 import useState from '../../hooks/state';
 
 const Stock = () => {
@@ -136,6 +136,24 @@ const Stock = () => {
       .catch((error) => {});
   };
 
+  const exportStock = () => {
+    axios
+      .get(apiUrl + '/stock/export', {
+        responseType: 'blob',
+        headers: { Authorization: 'Bearer ' + authState.token },
+      })
+      .then((response) => {
+        if (response.data.error) return console.log(response.data);
+        else {
+          if (response.status === 200) {
+            saveAs(response.data, `stock.xlsx`);
+
+            return addNotification('Stock', 'The file will be downloaded now.');
+          }
+        }
+      });
+  };
+
   return (
     <div class="flex flex-col w-full h-full overflow-y-auto">
       <AddStockModal materials={materials} onAdd={(data) => addStock(data)} />
@@ -156,14 +174,25 @@ const Stock = () => {
         <div class="flex flex-col w-full h-full space-y-2 animate-fade-in">
           <div class="flex justify-between items-center">
             <div class="text-xl">Your Stock</div>
-            <div
-              class="flex items-center justify-center px-3 py-1 rounded-md hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
-              data-mdb-ripple="true"
-              data-mdb-ripple-color="#10b981"
-              data-bs-toggle="modal"
-              data-bs-target="#addStockModal"
-            >
-              Add
+
+            <div class="flex">
+              <div
+                class="flex items-center justify-center px-3 py-1 rounded-md hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
+                data-mdb-ripple="true"
+                data-mdb-ripple-color="#10b981"
+                data-bs-toggle="modal"
+                data-bs-target="#addStockModal"
+              >
+                Add
+              </div>
+              <div
+                class="flex items-center justify-center px-3 py-1 rounded-md hover:text-emerald-500 hover:bg-emerald-100 transition duration-300 ease-in-out cursor-pointer"
+                data-mdb-ripple="true"
+                data-mdb-ripple-color="#10b981"
+                onClick={() => exportStock()}
+              >
+                Export
+              </div>
             </div>
           </div>
 

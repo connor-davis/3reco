@@ -4,6 +4,7 @@ import Logo from '../../assets/3rEco-x512.png';
 import { createSignal, onMount } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import useState from '../../hooks/state';
+import { io } from 'socket.io-client';
 
 const Root = ({ children }) => {
   const [notificationsState, updateNotificationsState] =
@@ -23,7 +24,8 @@ const Root = ({ children }) => {
 
           if (businessNameSplit.length > 1) {
             return (
-              businessNameSplit[0].substring(0, 1) + businessNameSplit[businessNameSplit.length - 1].substring(0, 1)
+              businessNameSplit[0].substring(0, 1) +
+              businessNameSplit[businessNameSplit.length - 1].substring(0, 1)
             );
           } else {
             return userState.businessName.substring(0, 1);
@@ -45,6 +47,18 @@ const Root = ({ children }) => {
   onMount(() => {
     setTimeout(() => {
       updateNotificationsState({ notifications: [] });
+
+      window.socket = io('http://localhost');
+
+      socket.on(userState.phoneNumber, (data) => {
+        switch (data.type) {
+          case 'inbox-message':
+            addNotification('Notification', data.content);
+            break;
+          default:
+            break;
+        }
+      });
 
       if (!userState.completedProfile)
         navigate('/setupProfile', { replace: true });
@@ -80,15 +94,32 @@ const Root = ({ children }) => {
           data-bs-toggle="tooltip"
           data-bs-placement="right"
           title="Menu"
-          onClick={() => setNavbarShown(true)}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          onClick={() => setNavbarShown(true)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="w-6 h-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+            />
           </svg>
         </div>
       </div>
 
-      {navbarShown() &&
-        <div class={navbarShown() && "absolute top-0 left-0 w-screen h-screen bg-neutral-100 p-1 md:p-3 flex flex-col space-y-5 z-50"}>
+      {navbarShown() && (
+        <div
+          class={
+            navbarShown() &&
+            'absolute top-0 left-0 w-screen h-screen bg-neutral-100 p-1 md:p-3 flex flex-col space-y-5 z-50'
+          }
+        >
           <div class="flex justify-between items-center w-full">
             <div class="text-2xl">
               <img src={Logo} class="w-10 h-10" />
@@ -100,9 +131,21 @@ const Root = ({ children }) => {
               data-bs-toggle="tooltip"
               data-bs-placement="right"
               title="Menu"
-              onClick={() => setNavbarShown(false)}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              onClick={() => setNavbarShown(false)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="w-6 h-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </div>
           </div>
@@ -188,6 +231,33 @@ const Root = ({ children }) => {
               </Link>
               <Link
                 class="flex items-center space-x-2 text-sm py-4 px-6 w-full h-12 bg-white border-l border-t border-r border-b border-neutral-300 overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
+                href="/transactions"
+                data-mdb-ripple="true"
+                data-mdb-ripple-color="#10b981"
+                data-bs-toggle="tooltip"
+                data-bs-placement="right"
+                title="Transactions"
+                onClick={() => setNavbarShown(false)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
+                  />
+                </svg>
+
+                <div>Transactions</div>
+              </Link>
+              <Link
+                class="flex items-center space-x-2 text-sm py-4 px-6 w-full h-12 bg-white border-l border-t border-r border-b border-neutral-300 overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
                 href="/inbox"
                 data-mdb-ripple="true"
                 data-mdb-ripple-color="#10b981"
@@ -215,7 +285,7 @@ const Root = ({ children }) => {
             </li>
           </ul>
         </div>
-      }
+      )}
       <div class="hidden lg:flex lg:flex-col items-center w-24 h-full border-r border-gray-300 bg-gray-100 dark:bg-gray-900">
         <div class="pt-4 pb-2 px-6">
           <Link href="/profile" title="Profile">
@@ -308,6 +378,30 @@ const Root = ({ children }) => {
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
+                />
+              </svg>
+            </Link>
+            <Link
+              class="flex items-center space-x-2 text-sm py-4 px-6 h-12 overflow-hidden text-gray-700 text-ellipsis whitespace-nowrap rounded hover:text-emerald-500 hover:bg-emerald-50 transition duration-300 ease-in-out"
+              href="/transactions"
+              data-mdb-ripple="true"
+              data-mdb-ripple-color="#10b981"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              title="Transactions"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="w-6 h-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
                 />
               </svg>
             </Link>

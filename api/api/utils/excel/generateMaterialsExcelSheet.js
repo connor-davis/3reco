@@ -2,6 +2,7 @@ let fs = require('fs');
 let path = require('path');
 let ExcelJS = require('exceljs');
 let moment = require('moment');
+const { v4 } = require('uuid');
 
 const generateMaterialsExcelSheet = async (materialsData, callback) => {
   try {
@@ -35,21 +36,13 @@ const generateMaterialsExcelSheet = async (materialsData, callback) => {
       column.width = Math.max(...lengths.filter((v) => typeof v === 'number'));
     });
 
+    const id = v4();
+
     workbook.xlsx
-      .writeFile(
-        path.join(
-          process.cwd(),
-          'temp',
-          'materials.xlsx'
-        )
-      )
+      .writeFile(path.join(process.cwd(), 'temp', id + 'materials.xlsx'))
       .then(() => {
         callback(
-          path.join(
-            process.cwd(),
-            'temp',
-            'materials.xlsx'
-          ),
+          path.join(process.cwd(), 'temp', id + 'materials.xlsx'),
           'materials.xlsx'
         );
       });

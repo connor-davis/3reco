@@ -24,13 +24,14 @@ const OfferAttachment = ({ id }) => {
         .then((response) => {
           if (response.data.error) {
             addNotification('Error', response.data.message);
-            setLoading(false);
           } else {
             setData({ ...response.data.data });
-            setLoading(false);
           }
         })
-        .catch((error) => {});
+        .catch((error) => {})
+        .finally(() => {
+          setLoading(false);
+        });
     }, 300);
   });
 
@@ -46,7 +47,7 @@ const OfferAttachment = ({ id }) => {
         </div>
       )}
 
-      {!loading() && (
+      {!loading() && data.stock && (
         <div class="flex flex-col w-full h-auto bg-gray-100 border-l border-t border-r border-b border-gray-300 rounded-md">
           <div class="flex justify-between items-center border-b border-gray-300 p-1 md:p-3">
             <div class="text-lg">{data.stock.stockName}</div>
@@ -68,6 +69,12 @@ const OfferAttachment = ({ id }) => {
               </span>
             </div>
           </div>
+        </div>
+      )}
+
+      {!loading() && !data.stock && (
+        <div class="flex space-x-3 justify-center items-center w-auto h-auto rounded-md p-1 md:p-3 bg-gray-100 border-1 border-l border-t border-r border-b border-gray-300">
+          <div>The offer is no longer valid.</div>
         </div>
       )}
     </>

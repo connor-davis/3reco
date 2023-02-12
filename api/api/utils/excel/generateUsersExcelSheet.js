@@ -2,6 +2,7 @@ let fs = require('fs');
 let path = require('path');
 let ExcelJS = require('exceljs');
 let moment = require('moment');
+const { v4 } = require("uuid");
 
 const generateUsersExcelSheet = async (users, callback) => {
   try {
@@ -59,10 +60,12 @@ const generateUsersExcelSheet = async (users, callback) => {
       column.width = Math.max(...lengths.filter((v) => typeof v === 'number'));
     });
 
+    const id = v4()
+
     workbook.xlsx
-      .writeFile(path.join(process.cwd(), 'temp', 'users.xlsx'))
+      .writeFile(path.join(process.cwd(), 'temp', id + 'users.xlsx'))
       .then(() => {
-        callback(path.join(process.cwd(), 'temp', 'users.xlsx'), 'users.xlsx');
+        callback(path.join(process.cwd(), 'temp', id + 'users.xlsx'), 'users.xlsx');
       });
   } catch (error) {
     console.log(error);

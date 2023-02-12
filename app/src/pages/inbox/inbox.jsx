@@ -29,6 +29,16 @@ const Inbox = () => {
   onMount(() => {
     setTimeout(() => {
       getInboxPages();
+
+      socket.on(userState.phoneNumber, (data) => {
+        switch (data.type) {
+          case 'inbox-message':
+            fetchInboxPage();
+            break;
+          default:
+            break;
+        }
+      });
     }, 300);
   });
 

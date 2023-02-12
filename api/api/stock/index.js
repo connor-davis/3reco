@@ -5,7 +5,14 @@ const Stock = require('../../models/stock.model');
 const createStockRoutes = require('./createStock.routes');
 const updateStockRoutes = require('./updateStock.routes');
 const deleteStockRoutes = require('./deleteStock.routes');
+const exportStockRoutes = require('./exportStock.routes');
 const logger = require('../../utils/logger');
+
+router.use(
+  '/export',
+  passport.authenticate('jwt', { session: false }),
+  exportStockRoutes
+);
 
 /**
  * @openapi

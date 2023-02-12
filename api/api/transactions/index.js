@@ -1,28 +1,26 @@
 const { Router } = require('express');
 const router = Router();
 const passport = require('passport');
-const Offer = require('../../models/offer.model');
-const User = require('../../models/user.model');
-const Stock = require('../../models/stock.model');
+const Transaction = require('../../models/transaction.model');
 const logger = require('../../utils/logger');
 
-const createOfferRoutes = require('./createOffer.routes');
-const deleteOfferRoutes = require('./deleteOffer.routes');
-const acquireOfferRoutes = require('./acquireOffer.routes');
+const exportTransactionsRoutes = require('./exportTransactions.routes');
+
+router.use('/export', exportTransactionsRoutes);
 
 /**
  * @openapi
- * /api/v1/offers:
+ * /api/v1/transactions:
  *   get:
- *     description: Retrieve all offers.
- *     tags: [Offers]
+ *     description: Retrieve all transactions.
+ *     tags: [Transactions]
  *     produces:
  *       - application/json
  *     security:
  *       - Bearer: []
  *     responses:
  *       200:
- *         description: Returns all offers.
+ *         description: Returns all transactions.
  *       401:
  *         description: Returns "Unauthorized".
  */
@@ -31,13 +29,16 @@ router.get(
   passport.authenticate('jwt', { session: false }),
   async (request, response) => {
     const foundData = await Offer.find({
-      owner: { $ne: request.user.phoneNumber },
+      $or: [
+        { buyerPhoneNumber: { $eq: request.user.phoneNumber } },
+        { sellerPhoneNumber: { $eq: request.user.phoneNumber } },
+      ],
     });
 
     if (!foundData)
       return response.status(200).json({
-        message: 'Offers not found.',
-        error: 'offers-not-found',
+        message: 'Transactions not found.',
+        error: 'transactions-not-found',
       });
     else {
       const data = [];
@@ -48,13 +49,8 @@ router.get(
         });
 
       Array.from(foundData).map(async (data) => {
-        const userFound = await User.findOne({ phoneNumber: data.owner });
-        const stockFound = await Stock.findOne({ _id: data.stockId });
-
         data.push({
           ...data.toJSON(),
-          user: userFound.toJSON(),
-          stock: stockFound.toJSON(),
         });
 
         if (data.length === foundData.length) {
@@ -69,17 +65,17 @@ router.get(
 
 /**
  * @openapi
- * /api/v1/offers/pages:
+ * /api/v1/transactions/pages:
  *   get:
- *     description: Retrieve offers pages.
- *     tags: [Offers]
+ *     description: Retrieve transactions pages.
+ *     tags: [Transactions]
  *     produces:
  *       - application/json
  *     security:
  *       - Bearer: []
  *     responses:
  *       200:
- *         description: Returns offers pages.
+ *         description: Returns transactions pages.
  *       401:
  *         description: Returns "Unauthorized".
  */
@@ -90,17 +86,24 @@ router.get(
     let { limit } = request.query;
     if (!limit) limit = 10;
 
-    const found = await Offer.find({
-      owner: { $ne: request.user.phoneNumber },
+    const found = await Transaction.find({
+      $or: [
+        { buyerPhoneNumber: { $eq: request.user.phoneNumber } },
+        { sellerPhoneNumber: { $eq: request.user.phoneNumber } },
+      ],
     });
 
     if (!found) return response.status(200).json({ pages: 0 });
     else {
       let pageList = [];
 
-      let result = await Offer.find({
-        owner: { $ne: request.user.phoneNumber },
+      let result = await Transaction.find({
+        $or: [
+          { buyerPhoneNumber: { $eq: request.user.phoneNumber } },
+          { sellerPhoneNumber: { $eq: request.user.phoneNumber } },
+        ],
       })
+        .sort({ date: -1 })
         .skip(pageList.length * limit)
         .limit(limit);
 
@@ -111,7 +114,13 @@ router.get(
           }),
         ]);
 
-        result = await Offer.find({ owner: { $ne: request.user.phoneNumber } })
+        result = await Transaction.find({
+          $or: [
+            { buyerPhoneNumber: { $eq: request.user.phoneNumber } },
+            { sellerPhoneNumber: { $eq: request.user.phoneNumber } },
+          ],
+        })
+          .sort({ date: -1 })
           .skip(pageList.length * limit)
           .limit(limit);
       }
@@ -125,17 +134,17 @@ router.get(
 
 /**
  * @openapi
- * /api/v1/offers/page/:page:
+ * /api/v1/transactions/page/:page:
  *   get:
- *     description: Retrieve offers page by page number.
- *     tags: [Offers]
+ *     description: Retrieve transactions page by page number.
+ *     tags: [Transactions]
  *     produces:
  *       - application/json
  *     security:
  *       - Bearer: []
  *     responses:
  *       200:
- *         description: Returns offers for page.
+ *         description: Returns transactions for page.
  *       401:
  *         description: Returns "Unauthorized".
  */
@@ -147,7 +156,13 @@ router.get(
     let { limit } = request.query;
     if (!limit) limit = 10;
 
-    const found = await Offer.find({ owner: { $ne: request.user.phoneNumber } })
+    const found = await Transaction.find({
+      $or: [
+        { buyerPhoneNumber: { $eq: request.user.phoneNumber } },
+        { sellerPhoneNumber: { $eq: request.user.phoneNumber } },
+      ],
+    })
+      .sort({ date: -1 })
       .skip((page - 1) * limit > 0 ? (page - 1) * limit : 0)
       .limit(limit);
 
@@ -161,13 +176,8 @@ router.get(
         });
 
       found.map(async (item) => {
-        const userFound = await User.findOne({ phoneNumber: item.owner });
-        const stockFound = await Stock.findOne({ _id: item.stockId });
-
         pageData.push({
           ...item.toJSON(),
-          user: userFound.toJSON(),
-          stock: stockFound.toJSON(),
         });
 
         if (pageData.length === found.length) {
@@ -182,17 +192,17 @@ router.get(
 
 /**
  * @openapi
- * /api/v1/offers/:id:
+ * /api/v1/transactions/:id:
  *   get:
- *     description: Retrieve offer item.
- *     tags: [Offers]
+ *     description: Retrieve transaction item.
+ *     tags: [Transactions]
  *     produces:
  *       - application/json
  *     security:
  *       - Bearer: []
  *     responses:
  *       200:
- *         description: Returns offer item.
+ *         description: Returns transaction item.
  *       401:
  *         description: Returns "Unauthorized".
  */
@@ -202,44 +212,21 @@ router.get(
   async (request, response) => {
     const { id } = request.params;
 
-    const found = await Offer.findOne({ _id: id });
+    const found = await Transaction.findOne({ _id: id });
 
     if (!found)
       return response.status(200).json({
-        message: 'Offer item not found.',
-        error: 'offer-item-not-found',
+        message: 'Transaction item not found.',
+        error: 'transaction-item-not-found',
       });
     else {
-      const userFound = await User.findOne({ phoneNumber: found.owner });
-      const stockFound = await Stock.findOne({ _id: found.stockId });
-
       return response.status(200).json({
         data: {
           ...found.toJSON(),
-          user: userFound.toJSON(),
-          stock: stockFound.toJSON(),
         },
       });
     }
   }
-);
-
-router.use(
-  '/',
-  passport.authenticate('jwt', { session: false }),
-  createOfferRoutes
-);
-
-router.use(
-  '/',
-  passport.authenticate('jwt', { session: false }),
-  deleteOfferRoutes
-);
-
-router.use(
-  '/acquire',
-  passport.authenticate('jwt', { session: false }),
-  acquireOfferRoutes
 );
 
 module.exports = router;

@@ -12,7 +12,7 @@ const devmode = process.env.DEV_MODE === 'true';
 let https;
 const compression = require('compression');
 const cors = require('cors');
-const {json, urlencoded} = require('body-parser');
+const { json, urlencoded } = require('body-parser');
 const passport = require('passport');
 const JwtStrategy = require('./strategies/jwt');
 const session = require('express-session');
@@ -20,12 +20,6 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const morgan = require('morgan');
 const chalk = require('chalk');
-const io = require('socket.io')(http, {
-    cors: {
-        origin: ["https://3reco.co.za", "http://localhost:5173"],
-        methods: ['GET', 'POST'],
-    },
-});
 const apiRoutes = require('./api');
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
@@ -38,144 +32,143 @@ const port = process.env.HTTP_PORT || 80;
 const client = mongoose.connect('mongodb://127.0.0.1:27017/threereco');
 
 client.then(async () => {
-    logger.success('Mongoose connected to MongoDB.');
+  logger.success('Mongoose connected to MongoDB.');
 
-    fs.readdirSync(process.cwd() + '/temp').forEach((path) =>
-        fs.unlinkSync(process.cwd() + '/temp/' + path)
+  fs.readdirSync(process.cwd() + '/temp').forEach((path) =>
+    fs.unlinkSync(process.cwd() + '/temp/' + path)
+  );
+
+  logger.success(`OP MODE: ${devmode ? 'DEV' : 'PROD'}`);
+
+  const adminFound = await User.findOne({ email: 'admin@3recoapp' });
+
+  if (!adminFound) {
+    logger.warning('Admin user does not exist, creating them now.');
+
+    const newAdmin = new User({
+      firstName: '3rEco',
+      lastName: 'Admin',
+      phoneNumber: 'admin',
+      password: bcrypt.hashSync(process.env.ROOT_PASSWORD, 2048),
+      agreedToTerms: true,
+      completedProfile: true,
+      userType: userTypes.ADMIN,
+    });
+
+    try {
+      newAdmin.save();
+
+      logger.success('Created admin user.');
+    } catch (error) {
+      logger.error(error);
+    }
+  }
+
+  if (!devmode) {
+    https = require('https').createServer(
+      {
+        cert: fs.readFileSync(process.env.CERTPATH + '/fullchain.pem'),
+        key: fs.readFileSync(process.env.CERTPATH + '/privkey.pem'),
+      },
+      app
     );
+  }
 
-    logger.success(`OP MODE: ${devmode ? 'DEV' : 'PROD'}`);
+  let options = {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'Api (v1)',
+        version: '1.0.0',
+      },
+    },
+    apis: ['./api/**/*.js'],
+  };
 
-    const adminFound = await User.findOne({email: 'admin@3recoapp'});
+  let openapiSpecification = swaggerJsdoc(options);
 
-    if (!adminFound) {
-        logger.warning('Admin user does not exist, creating them now.');
+  let morganMiddleware = morgan(function (tokens, req, res) {
+    return [
+      chalk.hex('#10b981').bold(tokens.method(req, res) + '\t'),
+      chalk.hex('#ffffff').bold(tokens.status(req, res) + '\t'),
+      chalk.hex('#262626').bold(tokens.url(req, res) + '\t\t\t'),
+      chalk.hex('#10b981').bold(tokens['response-time'](req, res) + ' ms'),
+    ].join(' ');
+  });
 
-        const newAdmin = new User({
-            firstName: '3rEco',
-            lastName: 'Admin',
-            phoneNumber: 'admin',
-            password: bcrypt.hashSync(process.env.ROOT_PASSWORD, 2048),
-            agreedToTerms: true,
-            completedProfile: true,
-            userType: userTypes.ADMIN,
-        });
+  const corsOptions = {
+    origin: '*',
+    credentials: true, //access-control-allow-credentials:true
+    optionSuccessStatus: 200,
+  };
 
-        try {
-            newAdmin.save();
+  app.use(morganMiddleware);
+  app.use(cors(corsOptions));
+  app.use(compression());
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: false }));
+  app.use(session({ secret: process.env.ROOT_PASSWORD }));
+  app.use(passport.initialize());
+  app.set('views', path.join(__dirname, 'views'));
+  app.set('view engine', 'ejs');
+  app.use(express.static(__dirname + '/public'));
+  app.use(express.static(__dirname + '/.well-known'));
 
-            logger.success('Created admin user.');
-        } catch (error) {
-            logger.error(error);
-        }
-    }
+  passport.serializeUser((user, done) => {
+    done(null, user.id);
+  });
 
-    if (!devmode) {
-        https = require('https').createServer(
-            {
-                cert: fs.readFileSync(process.env.CERTPATH + '/fullchain.pem'),
-                key: fs.readFileSync(process.env.CERTPATH + '/privkey.pem'),
-            },
-            app
-        );
-    }
+  passport.deserializeUser(async (id, done) => {
+    const found = await User.findOne({ _id: id });
 
-    let options = {
-        definition: {
-            openapi: '3.0.0',
-            info: {
-                title: 'Api (v1)',
-                version: '1.0.0',
-            },
-        },
-        apis: ['./api/**/*.js'],
-    };
+    if (found) return done(null, found.toJSON());
+    else return done(null, id);
+  });
 
-    let openapiSpecification = swaggerJsdoc(options);
+  const io = require('socket.io')(http, {
+    cors: {
+      origin: ['https://3reco.co.za', 'http://localhost:5173'],
+      methods: ['GET', 'POST'],
+    },
+  });
 
-    let morganMiddleware = morgan(function (tokens, req, res) {
-        return [
-            chalk.hex('#10b981').bold(tokens.method(req, res) + '\t'),
-            chalk.hex('#ffffff').bold(tokens.status(req, res) + '\t'),
-            chalk.hex('#262626').bold(tokens.url(req, res) + '\t\t\t'),
-            chalk.hex('#10b981').bold(tokens['response-time'](req, res) + ' ms'),
-        ].join(' ');
-    });
+  app.use((request, response, next) => {
+    request.io = io;
+    next();
+  });
 
-    const corsOptions ={
-        origin:'*',
-        credentials:true,            //access-control-allow-credentials:true
-        optionSuccessStatus:200,
-    }
+  io.on('connection', (socket) => {
+    logger.success('a user connected to socket io');
+  });
 
-    app.use(morganMiddleware);
-    app.use(cors(corsOptions))
-    app.use(compression());
-    app.use(json({limit: '50mb'}));
-    app.use(urlencoded({limit: '50mb', extended: false}));
-    app.use(session({secret: process.env.ROOT_PASSWORD}));
-    app.use(passport.initialize());
-    app.set('views', path.join(__dirname, 'views'));
-    app.set('view engine', 'ejs');
-    app.use(express.static(__dirname + '/public'));
-    app.use(express.static(__dirname + '/.well-known'));
+  passport.use('jwt', JwtStrategy);
 
-    passport.serializeUser((user, done) => {
-        done(null, user.id);
-    });
+  app.use('/api/v1', apiRoutes);
+  app.use(
+    '/api/v1/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(openapiSpecification)
+  );
 
-    passport.deserializeUser(async (id, done) => {
-        const found = await User.findOne({_id: id});
+  app.get('/', async (request, response) => {
+    response.render('pages/welcome');
+  });
 
-        if (found) return done(null, found.toJSON());
-        else return done(null, id);
-    });
+  app.get('/visualize', async (request, response) => {
+    response.render('pages/visualize');
+  });
 
-    passport.use('jwt', JwtStrategy);
+  app.get('/**', async (request, response) => {
+    response.render('pages/404.ejs');
+  });
 
-    app.use('/api/v1', apiRoutes);
-    app.use(
-        '/api/v1/docs',
-        swaggerUi.serve,
-        swaggerUi.setup(openapiSpecification)
+  http.listen(port, () =>
+    logger.success(`HTTP listening on http://localhost:${port}`)
+  );
+
+  if (!devmode) {
+    https.listen(secure_port, () =>
+      logger.success(`HTTPS listening on https://localhost:${secure_port}`)
     );
-
-    app.get('/', async (request, response) => {
-        response.render('pages/welcome');
-    });
-
-    app.get('/visualize', async (request, response) => {
-        response.render('pages/visualize');
-    });
-
-    app.get('/**', async (request, response) => {
-        response.render('pages/404.ejs');
-    });
-
-    io.on('connection', (socket) => {
-        // TODO
-        logger.success('a user connected to socket io');
-
-        // socket.on('announcement', (data) => {
-        //   let announcement = {
-        //     announcementTitle: data.data.announcementTitle,
-        //     announcementBody: data.data.announcementBody,
-        //     id: v4(),
-        //   };
-
-        //   writeTransaction(ADD_ANNOUNCEMENT(announcement), (error, result) => {});
-
-        //   socket.broadcast.emit('announcement', announcement);
-        // });
-    });
-
-    http.listen(port, () =>
-        logger.success(`HTTP listening on http://localhost:${port}`)
-    );
-
-    if (!devmode) {
-        https.listen(secure_port, () =>
-            logger.success(`HTTPS listening on https://localhost:${secure_port}`)
-        );
-    }
+  }
 });

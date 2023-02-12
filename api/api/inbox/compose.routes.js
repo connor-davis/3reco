@@ -61,6 +61,11 @@ router.post('/', async (request, response) => {
 
       const data = newInboxItem.toJSON();
 
+      request.io.emit(body.phoneNumber, {
+        type: 'inbox-message',
+        content: 'You have a new message in your inbox.',
+      });
+
       return response.status(200).json({ data });
     } catch (error) {
       console.log(error);

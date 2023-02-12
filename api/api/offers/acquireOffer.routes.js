@@ -4,6 +4,7 @@ const Offer = require('../../models/offer.model');
 const User = require('../../models/user.model');
 const Stock = require('../../models/stock.model');
 const Material = require('../../models/material.model');
+const Transaction = require('../../models/transaction.model');
 const Inbox = require('../../models/inbox.model');
 const AcquisitionRequest = require('../../models/acquisitionRequest.model');
 const inboxTypes = require('../../types/inbox.types');
@@ -93,6 +94,11 @@ router.post('/request', async (request, response) => {
 
     newInboxItem.save();
 
+    request.io.emit(recipientFound.phoneNumber, {
+      type: 'inbox-message',
+      content: 'You have a new message in your inbox.',
+    });
+
     return response.status(200).json({ message: 'Acquisiton request sent.' });
   } catch (error) {
     console.log(error);
@@ -141,6 +147,23 @@ router.post('/accept/offerer', async (request, response) => {
   });
 
   try {
+    const offererStockFound = await Stock.findOne({
+      _id: acquisitionRequestFound.stockId,
+    });
+
+    if (!offererStockFound)
+      return response.status(200).json({
+        message: 'Offerer stock not found.',
+        error: 'offerer-stock-not-found',
+      });
+
+    if (!offererStockFound.isOffered) {
+      return response.status(200).json({
+        message: 'Offerer stock not found.',
+        error: 'offerer-stock-not-found',
+      });
+    }
+
     const newInboxItem = new Inbox({
       sender: {
         ...offererFound.toJSON(),
@@ -171,6 +194,11 @@ router.post('/accept/offerer', async (request, response) => {
     });
 
     newInboxItem.save();
+
+    request.io.emit(requesterFound.phoneNumber, {
+      type: 'inbox-message',
+      content: 'You have a new message in your inbox.',
+    });
 
     return response
       .status(200)
@@ -232,6 +260,13 @@ router.post('/accept/requester', async (request, response) => {
         error: 'offerer-stock-not-found',
       });
 
+    if (!offererStockFound.isOffered) {
+      return response.status(200).json({
+        message: 'Offerer stock not found.',
+        error: 'offerer-stock-not-found',
+      });
+    }
+
     const offererMaterialFound = await Material.findOne({
       owner: offererFound.phoneNumber,
       type: offererStockFound.stockType,
@@ -276,10 +311,9 @@ router.post('/accept/requester', async (request, response) => {
             (parseFloat(requesterStockFound.stockWeight) +
               parseFloat(acquisitionRequestFound.weight)) *
             parseFloat(requesterMaterialFound.value),
+          isOffered: false,
         }
       );
-
-      await AcquisitionRequest.deleteOne({ _id: body.id });
 
       const newInboxItem = new Inbox({
         sender: {
@@ -305,6 +339,30 @@ router.post('/accept/requester', async (request, response) => {
       });
 
       newInboxItem.save();
+
+      const newTransaction = new Transaction({
+        buyer:
+          requesterFound.businessName ||
+          requesterFound.firstName + ' ' + requesterFound.lastName,
+        buyerPhoneNumber: requesterFound.phoneNumber,
+        seller:
+          offererFound.businessName ||
+          offererFound.firstName + ' ' + offererFound.lastName,
+        sellerPhoneNumber: offererFound.phoneNumber,
+        stockType: offererStockFound.stockType,
+        weight: acquisitionRequestFound.weight,
+        value:
+          parseFloat(acquisitionRequestFound.weight) *
+          parseFloat(requesterMaterialFound.value),
+        date: Date.now(),
+      });
+
+      newTransaction.save();
+
+      request.io.emit(offererFound.phoneNumber, {
+        type: 'inbox-message',
+        content: 'You have a new message in your inbox.',
+      });
 
       return response.status(200).json({ message: 'Acquisiton accept sent.' });
     }
@@ -329,12 +387,11 @@ router.post('/accept/requester', async (request, response) => {
       newData.owner = user.phoneNumber;
       newData.stockWeight = acquisitionRequestFound.weight;
       newData.stockValue = newData.stockWeight * requesterMaterialFound.value;
+      newData.isOffered = false;
 
       const newStock = new Stock(newData);
 
       newStock.save();
-
-      await AcquisitionRequest.deleteOne({ _id: body.id });
 
       const newInboxItem = new Inbox({
         sender: {
@@ -360,6 +417,30 @@ router.post('/accept/requester', async (request, response) => {
       });
 
       newInboxItem.save();
+
+      const newTransaction = new Transaction({
+        buyer:
+          requesterFound.businessName ||
+          requesterFound.firstName + ' ' + requesterFound.lastName,
+        buyerPhoneNumber: requesterFound.phoneNumber,
+        seller:
+          offererFound.businessName ||
+          offererFound.firstName + ' ' + offererFound.lastName,
+        sellerPhoneNumber: offererFound.phoneNumber,
+        stockType: offererStockFound.stockType,
+        weight: acquisitionRequestFound.weight,
+        value:
+          parseFloat(acquisitionRequestFound.weight) *
+          parseFloat(requesterMaterialFound.value),
+        date: Date.now(),
+      });
+
+      newTransaction.save();
+
+      request.io.emit(offererFound.phoneNumber, {
+        type: 'inbox-message',
+        content: 'You have a new message in your inbox.',
+      });
 
       return response.status(200).json({ message: 'Acquisiton accept sent.' });
     }
@@ -439,6 +520,11 @@ router.post('/reject/offerer', async (request, response) => {
 
     newInboxItem.save();
 
+    request.io.emit(requesterFound.phoneNumber, {
+      type: 'inbox-message',
+      content: 'You have a new message in your inbox.',
+    });
+
     return response
       .status(200)
       .json({ message: 'Acquisiton request rejection sent.' });
@@ -517,6 +603,11 @@ router.post('/reject/requester', async (request, response) => {
     });
 
     newInboxItem.save();
+
+    request.io.emit(offererFound.phoneNumber, {
+      type: 'inbox-message',
+      content: 'You have a new message in your inbox.',
+    });
 
     return response
       .status(200)

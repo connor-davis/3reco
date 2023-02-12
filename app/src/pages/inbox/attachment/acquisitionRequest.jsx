@@ -19,7 +19,6 @@ const AcquisitionRequestAttachment = ({ id, offerer = false }) => {
 
   onMount(() => {
     setLoading(false);
-    console.log(offerer);
   });
 
   const acceptRequest = () => {

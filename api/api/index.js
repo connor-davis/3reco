@@ -8,6 +8,7 @@ const stockRoutes = require('./stock');
 const materialsRoutes = require('./materials');
 const inboxRoutes = require('./inbox');
 const offersRoutes = require('./offers');
+const transactionsRoutes = require('./transactions');
 
 /**
  * @openapi
@@ -36,5 +37,6 @@ router.use('/stock', stockRoutes);
 router.use('/materials', materialsRoutes);
 router.use('/inbox', inboxRoutes);
 router.use('/offers', offersRoutes);
+router.use('/transactions', transactionsRoutes);
 
 module.exports = router;
