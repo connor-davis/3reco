@@ -15,8 +15,11 @@ const AddMaterialModal = ({ onAdd = (data) => {} }) => {
     'Paper',
     'Mercury',
     'Cardboard',
+    'Aluminum Cans',
     'E-Waste',
-    'Mixed Waste'
+    'Mixed Waste',
+    'HD Mixed',
+    'Mixed Bottle Tops',
   ]);
 
   const [value, setValue] = createSignal('');
