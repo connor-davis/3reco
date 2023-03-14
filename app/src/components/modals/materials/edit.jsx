@@ -17,8 +17,10 @@ const EditMaterialModal = ({ data, onEdit = (data) => {} }) => {
     'Cardboard',
     'Aluminum Cans',
     'E-Waste',
+    'Clear plastic',
     'Mixed Waste',
     'HD Mixed',
+    'White HD',
     'Mixed Bottle Tops',
   ]);
 
