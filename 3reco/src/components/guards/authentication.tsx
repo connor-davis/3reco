@@ -1,11 +1,5 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import { useRouter } from '@tanstack/react-router';
 
-import { useAuthActions } from '@convex-dev/auth/react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import z from 'zod/v4';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,18 +16,19 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import z from 'zod/v4';
 
 const formSchema = z.object({
   email: z.string().min(10).max(100),
   password: z.string().min(8).optional(),
 });
 
-export const Route = createFileRoute('/authentication')({
-  errorComponent: (props) => <pre>{JSON.stringify(props, null, 2)}</pre>,
-  component: RouteComponent,
-});
-
-function RouteComponent() {
+export default function AuthenticationGuard() {
   const router = useRouter();
   const { signIn } = useAuthActions();
 
@@ -48,7 +43,7 @@ function RouteComponent() {
   });
 
   return (
-    <Tabs value={tab} className="flex flex-col w-screen h-screen">
+    <Tabs value={tab} className="flex flex-col w-screen h-screen bg-background">
       <TabsContent value="signIn">
         <div className="flex flex-col w-full h-full items-center justify-center">
           <Card className="max-w-96 w-full gap-10">

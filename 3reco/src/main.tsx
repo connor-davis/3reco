@@ -10,6 +10,7 @@ import ReactDOM from 'react-dom/client';
 import { ConvexQueryClient } from '@convex-dev/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { ThemeProvider } from './components/providers/theme';
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 const convexQueryClient = new ConvexQueryClient(convex);
@@ -39,13 +40,15 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ConvexProvider client={convex}>
-        <QueryClientProvider client={queryClient}>
-          <ConvexAuthProvider client={convex}>
-            <RouterProvider router={router} />
-          </ConvexAuthProvider>
-        </QueryClientProvider>
-      </ConvexProvider>
+      <ConvexAuthProvider client={convex}>
+        <ConvexProvider client={convex}>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+              <RouterProvider router={router} />
+            </ThemeProvider>
+          </QueryClientProvider>
+        </ConvexProvider>
+      </ConvexAuthProvider>
     </StrictMode>
   );
 }
