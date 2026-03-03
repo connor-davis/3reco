@@ -18,14 +18,14 @@ import { TrashIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { toast } from 'sonner';
 
-export default function RemoveMaterialByIdDialog({
+export default function RemoveStockByIdDialog({
   _id,
   children,
 }: {
   children?: ReactElement;
-  _id: Id<'materials'>;
+  _id: Id<'stock'>;
 }) {
-  const removeMaterial = useConvexMutation(api.materials.remove);
+  const removeStock = useConvexMutation(api.stock.remove);
 
   const [open, setOpen] = useState<boolean>(false);
 
@@ -47,8 +47,8 @@ export default function RemoveMaterialByIdDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the
-            material record from the database.
+            This action cannot be undone. This will permanently delete the stock
+            record from the database.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -56,18 +56,18 @@ export default function RemoveMaterialByIdDialog({
           <AlertDialogAction
             variant="destructive"
             onClick={() =>
-              toast.promise(removeMaterial({ _id }), {
-                loading: 'Removing the material...',
-                error: 'Failed to remove the material. Please try again.',
+              toast.promise(removeStock({ _id }), {
+                loading: 'Removing the stock...',
+                error: 'Failed to remove the stock. Please try again.',
                 success: () => {
                   setOpen(false);
 
-                  return 'The material has been removed.';
+                  return 'The stock has been removed.';
                 },
               })
             }
           >
-            Remove Material
+            Remove Stock
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

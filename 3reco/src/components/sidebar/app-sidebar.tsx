@@ -1,4 +1,9 @@
-import { LayoutDashboardIcon, PackageIcon, StoreIcon } from 'lucide-react';
+import {
+  BoxesIcon,
+  LayoutDashboardIcon,
+  PackageIcon,
+  StoreIcon,
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -42,10 +47,21 @@ export default function AppSidebar() {
               </Link>
             </TypeGuard>
 
+            <TypeGuard type={['business']}>
+              <Link to="/stock">
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="Stock">
+                    <BoxesIcon />
+                    <Label>Stock</Label>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </Link>
+            </TypeGuard>
+
             <TypeGuard type={['admin', 'staff']}>
               <Link to="/materials">
                 <SidebarMenuItem>
-                  <SidebarMenuButton tooltip="Market">
+                  <SidebarMenuButton tooltip="Materials">
                     <PackageIcon />
                     <Label>Materials</Label>
                   </SidebarMenuButton>

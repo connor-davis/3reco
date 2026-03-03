@@ -1,7 +1,7 @@
 import BackButton from '@/components/back-button';
-import CreateMaterialDialog from '@/components/dialogs/materials/create';
-import RemoveMaterialByIdDialog from '@/components/dialogs/materials/remove';
-import EditMaterialByIdDialog from '@/components/dialogs/materials/update';
+import CreateStockDialog from '@/components/dialogs/stock/create';
+import RemoveStockByIdDialog from '@/components/dialogs/stock/remove';
+import StockItemContent from '@/components/items/stock';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -11,26 +11,20 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemTitle,
-} from '@/components/ui/item';
+import { Item, ItemActions } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
 import { useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { createFileRoute } from '@tanstack/react-router';
-import { PackageIcon, PencilIcon, TrashIcon } from 'lucide-react';
+import { PackageIcon, TrashIcon } from 'lucide-react';
 
-export const Route = createFileRoute('/materials')({
+export const Route = createFileRoute('/stock')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { results: materials } = useConvexPaginatedQuery(
-    api.materials.listWithPagination,
+  const { results: stock } = useConvexPaginatedQuery(
+    api.stock.listWithPagination,
     {},
     {
       initialNumItems: 50,
@@ -43,62 +37,54 @@ function RouteComponent() {
         <div className="flex items-center gap-3">
           <BackButton />
 
-          <Label className="text-lg">Materials</Label>
+          <Label className="text-lg">Stock</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <CreateMaterialDialog />
+          <CreateStockDialog />
         </div>
       </div>
 
-      {!materials ||
-        (materials.length === 0 && (
+      {!stock ||
+        (stock.length === 0 && (
           <div className="flex flex-col w-full h-full items-center justify-center gap-3">
             <Empty>
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <PackageIcon />
                 </EmptyMedia>
-                <EmptyTitle>No Materials Yet</EmptyTitle>
+                <EmptyTitle>No Stock Yet</EmptyTitle>
                 <EmptyDescription>
-                  It looks like you haven't added any materials yet. Start by
-                  creating a new material to track its carbon footprint and
-                  price.
+                  It looks like you haven't added any stock yet. Click the
+                  button below to start adding some materials to your stock.
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent className="flex-row justify-center gap-2">
-                <CreateMaterialDialog>
-                  <Button>Create Material</Button>
-                </CreateMaterialDialog>
+                <CreateStockDialog>
+                  <Button>Create Stock</Button>
+                </CreateStockDialog>
               </EmptyContent>
             </Empty>
           </div>
         ))}
 
-      {materials && materials.length > 0 && (
+      {stock && stock.length > 0 && (
         <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-          {materials?.map((material) => (
-            <Item variant="muted" key={material._id}>
-              <ItemContent>
-                <ItemTitle>{material.name}</ItemTitle>
-                <ItemDescription>
-                  The material has a carbon factor of {material.carbonFactor} kg
-                  CO₂e per kg, a GW code of {material.gwCode}, and a price of $
-                  {material.price} per kg.
-                </ItemDescription>
-              </ItemContent>
+          {stock?.map((stock) => (
+            <Item variant="muted" key={stock._id}>
+              <StockItemContent _id={stock._id} />
 
               <ItemActions>
-                <EditMaterialByIdDialog _id={material._id}>
+                {/*<EditMaterialByIdDialog _id={stock._id}>
                   <Button variant="ghost" size="icon">
                     <PencilIcon />
                   </Button>
-                </EditMaterialByIdDialog>
+                </EditMaterialByIdDialog>*/}
 
-                <RemoveMaterialByIdDialog _id={material._id}>
+                <RemoveStockByIdDialog _id={stock._id}>
                   <Button variant="destructiveGhost" size="icon">
                     <TrashIcon />
                   </Button>
-                </RemoveMaterialByIdDialog>
+                </RemoveStockByIdDialog>
               </ItemActions>
             </Item>
           ))}
