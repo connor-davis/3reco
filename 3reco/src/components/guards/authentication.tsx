@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -112,6 +113,9 @@ export default function AuthenticationGuard() {
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
+                        <FieldDescription>
+                          Please enter your email address.
+                        </FieldDescription>
                       </Field>
                     )}
                   />
@@ -135,6 +139,9 @@ export default function AuthenticationGuard() {
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
+                        <FieldDescription>
+                          Please enter your password.
+                        </FieldDescription>
                       </Field>
                     )}
                   />
@@ -223,6 +230,9 @@ export default function AuthenticationGuard() {
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
+                        <FieldDescription>
+                          Please enter your email address.
+                        </FieldDescription>
                       </Field>
                     )}
                   />
@@ -246,6 +256,9 @@ export default function AuthenticationGuard() {
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
+                        <FieldDescription>
+                          Please enter your password.
+                        </FieldDescription>
                       </Field>
                     )}
                   />

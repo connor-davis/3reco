@@ -29,7 +29,19 @@ export default defineTable({
   streetAddress: v.optional(v.string()),
   city: v.optional(v.string()),
   areaCode: v.optional(v.number()),
-  province: v.optional(v.string()),
+  province: v.optional(
+    v.union(
+      v.literal('Eastern Cape'),
+      v.literal('Free State'),
+      v.literal('Gauteng'),
+      v.literal('KwaZulu-Natal'),
+      v.literal('Limpopo'),
+      v.literal('Mpumalanga'),
+      v.literal('Northern Cape'),
+      v.literal('North West'),
+      v.literal('Western Cape')
+    )
+  ),
 })
   .index('email', ['email'])
   .index('type', ['type']);

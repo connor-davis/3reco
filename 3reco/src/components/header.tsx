@@ -9,11 +9,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuthActions } from '@convex-dev/auth/react';
 import { convexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { useQuery } from '@tanstack/react-query';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { useAuthActions } from '@convex-dev/auth/react';
 import {
   ComputerIcon,
   IdCardIcon,
@@ -22,9 +21,11 @@ import {
   SunIcon,
   SunMoonIcon,
 } from 'lucide-react';
-import { Label } from './ui/label';
 import { Activity } from 'react';
 import { useTheme } from './providers/theme';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Label } from './ui/label';
+import { Link } from '@tanstack/react-router';
 
 export default function Header() {
   const { signOut } = useAuthActions();
@@ -60,10 +61,12 @@ export default function Header() {
           />
           <DropdownMenuContent>
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IdCardIcon />
-                <Label>Profile</Label>
-              </DropdownMenuItem>
+              <Link to="/profile">
+                <DropdownMenuItem>
+                  <IdCardIcon />
+                  <Label>Profile</Label>
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <SunMoonIcon />

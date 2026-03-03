@@ -60,7 +60,7 @@ const RootLayout = () => {
               : 'hidden'
           }
         >
-          <div className="flex flex-col w-screen h-screen text-foreground bg-background">
+          <div className="flex flex-col w-screen h-screen text-foreground bg-background overflow-hidden">
             <CompleteProfileGuard />
           </div>
         </Activity>
@@ -75,11 +75,11 @@ const RootLayout = () => {
             <SidebarProvider>
               <AppSidebar />
 
-              <div className="flex flex-col w-full h-full">
+              <div className="flex flex-col w-full h-full overflow-hidden">
                 <Header />
 
-                <SidebarInset className="bg-transparent pr-3 pb-3">
-                  <div className="flex flex-col w-full h-full p-3 gap-3 bg-background rounded-xl">
+                <SidebarInset className="bg-transparent pr-3 pb-3 overflow-hidden">
+                  <div className="flex flex-col w-full h-full p-3 gap-3 bg-background rounded-xl overflow-hidden">
                     <Outlet />
                   </div>
                 </SidebarInset>

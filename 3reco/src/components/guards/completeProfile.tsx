@@ -3,7 +3,13 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod/v4';
 import { Button } from '../ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '../ui/field';
 import { Input } from '../ui/input';
 import { Tabs, TabsContent } from '../ui/tabs';
 
@@ -208,7 +214,7 @@ export default function CompleteProfileGuard() {
             )}
             className="flex flex-col w-full max-w-120 h-auto gap-5"
           >
-            <FieldGroup>
+            <FieldGroup className="gap-3">
               <Controller
                 name="image"
                 control={basicInfoForm.control}
@@ -240,6 +246,10 @@ export default function CompleteProfileGuard() {
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
+
+                      <FieldDescription>
+                        Please choose a profile image or leave it blank.
+                      </FieldDescription>
                     </Field>
                   );
                 }}
@@ -264,6 +274,9 @@ export default function CompleteProfileGuard() {
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
+                      <FieldDescription>
+                        Please enter your first name.
+                      </FieldDescription>
                     </Field>
                   )}
                 />
@@ -286,6 +299,9 @@ export default function CompleteProfileGuard() {
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
+                      <FieldDescription>
+                        Please enter your last name.
+                      </FieldDescription>
                     </Field>
                   )}
                 />
@@ -308,6 +324,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please enter your South African ID number.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -329,6 +348,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please enter your phone number.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -394,7 +416,7 @@ export default function CompleteProfileGuard() {
             )}
             className="flex flex-col w-full max-w-120 h-auto gap-5"
           >
-            <FieldGroup>
+            <FieldGroup className="gap-3">
               <Controller
                 name="businessName"
                 control={businessInfoForm.control}
@@ -413,6 +435,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please enter your business's name.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -435,6 +460,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please enter your business's registration number.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -484,7 +512,7 @@ export default function CompleteProfileGuard() {
             )}
             className="flex flex-col w-full max-w-120 h-auto gap-5"
           >
-            <FieldGroup>
+            <FieldGroup className="gap-3">
               <Controller
                 name="streetAddress"
                 control={locationInfoForm.control}
@@ -503,6 +531,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please enter your street address.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -525,6 +556,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please enter the name of your city.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -551,6 +585,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please enter your postal code.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -595,6 +632,9 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Please select your province.
+                    </FieldDescription>
                   </Field>
                 )}
               />
