@@ -39,6 +39,12 @@ const materialSchema = z.object({
       /^GW\s*[+-]?(\d+(\.\d*)?|\.\d+)/,
       'Please provide a valid GW Code, e.g. GW 100'
     ),
+  price: z
+    .string({ error: 'Please provide a price.' })
+    .regex(
+      /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
+      'Please provide a valid price that is a number or decimal, e.g. 10.5'
+    ),
 });
 
 export default function CreateMaterialDialog({
@@ -83,6 +89,7 @@ export default function CreateMaterialDialog({
                 name: values.name,
                 carbonFactor: values.carbonFactor,
                 gwCode: values.gwCode,
+                price: values.price,
               }),
               {
                 loading: 'Creating the new material...',

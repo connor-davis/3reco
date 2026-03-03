@@ -6,6 +6,7 @@ export default defineTable({
   name: v.string(),
   carbonFactor: v.string(),
   gwCode: v.string(),
+  price: v.string(),
 });
 
 export const create = mutation({
@@ -13,8 +14,14 @@ export const create = mutation({
     name: v.string(),
     carbonFactor: v.string(),
     gwCode: v.string(),
+    price: v.string(),
   },
-  handler: async (ctx, { name, carbonFactor, gwCode }) => {
-    return await ctx.db.insert('materials', { name, carbonFactor, gwCode });
+  handler: async (ctx, { name, carbonFactor, gwCode, price }) => {
+    return await ctx.db.insert('materials', {
+      name,
+      carbonFactor,
+      gwCode,
+      price,
+    });
   },
 });
