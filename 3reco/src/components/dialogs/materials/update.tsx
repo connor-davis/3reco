@@ -16,46 +16,62 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useConvexMutation } from '@convex-dev/react-query';
+import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PlusIcon } from 'lucide-react';
+import { PencilIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
 const materialSchema = z.object({
-  name: z.string({ error: 'Please provide a material name.' }),
+  name: z.string({ error: 'Please provide a material name.' }).optional(),
   carbonFactor: z
     .string({ error: 'Please provide a Carbon Factor.' })
     .regex(
       /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
       'Please provide a valid Carbon Factor that is a number or decimal, e.g. 10.5'
-    ),
+    )
+    .optional(),
   gwCode: z
     .string({ error: 'Please provide a GW Code.' })
     .regex(
       /^GW\s*[+-]?(\d+(\.\d*)?|\.\d+)/,
       'Please provide a valid GW Code, e.g. GW 100'
-    ),
+    )
+    .optional(),
   price: z
     .string({ error: 'Please provide a price.' })
     .regex(
       /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
       'Please provide a valid price that is a number or decimal, e.g. 10.5'
-    ),
+    )
+    .optional(),
 });
 
-export default function CreateMaterialDialog({
+export default function EditMaterialByIdDialog({
+  _id,
   children,
 }: {
   children?: ReactElement;
+  _id: Id<'materials'>;
 }) {
-  const createMaterial = useConvexMutation(api.materials.create);
+  const existingMaterial = useConvexQuery(api.materials.findById, {
+    _id,
+  });
+
+  const updateMaterial = useConvexMutation(api.materials.update);
 
   const materialForm = useForm<z.infer<typeof materialSchema>>({
     resolver: zodResolver(materialSchema),
+    values: {
+      name: existingMaterial?.name,
+      carbonFactor: existingMaterial?.carbonFactor,
+      gwCode: existingMaterial?.gwCode,
+      price: existingMaterial?.price,
+    },
   });
 
   return (
@@ -66,17 +82,17 @@ export default function CreateMaterialDialog({
             children
           ) : (
             <Button variant="ghost">
-              <PlusIcon className="size-4" />
-              <Label>Create</Label>
+              <PencilIcon className="size-4" />
+              <Label>Edit</Label>
             </Button>
           )
         }
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Material</DialogTitle>
+          <DialogTitle>Edit Material</DialogTitle>
           <DialogDescription>
-            Please fill out the fields below to create a new material.
+            Please fill out the fields below to edit an existing material.
           </DialogDescription>
         </DialogHeader>
 
@@ -85,19 +101,20 @@ export default function CreateMaterialDialog({
           className="flex flex-col w-full h-auto gap-3"
           onSubmit={materialForm.handleSubmit((values) =>
             toast.promise(
-              createMaterial({
+              updateMaterial({
+                _id,
                 name: values.name,
                 carbonFactor: values.carbonFactor,
                 gwCode: values.gwCode,
                 price: values.price,
               }),
               {
-                loading: 'Creating the new material...',
-                error: 'Failed to create the new material. Please try again.',
+                loading: 'Editing the material...',
+                error: 'Failed to edit the material. Please try again.',
                 success: () => {
                   materialForm.reset({});
 
-                  return 'The new material has been created.';
+                  return 'The material has been edited.';
                 },
               }
             )
@@ -122,7 +139,7 @@ export default function CreateMaterialDialog({
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a name for the new material.
+                    Please enter a name for the material.
                   </FieldDescription>
                 </Field>
               )}
@@ -146,7 +163,7 @@ export default function CreateMaterialDialog({
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a Carbon Factor for the new material, e.g. 10.5
+                    Please enter a Carbon Factor for the material, e.g. 10.5
                   </FieldDescription>
                 </Field>
               )}
@@ -170,7 +187,7 @@ export default function CreateMaterialDialog({
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a GW Code for the new material, e.g. GW 100
+                    Please enter a GW Code for the material, e.g. GW 100
                   </FieldDescription>
                 </Field>
               )}
@@ -194,14 +211,14 @@ export default function CreateMaterialDialog({
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a price for the new material, e.g. 10.5
+                    Please enter a price for the material, e.g. 10.5
                   </FieldDescription>
                 </Field>
               )}
             />
           </FieldGroup>
 
-          <Button type="submit">Create Material</Button>
+          <Button type="submit">Edit Material</Button>
         </form>
       </DialogContent>
     </Dialog>
