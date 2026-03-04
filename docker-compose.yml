@@ -6,7 +6,7 @@
 #    docs              Documentation site (static, served by nginx)
 #    convex-backend    Convex self-hosted backend  (ports 3210 / 3211)
 #    convex-dashboard  Convex admin dashboard      (port 6791)
-#    nginx             Reverse proxy + subdomain routing
+#    caddy             Reverse proxy + automatic HTTPS via Let's Encrypt
 #
 #  Required env vars – copy .env.example to .env and fill in your values.
 # =============================================================================
@@ -106,26 +106,24 @@ services:
     restart: unless-stopped
 
   # ──────────────────────────────────────────────────────────────────────────
-  # nginx reverse proxy
+  # Caddy reverse proxy
   #   Routes subdomains to the correct upstream service.
-  #   ${SERVER_NAME} is substituted at container start via envsubst.
-  #
-  #   SSL: place fullchain.pem + privkey.pem in ./nginx/certs/ and
-  #        uncomment the ssl_* lines in nginx/nginx.conf.template.
+  #   Automatically provisions and renews TLS certificates via Let's Encrypt.
+  #   HTTP → HTTPS redirects are handled automatically.
+  #   WebSocket proxying (required for Convex) is transparent.
   # ──────────────────────────────────────────────────────────────────────────
-  nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
+  caddy:
+    image: caddy:alpine
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"   # HTTP/3 (QUIC)
     environment:
-      - SERVER_NAME=${SERVER_NAME}
+      - DOMAIN=${DOMAIN}
     volumes:
-      # Mount SSL certificates (read-only).
-      # Leave empty for HTTP-only mode.
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data       # TLS certificates + ACME state (persisted)
+      - caddy-config:/config   # Caddy runtime config (persisted)
     depends_on:
       - frontend
       - docs
@@ -139,3 +137,6 @@ services:
 volumes:
   # Persistent Convex backend data (SQLite DB + uploaded files)
   convex-data:
+  # Caddy certificate storage (persisted so certs survive restarts)
+  caddy-data:
+  caddy-config:
