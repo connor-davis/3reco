@@ -4,6 +4,11 @@ import { ChevronDown, BookOpen, Server, Users, Zap, Code, HelpCircle, Terminal }
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
+interface SidebarProps {
+  open?: boolean
+  onClose?: () => void
+}
+
 interface NavItem {
   label: string
   to: string
@@ -13,6 +18,11 @@ interface NavGroup {
   label: string
   icon: React.ReactNode
   items: NavItem[]
+}
+
+interface SidebarGroupProps {
+  group: NavGroup
+  onNavClick?: () => void
 }
 
 const navGroups: NavGroup[] = [
@@ -96,7 +106,7 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-function SidebarGroup({ group }: { group: NavGroup }) {
+function SidebarGroup({ group, onNavClick }: SidebarGroupProps) {
   const [open, setOpen] = useState(true)
 
   return (
@@ -119,6 +129,7 @@ function SidebarGroup({ group }: { group: NavGroup }) {
             <Link
               key={item.to}
               to={item.to}
+              onClick={onNavClick}
               className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
               activeProps={{
                 className:
@@ -134,13 +145,19 @@ function SidebarGroup({ group }: { group: NavGroup }) {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   return (
-    <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 border-r bg-sidebar">
+    <aside
+      className={cn(
+        'fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 border-r bg-sidebar z-40 transition-transform duration-300',
+        'lg:translate-x-0',
+        open ? 'translate-x-0' : '-translate-x-full',
+      )}
+    >
       <ScrollArea className="h-full">
         <nav className="px-3 py-4 space-y-1">
           {navGroups.map(group => (
-            <SidebarGroup key={group.label} group={group} />
+            <SidebarGroup key={group.label} group={group} onNavClick={onClose} />
           ))}
         </nav>
       </ScrollArea>
