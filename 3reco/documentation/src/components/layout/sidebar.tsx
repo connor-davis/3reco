@@ -17,6 +17,15 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
+    label: 'Getting Started',
+    icon: <BookOpen size={15} />,
+    items: [
+      { label: 'Introduction', to: '/docs/introduction' },
+      { label: 'Setup & Installation', to: '/docs/setup' },
+      { label: 'Environment Variables', to: '/docs/environment' },
+    ],
+  },
+  {
     label: 'User Guide',
     icon: <HelpCircle size={15} />,
     items: [
@@ -42,15 +51,6 @@ const navGroups: NavGroup[] = [
       { label: 'Notifications Pattern', to: '/docs/dev/notifications' },
       { label: 'Internal Actions', to: '/docs/dev/internal-actions' },
       { label: 'Deployment', to: '/docs/dev/deployment' },
-    ],
-  },
-  {
-    label: 'Getting Started',
-    icon: <BookOpen size={15} />,
-    items: [
-      { label: 'Introduction', to: '/docs/introduction' },
-      { label: 'Setup & Installation', to: '/docs/setup' },
-      { label: 'Environment Variables', to: '/docs/environment' },
     ],
   },
   {
