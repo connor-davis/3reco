@@ -35,14 +35,14 @@ export const exportTransactions = query({
         const seller = await ctx.db.get('users', t.sellerId);
         const buyer = await ctx.db.get('users', t.buyerId);
         return {
-          id: t._id,
-          date: new Date(t._creationTime).toISOString(),
-          type: t.type,
-          material: material?.name ?? '',
-          weight: t.weight,
-          price: t.price,
-          seller: getUserDisplayName(seller),
-          buyer: getUserDisplayName(buyer),
+          'Date': new Date(t._creationTime).toISOString(),
+          'Transaction Type': t.type.toUpperCase(),
+          'Material': material?.name ?? '',
+          'Weight (kg)': t.weight,
+          'Price per kg (R)': t.price,
+          'Total (R)': +(t.price * t.weight).toFixed(2),
+          'Seller': getUserDisplayName(seller),
+          'Buyer': getUserDisplayName(buyer),
         };
       })
     );
@@ -88,13 +88,15 @@ export const exportCollections = query({
       rows.map(async (t) => {
         const material = await ctx.db.get('materials', t.materialId);
         const seller = await ctx.db.get('users', t.sellerId);
+        const buyer = await ctx.db.get('users', t.buyerId);
         return {
-          id: t._id,
-          date: new Date(t._creationTime).toISOString(),
-          material: material?.name ?? '',
-          weight: t.weight,
-          price: t.price,
-          collector: getUserDisplayName(seller),
+          'Date': new Date(t._creationTime).toISOString(),
+          'Material': material?.name ?? '',
+          'Weight (kg)': t.weight,
+          'Price per kg (R)': t.price,
+          'Total (R)': +(t.price * t.weight).toFixed(2),
+          'Collector': getUserDisplayName(seller),
+          'Business': getUserDisplayName(buyer),
         };
       })
     );
@@ -114,15 +116,18 @@ export const exportUsers = query({
 
     const users = await ctx.db.query('users').collect();
     return users.map((u) => ({
-      id: u._id,
-      email: u.email ?? '',
-      type: u.type ?? '',
-      firstName: u.firstName ?? '',
-      lastName: u.lastName ?? '',
-      businessName: u.businessName ?? '',
-      city: u.city ?? '',
-      province: u.province ?? '',
-      createdAt: new Date(u._creationTime).toISOString(),
+      'Email': u.email ?? '',
+      'Account Type': u.type ?? '',
+      'First Name': u.firstName ?? '',
+      'Last Name': u.lastName ?? '',
+      'Business Name': u.businessName ?? '',
+      'Business Reg. No.': u.businessRegistrationNumber ?? '',
+      'Phone': u.phone ?? '',
+      'Street Address': u.streetAddress ?? '',
+      'City': u.city ?? '',
+      'Area Code': u.areaCode ?? '',
+      'Province': u.province ?? '',
+      'Registered At': new Date(u._creationTime).toISOString(),
     }));
   },
 });

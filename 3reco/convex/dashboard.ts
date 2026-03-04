@@ -221,8 +221,8 @@ export const businessStats = query({
 
     const totals = {
       totalSpend: filteredBuyer.reduce((s, t) => s + t.price * t.weight, 0),
-      totalVolume: filteredAll.reduce((s, t) => s + t.weight, 0),
-      transactionCount: filteredAll.length,
+      totalVolume: filteredBuyer.reduce((s, t) => s + t.weight, 0),
+      transactionCount: filteredBuyer.length,
     };
 
     const stockItems = await ctx.db
