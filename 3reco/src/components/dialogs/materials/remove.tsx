@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { useConvexMutation } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { ConvexError } from 'convex/values';
 import { TrashIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { toast } from 'sonner';
@@ -58,7 +59,19 @@ export default function RemoveMaterialByIdDialog({
             onClick={() =>
               toast.promise(removeMaterial({ _id }), {
                 loading: 'Removing the material...',
-                error: 'Failed to remove the material. Please try again.',
+                error: (error: Error) => {
+                  if (error instanceof ConvexError) {
+                    return {
+                      message: error.data.name,
+                      description: error.data.message,
+                    };
+                  }
+
+                  return {
+                    message: error.name,
+                    description: error.message,
+                  };
+                },
                 success: () => {
                   setOpen(false);
 

@@ -12,7 +12,7 @@ import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as materials from "../materials.js";
 import type * as stock from "../stock.js";
-import type * as transactionRequestNotes from "../transactionRequestNotes.js";
+import type * as transactionRequestMessages from "../transactionRequestMessages.js";
 import type * as transactionRequests from "../transactionRequests.js";
 import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
@@ -28,7 +28,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   materials: typeof materials;
   stock: typeof stock;
-  transactionRequestNotes: typeof transactionRequestNotes;
+  transactionRequestMessages: typeof transactionRequestMessages;
   transactionRequests: typeof transactionRequests;
   transactions: typeof transactions;
   users: typeof users;

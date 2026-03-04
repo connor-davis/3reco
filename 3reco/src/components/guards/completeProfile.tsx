@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Spinner } from '../ui/spinner';
+import { ConvexError } from 'convex/values';
 
 const basicInfoFormSchema = z.object({
   image: z.string().optional(),
@@ -198,11 +199,19 @@ export default function CompleteProfileGuard() {
                   }),
                   {
                     loading: 'Updating your profile information...',
-                    error: (error: Error) =>
-                      toast.error(error.name, {
+                    error: (error: Error) => {
+                      if (error instanceof ConvexError) {
+                        return {
+                          message: error.data.name,
+                          description: error.data.message,
+                        };
+                      }
+
+                      return {
+                        message: error.name,
                         description: error.message,
-                        duration: 2000,
-                      }),
+                      };
+                    },
                     success: () => {
                       setTab('businessOrCollector');
 
@@ -400,11 +409,19 @@ export default function CompleteProfileGuard() {
                   }),
                   {
                     loading: 'Updating your profile information...',
-                    error: (error: Error) =>
-                      toast.error(error.name, {
+                    error: (error: Error) => {
+                      if (error instanceof ConvexError) {
+                        return {
+                          message: error.data.name,
+                          description: error.data.message,
+                        };
+                      }
+
+                      return {
+                        message: error.name,
                         description: error.message,
-                        duration: 2000,
-                      }),
+                      };
+                    },
                     success: () => {
                       setTab('locationInfo');
 
@@ -492,11 +509,19 @@ export default function CompleteProfileGuard() {
                   }),
                   {
                     loading: 'Updating your profile information...',
-                    error: (error: Error) =>
-                      toast.error(error.name, {
+                    error: (error: Error) => {
+                      if (error instanceof ConvexError) {
+                        return {
+                          message: error.data.name,
+                          description: error.data.message,
+                        };
+                      }
+
+                      return {
+                        message: error.name,
                         description: error.message,
-                        duration: 2000,
-                      }),
+                      };
+                    },
                     success: () => {
                       router.navigate({
                         to: '/',

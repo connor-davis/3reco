@@ -113,3 +113,32 @@ export const update = mutation({
     await ctx.db.patch('users', args._id, { ...args, _id: undefined });
   },
 });
+
+export const listCollectors = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query('users')
+      .withIndex('type', (q) => q.eq('type', 'collector'))
+      .collect();
+  },
+});
+
+export const listBusinesses = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query('users')
+      .withIndex('type', (q) => q.eq('type', 'business'))
+      .collect();
+  },
+});
+
+export const findById = query({
+  args: {
+    _id: v.id('users'),
+  },
+  handler: async (ctx, { _id }) => {
+    return await ctx.db.get('users', _id);
+  },
+});

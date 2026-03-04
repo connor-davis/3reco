@@ -6,7 +6,7 @@ export default defineTable({
   name: v.string(),
   carbonFactor: v.string(),
   gwCode: v.string(),
-  price: v.string(),
+  price: v.number(),
 });
 
 export const listWithPagination = query({
@@ -15,6 +15,12 @@ export const listWithPagination = query({
   },
   handler: async (ctx, { paginationOpts }) => {
     return await ctx.db.query('materials').paginate(paginationOpts);
+  },
+});
+
+export const list = query({
+  handler: async (ctx) => {
+    return await ctx.db.query('materials').collect();
   },
 });
 
@@ -32,7 +38,7 @@ export const create = mutation({
     name: v.string(),
     carbonFactor: v.string(),
     gwCode: v.string(),
-    price: v.string(),
+    price: v.number(),
   },
   handler: async (ctx, { name, carbonFactor, gwCode, price }) => {
     return await ctx.db.insert('materials', {
@@ -50,7 +56,7 @@ export const update = mutation({
     name: v.optional(v.string()),
     carbonFactor: v.optional(v.string()),
     gwCode: v.optional(v.string()),
-    price: v.optional(v.string()),
+    price: v.optional(v.number()),
   },
   handler: async (ctx, { _id, name, carbonFactor, gwCode, price }) => {
     const existing = await ctx.db.get('materials', _id);

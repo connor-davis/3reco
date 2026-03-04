@@ -19,7 +19,7 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
-import { useConvexPaginatedQuery } from '@convex-dev/react-query';
+import { useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { createFileRoute } from '@tanstack/react-router';
 import { PackageIcon, PencilIcon, TrashIcon } from 'lucide-react';
@@ -29,13 +29,7 @@ export const Route = createFileRoute('/materials')({
 });
 
 function RouteComponent() {
-  const { results: materials } = useConvexPaginatedQuery(
-    api.materials.listWithPagination,
-    {},
-    {
-      initialNumItems: 50,
-    }
-  );
+  const materials = useConvexQuery(api.materials.list, {});
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">

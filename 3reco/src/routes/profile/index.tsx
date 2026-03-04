@@ -37,6 +37,7 @@ import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute } from '@tanstack/react-router';
+import { ConvexError } from 'convex/values';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
@@ -181,8 +182,19 @@ function RouteComponent() {
                     }),
                     {
                       loading: 'Saving your profile information...',
-                      error:
-                        'Failed to save profile information. Please try again.',
+                      error: (error: Error) => {
+                        if (error instanceof ConvexError) {
+                          return {
+                            message: error.data.name,
+                            description: error.data.message,
+                          };
+                        }
+
+                        return {
+                          message: error.name,
+                          description: error.message,
+                        };
+                      },
                       success: () => {
                         profileForm.reset({});
 
@@ -402,8 +414,19 @@ function RouteComponent() {
                       }),
                       {
                         loading: 'Saving your business information...',
-                        error:
-                          'Failed to save business information. Please try again.',
+                        error: (error: Error) => {
+                          if (error instanceof ConvexError) {
+                            return {
+                              message: error.data.name,
+                              description: error.data.message,
+                            };
+                          }
+
+                          return {
+                            message: error.name,
+                            description: error.message,
+                          };
+                        },
                         success: () => {
                           businessProfileForm.reset({});
 
@@ -492,8 +515,19 @@ function RouteComponent() {
                     }),
                     {
                       loading: 'Saving your location information...',
-                      error:
-                        'Failed to save location information. Please try again.',
+                      error: (error: Error) => {
+                        if (error instanceof ConvexError) {
+                          return {
+                            message: error.data.name,
+                            description: error.data.message,
+                          };
+                        }
+
+                        return {
+                          message: error.name,
+                          description: error.message,
+                        };
+                      },
                       success: () => {
                         locationForm.reset({});
 

@@ -20,6 +20,7 @@ import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ConvexError } from 'convex/values';
 import { PencilIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -43,11 +44,10 @@ const materialSchema = z.object({
     )
     .optional(),
   price: z
-    .string({ error: 'Please provide a price.' })
-    .regex(
-      /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
-      'Please provide a valid price that is a number or decimal, e.g. 10.5'
-    )
+    .number({
+      error: 'Please provide a price that is a number or decimal, e.g. 10.5',
+    })
+    .nonnegative({ error: 'Price cannot be negative.' })
     .optional(),
 });
 
@@ -110,7 +110,19 @@ export default function EditMaterialByIdDialog({
               }),
               {
                 loading: 'Editing the material...',
-                error: 'Failed to edit the material. Please try again.',
+                error: (error: Error) => {
+                  if (error instanceof ConvexError) {
+                    return {
+                      message: error.data.name,
+                      description: error.data.message,
+                    };
+                  }
+
+                  return {
+                    message: error.name,
+                    description: error.message,
+                  };
+                },
                 success: () => {
                   materialForm.reset({});
 
@@ -206,6 +218,11 @@ export default function EditMaterialByIdDialog({
                     id="form-create-material-price"
                     aria-invalid={fieldState.invalid}
                     placeholder="Price"
+                    type="number"
+                    step={0.01}
+                    onChange={(event) =>
+                      field.onChange(event.target.valueAsNumber)
+                    }
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />

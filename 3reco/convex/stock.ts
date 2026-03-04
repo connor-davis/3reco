@@ -2,17 +2,17 @@ import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
 import { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
-import { zodToConvex } from 'convex-helpers/server/zod';
-import { z } from 'zod/v4';
-import { zid } from 'convex-helpers/server/zod4';
 
 export default defineTable({
   ownerId: v.id('users'),
   materialId: v.id('materials'),
-  weight: v.string(),
-  price: v.string(),
+  weight: v.number(),
+  price: v.number(),
   isListed: v.boolean(),
-});
+})
+  .index('by_ownerId', ['ownerId'])
+  .index('by_materialId', ['materialId'])
+  .index('by_ownerId_by_materialId', ['ownerId', 'materialId']);
 
 export const listWithPagination = query({
   args: {
@@ -20,6 +20,12 @@ export const listWithPagination = query({
   },
   handler: async (ctx, { paginationOpts }) => {
     return await ctx.db.query('stock').paginate(paginationOpts);
+  },
+});
+
+export const list = query({
+  handler: async (ctx) => {
+    return await ctx.db.query('stock').collect();
   },
 });
 
@@ -33,23 +39,11 @@ export const findByStockId = query({
 });
 
 export const create = mutation({
-  args: zodToConvex(
-    z.object({
-      materialId: zid('materials'),
-      weight: z
-        .string({ error: 'Please enter a weight.' })
-        .regex(
-          /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
-          'Please enter a valid weight that is a number or decimal, e.g. 10.5'
-        ),
-      price: z
-        .string({ error: 'Please enter a price.' })
-        .regex(
-          /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
-          'Please enter a valid price that is a number or decimal, e.g. 10.5'
-        ),
-    })
-  ),
+  args: {
+    materialId: v.id('materials'),
+    weight: v.number(),
+    price: v.number(),
+  },
   handler: async (ctx, { materialId, weight, price }) => {
     const identity = await ctx.auth.getUserIdentity();
 
@@ -68,6 +62,22 @@ export const create = mutation({
         message: 'The user was not found.',
       });
 
+    const material = await ctx.db.get('materials', materialId);
+
+    if (!material) {
+      throw new ConvexError({
+        name: 'Not Found',
+        message: `Material with id ${materialId} not found.`,
+      });
+    }
+
+    if (price < material.price) {
+      throw new ConvexError({
+        name: 'Invalid Input',
+        message: `The price of the stock must be greater than or equal to the price of the material.`,
+      });
+    }
+
     return await ctx.db.insert('stock', {
       ownerId: user._id,
       materialId,
@@ -81,8 +91,8 @@ export const create = mutation({
 export const update = mutation({
   args: {
     _id: v.id('stock'),
-    weight: v.optional(v.string()),
-    price: v.optional(v.string()),
+    weight: v.optional(v.number()),
+    price: v.optional(v.number()),
     isListed: v.optional(v.boolean()),
   },
   handler: async (ctx, { _id, weight, price, isListed }) => {
@@ -92,6 +102,26 @@ export const update = mutation({
       throw new ConvexError({
         name: 'Not Found',
         message: `Stock with id ${_id} not found.`,
+      });
+    }
+
+    const material = await ctx.db.get('materials', existing.materialId);
+
+    if (!material) {
+      throw new ConvexError({
+        name: 'Not Found',
+        message: `Material with id ${existing.materialId} not found.`,
+      });
+    }
+
+    if (!price) {
+      price = existing.price;
+    }
+
+    if (price < material.price) {
+      throw new ConvexError({
+        name: 'Invalid Input',
+        message: `The price of the stock must be greater than or equal to the price of the material.`,
       });
     }
 

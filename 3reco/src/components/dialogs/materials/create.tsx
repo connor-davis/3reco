@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { useConvexMutation } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ConvexError } from 'convex/values';
 import { PlusIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -40,11 +41,10 @@ const materialSchema = z.object({
       'Please provide a valid GW Code, e.g. GW 100'
     ),
   price: z
-    .string({ error: 'Please provide a price.' })
-    .regex(
-      /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
-      'Please provide a valid price that is a number or decimal, e.g. 10.5'
-    ),
+    .number({
+      error: 'Please provide a price that is a number or decimal, e.g. 10.5',
+    })
+    .nonnegative({ error: 'Price cannot be negative.' }),
 });
 
 export default function CreateMaterialDialog({
@@ -93,7 +93,19 @@ export default function CreateMaterialDialog({
               }),
               {
                 loading: 'Creating the new material...',
-                error: 'Failed to create the new material. Please try again.',
+                error: (error: Error) => {
+                  if (error instanceof ConvexError) {
+                    return {
+                      message: error.data.name,
+                      description: error.data.message,
+                    };
+                  }
+
+                  return {
+                    message: error.name,
+                    description: error.message,
+                  };
+                },
                 success: () => {
                   materialForm.reset({});
 
@@ -189,6 +201,11 @@ export default function CreateMaterialDialog({
                     id="form-create-material-price"
                     aria-invalid={fieldState.invalid}
                     placeholder="Price"
+                    type="number"
+                    step={0.01}
+                    onChange={(event) =>
+                      field.onChange(event.target.valueAsNumber)
+                    }
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />

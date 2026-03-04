@@ -9,13 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as MarketRouteImport } from './routes/market'
+import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 
+const TransactionsRoute = TransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StockRoute = StockRouteImport.update({
   id: '/stock',
   path: '/stock',
@@ -29,6 +36,11 @@ const MaterialsRoute = MaterialsRouteImport.update({
 const MarketRoute = MarketRouteImport.update({
   id: '/market',
   path: '/market',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsRoute = CollectionsRouteImport.update({
+  id: '/collections',
+  path: '/collections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -50,54 +62,87 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/collections': typeof CollectionsRoute
   '/market': typeof MarketRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
+  '/transactions': typeof TransactionsRoute
   '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/collections': typeof CollectionsRoute
   '/market': typeof MarketRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
+  '/transactions': typeof TransactionsRoute
   '/profile': typeof ProfileIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/collections': typeof CollectionsRoute
   '/market': typeof MarketRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
+  '/transactions': typeof TransactionsRoute
   '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/market' | '/materials' | '/stock' | '/profile/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/collections'
+    | '/market'
+    | '/materials'
+    | '/stock'
+    | '/transactions'
+    | '/profile/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/market' | '/materials' | '/stock' | '/profile'
+  to:
+    | '/'
+    | '/about'
+    | '/collections'
+    | '/market'
+    | '/materials'
+    | '/stock'
+    | '/transactions'
+    | '/profile'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/collections'
     | '/market'
     | '/materials'
     | '/stock'
+    | '/transactions'
     | '/profile/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CollectionsRoute: typeof CollectionsRoute
   MarketRoute: typeof MarketRoute
   MaterialsRoute: typeof MaterialsRoute
   StockRoute: typeof StockRoute
+  TransactionsRoute: typeof TransactionsRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/transactions': {
+      id: '/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stock': {
       id: '/stock'
       path: '/stock'
@@ -117,6 +162,13 @@ declare module '@tanstack/react-router' {
       path: '/market'
       fullPath: '/market'
       preLoaderRoute: typeof MarketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collections': {
+      id: '/collections'
+      path: '/collections'
+      fullPath: '/collections'
+      preLoaderRoute: typeof CollectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -146,9 +198,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CollectionsRoute: CollectionsRoute,
   MarketRoute: MarketRoute,
   MaterialsRoute: MaterialsRoute,
   StockRoute: StockRoute,
+  TransactionsRoute: TransactionsRoute,
   ProfileIndexRoute: ProfileIndexRoute,
 }
 export const routeTree = rootRouteImport

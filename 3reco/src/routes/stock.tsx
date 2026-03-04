@@ -1,8 +1,5 @@
 import BackButton from '@/components/back-button';
-import CreateStockDialog from '@/components/dialogs/stock/create';
-import RemoveStockByIdDialog from '@/components/dialogs/stock/remove';
-import StockItemContent from '@/components/items/stock';
-import { Button } from '@/components/ui/button';
+import StockItemContent from '@/components/stock/item-content';
 import {
   Empty,
   EmptyContent,
@@ -13,23 +10,17 @@ import {
 } from '@/components/ui/empty';
 import { Item, ItemActions } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
-import { useConvexPaginatedQuery } from '@convex-dev/react-query';
+import { useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { createFileRoute } from '@tanstack/react-router';
-import { PackageIcon, TrashIcon } from 'lucide-react';
+import { PackageIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/stock')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { results: stock } = useConvexPaginatedQuery(
-    api.stock.listWithPagination,
-    {},
-    {
-      initialNumItems: 50,
-    }
-  );
+  const stock = useConvexQuery(api.stock.list, {});
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
@@ -39,9 +30,7 @@ function RouteComponent() {
 
           <Label className="text-lg">Stock</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
-          <CreateStockDialog />
-        </div>
+        <div className="flex items-center gap-3 ml-auto"></div>
       </div>
 
       {!stock ||
@@ -54,15 +43,12 @@ function RouteComponent() {
                 </EmptyMedia>
                 <EmptyTitle>No Stock Yet</EmptyTitle>
                 <EmptyDescription>
-                  It looks like you haven't added any stock yet. Click the
-                  button below to start adding some materials to your stock.
+                  It looks like you haven't added any stock yet. Start by
+                  creating a new collection or by purchasing stock from the
+                  market.
                 </EmptyDescription>
               </EmptyHeader>
-              <EmptyContent className="flex-row justify-center gap-2">
-                <CreateStockDialog>
-                  <Button>Create Stock</Button>
-                </CreateStockDialog>
-              </EmptyContent>
+              <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
             </Empty>
           </div>
         ))}
@@ -73,19 +59,7 @@ function RouteComponent() {
             <Item variant="muted" key={stock._id}>
               <StockItemContent _id={stock._id} />
 
-              <ItemActions>
-                {/*<EditMaterialByIdDialog _id={stock._id}>
-                  <Button variant="ghost" size="icon">
-                    <PencilIcon />
-                  </Button>
-                </EditMaterialByIdDialog>*/}
-
-                <RemoveStockByIdDialog _id={stock._id}>
-                  <Button variant="destructiveGhost" size="icon">
-                    <TrashIcon />
-                  </Button>
-                </RemoveStockByIdDialog>
-              </ItemActions>
+              <ItemActions></ItemActions>
             </Item>
           ))}
         </div>

@@ -5,7 +5,7 @@ import materials from './materials';
 import stock from './stock';
 import transactions from './transactions';
 import transactionRequests from './transactionRequests';
-import transactionRequestNotes from './transactionRequestNotes';
+import transactionRequestMessages from './transactionRequestMessages';
 
 export default defineSchema({
   ...authTables,
@@ -14,5 +14,5 @@ export default defineSchema({
   stock,
   transactions,
   transactionRequests,
-  transactionRequestNotes,
+  transactionRequestMessages,
 });

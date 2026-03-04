@@ -1,9 +1,14 @@
+import { Link } from '@tanstack/react-router';
 import {
   BoxesIcon,
+  CreditCardIcon,
   LayoutDashboardIcon,
   PackageIcon,
   StoreIcon,
+  VanIcon,
 } from 'lucide-react';
+import TypeGuard from '../guards/type';
+import { Label } from '../ui/label';
 import {
   Sidebar,
   SidebarContent,
@@ -14,9 +19,6 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
 } from '../ui/sidebar';
-import { Label } from '../ui/label';
-import { Link } from '@tanstack/react-router';
-import TypeGuard from '../guards/type';
 
 export default function AppSidebar() {
   return (
@@ -53,6 +55,28 @@ export default function AppSidebar() {
                   <SidebarMenuButton tooltip="Stock">
                     <BoxesIcon />
                     <Label>Stock</Label>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </Link>
+            </TypeGuard>
+
+            <TypeGuard type={['business']}>
+              <Link to="/collections">
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="Collections">
+                    <VanIcon />
+                    <Label>Collections</Label>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </Link>
+            </TypeGuard>
+
+            <TypeGuard type={['admin', 'staff']}>
+              <Link to="/transactions">
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="Transactions">
+                    <CreditCardIcon />
+                    <Label>Transactions</Label>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </Link>

@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod/v4';
+import { ConvexError } from 'convex/values';
 
 const formSchema = z.object({
   email: z.string().min(10).max(100),
@@ -71,26 +72,21 @@ export default function AuthenticationGuard() {
                   formData.append('password', values.password);
                   formData.append('flow', 'signIn');
 
-                  try {
-                    await signIn('password', formData); // The Convex Auth provider name
-                    // Redirect or update UI on success
-                    router.navigate({ to: '/' });
-                  } catch (error) {
-                    if (error instanceof Error) {
-                      if (error.message.includes('InvalidAccountId')) {
-                        return toast.error('Uh Oh!', {
-                          description: 'That account was not found.',
+                  signIn('password', formData)
+                    .then(() => router.navigate({ to: '/' }))
+                    .catch((error) => {
+                      if (error instanceof ConvexError) {
+                        return toast.error(error.data.name, {
+                          description: error.data.message,
                           duration: 2000,
                         });
                       }
 
-                      // Access the error message and display it to the user
-                      toast.error(error.name, {
+                      return toast.error(error.name, {
                         description: error.message,
                         duration: 2000,
                       });
-                    }
-                  }
+                    });
                 })}
                 className="flex flex-col w-full h-auto gap-5"
               >
@@ -183,31 +179,26 @@ export default function AuthenticationGuard() {
                       duration: 2000,
                     });
 
-                  try {
-                    await signIn('password', {
-                      flow: 'signUp',
-                      ...values,
-                      agreedToTerms: false,
-                      profileComplete: false,
-                    }); // The Convex Auth provider name
-                    // Redirect or update UI on success
-                    router.navigate({ to: '/' });
-                  } catch (error) {
-                    if (error instanceof Error) {
-                      if (error.message.includes('InvalidAccountId')) {
-                        return toast.error('Uh Oh!', {
-                          description: 'That account was not found.',
+                  signIn('password', {
+                    flow: 'signUp',
+                    ...values,
+                    agreedToTerms: false,
+                    profileComplete: false,
+                  })
+                    .then(() => router.navigate({ to: '/' }))
+                    .catch((error) => {
+                      if (error instanceof ConvexError) {
+                        return toast.error(error.data.name, {
+                          description: error.data.message,
                           duration: 2000,
                         });
                       }
 
-                      // Access the error message and display it to the user
-                      toast.error(error.name, {
+                      return toast.error(error.name, {
                         description: error.message,
                         duration: 2000,
                       });
-                    }
-                  }
+                    });
                 })}
                 className="flex flex-col w-full h-auto gap-5"
               >
