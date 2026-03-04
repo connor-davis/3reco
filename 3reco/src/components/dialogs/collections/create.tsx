@@ -98,8 +98,8 @@ export default function CreateCollectionDialog({
           )
         }
       />
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="w-screen max-w-screen-sm flex flex-col max-h-[90vh]">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Create Collection</DialogTitle>
           <DialogDescription>
             Select a collector and add one or more materials to record this
@@ -109,7 +109,7 @@ export default function CreateCollectionDialog({
 
         <form
           id="form-create-collection"
-          className="flex flex-col w-full h-auto gap-4"
+          className="flex flex-col w-full min-h-0 gap-4 flex-1"
           onSubmit={form.handleSubmit((values) =>
             toast.promise(
               createCollection({
@@ -142,7 +142,8 @@ export default function CreateCollectionDialog({
             )
           )}
         >
-          {/* Collector */}
+          {/* Collector — fixed, doesn't scroll */}
+          <div className="shrink-0">
           <Controller
             name="collectorId"
             control={form.control}
@@ -210,10 +211,11 @@ export default function CreateCollectionDialog({
               </Field>
             )}
           />
+          </div>
 
-          {/* Cart items */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
+          {/* Cart items — scrollable */}
+          <div className="flex flex-col gap-3 min-h-0 flex-1 overflow-hidden">
+            <div className="flex items-center justify-between shrink-0">
               <Label className="text-sm font-medium">Items</Label>
               <Button
                 type="button"
@@ -226,6 +228,7 @@ export default function CreateCollectionDialog({
               </Button>
             </div>
 
+            <div className="flex flex-col gap-3 overflow-y-auto pr-1">
             {fields.map((field, index) => (
               <FieldGroup
                 key={field.id}
@@ -342,9 +345,10 @@ export default function CreateCollectionDialog({
                 </div>
               </FieldGroup>
             ))}
+            </div>
           </div>
 
-          <Button type="submit">Create Collection</Button>
+          <Button type="submit" className="shrink-0">Create Collection</Button>
         </form>
       </DialogContent>
     </Dialog>
