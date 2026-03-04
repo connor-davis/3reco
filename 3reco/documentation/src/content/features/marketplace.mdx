@@ -1,0 +1,123 @@
+# Marketplace
+
+The marketplace is the core of 3reco — where businesses find and purchase recyclable materials from collectors (and other businesses).
+
+## Transaction Types
+
+| Type | Parties | Description |
+|---|---|---|
+| **C2B** | Collector → Business | Business purchases from a collector |
+| **B2B** | Business → Business | Business purchases surplus stock from another business |
+
+## Browsing Stock
+
+The marketplace displays all stock items where `isListed = true`. Each card shows:
+
+- Material name and GW code
+- Weight available (kg)
+- Price per kg (Rand)
+- Seller's display name or business name
+- **Request** button
+
+Listings can be filtered by material type.
+
+## Transaction Request Workflow
+
+### 1. Send Request (Business)
+
+```typescript
+await convex.mutation(api.transactionRequests.create, {
+  sellerId: stock.ownerId,
+  materialId: stock.materialId,
+  stockId: stock._id,
+})
+// Creates { status: "pending", buyerId: currentUser, sellerId: ... }
+```
+
+The seller (collector) receives an immediate real-time notification.
+
+### 2. Respond with Offer (Seller)
+
+The seller reviews the pending request and submits an offer:
+
+```typescript
+await convex.mutation(api.transactionRequests.makeOffer, {
+  requestId,
+  offerWeight: 200,   // kg
+  offerPrice: 8.75,   // R/kg
+})
+// Updates { status: "offered", offerWeight: 200, offerPrice: 8.75 }
+```
+
+The buyer receives a notification that an offer has been made.
+
+### 3. Accept or Reject (Buyer)
+
+**Accept:**
+```typescript
+await convex.mutation(api.transactionRequests.accept, { requestId })
+// Creates transaction record, generates invoice, updates stock
+// Sets { status: "accepted" }
+```
+
+**Reject:**
+```typescript
+await convex.mutation(api.transactionRequests.reject, { requestId })
+// Sets { status: "rejected" }
+```
+
+### 4. Cancel (Either party)
+
+Either party can cancel at any time before acceptance:
+
+```typescript
+await convex.mutation(api.transactionRequests.cancel, { requestId })
+// Sets { status: "cancelled" }
+```
+
+## Negotiation Messages
+
+While a request is `pending` or `offered`, both parties can exchange messages in a negotiation thread:
+
+```typescript
+// Send a message
+await convex.mutation(api.transactionRequestMessages.send, {
+  transactionId: requestId,
+  content: 'I can do 200 kg but need R9/kg for this grade.',
+})
+
+// Subscribe to the thread
+const messages = useQuery(api.transactionRequestMessages.list, { transactionId: requestId })
+```
+
+Messages are displayed in real time for both parties.
+
+## Request Status State Machine
+
+```
+         ┌─────────────────────┐
+         │        pending       │
+         └──────────┬──────────┘
+                    │ makeOffer
+                    ▼
+         ┌─────────────────────┐
+         │        offered       │
+         └──────┬──────────────┘
+          accept│       │reject
+                ▼       ▼
+           accepted  rejected
+
+         Any state + cancel → cancelled
+```
+
+## Real-Time Updates
+
+Because all queries are Convex subscriptions, both buyer and seller see status changes immediately:
+
+- When a seller submits an offer, the buyer's request card updates from "pending" to "offered" without a page refresh
+- When a buyer accepts, the seller's inventory reflects the completed sale instantly
+- Notifications fire automatically on each status transition
+
+<Callout type="note" title="Concurrent requests">
+  Multiple buyers can send requests for the same stock item simultaneously. The seller handles them independently. Only the first accepted request results in a transaction — the seller should cancel remaining open requests to keep their inbox clean.
+</Callout>

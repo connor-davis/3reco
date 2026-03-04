@@ -1,0 +1,95 @@
+# Notifications
+
+3reco delivers real-time in-app notifications to users whenever a relevant platform event occurs.
+
+## How Notifications Work
+
+Notifications are stored as documents in the `notifications` table and delivered reactively via Convex subscriptions. Because the frontend subscribes to the notification query, new notifications appear instantly without polling:
+
+```typescript
+// In any component
+const notifications = useQuery(api.notifications.listForUser)
+// Updates in real time whenever a new notification is inserted
+```
+
+A notification badge counter updates automatically in the header.
+
+## Notification Types
+
+| Type | Trigger | Recipient |
+|---|---|---|
+| `transactionRequest` | Buyer sends a new request | Seller |
+| `offer` | Seller submits an offer | Buyer |
+| `accepted` | Buyer accepts the offer | Seller |
+| `rejected` | Buyer rejects the offer | Seller |
+| `cancelled` | Either party cancels the request | The other party |
+| `transactionComplete` | Transaction is fully recorded | Both buyer & seller |
+
+## Notification Structure
+
+Each notification document contains:
+
+```typescript
+{
+  userId: Id<"users">,       // recipient
+  type: string,              // e.g. "offer"
+  title: string,             // e.g. "New offer received"
+  body: string,              // e.g. "Collector Jane submitted an offer: 200kg @ R8.75/kg"
+  link: string | undefined,  // e.g. "/requests/k1234..."
+  read: boolean,
+  dismissed: boolean,
+}
+```
+
+## User Actions on Notifications
+
+### Mark as Read
+
+```typescript
+await convex.mutation(api.notifications.markRead, { id: notificationId })
+// Sets { read: true }
+```
+
+### Dismiss
+
+```typescript
+await convex.mutation(api.notifications.dismiss, { id: notificationId })
+// Sets { dismissed: true } — removed from the visible feed
+```
+
+### Mark All as Read
+
+```typescript
+await convex.mutation(api.notifications.markAllRead)
+// Marks all of the current user's notifications as read
+```
+
+## Notification Feed UI
+
+The notification panel is accessible from the header bell icon. It shows:
+
+- Unread notifications highlighted with a green dot
+- Notification title, body, and relative timestamp
+- Link to the relevant page (e.g. the transaction request)
+- Dismiss button on each notification
+
+<Callout type="tip" title="Real-time badge">
+  The unread count badge on the bell icon is driven by a `useQuery` subscription on `notifications.countUnread`. It updates the moment a new notification is created — even if the user is on a different page.
+</Callout>
+
+## Creating Notifications (Server Side)
+
+Notifications are inserted as part of transaction mutations. For example, when a seller submits an offer:
+
+```typescript
+// Inside api.transactionRequests.makeOffer mutation
+await ctx.db.insert('notifications', {
+  userId: request.buyerId,  // notify the buyer
+  type: 'offer',
+  title: 'Offer received',
+  body: `${sellerName} submitted an offer: ${offerWeight}kg @ R${offerPrice}/kg`,
+  link: `/requests/${requestId}`,
+  read: false,
+  dismissed: false,
+})
+```

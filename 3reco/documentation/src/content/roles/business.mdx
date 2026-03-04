@@ -1,0 +1,79 @@
+# Business Users
+
+Business users are the buyers on the 3reco platform. They source recyclable materials from collectors (C2B transactions) and can also trade with other businesses (B2B transactions).
+
+## Onboarding
+
+After sign-up, a business user completes their profile:
+
+- Business name
+- Business registration number
+- Contact details (phone, address, city, province, area code)
+- Acceptance of terms
+
+Until `profileComplete` is `true`, the user is redirected to the profile completion form.
+
+## Business Dashboard
+
+The business dashboard shows spending and procurement analytics:
+
+| Stat | Calculation |
+|---|---|
+| **Total Spend** | Sum of `price × weight` for all purchases |
+| **Total Volume** | Sum of `weight` for all purchases (kg) |
+| **Carbon Savings** | Sum of `weight × material.carbonFactor` |
+| **Transaction Count** | Number of completed transactions as buyer |
+
+All stats support **date range filtering** so businesses can view monthly or quarterly reports.
+
+## Marketplace Workflow
+
+### Sending a Transaction Request (C2B)
+
+1. Browse the marketplace — stock listed by collectors appears here
+2. Click a stock item to view details (material, weight, price per kg)
+3. Send a **transaction request** — this creates a `transactionRequest` with `status: "pending"`
+4. The collector receives a real-time notification
+5. The collector responds with an **offer** (may adjust weight and price)
+6. The business can **accept** or **reject** the offer
+7. On acceptance, a `transaction` record is created and an invoice PDF is generated
+
+### Sending a Transaction Request (B2B)
+
+The flow is identical to C2B, but both parties are `type: "business"`. B2B transactions are tagged with `type: "b2b"` in the `transactions` table.
+
+## Stock Listings
+
+Business users can also list their own stock for B2B sales:
+
+```
+Business lists surplus stock (isListed: true)
+       ↓
+Another business finds it in marketplace
+       ↓
+Sends transaction request
+       ↓
+Negotiation → acceptance → B2B transaction
+```
+
+## Negotiation Messages
+
+During an active transaction request, both parties can exchange messages:
+
+```typescript
+await convex.mutation(api.transactionRequestMessages.send, {
+  transactionId: requestId,
+  content: 'Can you do 500kg at R8.50/kg?',
+})
+```
+
+Messages appear in real time in the negotiation thread and are stored against the `transactionRequests` document.
+
+## Transaction History
+
+Businesses can view all their completed transactions, filtered by:
+- Date range
+- Transaction type (C2B / B2B)
+- Material
+
+Each transaction links to the auto-generated **PDF invoice** stored in Convex file storage.

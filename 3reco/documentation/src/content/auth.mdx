@@ -1,0 +1,118 @@
+# Authentication
+
+3reco uses [`@convex-dev/auth`](https://labs.convex.dev/auth) for authentication — a first-party Convex authentication library that stores sessions directly in the Convex database.
+
+## How It Works
+
+Authentication is **fully server-side** within Convex. There is no separate auth service or JWT issuer — sessions are stored as Convex documents and validated on every request.
+
+```
+Browser                    Convex Backend
+  │                              │
+  │── sign in (email+pw) ───────▶│
+  │                        validate credentials
+  │                        create session document
+  │◀── session token ───────────│
+  │                              │
+  │── query/mutation + token ───▶│
+  │                        getAuthUserId(ctx) → userId
+  │◀── data ────────────────────│
+```
+
+## Configuration
+
+Authentication is configured in `convex/auth.ts`:
+
+```typescript
+import { convexAuth } from '@convex-dev/auth/server'
+import { Password } from '@convex-dev/auth/providers/Password'
+
+export const { auth, signIn, signOut, store } = convexAuth({
+  providers: [Password],
+})
+```
+
+The `auth` object is used in `convex/http.ts` to expose the auth HTTP handler.
+
+## Sign In / Sign Up
+
+On the frontend, the auth UI uses hooks from `@convex-dev/auth/react`:
+
+```typescript
+import { useAuthActions } from '@convex-dev/auth/react'
+
+const { signIn, signOut } = useAuthActions()
+
+// Sign up
+await signIn('password', { email, password, flow: 'signUp' })
+
+// Sign in
+await signIn('password', { email, password, flow: 'signIn' })
+
+// Sign out
+await signOut()
+```
+
+## Protecting Convex Functions
+
+Use `getAuthUserId` inside any query or mutation to retrieve the authenticated user's ID:
+
+```typescript
+import { getAuthUserId } from '@convex-dev/auth/server'
+import { mutation } from './_generated/server'
+
+export const createStock = mutation({
+  args: { materialId: v.id('materials'), weight: v.number(), price: v.number() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new Error('Must be signed in')
+
+    return await ctx.db.insert('stock', {
+      ownerId: userId,
+      ...args,
+      isListed: false,
+    })
+  },
+})
+```
+
+## User Type Verification
+
+After sign-in, new users are redirected to an onboarding flow where they choose their role (Business or Collector). Admin assigns the `type` field via a dedicated mutation:
+
+```typescript
+// Admin-only mutation
+export const setType = mutation({
+  args: { id: v.id('users'), type: v.union(v.literal('admin'), v.literal('staff'), ...) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    const user = await ctx.db.get(userId)
+    if (user?.type !== 'admin') throw new Error('Forbidden')
+    await ctx.db.patch(args.id, { type: args.type })
+  },
+})
+```
+
+<Callout type="tip" title="Profile completion gate">
+  Routes check `profileComplete` on the current user. If `false`, the user is redirected to the profile completion form before accessing the main app.
+</Callout>
+
+## Session Persistence
+
+Sessions are persisted in `localStorage` by `@convex-dev/auth`. On page reload, the client automatically re-authenticates using the stored token.
+
+To check auth status in React:
+
+```typescript
+import { Authenticated, Unauthenticated, AuthLoading } from 'convex/react'
+
+function App() {
+  return (
+    <>
+      <AuthLoading><Spinner /></AuthLoading>
+      <Unauthenticated><SignInPage /></Unauthenticated>
+      <Authenticated><MainApp /></Authenticated>
+    </>
+  )
+}
+```

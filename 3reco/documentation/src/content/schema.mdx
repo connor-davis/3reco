@@ -1,0 +1,137 @@
+# Database Schema
+
+3reco's database is defined in `convex/schema.ts` using Convex's schema builder. All tables are strongly typed end-to-end — from the Convex validator through to React components.
+
+## Tables
+
+### `users`
+
+Stores all platform users. Extended from `@convex-dev/auth` base user fields.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` (optional) | Display name |
+| `email` | `string` (optional) | Email address |
+| `phone` | `string` (optional) | Phone number |
+| `type` | `"admin" \| "staff" \| "business" \| "collector"` (optional) | User role |
+| `profileComplete` | `boolean` (optional) | Whether the user completed onboarding |
+| `agreedToTerms` | `boolean` (optional) | Terms of service acceptance |
+| `firstName` | `string` (optional) | First name |
+| `lastName` | `string` (optional) | Last name |
+| `idNumber` | `string` (optional) | National ID / registration number |
+| `businessName` | `string` (optional) | Business trading name |
+| `businessRegistrationNumber` | `string` (optional) | Company registration number |
+| `streetAddress` | `string` (optional) | Street address |
+| `city` | `string` (optional) | City |
+| `areaCode` | `string` (optional) | Postal / area code |
+| `province` | `string` (optional) | Province or state |
+| `image` | `string` (optional) | Profile image URL |
+
+### `materials`
+
+Recyclable material definitions managed by admin/staff.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Material name (e.g. "PET Plastic") |
+| `carbonFactor` | `number` | kg CO₂ saved per kg of material recycled |
+| `gwCode` | `string` | Green waste / material classification code |
+| `price` | `number` | Default price per kg (Rand) |
+
+### `stock`
+
+Individual stock items listed by collectors (or businesses for B2B).
+
+| Field | Type | Description |
+|---|---|---|
+| `ownerId` | `Id<"users">` | User who owns this stock |
+| `materialId` | `Id<"materials">` | Material type |
+| `weight` | `number` | Weight in kg |
+| `price` | `number` | Asking price per kg |
+| `isListed` | `boolean` | Whether visible in the marketplace |
+
+### `transactions`
+
+Completed sales records.
+
+| Field | Type | Description |
+|---|---|---|
+| `sellerId` | `Id<"users">` | Seller (collector or business) |
+| `buyerId` | `Id<"users">` | Buyer (business) |
+| `materialId` | `Id<"materials">` | Material sold |
+| `weight` | `number` | Weight transacted in kg |
+| `price` | `number` | Agreed price per kg |
+| `type` | `"c2b" \| "b2b"` | Collector-to-Business or Business-to-Business |
+| `invoiceStorageId` | `Id<"_storage">` (optional) | Convex storage ID for the PDF invoice |
+
+**Total value** = `price × weight`
+
+### `transactionRequests`
+
+Pending negotiations between buyer and seller.
+
+| Field | Type | Description |
+|---|---|---|
+| `sellerId` | `Id<"users">` | The party receiving the request |
+| `buyerId` | `Id<"users">` | The party initiating the request |
+| `materialId` | `Id<"materials">` | Requested material |
+| `status` | `"pending" \| "offered" \| "accepted" \| "rejected" \| "cancelled"` | Current negotiation state |
+| `offerWeight` | `number` (optional) | Weight proposed in the offer |
+| `offerPrice` | `number` (optional) | Price per kg proposed in the offer |
+
+**Status machine:**
+
+```
+pending → offered → accepted
+                 ↘ rejected
+pending → cancelled
+offered → cancelled
+```
+
+### `transactionRequestMessages`
+
+Chat messages attached to a transaction request (negotiation thread).
+
+| Field | Type | Description |
+|---|---|---|
+| `transactionId` | `Id<"transactionRequests">` | Parent request |
+| `senderId` | `Id<"users">` | Message author |
+| `content` | `string` | Message body |
+
+### `notifications`
+
+In-app notification feed entries.
+
+| Field | Type | Description |
+|---|---|---|
+| `userId` | `Id<"users">` | Recipient |
+| `type` | `string` | Notification category (e.g. `"transactionRequest"`, `"offer"`, `"accepted"`) |
+| `title` | `string` | Short heading |
+| `body` | `string` | Notification body text |
+| `link` | `string` (optional) | Deep-link path within the app |
+| `read` | `boolean` | Whether the user has opened it |
+| `dismissed` | `boolean` | Whether the user dismissed it from the feed |
+
+## Indexes
+
+Convex queries are optimized via indexes defined in `schema.ts`. Key indexes include:
+
+```typescript
+stock: defineTable({ ... })
+  .index('by_owner', ['ownerId'])
+  .index('by_material', ['materialId'])
+  .index('by_listed', ['isListed']),
+
+transactions: defineTable({ ... })
+  .index('by_seller', ['sellerId'])
+  .index('by_buyer', ['buyerId']),
+
+transactionRequests: defineTable({ ... })
+  .index('by_seller', ['sellerId'])
+  .index('by_buyer', ['buyerId'])
+  .index('by_status', ['status']),
+
+notifications: defineTable({ ... })
+  .index('by_user', ['userId'])
+  .index('by_user_and_dismissed', ['userId', 'dismissed']),
+```

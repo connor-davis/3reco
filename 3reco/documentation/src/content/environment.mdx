@@ -1,0 +1,64 @@
+# Environment Variables
+
+3reco uses Vite's environment variable system. Variables prefixed with `VITE_` are exposed to the browser bundle; all others remain server-side only.
+
+## `.env.local` (required)
+
+Create this file at `3reco/.env.local` (never commit it):
+
+```bash
+VITE_CONVEX_URL=https://<your-deployment>.convex.cloud
+```
+
+<Callout type="note">
+  Vite automatically loads `.env.local` during `bun run dev` and `bun run build`. It takes precedence over `.env`.
+</Callout>
+
+## Variable Reference
+
+### `VITE_CONVEX_URL`
+
+| Property | Value |
+|---|---|
+| **Required** | Yes |
+| **Exposed to browser** | Yes (VITE_ prefix) |
+| **Example** | `https://abcd1234.convex.cloud` |
+
+The URL of your Convex deployment. You can find this in the [Convex dashboard](https://dashboard.convex.dev) under your project's **Settings → URL & Deploy Key**.
+
+The Convex React client is initialized with this URL in `src/main.tsx`:
+
+```typescript
+import { ConvexProvider, ConvexReactClient } from 'convex/react'
+
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
+```
+
+## Environment Files Loading Order
+
+Vite loads environment files in this order (later files override earlier ones):
+
+```
+.env                  ← always loaded
+.env.local            ← always loaded, git-ignored
+.env.[mode]           ← loaded in specific mode (e.g. .env.production)
+.env.[mode].local     ← loaded in specific mode, git-ignored
+```
+
+For most development setups, only `.env.local` is needed.
+
+## TypeScript Typing
+
+The `VITE_CONVEX_URL` variable is available as `import.meta.env.VITE_CONVEX_URL` (type `string`). Vite's `vite/client` types provide `ImportMetaEnv` — you can extend it in `src/vite-env.d.ts`:
+
+```typescript
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_CONVEX_URL: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}
+```

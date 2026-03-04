@@ -3,6 +3,7 @@ import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
+import { txByType, txByMaterial } from './aggregates';
 
 export default defineTable({
   sellerId: v.id('users'),
@@ -203,6 +204,12 @@ export const acceptOffer = mutation({
       price,
       type: 'b2b',
     });
+
+    const newDoc = await ctx.db.get('transactions', transactionId);
+    if (newDoc) {
+      await txByType.insert(ctx, newDoc);
+      await txByMaterial.insert(ctx, newDoc);
+    }
 
     await ctx.scheduler.runAfter(0, internal.invoices.generateForTransaction, {
       transactionId,

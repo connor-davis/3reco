@@ -1,0 +1,127 @@
+# Transactions API
+
+The `transactions` module provides read access to completed transaction records and write mutations for direct (admin-facilitated) sales. All functions are in `convex/transactions.ts`.
+
+<Callout type="note">
+  Most transactions are created automatically via `api.transactionRequests.accept`. The direct sale mutations below are primarily for admin data entry.
+</Callout>
+
+## Queries
+
+### `list()`
+
+Returns all transactions. **Admin / Staff only.**
+
+```typescript
+const allTransactions = useQuery(api.transactions.list)
+```
+
+**Returns:** `Doc<"transactions">[]`
+
+---
+
+### `listSales(opts?)`
+
+Returns transactions where the current user is the **seller**.
+
+```typescript
+const sales = useQuery(api.transactions.listSales, {
+  startDate: '2024-01-01T00:00:00.000Z',
+  endDate: '2024-12-31T23:59:59.999Z',
+})
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `startDate` | `string` (ISO 8601) | No |
+| `endDate` | `string` (ISO 8601) | No |
+
+**Returns:** `Doc<"transactions">[]` filtered by `sellerId = currentUser`
+
+**Access:** Collector, Business, Admin
+
+---
+
+### `listExpenses(opts?)`
+
+Returns transactions where the current user is the **buyer**.
+
+```typescript
+const expenses = useQuery(api.transactions.listExpenses, {
+  startDate: '2024-01-01T00:00:00.000Z',
+  endDate: '2024-12-31T23:59:59.999Z',
+})
+```
+
+**Args:** Same as `listSales`.
+
+**Returns:** `Doc<"transactions">[]` filtered by `buyerId = currentUser`
+
+**Access:** Business, Admin
+
+---
+
+### `getInvoiceUrl(transactionId)`
+
+Returns a temporary signed URL for downloading the transaction's PDF invoice.
+
+```typescript
+const url = useQuery(api.transactions.getInvoiceUrl, {
+  transactionId: transaction._id,
+})
+// url is valid for ~1 hour
+```
+
+**Returns:** `string | null` — `null` if invoice hasn't been generated yet
+
+---
+
+## Mutations
+
+### `collectorToBusinessSale(fields)`
+
+Creates a C2B transaction directly. **Admin only.**
+
+```typescript
+await convex.mutation(api.transactions.collectorToBusinessSale, {
+  sellerId: collectorId,
+  buyerId: businessId,
+  materialId,
+  weight: 500,
+  price: 8.50,
+})
+```
+
+**Args:**
+
+| Field | Type | Description |
+|---|---|---|
+| `sellerId` | `Id<"users">` | Collector's user ID |
+| `buyerId` | `Id<"users">` | Business's user ID |
+| `materialId` | `Id<"materials">` | Material sold |
+| `weight` | `number` | Weight in kg |
+| `price` | `number` | Price per kg (Rand) |
+
+Sets `type: "c2b"` automatically.
+
+---
+
+### `businessToBusinessSale(fields)`
+
+Creates a B2B transaction directly. **Admin only.**
+
+```typescript
+await convex.mutation(api.transactions.businessToBusinessSale, {
+  sellerId: businessAId,
+  buyerId: businessBId,
+  materialId,
+  weight: 1000,
+  price: 7.20,
+})
+```
+
+**Args:** Same as `collectorToBusinessSale`. Sets `type: "b2b"` automatically.
+
+Both mutations trigger invoice generation as a scheduled action after insertion.

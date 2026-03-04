@@ -19,6 +19,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const lineChartConfig = {
@@ -58,7 +59,8 @@ export default function CollectorDashboard() {
   return (
     <div className="flex flex-col gap-6">
       {/* Date range filter */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <Label className="text-lg">Dashboard</Label>
         <DateRangePicker value={dateRange} onChange={setDateRange} placeholder="All time" />
       </div>
 

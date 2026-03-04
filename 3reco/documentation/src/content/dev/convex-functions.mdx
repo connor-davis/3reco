@@ -1,0 +1,225 @@
+# Writing Convex Functions
+
+All backend logic in 3reco lives in the `convex/` directory. This guide explains how to write queries, mutations, and actions following the patterns already established in the codebase.
+
+## File Layout
+
+Each domain has its own file. The schema table it owns is exported as `default` from that file and imported in `convex/schema.ts`:
+
+```
+convex/
+├── schema.ts                  ← imports all table definitions
+├── users.ts                   ← export default = users table + user functions
+├── stock.ts                   ← export default = stock table + stock functions
+├── materials.ts               ← ...
+├── transactions.ts
+├── transactionRequests.ts
+├── transactionRequestMessages.ts
+├── notifications.ts
+├── dashboard.ts               ← queries only, no table
+├── exports.ts                 ← queries only
+├── invoices.ts                ← internal action
+├── aggregates.ts              ← aggregate instances
+└── convex.config.ts           ← registers aggregate components
+```
+
+## Queries
+
+Queries are read-only and **reactive** — every client subscribed to a query automatically re-renders when the underlying data changes.
+
+```typescript
+import { query } from './_generated/server'
+import { v } from 'convex/values'
+
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query('stock').collect()
+  },
+})
+
+// With arguments
+export const findById = query({
+  args: { _id: v.id('stock') },
+  handler: async (ctx, { _id }) => {
+    return await ctx.db.get('stock', _id)
+  },
+})
+```
+
+### Paginated queries
+
+Use `paginationOptsValidator` for cursor-based pagination:
+
+```typescript
+import { paginationOptsValidator } from 'convex/server'
+
+export const listWithPagination = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
+    return await ctx.db
+      .query('stock')
+      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId))
+      .order('desc')
+      .paginate(paginationOpts)
+  },
+})
+```
+
+On the frontend, use `usePaginatedQuery`:
+
+```typescript
+const { results, loadMore, status } = usePaginatedQuery(
+  api.stock.listWithPagination,
+  {},
+  { initialNumItems: 20 },
+)
+```
+
+## Mutations
+
+Mutations write data and run as database transactions. If any part throws, the entire mutation is rolled back.
+
+```typescript
+import { mutation } from './_generated/server'
+import { ConvexError, v } from 'convex/values'
+
+export const create = mutation({
+  args: {
+    materialId: v.id('materials'),
+    weight: v.number(),
+    price: v.number(),
+  },
+  handler: async (ctx, { materialId, weight, price }) => {
+    // 1. Authenticate
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'Not signed in.' })
+
+    const [userId] = identity.subject.split('|')
+
+    // 2. Validate business rules
+    const material = await ctx.db.get('materials', materialId)
+    if (!material)
+      throw new ConvexError({ name: 'Not Found', message: 'Material not found.' })
+    if (price < material.price)
+      throw new ConvexError({ name: 'Invalid Input', message: 'Price below minimum.' })
+
+    // 3. Write
+    return await ctx.db.insert('stock', {
+      ownerId: userId as Id<'users'>,
+      materialId,
+      weight,
+      price,
+      isListed: false,
+    })
+  },
+})
+```
+
+## Validators
+
+Use `v` from `convex/values` to declare argument types. These are validated at runtime and inferred by TypeScript:
+
+```typescript
+import { v } from 'convex/values'
+
+v.string()           // string
+v.number()           // number
+v.boolean()          // boolean
+v.id('tableName')    // typed document ID
+v.optional(v.string()) // string | undefined
+v.union(
+  v.literal('a'),
+  v.literal('b')
+)                    // 'a' | 'b'
+v.array(v.string())  // string[]
+v.object({ x: v.number(), y: v.number() }) // { x: number, y: number }
+```
+
+## Authentication Pattern
+
+Every function that requires a signed-in user follows the same pattern:
+
+```typescript
+const identity = await ctx.auth.getUserIdentity()
+if (!identity)
+  throw new ConvexError({ name: 'Unauthorized', message: 'Not signed in.' })
+
+const [userId] = identity.subject.split('|')
+// userId is the Id<'users'> string
+```
+
+For role checks, load the user document and check `type`:
+
+```typescript
+const user = await ctx.db.get('users', userId as Id<'users'>)
+if (!user || user.type !== 'admin')
+  throw new ConvexError({ name: 'Unauthorized', message: 'Admins only.' })
+```
+
+<Callout type="note" title="Why identity.subject.split('|')">
+  `@convex-dev/auth` stores the user ID as the first segment of `identity.subject`. The split strips any provider suffix.
+</Callout>
+
+## Database Operations
+
+```typescript
+// Read a single document by ID
+const doc = await ctx.db.get('tableName', id)
+
+// Query with index
+const results = await ctx.db
+  .query('stock')
+  .withIndex('by_ownerId', (q) => q.eq('ownerId', userId))
+  .order('desc')
+  .collect()
+
+// First result only
+const first = await ctx.db
+  .query('stock')
+  .withIndex('by_ownerId_by_materialId', (q) =>
+    q.eq('ownerId', userId).eq('materialId', materialId)
+  )
+  .first()
+
+// Insert
+const newId = await ctx.db.insert('tableName', { field: value })
+
+// Patch (partial update)
+await ctx.db.patch('tableName', id, { field: newValue })
+
+// Delete
+await ctx.db.delete('tableName', id)
+```
+
+## Adding a New Table
+
+1. Define the table in its own file:
+
+```typescript
+// convex/widgets.ts
+import { defineTable } from 'convex/server'
+import { v } from 'convex/values'
+
+export default defineTable({
+  name: v.string(),
+  ownerId: v.id('users'),
+}).index('by_owner', ['ownerId'])
+
+export const list = query({ ... })
+export const create = mutation({ ... })
+```
+
+2. Register it in `convex/schema.ts`:
+
+```typescript
+import widgets from './widgets'
+
+export default defineSchema({
+  // ... existing tables
+  widgets,
+})
+```
+
+3. Run `bunx convex dev` — the schema is pushed and `_generated/` types update automatically.

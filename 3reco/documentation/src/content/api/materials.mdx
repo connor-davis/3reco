@@ -1,0 +1,121 @@
+# Materials API
+
+The `materials` module manages the catalogue of recyclable material types. All functions are in `convex/materials.ts`.
+
+## Queries
+
+### `list()`
+
+Returns all materials, ordered by name.
+
+```typescript
+const materials = useQuery(api.materials.list)
+```
+
+**Returns:** `Doc<"materials">[]`
+
+**Access:** All authenticated users
+
+---
+
+### `listWithPagination(paginationOpts)`
+
+Returns materials with cursor-based pagination. Useful for admin tables with large datasets.
+
+```typescript
+import { usePaginatedQuery } from 'convex/react'
+
+const { results, loadMore, status } = usePaginatedQuery(
+  api.materials.listWithPagination,
+  {},
+  { initialNumItems: 20 },
+)
+```
+
+**Returns:** Paginated `Doc<"materials">[]`
+
+**Access:** Admin, Staff
+
+---
+
+### `findById(id)`
+
+Returns a single material by ID.
+
+```typescript
+const material = useQuery(api.materials.findById, { id: materialId })
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `id` | `Id<"materials">` | Yes |
+
+**Returns:** `Doc<"materials"> | null`
+
+---
+
+## Mutations
+
+### `create(fields)`
+
+Creates a new material. **Admin / Staff only.**
+
+```typescript
+await convex.mutation(api.materials.create, {
+  name: 'PET Plastic',
+  gwCode: 'PET-01',
+  price: 8.50,
+  carbonFactor: 1.7,
+})
+```
+
+**Args:**
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Display name |
+| `gwCode` | `string` | Green waste classification code |
+| `price` | `number` | Default price per kg (Rand) |
+| `carbonFactor` | `number` | kg CO₂ saved per kg recycled |
+
+**Returns:** `Id<"materials">`
+
+---
+
+### `update(id, fields)`
+
+Updates an existing material. **Admin / Staff only.**
+
+```typescript
+await convex.mutation(api.materials.update, {
+  id: materialId,
+  price: 9.00,
+  carbonFactor: 1.75,
+})
+```
+
+**Args:** Same as `create` plus `id: Id<"materials">`. All non-id fields are optional.
+
+<Callout type="note">
+  Updating a material's price only affects new stock listings. Existing stock items retain their own `price` field.
+</Callout>
+
+---
+
+### `remove(id)`
+
+Deletes a material. **Admin only.**
+
+```typescript
+await convex.mutation(api.materials.remove, { id: materialId })
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `id` | `Id<"materials">` | Yes |
+
+**Throws:** If any stock items reference this material (foreign key guard).

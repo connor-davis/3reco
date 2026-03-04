@@ -1,0 +1,85 @@
+# Collector Users
+
+Collectors are the sellers on the 3reco platform. They add recyclable material stock, receive purchase requests from businesses, negotiate terms, and complete sales.
+
+## Onboarding
+
+Collectors complete their profile with:
+
+- First name, last name
+- ID number
+- Contact details (phone, address, city, province, area code)
+- Acceptance of terms
+
+`profileComplete` is set to `true` after the form is submitted, unlocking access to the full app.
+
+## Collector Dashboard
+
+The collector dashboard shows revenue and sales analytics:
+
+| Stat | Calculation |
+|---|---|
+| **Total Revenue** | Sum of `price × weight` for all sales |
+| **Total Volume** | Sum of `weight` for all sales (kg) |
+| **Carbon Savings** | Sum of `weight × material.carbonFactor` |
+| **Transaction Count** | Number of completed transactions as seller |
+
+Date range filtering is available for all stats.
+
+## Managing Stock
+
+### Adding Stock
+
+Collectors add stock items representing physical recyclable material they have on hand:
+
+```typescript
+await convex.mutation(api.stock.create, {
+  materialId: 'k1234...',   // selected from materials list
+  weight: 250,              // kg
+  price: 8.50,              // R per kg
+})
+```
+
+Each stock item is private (`isListed: false`) by default.
+
+### Listing Stock
+
+To make stock visible in the marketplace:
+
+```typescript
+await convex.mutation(api.stock.update, {
+  id: stockId,
+  isListed: true,
+})
+```
+
+Listed stock appears in the marketplace for businesses to browse and request.
+
+### Editing / Removing Stock
+
+Collectors can update weight, price, and listing status at any time. Removing a stock item that has an active transaction request is blocked until the request is resolved.
+
+## Receiving Transaction Requests
+
+When a business sends a request for listed stock:
+
+1. Collector receives a **real-time notification**
+2. The request appears in the collector's **Requests** inbox with `status: "pending"`
+3. Collector reviews the request details (which material, requested weight)
+4. Collector submits an **offer**: sets `offerWeight` and `offerPrice`
+5. Status changes to `"offered"` and the business is notified
+6. If the business **accepts**, status → `"accepted"` and the transaction is completed
+7. If the business **rejects**, status → `"rejected"` and stock becomes available again
+
+## Transaction History
+
+After a sale completes:
+
+- A `transaction` document is created with `type: "c2b"`
+- Stock weight is decremented or the stock item is marked as sold
+- A PDF invoice is generated and stored in Convex file storage
+- Both parties can download the invoice from their transaction history
+
+<Callout type="tip" title="Multiple requests">
+  A collector may receive requests from multiple businesses for the same stock. They can review and respond to each independently. Accepting one does not automatically cancel others — the collector should manually cancel remaining open requests after completing a sale.
+</Callout>

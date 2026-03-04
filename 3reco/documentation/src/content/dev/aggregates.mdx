@@ -1,0 +1,149 @@
+# Aggregates
+
+3reco uses the [`@convex-dev/aggregate`](https://www.convex.dev/components/aggregate) component to compute platform-wide statistics efficiently without full table scans.
+
+## Why Aggregates?
+
+Convex queries are reactive but not designed for `COUNT` or `SUM` operations over large tables. Scanning an entire `transactions` table on every dashboard load would be slow and expensive.
+
+The aggregate component maintains **pre-computed counters and sums** in a balanced tree structure. Reads are `O(log n)` regardless of how many documents are in the table.
+
+## Current Aggregates
+
+Two aggregate instances are configured in `convex/aggregates.ts`:
+
+### `txByType`
+
+Groups transactions by `type` (`c2b` or `b2b`).
+
+```typescript
+export const txByType = new TableAggregate<{
+  Namespace: string   // 'c2b' | 'b2b'
+  Key: number         // _creationTime (ms) — enables time-range queries
+  DataModel: DataModel
+  TableName: 'transactions'
+}>((components as any).txByType, {
+  namespace: (doc) => doc.type,
+  sortKey: (doc) => doc._creationTime,
+  sumValue: (doc) => doc.weight,
+})
+```
+
+Used to answer: *"How many c2b transactions were there in March, and what was their total weight?"*
+
+### `txByMaterial`
+
+Groups transactions by `materialId`.
+
+```typescript
+export const txByMaterial = new TableAggregate<{
+  Namespace: string   // materialId
+  Key: number         // _creationTime
+  DataModel: DataModel
+  TableName: 'transactions'
+}>((components as any).txByMaterial, {
+  namespace: (doc) => doc.materialId,
+  sortKey: (doc) => doc._creationTime,
+  sumValue: (doc) => doc.weight,
+})
+```
+
+Used to answer: *"What is the total weight of PET Plastic traded across all time?"*
+
+## Using Aggregates in Queries
+
+```typescript
+import { txByType } from './aggregates'
+
+// Count with optional time-range bounds
+const count = await txByType.count(ctx, {
+  namespace: 'c2b',
+  bounds: {
+    lower: { key: startTs, inclusive: true },
+    upper: { key: endTs, inclusive: true },
+  },
+})
+
+// Sum (total weight)
+const totalWeight = await txByType.sum(ctx, {
+  namespace: 'c2b',
+})
+
+// No bounds = all time
+const allTimeBbCount = await txByType.count(ctx, { namespace: 'b2b' })
+```
+
+## Keeping Aggregates in Sync
+
+Aggregates are **not** updated automatically — you must call `.insert()`, `.delete()`, or `.replace()` whenever the underlying documents change.
+
+### On insert
+
+```typescript
+// After inserting a transaction
+const transactionId = await ctx.db.insert('transactions', { ... })
+const newDoc = await ctx.db.get('transactions', transactionId)
+if (newDoc) {
+  await txByType.insert(ctx, newDoc)
+  await txByMaterial.insert(ctx, newDoc)
+}
+```
+
+### On delete
+
+```typescript
+const existing = await ctx.db.get('transactions', id)
+if (existing) {
+  await txByType.delete(ctx, existing)
+  await txByMaterial.delete(ctx, existing)
+}
+await ctx.db.delete('transactions', id)
+```
+
+### On update (replace)
+
+```typescript
+await txByType.replace(ctx, oldDoc, newDoc)
+```
+
+<Callout type="warning" title="Always sync both directions">
+  If you forget to call `.insert()` or `.delete()` after a mutation, aggregate counts will drift from reality. Every mutation that creates or deletes a `transactions` document must update all relevant aggregates.
+</Callout>
+
+<Callout type="danger" title="Sync every code path — not just one file">
+  Transactions can be created from **multiple mutation files**. In 3reco, both `convex/transactions.ts` (direct sales) and `convex/transactionRequests.ts` (negotiated B2B sales) insert into the `transactions` table. Both must call `txByType.insert` and `txByMaterial.insert`. Missing a single code path causes silent drift — the aggregate returns zero for those transactions and the dashboard shows incorrect totals.
+</Callout>
+
+## Adding a New Aggregate
+
+1. Register the component in `convex/convex.config.ts`:
+
+```typescript
+import { defineApp } from 'convex/server'
+import aggregate from '@convex-dev/aggregate/convex.config.js'
+
+const app = defineApp()
+app.use(aggregate, { name: 'txByType' })
+app.use(aggregate, { name: 'txByMaterial' })
+app.use(aggregate, { name: 'myNewAggregate' })  // add here
+export default app
+```
+
+2. Define the instance in `convex/aggregates.ts`:
+
+```typescript
+export const myNewAggregate = new TableAggregate<{
+  Namespace: string
+  Key: number
+  DataModel: DataModel
+  TableName: 'transactions'
+}>((components as any).myNewAggregate, {
+  namespace: (doc) => doc.sellerId,
+  sortKey: (doc) => doc._creationTime,
+  sumValue: (doc) => doc.weight,
+})
+```
+
+3. Import and call `.insert()` / `.delete()` in every mutation that writes to that table.
+
+4. Run `bunx convex dev` to push the updated config and generate new types.

@@ -7,12 +7,24 @@ function toDateString(ts: number): string {
   return new Date(ts).toISOString().split('T')[0];
 }
 
+/**
+ * CO2 savings formula: (Baseline Activity - New Activity) * Carbon Factor
+ * Baseline Activity = weight that would have gone to conventional disposal
+ * New Activity      = 0 (all traded material is diverted from conventional disposal)
+ * Result            = weight * carbonFactor
+ */
+function co2Savings(baselineActivity: number, newActivity: number, carbonFactor: string): number {
+  const factor = Number(carbonFactor);
+  if (isNaN(factor)) return 0;
+  return (baselineActivity - newActivity) * factor;
+}
+
 function daysBetween(fromTs: number, toTs: number): string[] {
   const days: string[] = [];
   const start = new Date(fromTs);
-  start.setHours(0, 0, 0, 0);
+  start.setUTCHours(0, 0, 0, 0);
   const end = new Date(toTs);
-  end.setHours(0, 0, 0, 0);
+  end.setUTCHours(23, 59, 59, 999);
   const max = Math.min(end.getTime(), start.getTime() + 365 * 24 * 60 * 60 * 1000);
   let current = start.getTime();
   while (current <= max) {
@@ -146,32 +158,20 @@ export const businessStats = query({
       .withIndex('by_buyerId', (q) => q.eq('buyerId', userId as Id<'users'>))
       .order('desc')
       .collect();
-    const asSeller = await ctx.db
-      .query('transactions')
-      .withIndex('by_sellerId', (q) => q.eq('sellerId', userId as Id<'users'>))
-      .order('desc')
-      .collect();
-
-    const allMap = new Map<string, (typeof asBuyer)[0]>();
-    for (const t of [...asBuyer, ...asSeller]) allMap.set(t._id, t);
-    const allTransactions = [...allMap.values()].sort((a, b) => b._creationTime - a._creationTime);
-
-    const filteredTransactions = hasRange
-      ? allTransactions.filter((t) => t._creationTime >= from! && t._creationTime <= to!)
-      : allTransactions;
+    const filteredBuyer = hasRange
+      ? asBuyer.filter((t) => t._creationTime >= from! && t._creationTime <= to!)
+      : asBuyer;
 
     const chartFrom = hasRange ? from! : defaultChartFrom;
     const chartTo = hasRange ? to! : Date.now();
-    const chartTransactions = hasRange
-      ? filteredTransactions
-      : allTransactions.filter((t) => t._creationTime >= defaultChartFrom);
+    const chartBuyer = asBuyer.filter(
+      (t) => t._creationTime >= chartFrom && t._creationTime <= chartTo
+    );
 
     const latestTransactions = await Promise.all(
-      filteredTransactions.slice(0, 5).map(async (t) => {
+      filteredBuyer.slice(0, 5).map(async (t) => {
         const material = await ctx.db.get('materials', t.materialId);
-        const isBuying = t.buyerId === (userId as Id<'users'>);
-        const counterpartyId = isBuying ? t.sellerId : t.buyerId;
-        const counterparty = await ctx.db.get('users', counterpartyId);
+        const counterparty = await ctx.db.get('users', t.sellerId);
         return {
           _id: t._id,
           _creationTime: t._creationTime,
@@ -180,7 +180,7 @@ export const businessStats = query({
           price: t.price,
           materialName: material?.name ?? 'Unknown',
           counterpartyName: getUserDisplayName(counterparty),
-          direction: isBuying ? ('buy' as const) : ('sell' as const),
+          direction: 'buy' as const,
         };
       })
     );
@@ -188,7 +188,7 @@ export const businessStats = query({
     const days = daysBetween(chartFrom, chartTo);
     const dayMap: Record<string, { count: number; volume: number }> = {};
     for (const d of days) dayMap[d] = { count: 0, volume: 0 };
-    for (const t of chartTransactions) {
+    for (const t of chartBuyer) {
       const d = toDateString(t._creationTime);
       if (!dayMap[d]) continue;
       dayMap[d].count++;
@@ -196,19 +196,16 @@ export const businessStats = query({
     }
     const dailyTransactions = days.map((d) => ({ date: d, ...dayMap[d] }));
 
-    const filteredBuyer = hasRange
-      ? asBuyer.filter((t) => t._creationTime >= from! && t._creationTime <= to!)
-      : asBuyer;
     let carbonSavings = 0;
     for (const t of filteredBuyer) {
       const material = await ctx.db.get('materials', t.materialId);
-      if (material) carbonSavings += t.weight * parseFloat(material.carbonFactor);
+      if (material) carbonSavings += co2Savings(t.weight, 0, material.carbonFactor);
     }
 
     const totals = {
-      totalSpend: filteredBuyer.reduce((s, t) => s + t.price, 0),
-      totalVolume: filteredTransactions.reduce((s, t) => s + t.weight, 0),
-      transactionCount: filteredTransactions.length,
+      totalSpend: filteredBuyer.reduce((s, t) => s + t.price * t.weight, 0),
+      totalVolume: filteredBuyer.reduce((s, t) => s + t.weight, 0),
+      transactionCount: filteredBuyer.length,
     };
 
     const stockItems = await ctx.db
@@ -289,11 +286,11 @@ export const collectorStats = query({
     let carbonSavings = 0;
     for (const t of filteredSales) {
       const material = await ctx.db.get('materials', t.materialId);
-      if (material) carbonSavings += t.weight * parseFloat(material.carbonFactor);
+      if (material) carbonSavings += co2Savings(t.weight, 0, material.carbonFactor);
     }
 
     const totals = {
-      totalRevenue: filteredSales.reduce((s, t) => s + t.price, 0),
+      totalRevenue: filteredSales.reduce((s, t) => s + t.price * t.weight, 0),
       totalVolume: filteredSales.reduce((s, t) => s + t.weight, 0),
       transactionCount: filteredSales.length,
     };

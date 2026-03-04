@@ -1,0 +1,94 @@
+# Notifications Pattern
+
+3reco delivers real-time in-app notifications by inserting documents into the `notifications` table from within mutations. Because Convex queries are reactive, the recipient's notification feed updates instantly — no websocket management needed.
+
+## How It Works
+
+Notifications are plain documents in the `notifications` table. When a mutation does something the user should know about, it inserts a notification for the relevant `userId`. The frontend subscribes to `api.notifications.listForUser`, which automatically re-renders when new notifications arrive.
+
+## Emitting a Notification
+
+Call `ctx.db.insert('notifications', ...)` anywhere inside a mutation. The insert is part of the same transaction — if the mutation is rolled back, the notification is rolled back too.
+
+```typescript
+await ctx.db.insert('notifications', {
+  userId: targetUserId,           // Id<'users'> — who receives it
+  type: 'request_received',       // one of the union literals
+  title: 'New request received',  // short heading
+  body: `Someone wants your ${material.name} stock.`, // full message
+  link: '/market/incoming',       // optional deep link in the app
+  read: false,
+  dismissed: false,
+})
+```
+
+## Notification Types
+
+The `type` field is a union literal defined in `convex/notifications.ts`. The full set is:
+
+| Type | Sent when |
+|---|---|
+| `request_received` | A buyer sends a transaction request to a seller |
+| `request_accepted` | An offer is accepted (sent to both parties) |
+| `request_rejected` | A seller rejects a request or a buyer's offer is declined |
+| `request_cancelled` | A buyer cancels their request |
+| `message_received` | A new message arrives in a negotiation thread |
+| `stock_listed` | A stock item is toggled to `isListed: true` |
+| `stock_unlisted` | A stock item is toggled to `isListed: false` |
+
+### Adding a new notification type
+
+1. Add the new literal to the `type` union in `convex/notifications.ts`:
+
+```typescript
+export default defineTable({
+  // ...
+  type: v.union(
+    v.literal('request_received'),
+    // ... existing types ...
+    v.literal('your_new_type'),   // ← add here
+  ),
+  // ...
+})
+```
+
+2. Run `bunx convex dev` to push the schema change and regenerate types.
+
+3. Emit it from the relevant mutation using `ctx.db.insert('notifications', ...)`.
+
+## Where Notifications Are Sent in the Codebase
+
+Each mutation that should notify a user inserts inline. Here is the full map:
+
+| Mutation | Who is notified | Type |
+|---|---|---|
+| `transactionRequests.create` | Seller | `request_received` |
+| `transactionRequests.makeOffer` | Buyer | `request_accepted` |
+| `transactionRequests.acceptOffer` | Seller | `request_accepted` |
+| `transactionRequests.declineOffer` | Seller | `request_rejected` |
+| `transactionRequests.withdrawOffer` | Buyer | `request_cancelled` |
+| `transactionRequests.reject` | Buyer | `request_rejected` |
+| `transactionRequests.cancel` | Seller | `request_cancelled` |
+| `stock.update` (isListed toggle) | Stock owner | `stock_listed` / `stock_unlisted` |
+
+## Frontend Integration
+
+The notification bell in the header uses two queries:
+
+```typescript
+// Unread badge count
+const unreadCount = useQuery(api.notifications.unreadCount)
+
+// Full feed for the panel (paginated)
+const { results, loadMore } = usePaginatedQuery(
+  api.notifications.listForUser,
+  {},
+  { initialNumItems: 20 }
+)
+```
+
+Both update in real time when new notifications are inserted.
+
+<Callout type="tip" title="Keep notification body short">
+  The `body` field is displayed in a compact panel. Keep it under 120 characters and include enough context so the user knows what action to take without opening the full page.
+</Callout>

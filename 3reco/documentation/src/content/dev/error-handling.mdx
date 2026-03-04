@@ -1,0 +1,72 @@
+# Error Handling
+
+3reco uses `ConvexError` for all server-side errors and a consistent pattern for surfacing them in the UI.
+
+## Throwing Errors in Convex Functions
+
+Use `ConvexError` from `convex/values` for all expected business-rule violations. Always pass an object with `name` and `message`:
+
+```typescript
+import { ConvexError } from 'convex/values'
+
+throw new ConvexError({
+  name: 'Unauthorized',
+  message: 'Only admins can perform this action.',
+})
+```
+
+### Standard error names used in this codebase
+
+| `name` | Meaning |
+|---|---|
+| `Unauthorized` | The caller is not authenticated or lacks the required role |
+| `Not Found` | A referenced document does not exist |
+| `Invalid Input` | A business rule validation failed (e.g. price below minimum) |
+
+Stick to these three for consistency. Do not use HTTP status codes as error names.
+
+<Callout type="warning">
+  Plain `throw new Error('...')` errors are also caught by Convex but arrive on the client as a generic error without the structured `name` field — avoid these for user-facing errors.
+</Callout>
+
+## Catching Errors on the Frontend
+
+Errors thrown inside `useMutation` calls surface as rejected promises. Wrap calls in `try/catch` and use Sonner toasts to display them:
+
+```typescript
+import { toast } from 'sonner'
+import { ConvexError } from 'convex/values'
+
+const createStock = useMutation(api.stock.create)
+
+async function handleSubmit() {
+  try {
+    await createStock({ materialId, weight, price })
+    toast.success('Stock added')
+  } catch (err) {
+    if (err instanceof ConvexError) {
+      toast.error(err.data.message)   // err.data is the object you passed
+    } else {
+      toast.error('Something went wrong')
+    }
+  }
+}
+```
+
+<Callout type="tip" title="err.data vs err.message">
+  `ConvexError` wraps your payload under `.data`. So `err.data.name` is your `name` string and `err.data.message` is the human-readable message to show to users.
+</Callout>
+
+## Query Errors
+
+If a query throws (e.g. the user is not authorised), the `useQuery` hook will throw inside the render tree. Wrap query consumers in an error boundary, or use `usePaginatedQuery` / `@tanstack/react-query` patterns which expose `isError` + `error` instead of throwing.
+
+## Validation Errors
+
+Convex validates all function arguments against their declared validators **before** the handler runs. If the frontend passes the wrong type, Convex returns a validation error automatically — you do not need to manually validate types inside the handler.
+
+This is why all mutations have explicit `args` declarations with `v.*` validators.
+
+## Internal Error Logging
+
+`ConvexError` messages are visible in the **Convex dashboard → Logs** section. Use descriptive messages to make debugging easier — they are only visible to the development team, not end users (unless you surface them).

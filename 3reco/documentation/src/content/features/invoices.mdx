@@ -1,0 +1,86 @@
+# Invoices
+
+3reco automatically generates a PDF invoice for every completed transaction. Invoices are stored in Convex file storage and available for download by both buyer and seller.
+
+## Invoice Generation Flow
+
+```
+Transaction accepted
+        ↓
+Convex mutation inserts transaction record
+        ↓
+Convex action: generateInvoice(transactionId)
+        ↓
+Fetch transaction + user + material details
+        ↓
+Render PDF (server-side)
+        ↓
+ctx.storage.store(pdfBlob) → storageId
+        ↓
+ctx.db.patch(transactionId, { invoiceStorageId: storageId })
+        ↓
+Invoice available for download
+```
+
+## Accessing Invoices
+
+### From Transaction History
+
+Each transaction row in the history table includes a **Download Invoice** button. Clicking it fetches a temporary signed URL:
+
+```typescript
+const invoiceUrl = useQuery(api.transactions.getInvoiceUrl, {
+  transactionId: transaction._id,
+})
+
+// invoiceUrl is a signed URL valid for ~1 hour
+// Opens the PDF in a new tab or triggers download
+```
+
+### Direct URL Generation
+
+```typescript
+// Server-side (Convex query)
+export const getInvoiceUrl = query({
+  args: { transactionId: v.id('transactions') },
+  handler: async (ctx, { transactionId }) => {
+    const tx = await ctx.db.get(transactionId)
+    if (!tx?.invoiceStorageId) return null
+    return await ctx.storage.getUrl(tx.invoiceStorageId)
+  },
+})
+```
+
+## Invoice Contents
+
+| Section | Details |
+|---|---|
+| **Header** | 3reco logo, invoice number, date |
+| **Seller details** | Name / business name, registration number, address |
+| **Buyer details** | Name / business name, registration number, address |
+| **Line item** | Material name, GW code, weight (kg), price per kg |
+| **Totals** | Subtotal, VAT (if applicable), total |
+| **Footer** | Transaction ID, platform reference |
+
+## Invoice Numbering
+
+Invoice numbers are derived from the transaction ID with a formatted prefix:
+
+```
+INV-2024-001234
+```
+
+The sequence is based on the transaction's creation timestamp to ensure uniqueness and rough chronological ordering.
+
+## Storage
+
+Invoices are stored in **Convex file storage** (not in the database). The `_storage` system table manages the actual files, and the `invoiceStorageId` field on the `transactions` table is a reference (`Id<"_storage">`).
+
+Convex storage handles:
+- Redundant, durable storage
+- Access control (only authenticated users can retrieve signed URLs)
+- Automatic garbage collection (not enabled for invoices — they are retained indefinitely)
+
+<Callout type="note" title="Regeneration">
+  If an invoice file is missing (e.g. during a migration), admins can trigger regeneration via a dedicated admin action that re-runs the PDF generation for a given transaction ID.
+</Callout>

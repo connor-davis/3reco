@@ -1,0 +1,73 @@
+# Dashboard
+
+The Dashboard is the first page you see after signing in. It shows a summary of activity and key numbers relevant to your account type.
+
+## Collector Dashboard
+
+| Card | What it shows |
+|---|---|
+| **Total Revenue** | Sum of `price × weight` across all your completed sales |
+| **Total Volume** | Total kilograms sold across all transactions |
+| **Transactions** | Number of completed sales |
+| **Carbon Savings** | Estimated CO₂ equivalent (kg) saved based on the `carbonFactor` of each material you sold |
+
+Below the stat cards you will find:
+
+- **Transaction chart** — a daily bar chart showing volume and count over the last 30 days (or a custom date range)
+- **Recent transactions** — the 5 most recent sales with material name, buyer, weight, and price
+
+### Filtering by date range
+
+Use the date-range picker at the top of the dashboard to filter all stats and the chart to a specific period. The selected range is **inclusive of both the start and end day**, including today. Click the **✕** button to clear the filter and return to the all-time view.
+
+## Business Dashboard
+
+| Card | What it shows |
+|---|---|
+| **Total Spend** | Sum of `price × weight` across all your purchases |
+| **Total Volume** | Total kilograms **purchased** (not including sales) |
+| **Transactions** | Number of completed purchases |
+| **Carbon Savings** | Estimated CO₂ equivalent (kg) saved by your purchases — see [formula](#carbon-savings-formula) below |
+
+Additional panels:
+
+- **Stock summary** — a quick list of all materials you hold, their current weight, and whether each is listed on the marketplace
+- **Transaction chart** — daily purchase activity over the selected period
+- **Recent transactions** — last 5 purchases showing seller, material, weight, and price
+
+## Admin / Staff Dashboard
+
+Admins and staff see platform-wide statistics:
+
+| Card | What it shows |
+|---|---|
+| **C2B Transactions** | Count of collector-to-business trades |
+| **B2B Transactions** | Count of business-to-business trades |
+| **C2B Volume** | Total weight (kg) traded collector → business |
+| **B2B Volume** | Total weight (kg) traded business → business |
+
+Additional panels:
+
+- **Material volume chart** — a bar chart of total weight traded per material type
+- **Daily transactions chart** — platform-wide daily counts and volumes split by c2b and b2b
+- **Latest transactions** — the 5 most recent platform-wide trades with seller, buyer, material, type, weight, and price
+
+<Callout type="tip" title="Live updates">
+  All dashboard data updates in real time via Convex subscriptions. You do not need to refresh the page to see new activity.
+</Callout>
+
+## Carbon Savings Formula
+
+Carbon savings are calculated using the following formula:
+
+> **CO₂ Savings = (Baseline Activity − New Activity) × Carbon Factor**
+
+| Term | Meaning |
+|---|---|
+| **Baseline Activity** | Weight of material that would have been sent to conventional disposal (e.g. landfill) — equal to the transaction weight |
+| **New Activity** | Weight that still goes to conventional disposal after recycling — always `0` since all traded material is diverted |
+| **Carbon Factor** | CO₂ equivalent savings per kilogram, set per material by an admin |
+
+This simplifies to: `transaction weight × carbonFactor (kg CO₂/kg material)`.
+
+Carbon savings figures are estimates. The accuracy depends on the `carbonFactor` values configured for each material.

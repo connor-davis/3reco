@@ -5,7 +5,6 @@ import { api } from '@convex/_generated/api';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
 
 export const Route = createFileRoute('/')({
   component: Index,
@@ -30,8 +29,6 @@ function Index() {
 
   return (
     <div className="flex flex-col w-full h-full gap-6 overflow-y-auto">
-      <Label className="text-lg">Dashboard</Label>
-
       {(user?.type === 'admin' || user?.type === 'staff') && <AdminDashboard />}
       {user?.type === 'business' && <BusinessDashboard />}
       {user?.type === 'collector' && <CollectorDashboard />}

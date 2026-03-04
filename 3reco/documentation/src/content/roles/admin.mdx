@@ -1,0 +1,61 @@
+# Admin & Staff
+
+Admin and Staff are the platform's operators. They manage reference data, oversee all users, and have read access across every transaction in the system.
+
+## Role Comparison
+
+| Capability | Admin | Staff |
+|---|---|---|
+| View all users | ✅ | ✅ |
+| Edit user profiles | ✅ | ✅ |
+| Assign user types (`setType`) | ✅ | ❌ |
+| Remove users | ✅ | ❌ |
+| Create / edit materials | ✅ | ✅ |
+| Delete materials | ✅ | ❌ |
+| View all transactions | ✅ | ✅ |
+| View all stock listings | ✅ | ✅ |
+| Export data | ✅ | ✅ |
+| Access admin dashboard | ✅ | ✅ |
+
+## Admin Dashboard
+
+The admin dashboard provides a system-wide view:
+
+- **Total platform volume** — kg of materials transacted across all users
+- **Total transaction value** — sum of `price × weight` for all completed transactions
+- **Carbon savings** — sum of `weight × carbonFactor` for all materials transacted
+- **User counts** — breakdown by type (admin, staff, business, collector)
+- **Recent transactions** — filterable by date range
+
+## User Management
+
+Admins can:
+
+1. **View all registered users** with their profile status and type
+2. **Edit any user's profile fields** (name, address, contact details)
+3. **Assign or change the `type`** field — promoting a user from untyped to `business`, `collector`, `staff`, or `admin`
+4. **Remove users** — deletes the user document (does not cascade-delete transactions for audit purposes)
+
+```typescript
+// Promote a user to collector
+await convex.mutation(api.users.setType, { id: userId, type: 'collector' })
+
+// Remove a user
+await convex.mutation(api.users.removeUser, { id: userId })
+```
+
+<Callout type="warning" title="Admin self-protection">
+  An admin cannot demote or remove their own account. The `setType` and `removeUser` mutations check `userId !== currentUserId`.
+</Callout>
+
+## Material Management
+
+Materials are the platform's reference data — without materials, no stock can be listed. Admin/staff manage this catalogue:
+
+- **Create** new material entries (name, price, carbonFactor, gwCode)
+- **Edit** existing materials (price changes propagate to new stock listings only)
+- **Delete** materials (only if no stock references the material)
+
+## Data Access
+
+Admins have unrestricted read access. All queries that normally filter by `ownerId` or `userId` have admin-bypassing variants that return the full dataset.

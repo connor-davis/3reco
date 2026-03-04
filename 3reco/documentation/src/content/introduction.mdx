@@ -1,0 +1,48 @@
+# Introduction
+
+**3reco** is a real-time recycling marketplace platform that connects recycling collectors with businesses. It enables collectors to list recyclable material stock, receive purchase offers from businesses, negotiate prices, and complete transactions — all within a streamlined, role-based web application.
+
+## What is 3reco?
+
+The name stands for **3R** (Reduce, Reuse, Recycle) + **eco**. The platform's goal is to formalize and digitize the secondary materials market, making it easier for businesses to source recyclables from collectors and for collectors to find reliable buyers.
+
+## Key Features
+
+- **Role-based access control** — four user types (Admin, Staff, Business, Collector) each with tailored dashboards and capabilities
+- **Real-time marketplace** — transaction requests and negotiation messages update live via Convex subscriptions
+- **Offer & negotiation flow** — businesses send requests, collectors counter with offers, parties accept or reject
+- **Automatic PDF invoices** — generated server-side and stored in Convex file storage upon transaction completion
+- **Carbon savings tracking** — every material has a `carbonFactor`; transactions accumulate a carbon savings stat visible on dashboards
+- **Data exports** — role-scoped CSV exports for transactions, stock, and materials
+- **Notifications** — real-time, dismissible notification feed for all platform events
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, TypeScript, Vite |
+| Styling | Tailwind CSS v4, shadcn/ui |
+| Backend-as-a-Service | Convex |
+| Authentication | @convex-dev/auth |
+| Package manager | Bun |
+| PDF generation | (server-side Convex action) |
+
+## Project Layout
+
+```
+3reco/           ← active React 19 + Convex app (this codebase)
+app/             ← legacy SolidJS frontend (maintenance only)
+api/             ← legacy Express.js + MongoDB REST API (maintenance only)
+```
+
+The `/3reco` package is the actively developed full-stack application where Convex replaces the legacy Express API entirely.
+
+## Quick Start
+
+```bash
+cd 3reco
+bun install
+bun run dev
+```
+
+See [Setup & Installation](/docs/setup) for full prerequisites and configuration.

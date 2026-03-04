@@ -1,0 +1,114 @@
+# Negotiations
+
+Every purchase on 3reco goes through a negotiation flow. This page explains each stage from the buyer's initial request through to a completed transaction — and what each party can do at every step.
+
+## How It Works
+
+```
+Buyer sends request  →  Seller reviews  →  Seller makes offer
+       ↓                                         ↓
+  [Pending]                            [Offered — buyer reviews]
+                                            ↓              ↓
+                                      [Accepted]      [Declined → back to Pending]
+                                          ↓
+                                  Transaction created
+                                  Invoice generated
+```
+
+Both parties can also exit at any stage (cancel / reject / withdraw).
+
+---
+
+## If You Are the Buyer
+
+### Viewing incoming offers (Outgoing requests)
+
+Go to **Market → Outgoing** to see all requests you have sent and their current status.
+
+### When a seller makes you an offer
+
+You will receive a **notification** and the request status changes to **Offered**. Open the request to see:
+
+- The **weight** (kg) the seller is willing to trade
+- The **price per kg** they are asking
+
+You have three options:
+
+| Action | What it does |
+|---|---|
+| **Accept offer** | Completes the transaction immediately. Stock is transferred, an invoice is generated, and the request closes as Accepted. |
+| **Decline offer** | Sends the request back to Pending. The seller can make a revised offer or reject the request entirely. |
+| **Cancel request** | Closes the request entirely. The seller is notified. |
+
+### After accepting
+
+- The traded weight is deducted from the seller's stock and added to your stock
+- A PDF invoice is generated automatically and available on the [Transactions](/docs/user/transactions) page
+- If the seller's remaining stock reaches zero, their listing is automatically removed from the marketplace
+
+---
+
+## If You Are the Seller
+
+### Viewing incoming requests (Incoming requests)
+
+Go to **Market → Incoming** to see all requests buyers have sent you.
+
+### Responding to a request
+
+Open a **Pending** request. You have two options:
+
+**Make an offer:**
+
+1. Click **Make offer**
+2. Enter the **weight** (kg) you can supply — must not exceed your current stock
+3. Enter your **price per kg** — must be at or above the material's base price
+4. Click **Submit offer**
+
+The buyer is notified immediately and can accept or decline.
+
+**Reject the request:**
+
+Click **Reject** to decline without making an offer. The buyer is notified that their request was not accepted.
+
+### Managing an active offer
+
+Once you have made an offer (status = **Offered**), you can **Withdraw offer** to pull it back. The request returns to **Pending** and the buyer is notified — you can then submit a different offer or wait.
+
+### After the buyer accepts
+
+The transaction completes automatically:
+
+- Your stock is reduced by the agreed weight (unlisted if it hits zero)
+- The buyer's stock is increased
+- An invoice is generated for both parties
+
+---
+
+## Using the Chat
+
+Every request has a **message thread** where buyer and seller can communicate freely before and after an offer is made. Use it to:
+
+- Clarify material quality or condition
+- Discuss logistics and collection arrangements
+- Ask questions before committing to an offer
+
+Messages update in real time — you do not need to refresh.
+
+<Callout type="tip" title="Stay in touch">
+  Even after accepting, the chat history is preserved so you and your trading partner can refer back to any agreements made during negotiation.
+</Callout>
+
+---
+
+## Status Reference
+
+| Status | Who can act | Available actions |
+|---|---|---|
+| Pending | Seller | Make offer, Reject |
+| Pending | Buyer | Cancel |
+| Offered | Buyer | Accept, Decline, Cancel |
+| Offered | Seller | Withdraw offer, Reject |
+| Accepted | — | Read-only |
+| Rejected | — | Read-only |
+| Cancelled | — | Read-only |

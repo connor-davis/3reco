@@ -1,0 +1,174 @@
+# Frontend Guide
+
+The 3reco frontend is a React 19 SPA built with Vite and TanStack Router. This guide explains how the app is structured and how to add new pages or components.
+
+## Directory Structure
+
+```
+src/
+├── routes/               ← File-based route components
+│   ├── __root.tsx        ← Root layout (auth guard, sidebar, header)
+│   ├── index.tsx         ← Dashboard (role-aware)
+│   ├── stock.tsx
+│   ├── transactions.tsx
+│   ├── materials.tsx
+│   ├── collections.tsx
+│   ├── admin/
+│   │   └── users.tsx
+│   ├── market/
+│   │   ├── index.tsx     ← Marketplace listing
+│   │   ├── incoming.tsx
+│   │   ├── outgoing.tsx
+│   │   └── $requestId.tsx
+│   └── profile/
+│       └── index.tsx
+├── components/
+│   ├── ui/               ← shadcn/ui primitive components
+│   ├── sections/         ← Page-level section components
+│   ├── dialogs/          ← Modal dialogs
+│   ├── guards/           ← Auth / profile gates
+│   ├── sidebar/          ← App sidebar
+│   ├── header.tsx
+│   └── back-button.tsx
+├── hooks/                ← Custom React hooks
+├── lib/                  ← Utility functions (cn, formatting, etc.)
+└── main.tsx              ← Entry point — ConvexProvider, RouterProvider
+```
+
+## Path Alias
+
+All imports use the `@/` alias which resolves to `src/`:
+
+```typescript
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { api } from '@convex/_generated/api'  // special alias for convex/
+```
+
+Both aliases are configured in `vite.config.ts` and `tsconfig.app.json`.
+
+## Routing
+
+The app uses **TanStack Router v1** with file-based routes. Routes live in `src/routes/` and are auto-discovered by the `@tanstack/router-vite-plugin`.
+
+### Adding a new page
+
+1. Create a file in `src/routes/`, e.g. `src/routes/reports.tsx`
+2. Export a `Route` constant using `createFileRoute`:
+
+```typescript
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/reports')({
+  component: ReportsPage,
+})
+
+function ReportsPage() {
+  return <div>Reports</div>
+}
+```
+
+3. The route is automatically registered — no manual route tree editing needed
+4. Add a link to the sidebar in `src/components/sidebar/app-sidebar.tsx`
+
+### Dynamic routes
+
+Use the `$param` convention for dynamic segments:
+
+```typescript
+// src/routes/market/$requestId.tsx
+export const Route = createFileRoute('/market/$requestId')({
+  component: RequestDetail,
+})
+
+function RequestDetail() {
+  const { requestId } = Route.useParams()
+  // ...
+}
+```
+
+## Root Layout & Guards
+
+`src/routes/__root.tsx` wraps the entire app and handles:
+
+1. **Auth loading state** — shows a spinner while `@convex-dev/auth` initialises
+2. **Unauthenticated state** — renders `<AuthenticationGuard />` (the sign-in page)
+3. **Profile completion gate** — if `user.profileComplete` is `false`, renders `<CompleteProfileGuard />` instead of the main app
+4. **Main layout** — `SidebarProvider` + `AppSidebar` + `Header` + `<Outlet />`
+
+The profile completion check uses React 19's `<Activity>` component to switch between the two views:
+
+```tsx
+<Activity mode={user && !user.profileComplete ? 'visible' : 'hidden'}>
+  <CompleteProfileGuard />
+</Activity>
+<Activity mode={user && user.profileComplete ? 'visible' : 'hidden'}>
+  {/* main app */}
+</Activity>
+```
+
+## Fetching Data
+
+Use `useQuery` from `convex/react` for reactive data fetching:
+
+```typescript
+import { useQuery } from 'convex/react'
+import { api } from '@convex/_generated/api'
+
+const stock = useQuery(api.stock.list)
+// stock is undefined while loading, then the data array
+```
+
+For queries that need TanStack Query integration (e.g. to use `enabled` or combine with other queries), use `@convex-dev/react-query`:
+
+```typescript
+import { useQuery } from '@tanstack/react-query'
+import { convexQuery } from '@convex-dev/react-query'
+
+const { data: user, isLoading } = useQuery({
+  ...convexQuery(api.users.currentUser),
+  enabled: isAuthenticated,
+})
+```
+
+## Calling Mutations
+
+```typescript
+import { useMutation } from 'convex/react'
+import { api } from '@convex/_generated/api'
+
+function MyComponent() {
+  const createStock = useMutation(api.stock.create)
+
+  async function handleSubmit() {
+    await createStock({ materialId, weight, price })
+  }
+}
+```
+
+Mutations are optimistically typed — if the args don't match the Convex validator, TypeScript will complain at compile time.
+
+## UI Components
+
+All UI primitives are in `src/components/ui/` following the shadcn/ui pattern. They are composed from Radix UI primitives with Tailwind utility classes. Add new components with the shadcn CLI:
+
+```bash
+bunx shadcn@latest add <component-name>
+```
+
+For custom components, follow the same pattern: use `cn()` from `@/lib/utils`, accept a `className` prop, and forward refs where needed.
+
+## Styling
+
+The app uses **Tailwind CSS v4**. CSS custom properties for theming are defined in `src/index.css` under `:root` and `.dark`. Theme values are exposed as Tailwind utilities via `@theme inline`:
+
+```css
+/* src/index.css */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-background: var(--background);
+  /* ... */
+}
+```
+
+This means you can use `bg-primary`, `text-background`, `border-border` etc. as Tailwind classes and they will respect the current theme (light/dark).

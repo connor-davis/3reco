@@ -1,0 +1,69 @@
+# Transactions
+
+The **Transactions** page is a record of every completed trade you have been involved in. You can view sales, purchases, and download PDF invoices.
+
+## Sales History
+
+Go to **Transactions → Sales** to see every deal where you were the **seller**. Each row shows:
+
+| Column | Meaning |
+|---|---|
+| Date | When the transaction completed |
+| Material | What was sold |
+| Buyer | Who purchased from you |
+| Weight | Kilograms traded |
+| Price/kg | Agreed price per kilogram |
+| Total | `weight × price` |
+| Invoice | Download link for the PDF |
+
+## Purchases / Expenses
+
+Go to **Transactions → Purchases** (labelled **Expenses** for business accounts) to see every trade where you were the **buyer**.
+
+<Callout type="note">
+  **Collectors** only have a Sales view — collectors sell to businesses but do not purchase through the marketplace.  
+  **Businesses** see both Sales and Expenses.  
+  **Admin / Staff** see all platform-wide transactions.
+</Callout>
+
+## Downloading an Invoice
+
+Every completed transaction has an automatically generated PDF invoice. To download:
+
+1. Find the transaction in your Sales or Purchases list
+2. Click the **Invoice** icon or **Download** button in that row
+3. The PDF opens or saves — it includes both parties' details, material, weight, price, and a unique transaction reference
+
+<Callout type="tip" title="Invoice generation">
+  Invoices are generated within seconds of a transaction completing. If the download button is not yet active, wait a moment and refresh.
+</Callout>
+
+## Direct Collector Purchases *(Business accounts only)*
+
+Businesses can record **off-platform** purchases directly from collectors without going through the marketplace negotiation flow:
+
+1. Go to **Transactions** and click **Record purchase**
+2. Select the **collector** from the list
+3. Choose the **material** type
+4. Enter **weight** (kg) and **price per kg**
+5. Click **Save**
+
+The purchase is recorded, the material is added to your stock, and an invoice is generated automatically. The price must still be at or above the platform's base price for that material.
+
+<Callout type="warning">
+  Direct purchases are recorded immediately and cannot be undone. Double-check the weight and price before saving.
+</Callout>
+
+## Exporting Data
+
+You can export your transaction history as a CSV file for use in spreadsheets or accounting software:
+
+1. Go to **Transactions**
+2. Click **Export CSV**
+3. The file downloads with all transactions visible to your account
+
+Admin and Staff users can export the full platform-wide transaction dataset.
+
+<Callout type="note" title="Export scope">
+  The export always reflects your current filter and role. Collectors export their sales; businesses export their sales and purchases; admins export everything.
+</Callout>

@@ -1,0 +1,175 @@
+# Transaction Requests API
+
+The `transactionRequests` module powers the negotiation flow between buyers and sellers. All functions are in `convex/transactionRequests.ts`.
+
+## Status State Machine
+
+```
+             create()
+                │
+                ▼
+           ┌─────────┐
+           │ pending  │ ──── cancel() ────▶ cancelled
+           └────┬────┘
+                │ makeOffer()
+                ▼
+           ┌─────────┐
+           │ offered  │ ──── cancel() ────▶ cancelled
+           └────┬────┘
+         accept │     │ reject
+                ▼     ▼
+           accepted  rejected
+```
+
+## Queries
+
+### `list()`
+
+Returns all transaction requests relevant to the current user (as buyer or seller).
+
+```typescript
+const requests = useQuery(api.transactionRequests.list)
+```
+
+**Returns:** `Doc<"transactionRequests">[]`
+
+---
+
+### `findById(id)`
+
+Returns a single request with expanded seller, buyer, and material details.
+
+```typescript
+const request = useQuery(api.transactionRequests.findById, { id: requestId })
+```
+
+**Returns:** Full request document with joined references or `null`
+
+---
+
+## Mutations
+
+### `create(fields)`
+
+Sends a new transaction request from buyer to seller.
+
+```typescript
+await convex.mutation(api.transactionRequests.create, {
+  sellerId: collectorId,
+  materialId,
+  stockId: stock._id,  // optional reference to specific stock item
+})
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `sellerId` | `Id<"users">` | The seller receiving the request |
+| `materialId` | `Id<"materials">` | Requested material |
+| `stockId` | `Id<"stock">` | Optional reference to a specific listed stock item |
+
+Sets `status: "pending"`, `buyerId: currentUser`. Sends notification to seller.
+
+---
+
+### `makeOffer(fields)`
+
+Seller responds with weight and price. Transitions `pending` → `offered`.
+
+```typescript
+await convex.mutation(api.transactionRequests.makeOffer, {
+  requestId,
+  offerWeight: 200,
+  offerPrice: 8.75,
+})
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `requestId` | `Id<"transactionRequests">` | Yes |
+| `offerWeight` | `number` | Weight being offered (kg) |
+| `offerPrice` | `number` | Price per kg offered (Rand) |
+
+**Throws:** If current user is not the seller, or status is not `"pending"`.
+
+Sends `"offer"` notification to buyer.
+
+---
+
+### `accept(requestId)`
+
+Buyer accepts the offer. Transitions `offered` → `accepted`, creates a `transaction` record, and triggers invoice generation.
+
+```typescript
+await convex.mutation(api.transactionRequests.accept, { requestId })
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `requestId` | `Id<"transactionRequests">` | Yes |
+
+**Throws:** If current user is not the buyer, or status is not `"offered"`.
+
+**Side effects:**
+1. Inserts a `transaction` document
+2. Schedules `generateInvoice` action
+3. Sends `"accepted"` notification to seller
+4. Updates stock weight/listing status if a `stockId` was referenced
+
+---
+
+### `reject(requestId)`
+
+Buyer rejects the offer. Transitions `offered` → `rejected`.
+
+```typescript
+await convex.mutation(api.transactionRequests.reject, { requestId })
+```
+
+**Throws:** If current user is not the buyer, or status is not `"offered"`.
+
+Sends `"rejected"` notification to seller.
+
+---
+
+### `cancel(requestId)`
+
+Either party cancels the request at any stage before acceptance.
+
+```typescript
+await convex.mutation(api.transactionRequests.cancel, { requestId })
+```
+
+**Throws:** If the request is already `"accepted"`, `"rejected"`, or `"cancelled"`.
+
+Sends `"cancelled"` notification to the other party.
+
+---
+
+## Messages
+
+### `sendMessage(fields)`
+
+Sends a negotiation message within a transaction request thread.
+
+```typescript
+await convex.mutation(api.transactionRequestMessages.send, {
+  transactionId: requestId,
+  content: 'Can we do 250 kg instead?',
+})
+```
+
+### `listMessages(transactionId)`
+
+```typescript
+const messages = useQuery(api.transactionRequestMessages.list, {
+  transactionId: requestId,
+})
+```
+
+**Returns:** `Doc<"transactionRequestMessages">[]` ordered by creation time, updating in real time.

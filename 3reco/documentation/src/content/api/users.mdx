@@ -1,0 +1,132 @@
+# Users API
+
+The `users` module exposes queries and mutations for user management. All functions are in `convex/users.ts`.
+
+## Queries
+
+### `currentUser()`
+
+Returns the full user document for the currently authenticated user.
+
+```typescript
+import { useQuery } from 'convex/react'
+import { api } from '../convex/_generated/api'
+
+const user = useQuery(api.users.currentUser)
+```
+
+**Returns:** `Doc<"users"> | null`
+
+Returns `null` if the user is not authenticated or not found in the database.
+
+---
+
+### `listCollectors()`
+
+Returns all users with `type: "collector"`. Available to admin and staff only.
+
+```typescript
+const collectors = useQuery(api.users.listCollectors)
+```
+
+**Returns:** `Doc<"users">[]`
+
+**Access:** Admin, Staff
+
+---
+
+### `listBusinesses()`
+
+Returns all users with `type: "business"`. Available to admin and staff only.
+
+```typescript
+const businesses = useQuery(api.users.listBusinesses)
+```
+
+**Returns:** `Doc<"users">[]`
+
+**Access:** Admin, Staff
+
+---
+
+## Mutations
+
+### `update(id, fields)`
+
+Updates mutable profile fields for a user. Users can update their own profile; admins can update any user.
+
+```typescript
+await convex.mutation(api.users.update, {
+  id: userId,
+  firstName: 'Jane',
+  lastName: 'Smith',
+  phone: '0821234567',
+  streetAddress: '12 Eco Street',
+  city: 'Cape Town',
+  areaCode: '8001',
+  province: 'Western Cape',
+  profileComplete: true,
+  agreedToTerms: true,
+})
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `id` | `Id<"users">` | Yes |
+| `firstName` | `string` | No |
+| `lastName` | `string` | No |
+| `phone` | `string` | No |
+| `businessName` | `string` | No |
+| `businessRegistrationNumber` | `string` | No |
+| `streetAddress` | `string` | No |
+| `city` | `string` | No |
+| `areaCode` | `string` | No |
+| `province` | `string` | No |
+| `profileComplete` | `boolean` | No |
+| `agreedToTerms` | `boolean` | No |
+
+---
+
+### `setType(id, type)`
+
+Assigns a user role. **Admin only.**
+
+```typescript
+await convex.mutation(api.users.setType, {
+  id: userId,
+  type: 'collector', // 'admin' | 'staff' | 'business' | 'collector'
+})
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `id` | `Id<"users">` | Yes |
+| `type` | `"admin" \| "staff" \| "business" \| "collector"` | Yes |
+
+**Throws:** If the current user is not `type: "admin"`, or if attempting to change own type.
+
+---
+
+### `removeUser(id)`
+
+Permanently deletes a user document. **Admin only.**
+
+```typescript
+await convex.mutation(api.users.removeUser, { id: userId })
+```
+
+**Args:**
+
+| Field | Type | Required |
+|---|---|---|
+| `id` | `Id<"users">` | Yes |
+
+**Throws:** If current user is not `type: "admin"`, or if attempting to delete own account.
+
+<Callout type="warning">
+  Removing a user does not delete their associated transactions, stock, or messages. Historical records are preserved for audit purposes.
+</Callout>

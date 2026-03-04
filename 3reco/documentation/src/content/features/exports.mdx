@@ -1,0 +1,84 @@
+# Data Exports
+
+3reco provides CSV export functionality so users can analyse their data outside the platform in spreadsheets or BI tools.
+
+## Available Exports by Role
+
+| Export | Admin | Staff | Business | Collector |
+|---|---|---|---|---|
+| All transactions (platform-wide) | ✅ | ✅ | ❌ | ❌ |
+| My transactions | — | — | ✅ | ✅ |
+| All stock listings | ✅ | ✅ | ❌ | ❌ |
+| My stock | — | — | ✅ | ✅ |
+| Materials catalogue | ✅ | ✅ | ✅ (read) | ✅ (read) |
+| All users | ✅ | ✅ | ❌ | ❌ |
+
+## Transaction Export
+
+The transaction export CSV includes:
+
+```
+Date, Invoice #, Type, Seller, Buyer, Material, GW Code, Weight (kg),
+Price (R/kg), Total (R), Carbon Savings (kg CO₂)
+```
+
+Date range filtering is applied before export. Businesses and collectors export only their own transactions; admins export all.
+
+```typescript
+// Trigger export (frontend)
+const data = await convex.query(api.transactions.exportCsv, {
+  startDate,
+  endDate,
+})
+downloadCsv(data, `transactions-${startDate}-${endDate}.csv`)
+```
+
+## Stock Export
+
+The stock export CSV includes:
+
+```
+Material, GW Code, Weight (kg), Price (R/kg), Listed, Created Date
+```
+
+## Materials Export
+
+The materials catalogue export:
+
+```
+Name, GW Code, Price (R/kg), Carbon Factor (kg CO₂/kg)
+```
+
+## Users Export (Admin Only)
+
+```
+Name, Email, Phone, Type, Business Name, Registration #,
+Address, City, Province, Profile Complete, Created Date
+```
+
+## CSV Generation
+
+Exports are generated **client-side** from the query result — the Convex query returns the data array and the browser creates the CSV download:
+
+```typescript
+function downloadCsv(rows: Record<string, unknown>[], filename: string) {
+  const headers = Object.keys(rows[0])
+  const lines = [
+    headers.join(','),
+    ...rows.map(row =>
+      headers.map(h => JSON.stringify(row[h] ?? '')).join(',')
+    ),
+  ]
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+```
+
+<Callout type="tip" title="Large datasets">
+  For very large datasets (admin exporting all platform transactions), the Convex query uses pagination internally and assembles pages before returning the full result. For extremely high volumes, consider scheduling an export action that emails the CSV.
+</Callout>

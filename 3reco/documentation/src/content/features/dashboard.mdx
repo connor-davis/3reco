@@ -1,0 +1,89 @@
+# Dashboard
+
+Each user role sees a tailored dashboard with relevant statistics and recent activity. All dashboards support date range filtering.
+
+## Role-Based Views
+
+| Role | Primary Stats | Data Scope |
+|---|---|---|
+| **Admin / Staff** | Platform-wide volume, value, carbon savings | All users |
+| **Business** | Total spend, volume purchased, carbon savings | Own purchases |
+| **Collector** | Total revenue, volume sold, carbon savings | Own sales |
+
+## Statistics
+
+### Total Spend (Business)
+
+The total amount a business has paid for purchases:
+
+```
+totalSpend = Σ (transaction.price × transaction.weight)
+             for all transactions where buyerId = currentUser
+```
+
+### Total Revenue (Collector)
+
+The total amount a collector has received from sales:
+
+```
+totalRevenue = Σ (transaction.price × transaction.weight)
+               for all transactions where sellerId = currentUser
+```
+
+### Total Volume
+
+The total weight (kg) transacted:
+
+```
+totalVolume = Σ transaction.weight
+```
+
+### Carbon Savings
+
+The environmental impact metric — CO₂ equivalent saved by recycling rather than landfilling:
+
+```
+carbonSavings = Σ (transaction.weight × material.carbonFactor)
+```
+
+The `carbonFactor` (kg CO₂ per kg of material) is defined on each material record. For example, recycling 100 kg of PET plastic with a carbonFactor of 1.7 saves 170 kg of CO₂.
+
+## Date Range Filtering
+
+All dashboard stats are computed within a selected date range. The filter defaults to the current month. Users can select:
+
+- **This week**
+- **This month** (default)
+- **This quarter**
+- **This year**
+- **Custom** (date picker)
+
+The date range is passed as `startDate` / `endDate` arguments to dashboard queries:
+
+```typescript
+const stats = useQuery(api.dashboard.getStats, {
+  startDate: startOfMonth.toISOString(),
+  endDate: now.toISOString(),
+})
+```
+
+## Recent Activity
+
+Below the stats, each dashboard shows a table of recent transactions (paginated, 10 per page):
+
+- **Business**: recent purchases with seller name, material, weight, price, total
+- **Collector**: recent sales with buyer name, material, weight, price, total
+- **Admin**: all recent transactions across the platform
+
+Each row includes a link to download the PDF invoice for that transaction.
+
+## Carbon Savings Display
+
+The carbon savings figure is prominently displayed with an eco-friendly visual. The unit is formatted as:
+
+- `< 1000 kg` → displayed as `XXX kg CO₂`
+- `≥ 1000 kg` → displayed as `X.X tonnes CO₂`
+
+<Callout type="tip" title="Admin aggregate view">
+  Admin and staff see aggregated stats across the entire platform, not just their own activity. This makes the admin dashboard useful for monitoring overall platform health and growth.
+</Callout>

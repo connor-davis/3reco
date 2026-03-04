@@ -1,0 +1,126 @@
+# Deployment
+
+This guide covers deploying both the Convex backend and the React frontend to production.
+
+## Overview
+
+The application has two independent deploy targets:
+
+| Target | Command | Hosting |
+|---|---|---|
+| Convex backend | `bunx convex deploy` | Convex cloud (managed) |
+| React frontend | `bun run build` → upload `dist/` | Any static host |
+
+Both can be deployed independently — the frontend references the Convex deployment URL via an environment variable.
+
+## Environment Variables
+
+### Development (`3reco/.env.local`)
+
+```bash
+VITE_CONVEX_URL=https://<your-deployment>.convex.cloud
+```
+
+### Production
+
+The same variable must be available at **build time** (not runtime) because Vite inlines it at `import.meta.env.VITE_CONVEX_URL`. Set it in your hosting provider's build environment.
+
+<Callout type="warning" title="Never commit .env.local">
+  `.env.local` is git-ignored. Never commit it — it contains your deployment URL which is specific to each environment.
+</Callout>
+
+## Deploying the Convex Backend
+
+### First-time setup
+
+```bash
+cd 3reco
+bunx convex dev  # authenticates, creates a Convex project, pushes schema + functions
+```
+
+This also creates a `.env.local` with your `VITE_CONVEX_URL`.
+
+### Deploying to production
+
+```bash
+bunx convex deploy
+```
+
+This pushes all functions in `convex/` to your production Convex deployment. It does **not** affect your development deployment.
+
+<Callout type="note" title="Two Convex deployments">
+  Convex automatically creates separate **development** and **production** deployments for each project. `convex dev` always targets development; `convex deploy` always targets production.
+</Callout>
+
+### What gets deployed
+
+- All query, mutation, action, and internal function definitions
+- The database schema (new tables/indexes are added; existing indexes cannot be removed without a migration)
+- The `convex.config.ts` component registrations (aggregates)
+- Auth configuration from `convex/auth.ts`
+
+### Schema migrations
+
+Convex handles additive schema changes (new optional fields, new tables) automatically. For destructive changes (removing fields, changing types), write a migration function using `ctx.db` and run it manually before deploying the schema change.
+
+See `convex/migrations.ts` for examples of existing migrations.
+
+## Deploying the Frontend
+
+### Build
+
+```bash
+cd 3reco
+bun run build
+```
+
+Output: `dist/` — a fully static bundle (HTML + JS + CSS).
+
+### Hosting options
+
+| Provider | Notes |
+|---|---|
+| **Vercel** | Connect GitHub repo; set `VITE_CONVEX_URL` as environment variable; set build command to `bun run build` and output dir to `dist` |
+| **Netlify** | Same as Vercel; enable SPA redirect (all routes → `index.html`) |
+| **Cloudflare Pages** | Framework preset: Vite; set env var; enable SPA mode |
+| **Any CDN** | Upload `dist/` contents; configure all 404s to serve `index.html` (required for client-side routing) |
+
+<Callout type="warning" title="SPA fallback is required">
+  TanStack Router handles routing client-side. Your hosting provider **must** be configured to serve `index.html` for all unknown paths — otherwise direct links and page refreshes will return a 404.
+</Callout>
+
+## Authentication Setup
+
+After deploying the Convex backend, configure authentication providers in the Convex dashboard:
+
+1. Go to [dashboard.convex.dev](https://dashboard.convex.dev) → your project → **Settings → Authentication**
+2. Enable the providers you use (e.g. Password, Google OAuth)
+3. For OAuth providers, set the redirect URI to your production frontend URL
+
+## Production Checklist
+
+- [ ] `VITE_CONVEX_URL` points to the **production** Convex deployment (not dev)
+- [ ] `bunx convex deploy` has been run and reports success
+- [ ] Authentication providers are configured in the Convex dashboard
+- [ ] The hosting provider serves `index.html` for all unknown paths
+- [ ] HTTPS is enabled on the frontend domain
+- [ ] The aggregate components (`txByType`, `txByMaterial`) are initialised — run any backfill mutations if the production database has pre-existing transactions
+
+## Backfilling Aggregates
+
+If you deploy to an environment that already has transaction data, the aggregate counts will be zero until the data is backfilled. Write a one-time migration mutation that inserts all existing transactions into the aggregates:
+
+```typescript
+// convex/migrations.ts — one-time backfill
+export const backfillAggregates = internalMutation({
+  handler: async (ctx) => {
+    const txns = await ctx.db.query('transactions').collect()
+    for (const t of txns) {
+      await txByType.insertIfDoesNotExist(ctx, t)
+      await txByMaterial.insertIfDoesNotExist(ctx, t)
+    }
+  },
+})
+```
+
+Run it once from the Convex dashboard → **Functions → Run function**.

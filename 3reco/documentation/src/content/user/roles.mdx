@@ -1,0 +1,88 @@
+# Understanding Account Roles
+
+3reco has four account types, each with a different set of capabilities. This page explains what each role can and cannot do.
+
+## Role Overview
+
+| Feature | Collector | Business | Staff | Admin |
+|---|---|---|---|---|
+| Add & manage stock | ✅ | ✅ | ❌ | ❌ |
+| List stock on marketplace | ✅ | ✅ | ❌ | ❌ |
+| Browse marketplace | ✅ | ✅ | ✅ | ✅ |
+| Send purchase requests | ✅ | ✅ | ❌ | ❌ |
+| Respond to requests (sell) | ✅ | ✅ | ❌ | ❌ |
+| Record direct purchases (c2b) | ❌ | ✅ | ❌ | ❌ |
+| View own transactions | ✅ (sales) | ✅ (sales + expenses) | ✅ (all) | ✅ (all) |
+| Export CSV | ✅ | ✅ | ✅ | ✅ |
+| Dashboard stats | Personal | Personal | Platform-wide | Platform-wide |
+| Manage users | ❌ | ❌ | ❌ | ✅ |
+| Manage materials | ❌ | ❌ | ❌ | ✅ |
+
+---
+
+## Collector
+
+Collectors are individuals or small operations that gather recyclable materials and sell them to businesses.
+
+**What collectors do on 3reco:**
+
+- Record the materials they have collected with weight and price
+- List stock on the marketplace to attract buyers
+- Respond to purchase requests from businesses by making offers
+- Track revenue, volume, and carbon savings on their dashboard
+
+**Collector sales are always c2b (collector → business).** Collectors do not purchase from other users.
+
+---
+
+## Business
+
+Businesses buy recyclable materials — from collectors or from other businesses — to process or resell.
+
+**What businesses do on 3reco:**
+
+- Browse the marketplace and send purchase requests to sellers
+- Accept offers from sellers to complete trades via the marketplace
+- Record walk-in or direct purchases from collectors without going through the marketplace
+- List surplus stock on the marketplace for other businesses to buy (b2b trades)
+- Track spend, volume, stock holdings, and carbon savings on their dashboard
+
+---
+
+## Staff
+
+Staff members have a read-only and oversight role. They can see platform-wide activity but cannot initiate trades.
+
+**What staff can do:**
+
+- View the admin dashboard with platform-wide stats
+- View all transactions across the platform
+- Export transaction data
+
+Staff cannot manage users, add materials, or conduct any trades.
+
+---
+
+## Admin
+
+Admins have full platform access including user and content management.
+
+**What admins can do — in addition to staff capabilities:**
+
+- **Manage users** — view all registered users, change any user's account type, or remove an account
+- **Manage materials** — create, edit, and delete material types (e.g. add a new recyclable category with its base price and carbon factor)
+- View platform-wide stats and all transactions
+
+<Callout type="warning" title="Admin privileges">
+  Admins cannot change their own account type or delete their own account — these safeguards prevent accidental lock-out.
+</Callout>
+
+---
+
+## How Role Assignment Works
+
+- **Collector** and **Business** are self-selected during profile setup
+- **Staff** and **Admin** are assigned by an existing Admin via the **Admin → Users** page
+- Once assigned, your role is shown on your profile but only an Admin can change it
+
+If you believe your account has the wrong role, contact your platform administrator.

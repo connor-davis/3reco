@@ -1,0 +1,107 @@
+# Transactions
+
+Transactions are the permanent, immutable records of completed sales on the 3reco platform.
+
+## Transaction Types
+
+| Code | Full Name | Parties |
+|---|---|---|
+| `c2b` | Collector to Business | Collector sells to Business |
+| `b2b` | Business to Business | Business sells surplus to another Business |
+
+## How Transactions Are Created
+
+Transactions are created automatically when a buyer accepts a transaction request:
+
+```typescript
+// Triggered inside api.transactionRequests.accept
+await ctx.db.insert('transactions', {
+  sellerId: request.sellerId,
+  buyerId: request.buyerId,
+  materialId: request.materialId,
+  weight: request.offerWeight,
+  price: request.offerPrice,
+  type: determinedType,  // 'c2b' or 'b2b' based on seller type
+})
+```
+
+Direct sale mutations also exist for admin-facilitated transactions:
+
+```typescript
+// C2B direct sale (admin use)
+await convex.mutation(api.transactions.collectorToBusinessSale, {
+  sellerId, buyerId, materialId, weight, price,
+})
+
+// B2B direct sale (admin use)
+await convex.mutation(api.transactions.businessToBusinessSale, {
+  sellerId, buyerId, materialId, weight, price,
+})
+```
+
+## Calculating Transaction Value
+
+The total value of any transaction is:
+
+```
+total = price × weight
+```
+
+For example, 250 kg at R8.50/kg = **R2,125.00**
+
+Price is stored as **Rand per kilogram**. Weight is stored in **kilograms**.
+
+## Invoice Generation
+
+Immediately after a transaction is created, a PDF invoice is generated:
+
+1. A Convex **action** (not a mutation — actions can call external APIs and do async work) generates the PDF
+2. The PDF binary is uploaded to **Convex file storage** via `ctx.storage.store()`
+3. The returned `storageId` is patched back onto the transaction: `invoiceStorageId`
+4. The invoice is accessible via a signed URL: `ctx.storage.getUrl(transaction.invoiceStorageId)`
+
+```typescript
+// Getting the download URL on the frontend
+const invoiceUrl = useQuery(api.transactions.getInvoiceUrl, { transactionId })
+// Returns a temporary signed URL to the PDF in Convex storage
+```
+
+## Invoice Contents
+
+Each PDF invoice includes:
+
+- Invoice number (derived from transaction ID)
+- Date of transaction
+- Seller and buyer details (name, address, registration number)
+- Material name and GW code
+- Weight (kg)
+- Price per kg
+- **Total** (price × weight)
+- VAT breakdown (if applicable)
+
+## Transaction History
+
+Users can view their transaction history filtered by:
+
+- **Date range** — supports standard presets plus custom picker
+- **Type** — C2B, B2B, or all
+- **Material** — filter by material name
+
+```typescript
+// Business viewing their expenses
+const expenses = useQuery(api.transactions.listExpenses, {
+  startDate, endDate,
+})
+
+// Collector viewing their sales
+const sales = useQuery(api.transactions.listSales, {
+  startDate, endDate,
+})
+
+// Admin viewing all transactions
+const all = useQuery(api.transactions.list)
+```
+
+<Callout type="note" title="Immutability">
+  Transaction records are never modified after creation — they are the audit trail. If a transaction was entered incorrectly by an admin, it must be reversed with a corrective transaction, not edited.
+</Callout>

@@ -1,0 +1,118 @@
+# Architecture Overview
+
+3reco is structured as a **transitional monorepo** with three independent packages. The active development direction is the `/3reco` package — a full-stack application powered by Convex.
+
+## Monorepo Structure
+
+```
+3reco/                    ← repo root
+├── 3reco/                ← ✅ Active: React 19 + Convex full-stack app
+│   ├── src/              ← React frontend
+│   ├── convex/           ← Convex backend (functions, schema, auth)
+│   ├── vite.config.ts
+│   └── package.json
+├── app/                  ← ⚠️  Legacy: SolidJS frontend
+│   └── package.json      (pnpm)
+└── api/                  ← ⚠️  Legacy: Express.js + MongoDB REST API
+    └── package.json      (pnpm)
+```
+
+The `/app` and `/api` packages are in maintenance mode. All new feature development happens in `/3reco`.
+
+## Frontend Architecture
+
+The React frontend is a standard Vite SPA. Key layers:
+
+```
+src/
+├── components/           ← Reusable UI components
+├── pages/ (or routes/)   ← Route-level components
+├── lib/                  ← Shared utilities
+└── main.tsx              ← App entry point with ConvexProvider
+```
+
+### State Management
+
+There is no separate state management library. All server state is managed by **Convex reactive queries** — components subscribe to queries directly:
+
+```typescript
+import { useQuery } from 'convex/react'
+import { api } from '../convex/_generated/api'
+
+function StockList() {
+  const stock = useQuery(api.stock.list)  // auto-updates in real time
+  // ...
+}
+```
+
+## Backend Architecture (Convex)
+
+Convex acts as a **Backend-as-a-Service**, replacing the legacy Express API entirely. The `convex/` directory contains:
+
+```
+convex/
+├── schema.ts             ← Database schema (tables + indexes)
+├── auth.ts               ← Authentication configuration
+├── users.ts              ← User queries & mutations
+├── materials.ts          ← Materials CRUD
+├── stock.ts              ← Stock CRUD
+├── transactions.ts       ← Transaction mutations
+├── transactionRequests.ts← Negotiation flow
+├── notifications.ts      ← Notifications
+└── _generated/           ← Auto-generated types (do not edit)
+    └── api.ts
+```
+
+### Convex Function Types
+
+| Type | Purpose | Example |
+|---|---|---|
+| **Query** | Read data, reactive | `api.stock.list` |
+| **Mutation** | Write data, transactional | `api.stock.create` |
+| **Action** | Side effects, async (PDF gen, email) | `api.invoices.generate` |
+
+## Real-Time Data Flow
+
+Convex provides **automatic reactivity** — when a mutation writes data, all clients subscribed to related queries receive the update immediately without polling:
+
+```
+User A creates transaction request
+       ↓
+Convex mutation runs transactionally
+       ↓
+All subscribers to related queries (User B, dashboard) update automatically
+       ↓
+Notification is inserted → User B's notification feed updates in real time
+```
+
+## Authentication Flow
+
+Authentication is handled by `@convex-dev/auth`:
+
+1. User submits credentials (or OAuth redirect)
+2. `@convex-dev/auth` validates and creates a session in Convex
+3. A JWT session token is stored in the browser
+4. All subsequent Convex requests include the token
+5. Server-side functions can call `await getAuthUserId(ctx)` to get the authenticated user
+
+```typescript
+// In a Convex mutation:
+import { getAuthUserId } from '@convex-dev/auth/server'
+
+export const create = mutation({
+  args: { weight: v.number(), materialId: v.id('materials') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new Error('Unauthenticated')
+    // ...
+  },
+})
+```
+
+## Deployment
+
+| Environment | Command | Notes |
+|---|---|---|
+| Development | `bunx convex dev` + `bun run dev` | Hot reload on both layers |
+| Production (backend) | `bunx convex deploy` | Deploys functions to Convex cloud |
+| Production (frontend) | `bun run build` | Static files → any CDN |
