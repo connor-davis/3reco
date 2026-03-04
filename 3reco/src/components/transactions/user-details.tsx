@@ -23,7 +23,7 @@ export default function TransactionUserDetails({ _id }: { _id: Id<'users'> }) {
           <Avatar>
             <AvatarImage src={user.image} />
             <AvatarFallback>
-              {user.firstName?.charAt(0) ?? user.email?.charAt(0)}
+              {(user.businessName ?? user.firstName)?.charAt(0) ?? user.email?.charAt(0)}
             </AvatarFallback>
           </Avatar>
         }
@@ -33,7 +33,7 @@ export default function TransactionUserDetails({ _id }: { _id: Id<'users'> }) {
           <Avatar>
             <AvatarImage src={user?.image} />
             <AvatarFallback>
-              {user?.firstName?.charAt(0) ?? user?.email?.charAt(0)}
+              {(user?.businessName ?? user?.firstName)?.charAt(0) ?? user?.email?.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">

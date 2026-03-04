@@ -103,9 +103,10 @@ function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string 
   );
 }
 
-function UserRow({ user }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; type?: UserType; profileComplete?: boolean } }) {
+function UserRow({ user }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; type?: UserType; profileComplete?: boolean } }) {
   const setType = useConvexMutation(api.users.setType);
   const displayName =
+    user.businessName ||
     user.name ||
     [user.firstName, user.lastName].filter(Boolean).join(' ') ||
     user.email ||
@@ -173,6 +174,7 @@ function RouteComponent() {
 
   const filtered = users?.filter((u) => {
     const displayName =
+      (u as { businessName?: string }).businessName ||
       (u as { name?: string }).name ||
       [(u as { firstName?: string }).firstName, (u as { lastName?: string }).lastName].filter(Boolean).join(' ') ||
       (u as { email?: string }).email ||
