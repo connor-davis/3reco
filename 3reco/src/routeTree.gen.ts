@@ -21,6 +21,7 @@ import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store.$sellerId'
 
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
@@ -82,6 +83,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketStoreSellerIdRoute = MarketStoreSellerIdRouteImport.update({
+  id: '/market/store/$sellerId',
+  path: '/market/store/$sellerId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/market/outgoing': typeof MarketOutgoingRoute
   '/market/': typeof MarketIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/market/outgoing': typeof MarketOutgoingRoute
   '/market': typeof MarketIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/market/outgoing': typeof MarketOutgoingRoute
   '/market/': typeof MarketIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/market/outgoing'
     | '/market/'
     | '/profile/'
+    | '/market/store/$sellerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/market/outgoing'
     | '/market'
     | '/profile'
+    | '/market/store/$sellerId'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/market/outgoing'
     | '/market/'
     | '/profile/'
+    | '/market/store/$sellerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   MarketOutgoingRoute: typeof MarketOutgoingRoute
   MarketIndexRoute: typeof MarketIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
+  MarketStoreSellerIdRoute: typeof MarketStoreSellerIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/market/store/$sellerId': {
+      id: '/market/store/$sellerId'
+      path: '/market/store/$sellerId'
+      fullPath: '/market/store/$sellerId'
+      preLoaderRoute: typeof MarketStoreSellerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarketOutgoingRoute: MarketOutgoingRoute,
   MarketIndexRoute: MarketIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
+  MarketStoreSellerIdRoute: MarketStoreSellerIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

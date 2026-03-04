@@ -19,9 +19,11 @@ import { toast } from 'sonner';
 export default function RequestDialog({
   sellerId,
   materialId,
+  stockId,
 }: {
   sellerId: Id<'users'>;
   materialId: Id<'materials'>;
+  stockId: Id<'stock'>;
 }) {
   const [open, setOpen] = useState(false);
   const material = useConvexQuery(api.materials.findById, { _id: materialId });
@@ -50,7 +52,7 @@ export default function RequestDialog({
         <DialogFooter showCloseButton>
           <Button
             onClick={() =>
-              toast.promise(createRequest({ sellerId, materialId }), {
+              toast.promise(createRequest({ sellerId, items: [{ materialId, stockId }] }), {
                 loading: 'Sending request...',
                 success: () => {
                   setOpen(false);

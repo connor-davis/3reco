@@ -10,7 +10,8 @@ type RequestDoc = {
   _id: Id<'transactionRequests'>;
   sellerId: Id<'users'>;
   buyerId: Id<'users'>;
-  materialId: Id<'materials'>;
+  materialId?: Id<'materials'>;
+  items?: Array<{ materialId?: Id<'materials'>; stockId: Id<'stock'> }>;
   status: 'pending' | 'offered' | 'accepted' | 'rejected' | 'cancelled';
 };
 
@@ -40,17 +41,26 @@ export default function RequestItem({
   request: RequestDoc;
   perspective: 'buyer' | 'seller';
 }) {
-  const material = useConvexQuery(api.materials.findById, { _id: request.materialId });
+  const firstMaterialId =
+    request.items?.[0]?.materialId ?? request.materialId;
+  const material = useConvexQuery(
+    api.materials.findById,
+    firstMaterialId ? { _id: firstMaterialId } : 'skip'
+  );
   const counterpartyId = perspective === 'buyer' ? request.sellerId : request.buyerId;
   const counterparty = useConvexQuery(api.users.findById, { _id: counterpartyId });
+  const itemCount = request.items?.length ?? 1;
 
   return (
     <Link to="/market/$requestId" params={{ requestId: request._id }}>
       <Item variant="muted">
         <ItemContent>
-          {material ? (
+          {firstMaterialId !== undefined ? (
             <>
-              <ItemTitle>{material.name}</ItemTitle>
+              <ItemTitle>
+                {material?.name ?? <Skeleton className="w-32 h-3 inline-block" />}
+                {itemCount > 1 && ` +${itemCount - 1} more`}
+              </ItemTitle>
               <ItemDescription>
                 {perspective === 'buyer' ? 'Seller' : 'Buyer'}:{' '}
                 {counterparty?.businessName ?? counterparty?.firstName ?? '...'}
@@ -58,12 +68,8 @@ export default function RequestItem({
             </>
           ) : (
             <>
-              <ItemTitle>
-                <Skeleton className="w-32 h-3" />
-              </ItemTitle>
-              <ItemDescription>
-                <Skeleton className="w-48 h-3" />
-              </ItemDescription>
+              <ItemTitle><Skeleton className="w-32 h-3" /></ItemTitle>
+              <ItemDescription><Skeleton className="w-48 h-3" /></ItemDescription>
             </>
           )}
         </ItemContent>

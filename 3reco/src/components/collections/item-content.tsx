@@ -10,21 +10,21 @@ export default function CollectionItemContent({
   _id: Id<'transactions'>;
 }) {
   const transaction = useConvexQuery(api.transactions.findById, { _id });
+  const items = transaction?.items ?? (
+    transaction?.materialId
+      ? [{ materialId: transaction.materialId, weight: transaction.weight ?? 0, price: transaction.price ?? 0 }]
+      : []
+  );
+  const firstMaterialId = items[0]?.materialId;
   const material = useConvexQuery(
     api.materials.findById,
-    transaction
-      ? {
-          _id: transaction.materialId,
-        }
-      : 'skip'
+    firstMaterialId ? { _id: firstMaterialId } : 'skip'
   );
 
-  if (!transaction || !material)
+  if (!transaction)
     return (
       <ItemContent>
-        <ItemTitle>
-          <Skeleton className="w-32 h-3" />
-        </ItemTitle>
+        <ItemTitle><Skeleton className="w-32 h-3" /></ItemTitle>
         <ItemDescription className="flex flex-col gap-1">
           <Skeleton className="w-full lg:w-96 h-3" />
           <Skeleton className="w-full lg:w-96 h-3" />
@@ -32,11 +32,17 @@ export default function CollectionItemContent({
       </ItemContent>
     );
 
+  const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+  const totalValue = items.reduce((s, i) => s + i.weight * i.price, 0);
+  const titleText = items.length > 1
+    ? `${material?.name ?? '...'} +${items.length - 1} more`
+    : (material?.name ?? '...');
+
   return (
     <ItemContent>
-      <ItemTitle>{material.name}</ItemTitle>
+      <ItemTitle>{titleText}</ItemTitle>
       <ItemDescription>
-        Weight: {transaction.weight} | Price: {transaction.price}
+        {totalWeight.toFixed(2)} kg · R{totalValue.toFixed(2)}
       </ItemDescription>
     </ItemContent>
   );

@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { query } from './_generated/server';
+import { getTransactionItems } from './transactions';
 
 function getUserDisplayName(
   user: { firstName?: string; lastName?: string; businessName?: string; email?: string } | null
@@ -29,23 +30,25 @@ export const exportTransactions = query({
     if (from !== undefined) rows = rows.filter((r) => r._creationTime >= from);
     if (to !== undefined) rows = rows.filter((r) => r._creationTime <= to);
 
-    return Promise.all(
-      rows.map(async (t) => {
-        const material = await ctx.db.get('materials', t.materialId);
-        const seller = await ctx.db.get('users', t.sellerId);
-        const buyer = await ctx.db.get('users', t.buyerId);
-        return {
+    const expandedRows = [];
+    for (const t of rows) {
+      const seller = await ctx.db.get('users', t.sellerId);
+      const buyer = await ctx.db.get('users', t.buyerId);
+      for (const item of getTransactionItems(t)) {
+        const material = await ctx.db.get('materials', item.materialId);
+        expandedRows.push({
           'Date': new Date(t._creationTime).toISOString(),
           'Transaction Type': t.type.toUpperCase(),
           'Material': material?.name ?? '',
-          'Weight (kg)': t.weight,
-          'Price per kg (R)': t.price,
-          'Total (R)': +(t.price * t.weight).toFixed(2),
+          'Weight (kg)': item.weight,
+          'Price per kg (R)': item.price,
+          'Total (R)': +(item.price * item.weight).toFixed(2),
           'Seller': getUserDisplayName(seller),
           'Buyer': getUserDisplayName(buyer),
-        };
-      })
-    );
+        });
+      }
+    }
+    return expandedRows;
   },
 });
 
@@ -84,22 +87,24 @@ export const exportCollections = query({
     if (from !== undefined) rows = rows.filter((r) => r._creationTime >= from);
     if (to !== undefined) rows = rows.filter((r) => r._creationTime <= to);
 
-    return Promise.all(
-      rows.map(async (t) => {
-        const material = await ctx.db.get('materials', t.materialId);
-        const seller = await ctx.db.get('users', t.sellerId);
-        const buyer = await ctx.db.get('users', t.buyerId);
-        return {
+    const expandedRows = [];
+    for (const t of rows) {
+      const seller = await ctx.db.get('users', t.sellerId);
+      const buyer = await ctx.db.get('users', t.buyerId);
+      for (const item of getTransactionItems(t)) {
+        const material = await ctx.db.get('materials', item.materialId);
+        expandedRows.push({
           'Date': new Date(t._creationTime).toISOString(),
           'Material': material?.name ?? '',
-          'Weight (kg)': t.weight,
-          'Price per kg (R)': t.price,
-          'Total (R)': +(t.price * t.weight).toFixed(2),
+          'Weight (kg)': item.weight,
+          'Price per kg (R)': item.price,
+          'Total (R)': +(item.price * item.weight).toFixed(2),
           'Collector': getUserDisplayName(seller),
           'Business': getUserDisplayName(buyer),
-        };
-      })
-    );
+        });
+      }
+    }
+    return expandedRows;
   },
 });
 

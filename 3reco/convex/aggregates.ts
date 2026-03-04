@@ -18,7 +18,12 @@ export const txByType = new TableAggregate<{
 }>((components as any).txByType, {
   namespace: (doc) => doc.type,
   sortKey: (doc) => doc._creationTime,
-  sumValue: (doc) => doc.weight,
+  sumValue: (doc) => {
+    if (doc.items && doc.items.length > 0) {
+      return doc.items.reduce((s, i) => s + i.weight, 0);
+    }
+    return doc.weight ?? 0;
+  },
 });
 
 /**
@@ -35,7 +40,7 @@ export const txByMaterial = new TableAggregate<{
   TableName: 'transactions';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }>((components as any).txByMaterial, {
-  namespace: (doc) => doc.materialId,
+  namespace: (doc) => doc.materialId ?? '',
   sortKey: (doc) => doc._creationTime,
-  sumValue: (doc) => doc.weight,
+  sumValue: (doc) => doc.weight ?? 0,
 });

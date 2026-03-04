@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -39,25 +38,25 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConvexError } from 'convex/values';
-import { CheckIcon, PlusIcon } from 'lucide-react';
+import { CheckIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { type ReactElement } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
-const collectionSchema = z.object({
+const itemSchema = z.object({
   materialId: z.string({ error: 'Please select a material.' }),
-  collectorId: z.string({ error: 'Please select a collector.' }),
   weight: z
-    .number({
-      error: 'Please provide a weight that is a number or decimal, e.g. 10.5',
-    })
-    .nonnegative({ error: 'Weight cannot be negative.' }),
+    .number({ error: 'Please provide a weight.' })
+    .positive({ error: 'Weight must be greater than zero.' }),
   price: z
-    .number({
-      error: 'Please provide a price that is a number or decimal, e.g. 10.5',
-    })
-    .nonnegative({ error: 'Price cannot be negative.' }),
+    .number({ error: 'Please provide a price.' })
+    .positive({ error: 'Price must be greater than zero.' }),
+});
+
+const collectionSchema = z.object({
+  collectorId: z.string({ error: 'Please select a collector.' }),
+  items: z.array(itemSchema).min(1, { error: 'At least one item is required.' }),
 });
 
 export default function CreateCollectionDialog({
@@ -72,8 +71,17 @@ export default function CreateCollectionDialog({
     api.transactions.collectorToBusinessSale
   );
 
-  const collectionForm = useForm<z.infer<typeof collectionSchema>>({
+  const form = useForm<z.infer<typeof collectionSchema>>({
     resolver: zodResolver(collectionSchema),
+    defaultValues: {
+      collectorId: '',
+      items: [{ materialId: '', weight: 0, price: 0 }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'items',
   });
 
   return (
@@ -90,27 +98,30 @@ export default function CreateCollectionDialog({
           )
         }
       />
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Collection</DialogTitle>
           <DialogDescription>
-            Please fill out the fields below to create a new collection.
+            Select a collector and add one or more materials to record this
+            collection.
           </DialogDescription>
         </DialogHeader>
 
         <form
-          id="form-create-material"
-          className="flex flex-col w-full h-auto gap-3"
-          onSubmit={collectionForm.handleSubmit((values) =>
+          id="form-create-collection"
+          className="flex flex-col w-full h-auto gap-4"
+          onSubmit={form.handleSubmit((values) =>
             toast.promise(
               createCollection({
-                materialId: values.materialId as Id<'materials'>,
                 collectorId: values.collectorId as Id<'users'>,
-                weight: values.weight,
-                price: values.price,
+                items: values.items.map((item) => ({
+                  materialId: item.materialId as Id<'materials'>,
+                  weight: item.weight,
+                  price: item.price,
+                })),
               }),
               {
-                loading: 'Creating the new material...',
+                loading: 'Creating collection...',
                 error: (error: Error) => {
                   if (error instanceof ConvexError) {
                     return {
@@ -118,208 +129,220 @@ export default function CreateCollectionDialog({
                       description: error.data.message,
                     };
                   }
-
-                  return {
-                    message: error.name,
-                    description: error.message,
-                  };
+                  return { message: error.name, description: error.message };
                 },
                 success: () => {
-                  return 'The new collection has been created.';
+                  form.reset({
+                    collectorId: '',
+                    items: [{ materialId: '', weight: 0, price: 0 }],
+                  });
+                  return 'Collection created.';
                 },
               }
             )
           )}
         >
-          <FieldGroup className="gap-3">
-            <Controller
-              name="materialId"
-              control={collectionForm.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-create-collection-material">
-                    Material
-                  </FieldLabel>
-                  <Select
-                    id="form-create-collection-material"
-                    value={field.value}
-                    onValueChange={(value) => field.onChange(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a material">
-                        {materials?.find((m) => m._id === field.value)?.name}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>
-                          {materials && materials.length > 0
-                            ? 'Materials'
-                            : 'There are no materials'}
-                        </SelectLabel>
-                        {materials?.map((material) => (
-                          <SelectItem
-                            key={material._id}
-                            value={material._id}
-                            render={
-                              <Item key={material._id}>
-                                <ItemContent>
-                                  <ItemTitle>{material.name}</ItemTitle>
-                                  <ItemDescription>
-                                    The material has a carbon factor of{' '}
-                                    {material.carbonFactor} kg CO₂e per kg, a GW
-                                    code of {material.gwCode}, and a price of $
-                                    {material.price} per kg.
-                                  </ItemDescription>
-                                </ItemContent>
-                                <ItemActions>
-                                  {field.value === material._id && (
-                                    <CheckIcon />
-                                  )}
-                                </ItemActions>
-                              </Item>
-                            }
-                          />
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                  <FieldDescription>
-                    Please select a Material for the new collection.
-                  </FieldDescription>
-                </Field>
-              )}
-            />
+          {/* Collector */}
+          <Controller
+            name="collectorId"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="form-create-collection-collector">
+                  Collector
+                </FieldLabel>
+                <Select
+                  id="form-create-collection-collector"
+                  value={field.value}
+                  onValueChange={(value) => field.onChange(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a collector">
+                      {(() => {
+                        const c = collectors?.find((m) => m._id === field.value);
+                        return c ? (c.businessName ?? c.name ?? c.email) : undefined;
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>
+                        {collectors && collectors.length > 0
+                          ? 'Collectors'
+                          : 'There are no collectors'}
+                      </SelectLabel>
+                      {collectors?.map((collector) => (
+                        <SelectItem
+                          key={collector._id}
+                          value={collector._id}
+                          render={
+                            <Item key={collector._id}>
+                              <ItemMedia>
+                                <Avatar>
+                                  <AvatarImage src={collector.image} />
+                                  <AvatarFallback>
+                                    {collector.firstName?.charAt(0) ??
+                                      collector.email?.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </ItemMedia>
+                              <ItemContent>
+                                <ItemTitle>
+                                  {collector.businessName ?? collector.name}
+                                </ItemTitle>
+                                <ItemDescription>
+                                  {collector.phone} | {collector.email}
+                                </ItemDescription>
+                              </ItemContent>
+                              <ItemActions>
+                                {field.value === collector._id && <CheckIcon />}
+                              </ItemActions>
+                            </Item>
+                          }
+                        />
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
 
-            <Controller
-              name="collectorId"
-              control={collectionForm.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-create-collection-collector">
-                    Collector
-                  </FieldLabel>
-                  <Select
-                    id="form-create-collection-material"
-                    value={field.value}
-                    onValueChange={(value) => field.onChange(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a collector">
-                        {collectors?.find((m) => m._id === field.value)?.name}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>
-                          {collectors && collectors.length > 0
-                            ? 'Collectors'
-                            : 'There are no collectors'}
-                        </SelectLabel>
-                        {collectors?.map((collector) => (
-                          <SelectItem
-                            key={collector._id}
-                            value={collector._id}
-                            render={
-                              <Item key={collector._id}>
-                                <ItemMedia>
-                                  <Avatar>
-                                    <AvatarImage src={collector.image} />
-                                    <AvatarFallback>
-                                      {collector.firstName?.charAt(0) ??
-                                        collector.email?.charAt(0)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </ItemMedia>
-                                <ItemContent>
-                                  <ItemTitle>{collector.name}</ItemTitle>
-                                  <ItemDescription>
-                                    {collector.phone} | {collector.email}
-                                  </ItemDescription>
-                                </ItemContent>
-                                <ItemActions>
-                                  {field.value === collector._id && (
-                                    <CheckIcon />
-                                  )}
-                                </ItemActions>
-                              </Item>
-                            }
-                          />
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                  <FieldDescription>
-                    Please select a Collector for the new collection.
-                  </FieldDescription>
-                </Field>
-              )}
-            />
+          {/* Cart items */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Items</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append({ materialId: '', weight: 0, price: 0 })}
+              >
+                <PlusIcon className="size-3" />
+                Add Item
+              </Button>
+            </div>
 
-            <Controller
-              name="weight"
-              control={collectionForm.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-create-collection-weight">
-                    Weight
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    id="form-create-collection-weight"
-                    aria-invalid={fieldState.invalid}
-                    placeholder="Weight"
-                    type="number"
-                    step={0.01}
-                    onChange={(event) =>
-                      field.onChange(event.target.valueAsNumber)
-                    }
+            {fields.map((field, index) => (
+              <FieldGroup
+                key={field.id}
+                className="gap-2 p-3 border rounded-lg"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-muted-foreground">
+                    Item {index + 1}
+                  </Label>
+                  {fields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                    >
+                      <TrashIcon className="size-3" />
+                    </Button>
+                  )}
+                </div>
+
+                <Controller
+                  name={`items.${index}.materialId`}
+                  control={form.control}
+                  render={({ field: f, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel>Material</FieldLabel>
+                      <Select
+                        value={f.value}
+                        onValueChange={(value) => f.onChange(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a material">
+                            {materials?.find((m) => m._id === f.value)?.name}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>
+                              {materials && materials.length > 0
+                                ? 'Materials'
+                                : 'No materials'}
+                            </SelectLabel>
+                            {materials?.map((material) => (
+                              <SelectItem
+                                key={material._id}
+                                value={material._id}
+                                render={
+                                  <Item key={material._id}>
+                                    <ItemContent>
+                                      <ItemTitle>{material.name}</ItemTitle>
+                                      <ItemDescription>
+                                        Base price: R{material.price}/kg
+                                      </ItemDescription>
+                                    </ItemContent>
+                                    <ItemActions>
+                                      {f.value === material._id && (
+                                        <CheckIcon />
+                                      )}
+                                    </ItemActions>
+                                  </Item>
+                                }
+                              />
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Controller
+                    name={`items.${index}.weight`}
+                    control={form.control}
+                    render={({ field: f, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel>Weight (kg)</FieldLabel>
+                        <Input
+                          {...f}
+                          type="number"
+                          step={0.01}
+                          placeholder="e.g. 10.5"
+                          onChange={(e) => f.onChange(e.target.valueAsNumber)}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
                   />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                  <FieldDescription>
-                    Please enter a Weight for the new collection, e.g. 10.5
-                  </FieldDescription>
-                </Field>
-              )}
-            />
-
-            <Controller
-              name="price"
-              control={collectionForm.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-create-collection-price">
-                    Price
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    id="form-create-collection-price"
-                    aria-invalid={fieldState.invalid}
-                    placeholder="Price"
-                    type="number"
-                    step={0.01}
-                    onChange={(event) =>
-                      field.onChange(event.target.valueAsNumber)
-                    }
+                  <Controller
+                    name={`items.${index}.price`}
+                    control={form.control}
+                    render={({ field: f, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel>Price / kg (R)</FieldLabel>
+                        <Input
+                          {...f}
+                          type="number"
+                          step={0.01}
+                          placeholder="e.g. 5.00"
+                          onChange={(e) => f.onChange(e.target.valueAsNumber)}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
                   />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                  <FieldDescription>
-                    Please enter a Price for the new collection, e.g. 10.5
-                  </FieldDescription>
-                </Field>
-              )}
-            />
-          </FieldGroup>
+                </div>
+              </FieldGroup>
+            ))}
+          </div>
 
           <Button type="submit">Create Collection</Button>
         </form>

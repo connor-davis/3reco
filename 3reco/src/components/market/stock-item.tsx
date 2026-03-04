@@ -41,7 +41,7 @@ export default function MarketStockItem({ stock }: { stock: StockDoc }) {
         )}
       </ItemContent>
       <ItemActions>
-        <RequestDialog sellerId={stock.ownerId} materialId={stock.materialId} />
+        <RequestDialog sellerId={stock.ownerId} materialId={stock.materialId} stockId={stock._id} />
       </ItemActions>
     </Item>
   );

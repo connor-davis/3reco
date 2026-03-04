@@ -3,14 +3,35 @@ import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
-import { txByType, txByMaterial } from './aggregates';
+import { txByType } from './aggregates';
+
+export const txItemValidator = v.object({
+  materialId: v.id('materials'),
+  weight: v.number(),
+  price: v.number(),
+});
+
+/** Normalise both legacy (materialId/weight/price) and new (items) transactions. */
+export function getTransactionItems(t: {
+  items?: Array<{ materialId: Id<'materials'>; weight: number; price: number }>;
+  materialId?: Id<'materials'>;
+  weight?: number;
+  price?: number;
+}): Array<{ materialId: Id<'materials'>; weight: number; price: number }> {
+  if (t.items && t.items.length > 0) return t.items;
+  if (t.materialId) return [{ materialId: t.materialId, weight: t.weight!, price: t.price! }];
+  return [];
+}
 
 export default defineTable({
   sellerId: v.id('users'),
   buyerId: v.id('users'),
-  materialId: v.id('materials'),
-  weight: v.number(),
-  price: v.number(),
+  // Multi-item transactions
+  items: v.optional(v.array(txItemValidator)),
+  // Legacy single-item fields (kept for backward compatibility)
+  materialId: v.optional(v.id('materials')),
+  weight: v.optional(v.number()),
+  price: v.optional(v.number()),
   type: v.union(v.literal('c2b'), v.literal('b2b')),
   invoiceStorageId: v.optional(v.id('_storage')),
 })
@@ -207,12 +228,10 @@ export const findById = query({
 
 export const collectorToBusinessSale = mutation({
   args: {
-    materialId: v.id('materials'),
     collectorId: v.id('users'),
-    weight: v.number(),
-    price: v.number(),
+    items: v.array(txItemValidator),
   },
-  handler: async (ctx, { materialId, collectorId, weight, price }) => {
+  handler: async (ctx, { collectorId, items }) => {
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity)
@@ -223,57 +242,53 @@ export const collectorToBusinessSale = mutation({
 
     const [businessId] = identity.subject.split('|');
 
+    // Validate all items
+    for (const item of items) {
+      const existingMaterial = await ctx.db.get('materials', item.materialId);
+      if (!existingMaterial)
+        throw new ConvexError({ name: 'Not Found', message: `Material not found.` });
+      if (item.price < existingMaterial.price)
+        throw new ConvexError({
+          name: 'Invalid Input',
+          message: `Price must be at or above the base material price.`,
+        });
+    }
+
     const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId as Id<'users'>,
       sellerId: collectorId,
-      materialId,
-      weight,
-      price,
+      items,
       type: 'c2b',
     });
 
     const newDoc = await ctx.db.get('transactions', transactionId);
     if (newDoc) {
       await txByType.insert(ctx, newDoc);
-      await txByMaterial.insert(ctx, newDoc);
     }
 
-    const existingStock= await ctx.db
-      .query('stock')
-      .withIndex('by_ownerId_by_materialId', (q) =>
-        q.eq('ownerId', businessId as Id<'users'>).eq('materialId', materialId)
-      )
-      .first();
+    // Upsert stock for each item
+    for (const item of items) {
+      const existingStock = await ctx.db
+        .query('stock')
+        .withIndex('by_ownerId_by_materialId', (q) =>
+          q.eq('ownerId', businessId as Id<'users'>).eq('materialId', item.materialId)
+        )
+        .first();
 
-    const existingMaterial = await ctx.db.get('materials', materialId);
-
-    if (!existingMaterial) {
-      throw new ConvexError({
-        name: 'Not Found',
-        message: `Material with id ${materialId} not found.`,
-      });
-    }
-
-    if (price < existingMaterial.price) {
-      throw new ConvexError({
-        name: 'Invalid Input',
-        message: `The price of the stock must be greater than or equal to the price of the material.`,
-      });
-    }
-
-    if (!existingStock) {
-      await ctx.db.insert('stock', {
-        ownerId: businessId as Id<'users'>,
-        materialId,
-        weight,
-        price,
-        isListed: false,
-      });
-    } else {
-      await ctx.db.patch('stock', existingStock._id, {
-        weight: existingStock.weight + weight,
-        price,
-      });
+      if (!existingStock) {
+        await ctx.db.insert('stock', {
+          ownerId: businessId as Id<'users'>,
+          materialId: item.materialId,
+          weight: item.weight,
+          price: item.price,
+          isListed: false,
+        });
+      } else {
+        await ctx.db.patch('stock', existingStock._id, {
+          weight: existingStock.weight + item.weight,
+          price: item.price,
+        });
+      }
     }
 
     await ctx.scheduler.runAfter(0, internal.invoices.generateForTransaction, {
@@ -284,12 +299,10 @@ export const collectorToBusinessSale = mutation({
 
 export const businessToBusinessSale= mutation({
   args: {
-    materialId: v.id('materials'),
     businessId: v.id('users'),
-    weight: v.number(),
-    price: v.number(),
+    items: v.array(txItemValidator),
   },
-  handler: async (ctx, { materialId, businessId, weight, price }) => {
+  handler: async (ctx, { businessId, items }) => {
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity)
@@ -300,77 +313,80 @@ export const businessToBusinessSale= mutation({
 
     const [sellerId] = identity.subject.split('|');
 
+    // Validate all items
+    for (const item of items) {
+      const existingMaterial = await ctx.db.get('materials', item.materialId);
+      if (!existingMaterial)
+        throw new ConvexError({ name: 'Not Found', message: `Material not found.` });
+      if (item.price < existingMaterial.price)
+        throw new ConvexError({
+          name: 'Invalid Input',
+          message: `Price must be at or above the base material price.`,
+        });
+
+      const existingSellerStock = await ctx.db
+        .query('stock')
+        .withIndex('by_ownerId_by_materialId', (q) =>
+          q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', item.materialId)
+        )
+        .first();
+
+      if (!existingSellerStock || existingSellerStock.weight < item.weight)
+        throw new ConvexError({
+          name: 'Invalid Input',
+          message: 'Insufficient stock to complete this transaction.',
+        });
+    }
+
     const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId,
       sellerId: sellerId as Id<'users'>,
-      materialId,
-      weight,
-      price,
+      items,
       type: 'b2b',
     });
 
     const newDoc = await ctx.db.get('transactions', transactionId);
     if (newDoc) {
       await txByType.insert(ctx, newDoc);
-      await txByMaterial.insert(ctx, newDoc);
     }
 
-    const existingSellerStock= await ctx.db
-      .query('stock')
-      .withIndex('by_ownerId_by_materialId', (q) =>
-        q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', materialId)
-      )
-      .first();
+    // Update stock for each item
+    for (const item of items) {
+      const existingSellerStock = await ctx.db
+        .query('stock')
+        .withIndex('by_ownerId_by_materialId', (q) =>
+          q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', item.materialId)
+        )
+        .first();
 
-    const existingBuyerStock = await ctx.db
-      .query('stock')
-      .withIndex('by_ownerId_by_materialId', (q) =>
-        q.eq('ownerId', businessId).eq('materialId', materialId)
-      )
-      .first();
+      const existingBuyerStock = await ctx.db
+        .query('stock')
+        .withIndex('by_ownerId_by_materialId', (q) =>
+          q.eq('ownerId', businessId).eq('materialId', item.materialId)
+        )
+        .first();
 
-    const existingMaterial = await ctx.db.get('materials', materialId);
+      if (existingSellerStock) {
+        await ctx.db.patch('stock', existingSellerStock._id, {
+          weight: existingSellerStock.weight - item.weight,
+        });
+      }
 
-    if (!existingMaterial) {
-      throw new ConvexError({
-        name: 'Not Found',
-        message: `Material with id ${materialId} not found.`,
-      });
+      if (!existingBuyerStock) {
+        await ctx.db.insert('stock', {
+          ownerId: businessId,
+          materialId: item.materialId,
+          weight: item.weight,
+          price: item.price,
+          isListed: false,
+        });
+      } else {
+        await ctx.db.patch('stock', existingBuyerStock._id, {
+          weight: existingBuyerStock.weight + item.weight,
+          price: item.price,
+        });
+      }
     }
-
-    if (price < existingMaterial.price) {
-      throw new ConvexError({
-        name: 'Invalid Input',
-        message: `The price of the stock must be greater than or equal to the price of the material.`,
-      });
-    }
-
-    if (!existingSellerStock || existingSellerStock.weight < weight) {
-      throw new ConvexError({
-        name: 'Invalid Input',
-        message:
-          'The seller does not have enough stock to complete this transaction.',
-      });
-    }
-
-    if (!existingBuyerStock) {
-      await ctx.db.insert('stock', {
-        ownerId: businessId,
-        materialId,
-        weight,
-        price,
-        isListed: false,
-      });
-    } else {
-      await ctx.db.patch('stock', existingBuyerStock._id, {
-        weight: existingBuyerStock.weight + weight,
-        price,
-      });
-    }
-
-    await ctx.db.patch('stock', existingSellerStock._id, {
-      weight: existingSellerStock.weight - weight,
-    });
 
     await ctx.scheduler.runAfter(0, internal.invoices.generateForTransaction, {
       transactionId,

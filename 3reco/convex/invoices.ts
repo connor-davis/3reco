@@ -8,6 +8,7 @@ import {
 } from './_generated/server';
 import { internal } from './_generated/api';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { getTransactionItems } from './transactions';
 
 export const getTransactionData = internalQuery({
   args: { transactionId: v.id('transactions') },
@@ -16,8 +17,14 @@ export const getTransactionData = internalQuery({
     if (!transaction) return null;
     const seller = await ctx.db.get('users', transaction.sellerId);
     const buyer = await ctx.db.get('users', transaction.buyerId);
-    const material = await ctx.db.get('materials', transaction.materialId);
-    return { transaction, seller, buyer, material };
+    const rawItems = getTransactionItems(transaction);
+    const resolvedItems = await Promise.all(
+      rawItems.map(async (item) => {
+        const material = await ctx.db.get('materials', item.materialId);
+        return { ...item, materialName: material?.name ?? 'Unknown' };
+      })
+    );
+    return { transaction, seller, buyer, items: resolvedItems };
   },
 });
 
@@ -40,8 +47,8 @@ export const generateForTransaction = internalAction({
       transactionId,
     });
     if (!data) return;
-    const { transaction, seller, buyer, material } = data;
-    if (!seller || !buyer || !material) return;
+    const { transaction, seller, buyer, items } = data;
+    if (!seller || !buyer || items.length === 0) return;
 
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -120,19 +127,24 @@ export const generateForTransaction = internalAction({
     page.drawText('TOTAL', { x: 460, y: y + 3, size: 10, font: boldFont, color: dark });
     y -= 30;
 
-    const total = transaction.weight * transaction.price;
-    page.drawText(material.name, { x: 50, y, size: 10, font: regularFont, color: dark });
-    page.drawText(`${transaction.weight.toFixed(2)} kg`, { x: 255, y, size: 10, font: regularFont, color: dark });
-    page.drawText(`R ${transaction.price.toFixed(2)}`, { x: 355, y, size: 10, font: regularFont, color: dark });
-    page.drawText(`R ${total.toFixed(2)}`, { x: 460, y, size: 10, font: regularFont, color: dark });
+    let grandTotal = 0;
+    for (const item of items) {
+      const lineTotal = item.weight * item.price;
+      grandTotal += lineTotal;
+      page.drawText(item.materialName, { x: 50, y, size: 10, font: regularFont, color: dark });
+      page.drawText(`${item.weight.toFixed(2)} kg`, { x: 255, y, size: 10, font: regularFont, color: dark });
+      page.drawText(`R ${item.price.toFixed(2)}`, { x: 355, y, size: 10, font: regularFont, color: dark });
+      page.drawText(`R ${lineTotal.toFixed(2)}`, { x: 460, y, size: 10, font: regularFont, color: dark });
+      y -= 20;
+    }
 
-    y -= 15;
+    y -= 5;
     page.drawLine({ start: { x: 40, y }, end: { x: width - 40, y }, thickness: 0.5, color: light });
-    y -= 30;
+    y -= 25;
 
     // ── Total ─────────────────────────────────────────────────────────────────
     page.drawText('TOTAL DUE:', { x: 355, y, size: 12, font: boldFont, color: dark });
-    page.drawText(`R ${total.toFixed(2)}`, { x: 460, y, size: 13, font: boldFont, color: green });
+    page.drawText(`R ${grandTotal.toFixed(2)}`, { x: 460, y, size: 13, font: boldFont, color: green });
 
     y -= 20;
     const txType =

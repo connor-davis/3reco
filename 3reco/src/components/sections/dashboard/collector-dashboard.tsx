@@ -161,7 +161,7 @@ export default function CollectorDashboard() {
                     <tr key={t._id} className="border-b last:border-0">
                       <td className="py-2 px-3">{t.materialName}</td>
                       <td className="py-2 px-3 text-right">{t.weight.toFixed(1)} kg</td>
-                      <td className="py-2 px-3 text-right">R {t.price.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right">R {t.price?.toFixed(2) ?? '—'}</td>
                       <td className="py-2 px-3">{t.buyerName}</td>
                       <td className="py-2 px-3 text-right whitespace-nowrap">
                         {format(new Date(t._creationTime), 'dd MMM yyyy')}

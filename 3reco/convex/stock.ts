@@ -68,6 +68,62 @@ export const list = query({
   },
 });
 
+export const listListedBySeller = query({
+  args: { sellerId: v.id('users') },
+  handler: async (ctx, { sellerId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    return await ctx.db
+      .query('stock')
+      .withIndex('by_ownerId', (q) => q.eq('ownerId', sellerId))
+      .filter((q) => q.eq(q.field('isListed'), true))
+      .collect();
+  },
+});
+
+export const listSellersWithStock = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+
+    const allListed = await ctx.db
+      .query('stock')
+      .withIndex('by_isListed', (q) => q.eq('isListed', true))
+      .collect();
+
+    const othersStock = allListed.filter((s) => s.ownerId !== (userId as Id<'users'>));
+
+    const byOwner = new Map<Id<'users'>, typeof othersStock>();
+    for (const s of othersStock) {
+      if (!byOwner.has(s.ownerId)) byOwner.set(s.ownerId, []);
+      byOwner.get(s.ownerId)!.push(s);
+    }
+
+    const sellers = await Promise.all(
+      Array.from(byOwner.entries()).map(async ([ownerId, items]) => {
+        const owner = await ctx.db.get('users', ownerId);
+        const materialIds = [...new Set(items.map((i) => i.materialId))];
+        const materials = await Promise.all(materialIds.map((id) => ctx.db.get('materials', id)));
+        return {
+          _id: ownerId,
+          displayName: (owner?.businessName ??
+            (`${owner?.firstName ?? ''} ${owner?.lastName ?? ''}`.trim() || 'Unknown')),
+          itemCount: items.length,
+          materialNames: materials.filter(Boolean).map((m) => m!.name),
+        };
+      })
+    );
+
+    return sellers;
+  },
+});
+
+
 export const findByStockId = query({
   args: {
     _id: v.id('stock'),

@@ -10,16 +10,18 @@ export default function TransactionItemContent({
   _id: Id<'transactions'>;
 }) {
   const transaction = useConvexQuery(api.transactions.findById, { _id });
+  const items = transaction?.items ?? (
+    transaction?.materialId
+      ? [{ materialId: transaction.materialId, weight: transaction.weight ?? 0, price: transaction.price ?? 0 }]
+      : []
+  );
+  const firstMaterialId = items[0]?.materialId;
   const material = useConvexQuery(
     api.materials.findById,
-    transaction
-      ? {
-          _id: transaction.materialId,
-        }
-      : 'skip'
+    firstMaterialId ? { _id: firstMaterialId as Id<'materials'> } : 'skip'
   );
 
-  if (!transaction || !material)
+  if (!transaction)
     return (
       <ItemContent>
         <ItemTitle>
@@ -32,11 +34,19 @@ export default function TransactionItemContent({
       </ItemContent>
     );
 
+  const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+  const totalValue = items.reduce((s, i) => s + i.weight * i.price, 0);
+
+  const titleText = items.length > 1
+    ? `${material?.name ?? '...'} +${items.length - 1} more`
+    : (material?.name ?? '...');
+
   return (
     <ItemContent>
-      <ItemTitle>{material.name}</ItemTitle>
+      <ItemTitle>{titleText}</ItemTitle>
       <ItemDescription>
-        Weight: {transaction.weight} | Price: {transaction.price}
+        {totalWeight.toFixed(2)} kg · R{totalValue.toFixed(2)}
+        {items.length > 1 && ` · ${items.length} materials`}
       </ItemDescription>
     </ItemContent>
   );

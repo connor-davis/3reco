@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -29,7 +28,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
 import { CheckIcon, SendIcon, UndoIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
@@ -37,13 +36,19 @@ export const Route = createFileRoute('/market/$requestId')({
   component: RouteComponent,
 });
 
-const offerSchema = z.object({
-  weight: z
+const offerItemSchema = z.object({
+  materialId: z.string(),
+  materialName: z.string(),
+  offerWeight: z
     .number({ error: 'Please provide a weight.' })
     .positive({ error: 'Weight must be greater than zero.' }),
-  price: z
+  offerPrice: z
     .number({ error: 'Please provide a price.' })
     .positive({ error: 'Price must be greater than zero.' }),
+});
+
+const offerSchema = z.object({
+  items: z.array(offerItemSchema).min(1),
 });
 
 const statusVariant: Record<
@@ -73,10 +78,7 @@ function RouteComponent() {
     _id: requestId as Id<'transactionRequests'>,
   });
   const currentUser = useConvexQuery(api.users.currentUser, {});
-  const material = useConvexQuery(
-    api.materials.findById,
-    request ? { _id: request.materialId } : 'skip'
-  );
+  const materials = useConvexQuery(api.materials.list, {});
   const counterparty = useConvexQuery(
     api.users.findById,
     request && currentUser
@@ -96,9 +98,27 @@ function RouteComponent() {
   const rejectRequest = useConvexMutation(api.transactionRequests.reject);
   const cancelRequest = useConvexMutation(api.transactionRequests.cancel);
 
+  const materialMap = new Map(materials?.map((m) => [m._id, m]) ?? []);
+
+  // Normalise items for display
+  const requestItems = request?.items ??
+    (request?.materialId
+      ? [{ materialId: request.materialId, stockId: undefined as unknown as Id<'stock'> }]
+      : []);
+
   const offerForm = useForm<z.infer<typeof offerSchema>>({
     resolver: zodResolver(offerSchema),
+    values: {
+      items: requestItems.map((item) => ({
+        materialId: item.materialId ?? '',
+        materialName: item.materialId ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? '') : '',
+        offerWeight: (item as { offerWeight?: number }).offerWeight ?? 0,
+        offerPrice: (item as { offerPrice?: number }).offerPrice ?? 0,
+      })),
+    },
   });
+
+  const { fields } = useFieldArray({ control: offerForm.control, name: 'items' });
 
   if (!request || !currentUser) {
     return (
@@ -123,15 +143,23 @@ function RouteComponent() {
     return { message: error.name, description: error.message };
   };
 
+  // Title: first material or "N materials"
+  const titleItems = requestItems.map((item) =>
+    item.materialId ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? 'Unknown') : 'Unknown'
+  );
+  const titleText = titleItems.length === 0
+    ? 'Request'
+    : titleItems.length === 1
+      ? titleItems[0]
+      : `${titleItems[0]} +${titleItems.length - 1} more`;
+
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
       {/* ── Header ── */}
       <div className="flex flex-wrap items-center w-full h-auto gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <BackButton />
-          <Label className="text-lg truncate">
-            {material?.name ?? <Skeleton className="w-32 h-5 inline-block" />}
-          </Label>
+          <Label className="text-lg truncate">{titleText}</Label>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={statusVariant[request.status]}>
@@ -146,29 +174,31 @@ function RouteComponent() {
                   <SendIcon />
                   <span className="hidden sm:inline">Make Offer</span>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Make an Offer</DialogTitle>
                     <DialogDescription>
-                      Propose a weight and price. The buyer will need to accept
-                      before the transaction is finalised.
+                      Set the weight and price for each requested item. The buyer
+                      will need to accept before the transaction is finalised.
                     </DialogDescription>
                   </DialogHeader>
                   <form
                     id="form-make-offer"
-                    className="flex flex-col gap-3"
+                    className="flex flex-col gap-4"
                     onSubmit={offerForm.handleSubmit((values) =>
                       toast.promise(
                         makeOffer({
                           _id: requestId as Id<'transactionRequests'>,
-                          weight: values.weight,
-                          price: values.price,
+                          offerItems: values.items.map((item) => ({
+                            materialId: item.materialId as Id<'materials'>,
+                            offerWeight: item.offerWeight,
+                            offerPrice: item.offerPrice,
+                          })),
                         }),
                         {
                           loading: 'Sending offer...',
                           success: () => {
                             setOfferOpen(false);
-                            offerForm.reset({});
                             return 'Offer sent to buyer!';
                           },
                           error: handleMutationError,
@@ -176,64 +206,49 @@ function RouteComponent() {
                       )
                     )}
                   >
-                    <FieldGroup className="gap-3">
-                      <Controller
-                        name="weight"
-                        control={offerForm.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel htmlFor="form-offer-weight">
-                              Weight (kg)
-                            </FieldLabel>
-                            <Input
-                              {...field}
-                              id="form-offer-weight"
-                              type="number"
-                              step={0.01}
-                              placeholder="e.g. 100"
-                              aria-invalid={fieldState.invalid}
-                              onChange={(e) =>
-                                field.onChange(e.target.valueAsNumber)
-                              }
-                            />
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
+                    {fields.map((field, index) => (
+                      <FieldGroup key={field.id} className="gap-2 p-3 border rounded-lg">
+                        <Label className="text-xs text-muted-foreground font-medium">
+                          {offerForm.watch(`items.${index}.materialName`) || `Item ${index + 1}`}
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Controller
+                            name={`items.${index}.offerWeight`}
+                            control={offerForm.control}
+                            render={({ field: f, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel>Weight (kg)</FieldLabel>
+                                <Input
+                                  {...f}
+                                  type="number"
+                                  step={0.01}
+                                  placeholder="e.g. 100"
+                                  onChange={(e) => f.onChange(e.target.valueAsNumber)}
+                                />
+                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                              </Field>
                             )}
-                            <FieldDescription>
-                              The weight in kilograms you are offering.
-                            </FieldDescription>
-                          </Field>
-                        )}
-                      />
-                      <Controller
-                        name="price"
-                        control={offerForm.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel htmlFor="form-offer-price">
-                              Price (R/kg)
-                            </FieldLabel>
-                            <Input
-                              {...field}
-                              id="form-offer-price"
-                              type="number"
-                              step={0.01}
-                              placeholder="e.g. 15.50"
-                              aria-invalid={fieldState.invalid}
-                              onChange={(e) =>
-                                field.onChange(e.target.valueAsNumber)
-                              }
-                            />
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
+                          />
+                          <Controller
+                            name={`items.${index}.offerPrice`}
+                            control={offerForm.control}
+                            render={({ field: f, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel>Price (R/kg)</FieldLabel>
+                                <Input
+                                  {...f}
+                                  type="number"
+                                  step={0.01}
+                                  placeholder="e.g. 15.50"
+                                  onChange={(e) => f.onChange(e.target.valueAsNumber)}
+                                />
+                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                              </Field>
                             )}
-                            <FieldDescription>
-                              Price per kilogram in Rands.
-                            </FieldDescription>
-                          </Field>
-                        )}
-                      />
-                    </FieldGroup>
+                          />
+                        </div>
+                      </FieldGroup>
+                    ))}
                   </form>
                   <DialogFooter showCloseButton>
                     <Button type="submit" form="form-make-offer">
@@ -372,25 +387,46 @@ function RouteComponent() {
         {counterparty?.businessName ?? counterparty?.firstName ?? '...'}
       </div>
 
-      {/* Offer details panel — visible to buyer when an offer is active */}
-      {!isSeller && isOffered && request.offerWeight != null && request.offerPrice != null && (
-        <div className="rounded-xl border bg-muted/50 px-4 py-3 flex flex-wrap gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground">Offered weight</span>
-            <p className="font-semibold">{request.offerWeight} kg</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Price per kg</span>
-            <p className="font-semibold">R {request.offerPrice.toFixed(2)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Total</span>
-            <p className="font-semibold">
-              R {(request.offerWeight * request.offerPrice).toFixed(2)}
-            </p>
-          </div>
+      {/* Items table */}
+      <div className="rounded-xl border overflow-hidden text-sm">
+        <div className="grid grid-cols-4 gap-2 px-3 py-2 bg-muted text-muted-foreground font-medium text-xs">
+          <span>Material</span>
+          <span className="text-right">Offered Weight</span>
+          <span className="text-right">Price/kg</span>
+          <span className="text-right">Total</span>
         </div>
-      )}
+        {requestItems.map((item, i) => {
+          const matName = item.materialId
+            ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? 'Unknown')
+            : 'Unknown';
+          const offerWeight = (item as { offerWeight?: number }).offerWeight;
+          const offerPrice = (item as { offerPrice?: number }).offerPrice;
+          return (
+            <div key={i} className="grid grid-cols-4 gap-2 px-3 py-2 border-t">
+              <span>{matName}</span>
+              <span className="text-right">{offerWeight != null ? `${offerWeight} kg` : '—'}</span>
+              <span className="text-right">{offerPrice != null ? `R${offerPrice.toFixed(2)}` : '—'}</span>
+              <span className="text-right">
+                {offerWeight != null && offerPrice != null
+                  ? `R${(offerWeight * offerPrice).toFixed(2)}`
+                  : '—'}
+              </span>
+            </div>
+          );
+        })}
+        {isOffered && (
+          <div className="grid grid-cols-4 gap-2 px-3 py-2 border-t bg-muted/50 font-medium">
+            <span className="col-span-3 text-right">Grand Total</span>
+            <span className="text-right">
+              R{requestItems.reduce((sum, item) => {
+                const ow = (item as { offerWeight?: number }).offerWeight ?? 0;
+                const op = (item as { offerPrice?: number }).offerPrice ?? 0;
+                return sum + ow * op;
+              }, 0).toFixed(2)}
+            </span>
+          </div>
+        )}
+      </div>
 
       <MessageThread requestId={requestId as Id<'transactionRequests'>} />
     </div>

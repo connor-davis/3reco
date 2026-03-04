@@ -14,7 +14,10 @@ export const backfillAggregates = internalMutation({
     let count = 0;
     for (const doc of all) {
       await txByType.insert(ctx, doc);
-      await txByMaterial.insert(ctx, doc);
+      // Only insert into txByMaterial for legacy single-item transactions
+      if (doc.materialId) {
+        await txByMaterial.insert(ctx, doc);
+      }
       count++;
     }
     return { backfilled: count };
