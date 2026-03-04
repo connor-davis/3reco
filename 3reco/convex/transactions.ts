@@ -46,6 +46,7 @@ export const listExpensesWithPagination = query({
         .withIndex('by_buyerId_and_type', (q) =>
           q.eq('buyerId', userId as Id<'users'>).eq('type', 'c2b')
         )
+        .order('desc')
         .paginate(paginationOpts);
     }
 
@@ -56,7 +57,10 @@ export const listExpensesWithPagination = query({
       });
     }
 
-    return await ctx.db.query('transactions').paginate(paginationOpts);
+    return await ctx.db
+      .query('transactions')
+      .order('desc')
+      .paginate(paginationOpts);
   },
 });
 
@@ -95,7 +99,7 @@ export const listExpenses = query({
       });
     }
 
-    return await ctx.db.query('transactions').collect();
+    return await ctx.db.query('transactions').order('desc').collect();
   },
 });
 
@@ -127,10 +131,14 @@ export const listSalesWithPagination = query({
         .withIndex('by_sellerId_and_type', (q) =>
           q.eq('sellerId', userId as Id<'users'>).eq('type', 'c2b')
         )
+        .order('desc')
         .paginate(paginationOpts);
     }
 
-    return await ctx.db.query('transactions').paginate(paginationOpts);
+    return await ctx.db
+      .query('transactions')
+      .order('desc')
+      .paginate(paginationOpts);
   },
 });
 
@@ -159,10 +167,11 @@ export const listSales = query({
         .withIndex('by_sellerId_and_type', (q) =>
           q.eq('sellerId', userId as Id<'users'>).eq('type', 'c2b')
         )
+        .order('desc')
         .collect();
     }
 
-    return await ctx.db.query('transactions').collect();
+    return await ctx.db.query('transactions').order('desc').collect();
   },
 });
 
@@ -171,13 +180,16 @@ export const listWithPagination = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, { paginationOpts }) => {
-    return await ctx.db.query('transactions').paginate(paginationOpts);
+    return await ctx.db
+      .query('transactions')
+      .order('desc')
+      .paginate(paginationOpts);
   },
 });
 
 export const list = query({
   handler: async (ctx) => {
-    return await ctx.db.query('transactions').collect();
+    return await ctx.db.query('transactions').order('desc').collect();
   },
 });
 
