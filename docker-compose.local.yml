@@ -1,0 +1,47 @@
+# =============================================================================
+#  3reco – Docker Compose local override
+#
+#  Merges with docker-compose.yml to run the full stack on localhost with no
+#  DNS setup and no TLS certificates required.
+#
+#  Single command:
+#    docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+#
+#  Services will be available at:
+#    http://app.localhost
+#    http://docs.localhost
+#    http://convex.localhost
+#    http://convex-site.localhost
+#    http://convex-dashboard.localhost
+# =============================================================================
+
+services:
+
+  frontend:
+    build:
+      args:
+        # Bake localhost URLs into the JS bundle
+        VITE_CONVEX_URL: http://convex.localhost
+        VITE_CONVEX_AUTH_DOMAIN: http://convex-site.localhost
+
+  convex-backend:
+    environment:
+      - INSTANCE_NAME=3reco-local
+      # Dummy secret — fine for local dev, never use in production
+      - INSTANCE_SECRET=0000000000000000000000000000000000000000000000000000000000000001
+      - CONVEX_CLOUD_ORIGIN=http://convex.localhost
+      - CONVEX_SITE_ORIGIN=http://convex-site.localhost
+      - DO_NOT_REQUIRE_SSL=true
+
+  convex-dashboard:
+    environment:
+      - NEXT_PUBLIC_DEPLOYMENT_URL=http://convex.localhost
+
+  caddy:
+    environment:
+      - DOMAIN=localhost   # not used by Caddyfile.local but keeps compose happy
+    volumes:
+      # Override the Caddyfile with the HTTP-only localhost version
+      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config

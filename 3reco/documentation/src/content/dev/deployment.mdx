@@ -1,114 +1,140 @@
 # Deployment
 
-This guide covers deploying both the Convex backend and the React frontend to production.
+3reco supports two deployment strategies:
 
-## Overview
+| Strategy | When to use |
+|---|---|
+| **Docker (self-hosted)** | You own the infrastructure and want full control. Everything runs in containers — Convex backend, React app, docs, and Caddy reverse proxy. |
+| **Convex Cloud + static hosting** | Quickest path to production. Convex manages the backend; deploy the frontend to any CDN. |
 
-The application has two independent deploy targets:
+---
 
-| Target | Command | Hosting |
-|---|---|---|
-| Convex backend | `bunx convex deploy` | Convex cloud (managed) |
-| React frontend | `bun run build` → upload `dist/` | Any static host |
+## Docker Deployment (Self-Hosted)
 
-Both can be deployed independently — the frontend references the Convex deployment URL via an environment variable.
+The repo ships with a complete Docker Compose stack. A single [Caddy](https://caddyserver.com) container handles reverse-proxying and **automatically provisions TLS certificates** via Let's Encrypt — no cert files or cron jobs needed.
 
-## Environment Variables
+### Architecture
 
-### Development (`3reco/.env.local`)
-
-```bash
-VITE_CONVEX_URL=https://<your-deployment>.convex.cloud
+```
+Internet
+   │
+   ▼
+Caddy (80/443)
+   ├── app.yourdomain.com          → frontend  (React 19 + Vite)
+   ├── docs.yourdomain.com         → docs       (documentation site)
+   ├── convex.yourdomain.com       → convex-backend :3210  (API + WebSocket)
+   ├── convex-site.yourdomain.com  → convex-backend :3211  (HTTP actions)
+   └── convex-dashboard.yourdomain.com → convex-dashboard :6791
 ```
 
-### Production
+### Prerequisites
 
-The same variable must be available at **build time** (not runtime) because Vite inlines it at `import.meta.env.VITE_CONVEX_URL`. Set it in your hosting provider's build environment.
+- Docker ≥ 24 and Docker Compose v2
+- A server with a public IP
+- DNS A records for all five subdomains pointing at that IP
 
-<Callout type="warning" title="Never commit .env.local">
-  `.env.local` is git-ignored. Never commit it — it contains your deployment URL which is specific to each environment.
+### Localhost quickstart (single command)
+
+To run the full stack locally with no DNS setup and no TLS:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+```
+
+After the stack starts the services are available at:
+
+| URL | Service |
+|---|---|
+| `http://app.localhost` | React frontend |
+| `http://docs.localhost` | Documentation site |
+| `http://convex.localhost` | Convex backend API |
+| `http://convex-site.localhost` | Convex HTTP actions |
+| `http://convex-dashboard.localhost` | Convex admin dashboard |
+
+The `docker-compose.local.yml` override pre-fills all environment variables with localhost values so no `.env` file is needed.
+
+<Callout type="note" title="*.localhost in browsers">
+  Modern browsers resolve `*.localhost` to `127.0.0.1` natively — no `/etc/hosts` edits required. If a browser doesn't resolve them, add the five entries manually.
 </Callout>
 
-## Deploying the Convex Backend
+### Production setup
 
-### First-time setup
+**1. Configure environment**
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in:
+
+| Variable | Description |
+|---|---|
+| `DOMAIN` | Your root domain, e.g. `yourdomain.com` |
+| `INSTANCE_NAME` | Any unique name for this deployment |
+| `INSTANCE_SECRET` | 64-byte hex string — generate with `openssl rand -hex 64` |
+| `CONVEX_CLOUD_ORIGIN` | `https://convex.yourdomain.com` |
+| `CONVEX_SITE_ORIGIN` | `https://convex-site.yourdomain.com` |
+| `VITE_CONVEX_URL` | Same as `CONVEX_CLOUD_ORIGIN` |
+| `VITE_CONVEX_AUTH_DOMAIN` | Same as `CONVEX_SITE_ORIGIN` |
+
+**2. Start the stack**
+
+```bash
+docker compose up -d --build
+```
+
+Caddy will request TLS certificates on first boot — this requires ports 80 and 443 to be reachable from the internet.
+
+**3. Generate the Convex admin key**
+
+```bash
+docker compose exec convex-backend ./generate_admin_key.sh
+```
+
+Copy the key — you'll need it to log in to the Convex dashboard and to deploy functions.
+
+**4. Deploy Convex functions**
 
 ```bash
 cd 3reco
-bunx convex dev  # authenticates, creates a Convex project, pushes schema + functions
-```
-
-This also creates a `.env.local` with your `VITE_CONVEX_URL`.
-
-### Deploying to production
-
-```bash
+CONVEX_SELF_HOSTED_URL=https://convex.yourdomain.com \
+CONVEX_SELF_HOSTED_ADMIN_KEY=<key from step 3> \
 bunx convex deploy
 ```
 
-This pushes all functions in `convex/` to your production Convex deployment. It does **not** affect your development deployment.
-
-<Callout type="note" title="Two Convex deployments">
-  Convex automatically creates separate **development** and **production** deployments for each project. `convex dev` always targets development; `convex deploy` always targets production.
+<Callout type="warning" title="VITE_ variables are baked at build time">
+  `VITE_CONVEX_URL` and `VITE_CONVEX_AUTH_DOMAIN` are inlined into the JS bundle when the Docker image is built. If you change these values you must rebuild the frontend image: `docker compose build frontend`.
 </Callout>
 
-### What gets deployed
-
-- All query, mutation, action, and internal function definitions
-- The database schema (new tables/indexes are added; existing indexes cannot be removed without a migration)
-- The `convex.config.ts` component registrations (aggregates)
-- Auth configuration from `convex/auth.ts`
-
-### Schema migrations
-
-Convex handles additive schema changes (new optional fields, new tables) automatically. For destructive changes (removing fields, changing types), write a migration function using `ctx.db` and run it manually before deploying the schema change.
-
-See `convex/migrations.ts` for examples of existing migrations.
-
-## Deploying the Frontend
-
-### Build
+### Updating
 
 ```bash
-cd 3reco
-bun run build
+git pull
+docker compose up -d --build
 ```
 
-Output: `dist/` — a fully static bundle (HTML + JS + CSS).
+Convex schema changes are applied automatically on the next `bunx convex deploy`.
 
-### Hosting options
+### Useful commands
 
-| Provider | Notes |
-|---|---|
-| **Vercel** | Connect GitHub repo; set `VITE_CONVEX_URL` as environment variable; set build command to `bun run build` and output dir to `dist` |
-| **Netlify** | Same as Vercel; enable SPA redirect (all routes → `index.html`) |
-| **Cloudflare Pages** | Framework preset: Vite; set env var; enable SPA mode |
-| **Any CDN** | Upload `dist/` contents; configure all 404s to serve `index.html` (required for client-side routing) |
+```bash
+# View logs for a specific service
+docker compose logs -f caddy
+docker compose logs -f convex-backend
 
-<Callout type="warning" title="SPA fallback is required">
-  TanStack Router handles routing client-side. Your hosting provider **must** be configured to serve `index.html` for all unknown paths — otherwise direct links and page refreshes will return a 404.
-</Callout>
+# Restart a single service
+docker compose restart frontend
 
-## Authentication Setup
+# Stop everything
+docker compose down
 
-After deploying the Convex backend, configure authentication providers in the Convex dashboard:
+# Stop and delete all data (destructive!)
+docker compose down -v
+```
 
-1. Go to [dashboard.convex.dev](https://dashboard.convex.dev) → your project → **Settings → Authentication**
-2. Enable the providers you use (e.g. Password, Google OAuth)
-3. For OAuth providers, set the redirect URI to your production frontend URL
+### Backfilling aggregates
 
-## Production Checklist
-
-- [ ] `VITE_CONVEX_URL` points to the **production** Convex deployment (not dev)
-- [ ] `bunx convex deploy` has been run and reports success
-- [ ] Authentication providers are configured in the Convex dashboard
-- [ ] The hosting provider serves `index.html` for all unknown paths
-- [ ] HTTPS is enabled on the frontend domain
-- [ ] The aggregate components (`txByType`, `txByMaterial`) are initialised — run any backfill mutations if the production database has pre-existing transactions
-
-## Backfilling Aggregates
-
-If you deploy to an environment that already has transaction data, the aggregate counts will be zero until the data is backfilled. Write a one-time migration mutation that inserts all existing transactions into the aggregates:
+If you deploy to a server that already has transaction data, aggregate counts will be zero until backfilled. Run this one-time migration from the Convex dashboard → **Functions → Run function**:
 
 ```typescript
 // convex/migrations.ts — one-time backfill
@@ -123,4 +149,77 @@ export const backfillAggregates = internalMutation({
 })
 ```
 
-Run it once from the Convex dashboard → **Functions → Run function**.
+---
+
+## Convex Cloud + Static Hosting
+
+The quickest path to production without managing infrastructure.
+
+### Deploy the Convex backend
+
+```bash
+cd 3reco
+bunx convex deploy
+```
+
+This pushes all functions in `convex/` to your production Convex deployment.
+
+<Callout type="note" title="Two Convex deployments">
+  Convex automatically creates separate **development** and **production** deployments. `convex dev` always targets development; `convex deploy` always targets production.
+</Callout>
+
+### What gets deployed
+
+- All query, mutation, action, and internal function definitions
+- The database schema (additive changes are applied automatically)
+- The `convex.config.ts` component registrations (aggregates)
+- Auth configuration from `convex/auth.ts`
+
+### Deploy the frontend
+
+Build the static bundle:
+
+```bash
+cd 3reco
+VITE_CONVEX_URL=https://<your-deployment>.convex.cloud bun run build
+```
+
+Upload the `dist/` folder to any static host:
+
+| Provider | Notes |
+|---|---|
+| **Vercel** | Set `VITE_CONVEX_URL` as a build env var; build command `bun run build`; output dir `dist` |
+| **Netlify** | Same; enable SPA redirect (all routes → `index.html`) |
+| **Cloudflare Pages** | Framework preset: Vite; set env var; enable SPA mode |
+| **Any CDN** | Upload `dist/`; configure all 404s to serve `index.html` |
+
+<Callout type="warning" title="SPA fallback is required">
+  TanStack Router handles routing client-side. Your host **must** serve `index.html` for all unknown paths — otherwise direct links and page refreshes return 404.
+</Callout>
+
+### Authentication setup
+
+After deploying, configure auth providers in the Convex dashboard:
+
+1. Go to [dashboard.convex.dev](https://dashboard.convex.dev) → your project → **Settings → Authentication**
+2. Enable your providers (e.g. Password, Google OAuth)
+3. For OAuth providers, set the redirect URI to your production frontend URL
+
+---
+
+## Schema Migrations
+
+Convex handles additive schema changes (new optional fields, new tables) automatically. For destructive changes (removing fields, changing types), write a migration function using `ctx.db` and run it manually **before** deploying the schema change.
+
+See `convex/migrations.ts` for examples of existing migrations.
+
+---
+
+## Production Checklist
+
+- [ ] `VITE_CONVEX_URL` points to the **production** Convex deployment
+- [ ] `bunx convex deploy` completed successfully
+- [ ] Authentication providers configured in the Convex dashboard
+- [ ] SPA fallback (`index.html` for unknown paths) is enabled
+- [ ] HTTPS enabled on all frontend domains
+- [ ] Aggregate components (`txByType`, `txByMaterial`) initialised — run backfill if pre-existing data
