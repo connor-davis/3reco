@@ -10,6 +10,7 @@
 
 import type * as aggregates from "../aggregates.js";
 import type * as auth from "../auth.js";
+import type * as carts from "../carts.js";
 import type * as dashboard from "../dashboard.js";
 import type * as exports from "../exports.js";
 import type * as http from "../http.js";
@@ -32,6 +33,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   aggregates: typeof aggregates;
   auth: typeof auth;
+  carts: typeof carts;
   dashboard: typeof dashboard;
   exports: typeof exports;
   http: typeof http;

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { useMutation } from 'convex/react';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
 import { MinusIcon, PlusIcon, ShoppingCartIcon, StoreIcon } from 'lucide-react';
@@ -21,14 +22,6 @@ export const Route = createFileRoute('/market/store/$sellerId')({
   component: RouteComponent,
 });
 
-type CartItem = {
-  stockId: Id<'stock'>;
-  materialId: Id<'materials'>;
-  materialName: string;
-  weight: number;
-  price: number;
-};
-
 function RouteComponent() {
   const { sellerId } = Route.useParams();
   const stock = useConvexQuery(api.stock.listListedBySeller, {
@@ -38,8 +31,12 @@ function RouteComponent() {
   const seller = useConvexQuery(api.users.findById, {
     _id: sellerId as Id<'users'>,
   });
+  const savedCart = useConvexQuery(api.carts.get, {
+    sellerId: sellerId as Id<'users'>,
+  });
+  const upsertCart = useMutation(api.carts.upsert);
+  const clearCart = useMutation(api.carts.clear);
   const createRequest = useConvexMutation(api.transactionRequests.create);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
   const materialMap = new Map(materials?.map((m) => [m._id, m]) ?? []);
@@ -47,26 +44,29 @@ function RouteComponent() {
     seller?.businessName ??
     (`${seller?.firstName ?? ''} ${seller?.lastName ?? ''}`.trim() || 'Store');
 
+  const cart = savedCart?.items ?? [];
+  const cartIds = new Set(cart.map((c) => c.stockId));
+
   function addToCart(stockItem: NonNullable<typeof stock>[number]) {
     const material = materialMap.get(stockItem.materialId);
     if (!material) return;
-    setCart((prev) => {
-      if (prev.find((c) => c.stockId === stockItem._id)) return prev;
-      return [
-        ...prev,
-        {
-          stockId: stockItem._id,
-          materialId: stockItem.materialId,
-          materialName: material.name,
-          weight: stockItem.weight,
-          price: stockItem.price,
-        },
-      ];
-    });
+    if (cartIds.has(stockItem._id)) return;
+    const newItems = [
+      ...cart.map((c) => ({ stockId: c.stockId, materialId: c.materialId })),
+      { stockId: stockItem._id, materialId: stockItem.materialId },
+    ];
+    upsertCart({ sellerId: sellerId as Id<'users'>, items: newItems });
   }
 
   function removeFromCart(stockId: Id<'stock'>) {
-    setCart((prev) => prev.filter((c) => c.stockId !== stockId));
+    const newItems = cart
+      .filter((c) => c.stockId !== stockId)
+      .map((c) => ({ stockId: c.stockId, materialId: c.materialId }));
+    upsertCart({ sellerId: sellerId as Id<'users'>, items: newItems });
+  }
+
+  function handleClear() {
+    clearCart({ sellerId: sellerId as Id<'users'> });
   }
 
   function handleSubmit() {
@@ -83,7 +83,7 @@ function RouteComponent() {
       {
         loading: 'Sending request...',
         success: () => {
-          setCart([]);
+          clearCart({ sellerId: sellerId as Id<'users'> });
           setSubmitted(false);
           return 'Request sent! View it in Outgoing Requests.';
         },
@@ -138,7 +138,7 @@ function RouteComponent() {
           {stock &&
             stock.map((item) => {
               const material = materialMap.get(item.materialId);
-              const inCart = cart.some((c) => c.stockId === item._id);
+              const inCart = cartIds.has(item._id);
               return (
                 <div
                   key={item._id}
@@ -197,7 +197,7 @@ function RouteComponent() {
             <Button onClick={handleSubmit} disabled={submitted}>
               Send Request
             </Button>
-            <Button variant="outline" onClick={() => setCart([])}>
+            <Button variant="outline" onClick={handleClear}>
               Clear Cart
             </Button>
             <Link
@@ -212,3 +212,4 @@ function RouteComponent() {
     </div>
   );
 }
+
