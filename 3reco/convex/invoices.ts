@@ -49,7 +49,7 @@ export const generateForTransaction = internalAction({
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    const green = rgb(0.133, 0.545, 0.133);
+    const green = rgb(0.158, 0.523, 0.543); // hsl(183, 55%, 35%) – matches app primary
     const dark = rgb(0.1, 0.1, 0.1);
     const gray = rgb(0.5, 0.5, 0.5);
     const light = rgb(0.93, 0.93, 0.93);
