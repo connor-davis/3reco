@@ -13,10 +13,10 @@ import { Label } from '@/components/ui/label';
 import { useConvexMutation, useConvexPaginatedQuery, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
-import { MinusIcon, PlusIcon, ShoppingCartIcon, StarIcon, StoreIcon } from 'lucide-react';
+import { MinusIcon, PlusIcon, ShoppingCartIcon, StarIcon, StoreIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -39,6 +39,9 @@ function RouteComponent() {
   const upsertCart = useMutation(api.carts.upsert);
   const clearCart = useMutation(api.carts.clear);
   const createRequest = useConvexMutation(api.transactionRequests.create);
+  const removeReview = useMutation(api.reviews.removeReview);
+  const currentUser = useQuery(api.users.currentUser, {});
+  const isAdmin = currentUser?.type === 'admin';
   const [submitted, setSubmitted] = useState(false);
 
   const averageRating = useConvexQuery(api.reviews.averageForSeller, {
@@ -216,7 +219,22 @@ function RouteComponent() {
               <div key={review._id} className="flex flex-col gap-1 p-3 border rounded-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{review.reviewerName}</span>
-                  <Stars rating={review.rating} size="sm" />
+                  <div className="flex items-center gap-2">
+                    <Stars rating={review.rating} size="sm" />
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 text-destructive hover:text-destructive"
+                        onClick={() => toast.promise(
+                          removeReview({ reviewId: review._id }),
+                          { loading: 'Deleting…', success: 'Review deleted', error: 'Failed to delete' }
+                        )}
+                      >
+                        <Trash2Icon className="size-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {review.comment && (
                   <p className="text-sm text-muted-foreground">{review.comment}</p>

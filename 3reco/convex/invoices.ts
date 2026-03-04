@@ -104,6 +104,14 @@ export const generateForTransaction = internalAction({
     }
     y -= 12;
 
+    if (seller.phone) {
+      page.drawText(seller.phone, { x: 40, y, size: 9, font: regularFont, color: gray });
+    }
+    if (buyer.phone) {
+      page.drawText(buyer.phone, { x: col2, y, size: 9, font: regularFont, color: gray });
+    }
+    y -= 12;
+
     const sellerAddr = [seller.streetAddress, seller.city, seller.province]
       .filter(Boolean)
       .join(', ');
