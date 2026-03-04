@@ -1,7 +1,9 @@
 import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import { Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
+import { internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
+import { txByType, txByMaterial } from './aggregates';
 
 export default defineTable({
   sellerId: v.id('users'),
@@ -10,6 +12,7 @@ export default defineTable({
   weight: v.number(),
   price: v.number(),
   type: v.union(v.literal('c2b'), v.literal('b2b')),
+  invoiceStorageId: v.optional(v.id('_storage')),
 })
   .index('by_sellerId', ['sellerId'])
   .index('by_buyerId', ['buyerId'])
@@ -220,7 +223,7 @@ export const collectorToBusinessSale = mutation({
 
     const [businessId] = identity.subject.split('|');
 
-    await ctx.db.insert('transactions', {
+    const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId as Id<'users'>,
       sellerId: collectorId,
       materialId,
@@ -229,7 +232,13 @@ export const collectorToBusinessSale = mutation({
       type: 'c2b',
     });
 
-    const existingStock = await ctx.db
+    const newDoc = await ctx.db.get('transactions', transactionId);
+    if (newDoc) {
+      await txByType.insert(ctx, newDoc);
+      await txByMaterial.insert(ctx, newDoc);
+    }
+
+    const existingStock= await ctx.db
       .query('stock')
       .withIndex('by_ownerId_by_materialId', (q) =>
         q.eq('ownerId', businessId as Id<'users'>).eq('materialId', materialId)
@@ -266,10 +275,14 @@ export const collectorToBusinessSale = mutation({
         price,
       });
     }
+
+    await ctx.scheduler.runAfter(0, internal.invoices.generateForTransaction, {
+      transactionId,
+    });
   },
 });
 
-export const businessToBusinessSale = mutation({
+export const businessToBusinessSale= mutation({
   args: {
     materialId: v.id('materials'),
     businessId: v.id('users'),
@@ -287,7 +300,7 @@ export const businessToBusinessSale = mutation({
 
     const [sellerId] = identity.subject.split('|');
 
-    await ctx.db.insert('transactions', {
+    const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId,
       sellerId: sellerId as Id<'users'>,
       materialId,
@@ -296,7 +309,13 @@ export const businessToBusinessSale = mutation({
       type: 'b2b',
     });
 
-    const existingSellerStock = await ctx.db
+    const newDoc = await ctx.db.get('transactions', transactionId);
+    if (newDoc) {
+      await txByType.insert(ctx, newDoc);
+      await txByMaterial.insert(ctx, newDoc);
+    }
+
+    const existingSellerStock= await ctx.db
       .query('stock')
       .withIndex('by_ownerId_by_materialId', (q) =>
         q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', materialId)
@@ -351,6 +370,10 @@ export const businessToBusinessSale = mutation({
 
     await ctx.db.patch('stock', existingSellerStock._id, {
       weight: existingSellerStock.weight - weight,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.invoices.generateForTransaction, {
+      transactionId,
     });
   },
 });

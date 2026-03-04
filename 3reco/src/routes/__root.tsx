@@ -11,7 +11,6 @@ import { convexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { useQuery } from '@tanstack/react-query';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import {
   Authenticated,
   AuthLoading,
@@ -78,8 +77,8 @@ const RootLayout = () => {
               <div className="flex flex-col w-full h-full overflow-hidden">
                 <Header />
 
-                <SidebarInset className="bg-transparent pr-3 pb-3 overflow-hidden">
-                  <div className="flex flex-col w-full h-full p-3 gap-3 bg-background rounded-xl overflow-hidden">
+                <SidebarInset className="bg-transparent p-2 sm:pr-3 sm:pb-3 overflow-hidden">
+                  <div className="flex flex-col w-full h-full p-2 sm:p-3 gap-3 bg-background rounded-xl overflow-hidden">
                     <Outlet />
                   </div>
                 </SidebarInset>
@@ -95,7 +94,7 @@ const RootLayout = () => {
         </div>
       </Unauthenticated>
 
-      <TanStackRouterDevtools />
+      {/*<TanStackRouterDevtools position="top-left" />*/}
 
       <Toaster />
     </TooltipProvider>

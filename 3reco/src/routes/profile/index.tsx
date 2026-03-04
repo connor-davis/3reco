@@ -219,7 +219,7 @@ function RouteComponent() {
                                     render={
                                       <AspectRatio
                                         ratio={1 / 1}
-                                        className="w-32 lg:w-64"
+                                        className="w-24 sm:w-32 lg:w-48"
                                       >
                                         <Avatar className="w-full h-full">
                                           <AvatarImage
@@ -230,7 +230,7 @@ function RouteComponent() {
                                             }
                                             className="hover:cursor-pointer"
                                           />
-                                          <AvatarFallback className="text-4xl lg:text-8xl">
+                                          <AvatarFallback className="text-3xl sm:text-4xl lg:text-7xl">
                                             {user?.firstName?.charAt(0) ??
                                               'None'}
                                           </AvatarFallback>

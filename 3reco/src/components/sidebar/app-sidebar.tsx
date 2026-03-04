@@ -1,22 +1,37 @@
 import { Link } from '@tanstack/react-router';
 import {
   BoxesIcon,
+  ChevronRightIcon,
   CreditCardIcon,
+  EyeIcon,
+  InboxIcon,
   LayoutDashboardIcon,
   PackageIcon,
+  SendIcon,
   StoreIcon,
+  UsersIcon,
   VanIcon,
 } from 'lucide-react';
+import NotificationTray from '../notifications/tray';
 import TypeGuard from '../guards/type';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../ui/collapsible';
 import { Label } from '../ui/label';
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarTrigger,
 } from '../ui/sidebar';
 
@@ -39,14 +54,50 @@ export default function AppSidebar() {
             </Link>
 
             <TypeGuard type={['admin', 'staff', 'business']}>
-              <Link to="/market">
+              <Collapsible defaultOpen className="group/market">
                 <SidebarMenuItem>
-                  <SidebarMenuButton tooltip="Market">
-                    <StoreIcon />
-                    <Label>Market</Label>
-                  </SidebarMenuButton>
+                  <CollapsibleTrigger
+                    render={
+                      <SidebarMenuButton tooltip="Market">
+                        <StoreIcon />
+                        <Label>Market</Label>
+                        <ChevronRightIcon className="ml-auto transition-transform group-data-[state=open]/market:rotate-90" />
+                      </SidebarMenuButton>
+                    }
+                  />
+
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <Link to="/market">
+                          <SidebarMenuSubButton>
+                            <EyeIcon className="size-3.5" />
+                            <Label>Browse</Label>
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                      <TypeGuard type={['business']}>
+                        <SidebarMenuSubItem>
+                          <Link to="/market/incoming">
+                            <SidebarMenuSubButton>
+                              <InboxIcon className="size-3.5" />
+                              <Label>Incoming</Label>
+                            </SidebarMenuSubButton>
+                          </Link>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <Link to="/market/outgoing">
+                            <SidebarMenuSubButton>
+                              <SendIcon className="size-3.5" />
+                              <Label>Outgoing</Label>
+                            </SidebarMenuSubButton>
+                          </Link>
+                        </SidebarMenuSubItem>
+                      </TypeGuard>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
                 </SidebarMenuItem>
-              </Link>
+              </Collapsible>
             </TypeGuard>
 
             <TypeGuard type={['business']}>
@@ -95,6 +146,24 @@ export default function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <NotificationTray />
+          </SidebarMenuItem>
+          <TypeGuard type="admin">
+            <Link to="/admin/users">
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="User Management">
+                  <UsersIcon />
+                  <Label>Users</Label>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </Link>
+          </TypeGuard>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

@@ -26,6 +26,7 @@ import { useTheme } from './providers/theme';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Label } from './ui/label';
 import { Link } from '@tanstack/react-router';
+import { SidebarTrigger } from './ui/sidebar';
 
 export default function Header() {
   const { signOut } = useAuthActions();
@@ -34,23 +35,24 @@ export default function Header() {
   const { data } = useQuery(convexQuery(api.users.currentUser));
 
   return (
-    <div className="flex items-center w-full h-auto gap-3 p-3">
-      <div className="flex items-center gap-3">
-        <img src="/logo.png" className="w-16" />
+    <div className="flex items-center w-full h-auto gap-2 px-3 py-2">
+      <SidebarTrigger className="md:hidden shrink-0" />
+      <div className="flex items-center gap-2">
+        <img src="/logo.png" className="w-10 sm:w-14" />
       </div>
 
-      <div className="flex items-center gap-3 ml-auto">
+      <div className="flex items-center gap-2 ml-auto">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 cursor-pointer">
                 <Avatar>
                   <AvatarImage src={data?.image} />
                   <AvatarFallback>
                     {data?.firstName?.charAt(0) ?? data?.email?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
+                <div className="hidden sm:flex flex-col">
                   <Activity mode={data?.name ? 'visible' : 'hidden'}>
                     <Label>{data?.name}</Label>
                   </Activity>

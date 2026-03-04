@@ -1,7 +1,7 @@
-import { defineTable } from 'convex/server';
+import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import { Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 
 export default defineTable({
   name: v.optional(v.string()),
@@ -140,5 +140,67 @@ export const findById = query({
   },
   handler: async (ctx, { _id }) => {
     return await ctx.db.get('users', _id);
+  },
+});
+
+export const listAll = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+    const caller = await ctx.db.get('users', userId as Id<'users'>);
+    if (!caller || caller.type !== 'admin')
+      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins can list all users.' });
+
+    return await ctx.db.query('users').order('desc').paginate(paginationOpts);
+  },
+});
+
+export const setType = mutation({
+  args: {
+    _id: v.id('users'),
+    type: v.union(
+      v.literal('admin'),
+      v.literal('staff'),
+      v.literal('business'),
+      v.literal('collector')
+    ),
+  },
+  handler: async (ctx, { _id, type }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+    const caller = await ctx.db.get('users', userId as Id<'users'>);
+    if (!caller || caller.type !== 'admin')
+      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins can change user types.' });
+
+    if (_id === (userId as Id<'users'>))
+      throw new ConvexError({ name: 'Invalid Input', message: 'You cannot change your own type.' });
+
+    await ctx.db.patch('users', _id, { type });
+  },
+});
+
+export const removeUser = mutation({
+  args: { _id: v.id('users') },
+  handler: async (ctx, { _id }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+    const caller = await ctx.db.get('users', userId as Id<'users'>);
+    if (!caller || caller.type !== 'admin')
+      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins can remove users.' });
+
+    if (_id === (userId as Id<'users'>))
+      throw new ConvexError({ name: 'Invalid Input', message: 'You cannot remove your own account.' });
+
+    await ctx.db.delete('users', _id);
   },
 });

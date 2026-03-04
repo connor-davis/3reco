@@ -1,6 +1,6 @@
 import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import { Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 export default defineTable({
@@ -12,20 +12,59 @@ export default defineTable({
 })
   .index('by_ownerId', ['ownerId'])
   .index('by_materialId', ['materialId'])
-  .index('by_ownerId_by_materialId', ['ownerId', 'materialId']);
+  .index('by_ownerId_by_materialId', ['ownerId', 'materialId'])
+  .index('by_isListed', ['isListed']);
+
+export const listListed = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+
+    const result = await ctx.db
+      .query('stock')
+      .withIndex('by_isListed', (q) => q.eq('isListed', true))
+      .order('desc')
+      .paginate(paginationOpts);
+
+    return {
+      ...result,
+      page: result.page.filter((s) => s.ownerId !== (userId as Id<'users'>)),
+    };
+  },
+});
 
 export const listWithPagination = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, { paginationOpts }) => {
-    return await ctx.db.query('stock').paginate(paginationOpts);
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+    return await ctx.db
+      .query('stock')
+      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId as Id<'users'>))
+      .paginate(paginationOpts);
   },
 });
 
 export const list = query({
   handler: async (ctx) => {
-    return await ctx.db.query('stock').collect();
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+    return await ctx.db
+      .query('stock')
+      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId as Id<'users'>))
+      .collect();
   },
 });
 
@@ -126,10 +165,22 @@ export const update = mutation({
     }
 
     await ctx.db.patch('stock', _id, {
-      weight,
+      ...(weight !== undefined ? { weight } : {}),
       price,
-      isListed,
+      ...(isListed !== undefined ? { isListed } : {}),
     });
+
+    if (isListed !== undefined && isListed !== existing.isListed) {
+      await ctx.db.insert('notifications', {
+        userId: existing.ownerId,
+        type: isListed ? 'stock_listed' : 'stock_unlisted',
+        title: isListed ? 'Stock listed on market' : 'Stock removed from market',
+        body: `Your ${material.name} stock is now ${isListed ? 'visible on the market' : 'hidden from the market'}.`,
+        link: '/stock',
+        read: false,
+        dismissed: false,
+      });
+    }
   },
 });
 

@@ -1,7 +1,9 @@
 import BackButton from '@/components/back-button';
 import CreateCollectionDialog from '@/components/dialogs/collections/create';
 import CollectionItemContent from '@/components/collections/item-content';
+import { InvoiceDownloadButton } from '@/components/transactions/invoice-download';
 import { Button } from '@/components/ui/button';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
   Empty,
   EmptyContent,
@@ -16,9 +18,13 @@ import { useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { VanIcon } from 'lucide-react';
+import { DownloadIcon, VanIcon } from 'lucide-react';
+import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { Activity } from 'react';
 import TransactionUserDetails from '@/components/transactions/user-details';
+import { useQuery } from 'convex/react';
+import { downloadCsv } from '@/lib/export-csv';
 
 export const Route = createFileRoute('/collections')({
   component: RouteComponent,
@@ -36,15 +42,43 @@ function RouteComponent() {
     { initialNumItems: 50 }
   );
 
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+  const exportData = useQuery(api.exports.exportCollections, {
+    from: dateRange?.from?.getTime(),
+    to: dateRange?.to
+      ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999).getTime()
+      : undefined,
+  });
+
+  const filtered = collections?.filter((c) => {
+    if (dateRange?.from && c._creationTime < dateRange.from.getTime()) return false;
+    if (dateRange?.to) {
+      const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
+      if (c._creationTime > toEnd.getTime()) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3">
+      <div className="flex items-center w-full h-auto gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <BackButton />
 
           <Label className="text-lg">Collections</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-3 ml-auto flex-wrap">
+          <DateRangePicker value={dateRange} onChange={setDateRange} align="end" />
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!exportData || exportData.length === 0}
+            onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'collections.csv')}
+          >
+            <DownloadIcon className="size-4" />
+            Export CSV
+          </Button>
           <CreateCollectionDialog />
         </div>
       </div>
@@ -66,8 +100,8 @@ function RouteComponent() {
       </Activity>
 
       <Activity mode={isLoadingCollections ? 'hidden' : 'visible'}>
-        {!collections ||
-          (collections.length === 0 && (
+        {!filtered ||
+          (filtered.length === 0 && (
             <div className="flex flex-col w-full h-full items-center justify-center gap-3">
               <Empty>
                 <EmptyHeader>
@@ -88,13 +122,14 @@ function RouteComponent() {
             </div>
           ))}
 
-        {collections && collections.length > 0 && (
+        {filtered && filtered.length > 0 && (
           <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {collections?.map((collection) => (
+            {filtered?.map((collection) => (
               <Item variant="muted" key={collection._id}>
                 <CollectionItemContent _id={collection._id} />
 
                 <ItemActions>
+                  <InvoiceDownloadButton transactionId={collection._id} creationTime={collection._creationTime} />
                   <TransactionUserDetails _id={collection.sellerId} />
                 </ItemActions>
 
