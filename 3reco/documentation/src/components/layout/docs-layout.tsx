@@ -31,7 +31,7 @@ export function DocsLayout() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <Leaf size={16} className="text-primary-foreground" />
               </div>
-              <span className="text-foreground">3reco</span>
+              <span className="text-foreground">3rEco</span>
               <span className="text-muted-foreground font-normal text-sm">docs</span>
             </div>
           </div>

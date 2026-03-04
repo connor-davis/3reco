@@ -1,6 +1,6 @@
 # Aggregates
 
-3reco uses the [`@convex-dev/aggregate`](https://www.convex.dev/components/aggregate) component to compute platform-wide statistics efficiently without full table scans.
+3rEco uses the [`@convex-dev/aggregate`](https://www.convex.dev/components/aggregate) component to compute platform-wide statistics efficiently without full table scans.
 
 ## Why Aggregates?
 
@@ -111,7 +111,7 @@ await txByType.replace(ctx, oldDoc, newDoc)
 </Callout>
 
 <Callout type="danger" title="Sync every code path — not just one file">
-  Transactions can be created from **multiple mutation files**. In 3reco, both `convex/transactions.ts` (direct sales) and `convex/transactionRequests.ts` (negotiated B2B sales) insert into the `transactions` table. Both must call `txByType.insert` and `txByMaterial.insert`. Missing a single code path causes silent drift — the aggregate returns zero for those transactions and the dashboard shows incorrect totals.
+  Transactions can be created from **multiple mutation files**. In 3rEco, both `convex/transactions.ts` (direct sales) and `convex/transactionRequests.ts` (negotiated B2B sales) insert into the `transactions` table. Both must call `txByType.insert` and `txByMaterial.insert`. Missing a single code path causes silent drift — the aggregate returns zero for those transactions and the dashboard shows incorrect totals.
 </Callout>
 
 ## Adding a New Aggregate

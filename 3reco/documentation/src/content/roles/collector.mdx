@@ -1,6 +1,6 @@
 # Collector Users
 
-Collectors are the sellers on the 3reco platform. They add recyclable material stock, receive purchase requests from businesses, negotiate terms, and complete sales.
+Collectors are the sellers on the 3rEco platform. They gather recyclable materials and sell them to businesses. In the app, collectors have a single focused view: their **Dashboard**, which tracks all their sales activity.
 
 ## Onboarding
 
@@ -13,73 +13,46 @@ Collectors complete their profile with:
 
 `profileComplete` is set to `true` after the form is submitted, unlocking access to the full app.
 
+## What Collectors Can Access
+
+Collectors see only the **Dashboard**, notifications, and their profile. They do not have access to the Marketplace, Stock, or Transactions pages.
+
+| Page | Available to Collectors |
+|---|---|
+| Dashboard | ✅ |
+| Market (browse / requests) | ❌ |
+| Stock management | ❌ |
+| Collections | ❌ |
+| Transactions | ❌ |
+| Notifications | ✅ |
+| Profile | ✅ |
+
 ## Collector Dashboard
 
-The collector dashboard shows revenue and sales analytics:
+The collector dashboard shows revenue and sales analytics for all sales where they were the seller:
 
 | Stat | Calculation |
 |---|---|
 | **Total Revenue** | Sum of `price × weight` for all sales |
-| **Total Volume** | Sum of `weight` for all sales (kg) |
+| **Total Volume Sold** | Sum of `weight` for all sales (kg) |
 | **Carbon Savings** | Sum of `weight × material.carbonFactor` |
-| **Transaction Count** | Number of completed transactions as seller |
+
+A **daily sales line chart** shows volume sold per day over the last 30 days. A **latest sales table** shows the 5 most recent transactions with material, buyer, weight, price, and date.
 
 Date range filtering is available for all stats.
 
-## Managing Stock
+## How Collector Sales Are Recorded
 
-### Adding Stock
+Collectors do not initiate trades in the UI. Their sales are recorded by businesses via a **direct purchase**: a business goes to the Transactions page and clicks **Record purchase**, selecting the collector, material, weight, and price. This creates a `c2b` transaction immediately and the collector sees it on their dashboard.
 
-Collectors add stock items representing physical recyclable material they have on hand:
+## Transaction Record
 
-```typescript
-await convex.mutation(api.stock.create, {
-  materialId: 'k1234...',   // selected from materials list
-  weight: 250,              // kg
-  price: 8.50,              // R per kg
-})
-```
+After a c2b sale is recorded:
 
-Each stock item is private (`isListed: false`) by default.
-
-### Listing Stock
-
-To make stock visible in the marketplace:
-
-```typescript
-await convex.mutation(api.stock.update, {
-  id: stockId,
-  isListed: true,
-})
-```
-
-Listed stock appears in the marketplace for businesses to browse and request.
-
-### Editing / Removing Stock
-
-Collectors can update weight, price, and listing status at any time. Removing a stock item that has an active transaction request is blocked until the request is resolved.
-
-## Receiving Transaction Requests
-
-When a business sends a request for listed stock:
-
-1. Collector receives a **real-time notification**
-2. The request appears in the collector's **Requests** inbox with `status: "pending"`
-3. Collector reviews the request details (which material, requested weight)
-4. Collector submits an **offer**: sets `offerWeight` and `offerPrice`
-5. Status changes to `"offered"` and the business is notified
-6. If the business **accepts**, status → `"accepted"` and the transaction is completed
-7. If the business **rejects**, status → `"rejected"` and stock becomes available again
-
-## Transaction History
-
-After a sale completes:
-
-- A `transaction` document is created with `type: "c2b"`
-- Stock weight is decremented or the stock item is marked as sold
+- A `transaction` document is created with `type: "c2b"` and the collector's `_id` as `sellerId`
 - A PDF invoice is generated and stored in Convex file storage
-- Both parties can download the invoice from their transaction history
+- The collector's dashboard stats update in real time
 
-<Callout type="tip" title="Multiple requests">
-  A collector may receive requests from multiple businesses for the same stock. They can review and respond to each independently. Accepting one does not automatically cancel others — the collector should manually cancel remaining open requests after completing a sale.
+<Callout type="tip" title="How do I know when I have a sale?">
+  You will receive a notification when a business records a purchase from you. Your dashboard stats and sales table update immediately — no refresh needed.
 </Callout>

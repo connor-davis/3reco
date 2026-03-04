@@ -1,20 +1,20 @@
 # Understanding Account Roles
 
-3reco has four account types, each with a different set of capabilities. This page explains what each role can and cannot do.
+3rEco has four account types, each with a different set of capabilities. This page explains what each role can and cannot do.
 
 ## Role Overview
 
 | Feature | Collector | Business | Staff | Admin |
 |---|---|---|---|---|
-| Add & manage stock | ✅ | ✅ | ❌ | ❌ |
-| List stock on marketplace | ✅ | ✅ | ❌ | ❌ |
-| Browse marketplace | ✅ | ✅ | ✅ | ✅ |
-| Send purchase requests | ✅ | ✅ | ❌ | ❌ |
-| Respond to requests (sell) | ✅ | ✅ | ❌ | ❌ |
+| Add & manage stock | ❌ | ✅ | ❌ | ❌ |
+| List stock on marketplace | ❌ | ✅ | ❌ | ❌ |
+| Browse marketplace | ❌ | ✅ | ✅ | ✅ |
+| Send purchase requests | ❌ | ✅ | ❌ | ❌ |
+| Respond to requests (sell) | ❌ | ✅ | ❌ | ❌ |
 | Record direct purchases (c2b) | ❌ | ✅ | ❌ | ❌ |
-| View own transactions | ✅ (sales) | ✅ (sales + expenses) | ✅ (all) | ✅ (all) |
-| Export CSV | ✅ | ✅ | ✅ | ✅ |
-| Dashboard stats | Personal | Personal | Platform-wide | Platform-wide |
+| View own transactions | ✅ (dashboard only) | ✅ (sales + expenses) | ✅ (all) | ✅ (all) |
+| Export CSV | ❌ | ✅ | ✅ | ✅ |
+| Dashboard stats | Personal sales | Personal | Platform-wide | Platform-wide |
 | Manage users | ❌ | ❌ | ❌ | ✅ |
 | Manage materials | ❌ | ❌ | ❌ | ✅ |
 
@@ -24,12 +24,12 @@
 
 Collectors are individuals or small operations that gather recyclable materials and sell them to businesses.
 
-**What collectors do on 3reco:**
+**What collectors see on 3rEco:**
 
-- Record the materials they have collected with weight and price
-- List stock on the marketplace to attract buyers
-- Respond to purchase requests from businesses by making offers
-- Track revenue, volume, and carbon savings on their dashboard
+- **Dashboard only** — showing their personal sales summary (total revenue, volume sold, and carbon savings)
+- Notifications and profile settings
+
+Collectors do not have access to the Marketplace, Stock management, or the Transactions page. Their sales are recorded by businesses — either as a direct purchase (off-platform) or via a completed marketplace negotiation between businesses. Once a business records a purchase from a collector, that sale appears on the collector's dashboard.
 
 **Collector sales are always c2b (collector → business).** Collectors do not purchase from other users.
 
@@ -39,7 +39,7 @@ Collectors are individuals or small operations that gather recyclable materials 
 
 Businesses buy recyclable materials — from collectors or from other businesses — to process or resell.
 
-**What businesses do on 3reco:**
+**What businesses do on 3rEco:**
 
 - Browse the marketplace and send purchase requests to sellers
 - Accept offers from sellers to complete trades via the marketplace
