@@ -10,8 +10,7 @@ import {
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { ScrollArea } from '../ui/scroll-area';
-import { Separator } from '../ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 const TYPE_LABELS: Record<string, string> = {
   request_received: '📬',
@@ -37,7 +36,33 @@ export default function NotificationTray() {
   const { mutate: dismissAll } = useMutation({ mutationFn: useConvexMutation(api.notifications.dismissAll) });
 
   const unread = notifications?.filter((n) => !n.read) ?? [];
-  const read = notifications?.filter((n) => n.read) ?? [];
+  const all = notifications ?? [];
+
+  function renderList(items: typeof all) {
+    if (isLoading) return <p className="text-sm text-muted-foreground text-center py-6">Loading…</p>;
+    if (items.length === 0) return <p className="text-sm text-muted-foreground text-center py-6">No notifications</p>;
+    return (
+      <>
+        {items.map((n) => (
+          <NotificationItem
+            key={n._id}
+            type={n.type}
+            title={n.title}
+            body={n.body}
+            link={n.link}
+            read={n.read}
+            onRead={() => markRead({ _id: n._id })}
+            onDismiss={() => dismiss({ _id: n._id })}
+          />
+        ))}
+        {status === 'CanLoadMore' && (
+          <div className="flex justify-center py-2">
+            <Button variant="ghost" size="sm" onClick={() => loadMore(20)}>Load more</Button>
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
     <Popover>
@@ -53,7 +78,7 @@ export default function NotificationTray() {
         )}
       </PopoverTrigger>
 
-      <PopoverContent side="right" align="end" sideOffset={8} className="w-[min(20rem,calc(100vw-1rem))] p-0">
+      <PopoverContent side="bottom" align="end" sideOffset={8} className="w-[min(22rem,calc(100vw-1rem))] p-0">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <span className="font-semibold text-sm">Notifications</span>
           <div className="flex gap-1">
@@ -62,7 +87,7 @@ export default function NotificationTray() {
                 <CheckCheckIcon className="size-3.5" />
               </Button>
             )}
-            {notifications && notifications.length > 0 && (
+            {all.length > 0 && (
               <Button variant="ghost" size="icon" className="size-7" title="Dismiss all" onClick={() => dismissAll({})}>
                 <XIcon className="size-3.5" />
               </Button>
@@ -70,61 +95,22 @@ export default function NotificationTray() {
           </div>
         </div>
 
-        <ScrollArea className="max-h-[420px]">
-          {isLoading && (
-            <p className="text-sm text-muted-foreground text-center py-6">Loading…</p>
-          )}
-
-          {!isLoading && notifications?.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6">No notifications</p>
-          )}
-
-          {unread.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground px-4 py-2 uppercase tracking-wide">Unread</p>
-              {unread.map((n) => (
-                <NotificationItem
-                  key={n._id}
-                  type={n.type}
-                  title={n.title}
-                  body={n.body}
-                  link={n.link}
-                  read={n.read}
-                  onRead={() => markRead({ _id: n._id })}
-                  onDismiss={() => dismiss({ _id: n._id })}
-                />
-              ))}
-            </div>
-          )}
-
-          {unread.length > 0 && read.length > 0 && <Separator />}
-
-          {read.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground px-4 py-2 uppercase tracking-wide">Read</p>
-              {read.map((n) => (
-                <NotificationItem
-                  key={n._id}
-                  type={n.type}
-                  title={n.title}
-                  body={n.body}
-                  link={n.link}
-                  read={n.read}
-                  onRead={() => markRead({ _id: n._id })}
-                  onDismiss={() => dismiss({ _id: n._id })}
-                />
-              ))}
-            </div>
-          )}
-
-          {status === 'CanLoadMore' && (
-            <div className="flex justify-center py-2">
-              <Button variant="ghost" size="sm" onClick={() => loadMore(20)}>
-                Load more
-              </Button>
-            </div>
-          )}
-        </ScrollArea>
+        <Tabs defaultValue="all">
+          <TabsList className="w-full rounded-none border-b px-4 justify-start gap-4 h-9 bg-transparent">
+            <TabsTrigger value="all" className="text-xs px-0 pb-2 h-full rounded-none border-b-2 border-transparent data-[selected]:border-primary data-[selected]:bg-transparent shadow-none">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="unread" className="text-xs px-0 pb-2 h-full rounded-none border-b-2 border-transparent data-[selected]:border-primary data-[selected]:bg-transparent shadow-none">
+              Unread {unread.length > 0 && <Badge variant="secondary" className="ml-1 text-[0.6rem] px-1 h-4">{unread.length}</Badge>}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="mt-0 max-h-[380px] overflow-y-auto">
+            {renderList(all)}
+          </TabsContent>
+          <TabsContent value="unread" className="mt-0 max-h-[380px] overflow-y-auto">
+            {renderList(unread)}
+          </TabsContent>
+        </Tabs>
       </PopoverContent>
     </Popover>
   );
@@ -176,3 +162,4 @@ function NotificationItem({
     </div>
   );
 }
+

@@ -1,5 +1,4 @@
 import BackButton from '@/components/back-button';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -44,13 +43,6 @@ export const Route = createFileRoute('/admin/users')({
 });
 
 type UserType = 'admin' | 'staff' | 'business' | 'collector';
-
-const typeVariant: Record<UserType, 'default' | 'secondary' | 'outline'> = {
-  admin: 'default',
-  staff: 'secondary',
-  business: 'outline',
-  collector: 'outline',
-};
 
 function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string }) {
   const [open, setOpen] = useState(false);
@@ -103,7 +95,7 @@ function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string 
   );
 }
 
-function UserRow({ user }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; type?: UserType; profileComplete?: boolean } }) {
+function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; type?: UserType; profileComplete?: boolean }; isAdmin: boolean }) {
   const setType = useConvexMutation(api.users.setType);
   const displayName =
     user.businessName ||
@@ -119,9 +111,6 @@ function UserRow({ user }: { user: { _id: Id<'users'>; name?: string; email?: st
         <ItemDescription>{user.email}</ItemDescription>
       </ItemContent>
       <ItemActions className="flex-wrap justify-end">
-        {user.type && (
-          <Badge variant={typeVariant[user.type]} className="hidden sm:flex">{user.type}</Badge>
-        )}
         <Select
           value={user.type}
           onValueChange={(value) =>
@@ -153,7 +142,7 @@ function UserRow({ user }: { user: { _id: Id<'users'>; name?: string; email?: st
             <SelectItem value="collector">Collector</SelectItem>
           </SelectContent>
         </Select>
-        <DeleteUserDialog userId={user._id} name={displayName} />
+        {isAdmin && <DeleteUserDialog userId={user._id} name={displayName} />}
       </ItemActions>
     </Item>
   );
@@ -169,6 +158,9 @@ function RouteComponent() {
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserType>('all');
+
+  const currentUser = useQuery(api.users.currentUser);
+  const isAdmin = currentUser?.type === 'admin';
 
   const exportData = useQuery(api.exports.exportUsers, {});
 
@@ -263,7 +255,7 @@ function RouteComponent() {
         {filtered && filtered.length > 0 && (
           <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
             {filtered.map((user) => (
-              <UserRow key={user._id} user={user} />
+              <UserRow key={user._id} user={user} isAdmin={isAdmin} />
             ))}
 
             <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>

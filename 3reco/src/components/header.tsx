@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Label } from './ui/label';
 import { Link } from '@tanstack/react-router';
 import { SidebarTrigger } from './ui/sidebar';
+import NotificationTray from './notifications/tray';
 
 export default function Header() {
   const { signOut } = useAuthActions();
@@ -42,6 +43,7 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
+        <NotificationTray />
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
