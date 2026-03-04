@@ -156,7 +156,7 @@ function RouteComponent() {
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
       {/* ── Header ── */}
-      <div className="flex flex-wrap items-center w-full h-auto gap-2">
+      <div className="flex flex-wrap items-center w-full h-auto gap-2 shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <BackButton />
           <Label className="text-lg truncate">{titleText}</Label>
@@ -382,13 +382,13 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="text-muted-foreground text-sm">
+      <div className="text-muted-foreground text-sm shrink-0">
         {isSeller ? 'Buyer' : 'Seller'}:{' '}
         {counterparty?.businessName ?? counterparty?.firstName ?? '...'}
       </div>
 
       {/* Items table */}
-      <div className="rounded-xl border overflow-hidden text-sm">
+      <div className="rounded-xl border overflow-hidden text-sm shrink-0">
         <div className="grid grid-cols-4 gap-2 px-3 py-2 bg-muted text-muted-foreground font-medium text-xs">
           <span>Material</span>
           <span className="text-right">Offered Weight</span>
@@ -428,7 +428,9 @@ function RouteComponent() {
         )}
       </div>
 
-      <MessageThread requestId={requestId as Id<'transactionRequests'>} />
+      <div className="flex-1 min-h-0">
+        <MessageThread requestId={requestId as Id<'transactionRequests'>} />
+      </div>
     </div>
   );
 }
