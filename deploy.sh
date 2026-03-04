@@ -48,7 +48,7 @@ if [[ -n "$EXISTING_SECRET" ]]; then
   INSTANCE_SECRET="$EXISTING_SECRET"
   echo "ℹ️  Reusing existing INSTANCE_SECRET from $ENV_FILE"
 else
-  INSTANCE_SECRET=$(openssl rand -hex 64)
+  INSTANCE_SECRET=$(openssl rand -hex 32)
   echo "✅ Generated new INSTANCE_SECRET"
 fi
 
