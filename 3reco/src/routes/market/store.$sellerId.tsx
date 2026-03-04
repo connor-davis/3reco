@@ -1,4 +1,6 @@
 import BackButton from '@/components/back-button';
+import ReviewDialog from '@/components/reviews/review-dialog';
+import Stars from '@/components/reviews/stars';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -8,13 +10,13 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Label } from '@/components/ui/label';
-import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
+import { useConvexMutation, useConvexPaginatedQuery, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { useMutation } from 'convex/react';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
-import { MinusIcon, PlusIcon, ShoppingCartIcon, StoreIcon } from 'lucide-react';
+import { MinusIcon, PlusIcon, ShoppingCartIcon, StarIcon, StoreIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -38,6 +40,22 @@ function RouteComponent() {
   const clearCart = useMutation(api.carts.clear);
   const createRequest = useConvexMutation(api.transactionRequests.create);
   const [submitted, setSubmitted] = useState(false);
+
+  const averageRating = useConvexQuery(api.reviews.averageForSeller, {
+    sellerId: sellerId as Id<'users'>,
+  });
+  const reviewableTransactions = useConvexQuery(api.reviews.reviewableTransactions, {
+    sellerId: sellerId as Id<'users'>,
+  });
+  const {
+    results: reviews,
+    status: reviewsStatus,
+    loadMore: loadMoreReviews,
+  } = useConvexPaginatedQuery(
+    api.reviews.listBySeller,
+    { sellerId: sellerId as Id<'users'> },
+    { initialNumItems: 5 }
+  );
 
   const materialMap = new Map(materials?.map((m) => [m._id, m]) ?? []);
   const sellerName =
@@ -169,6 +187,49 @@ function RouteComponent() {
                 </div>
               );
             })}
+
+          {/* Reviews section */}
+          <div className="flex flex-col gap-3 mt-2 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <StarIcon className="size-4 text-muted-foreground" />
+                <Label className="text-sm font-semibold">Reviews</Label>
+                {averageRating && (
+                  <Stars rating={averageRating.average} count={averageRating.count} size="sm" />
+                )}
+              </div>
+              {reviewableTransactions && reviewableTransactions.length > 0 && reviewableTransactions[0] && (
+                <ReviewDialog
+                  transactionId={reviewableTransactions[0]._id}
+                  sellerName={sellerName}
+                >
+                  <Button variant="outline" size="sm">Leave a Review</Button>
+                </ReviewDialog>
+              )}
+            </div>
+
+            {reviews && reviews.length === 0 && (
+              <p className="text-sm text-muted-foreground">No reviews yet. Be the first!</p>
+            )}
+
+            {reviews && reviews.map((review) => (
+              <div key={review._id} className="flex flex-col gap-1 p-3 border rounded-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{review.reviewerName}</span>
+                  <Stars rating={review.rating} size="sm" />
+                </div>
+                {review.comment && (
+                  <p className="text-sm text-muted-foreground">{review.comment}</p>
+                )}
+              </div>
+            ))}
+
+            {reviewsStatus === 'CanLoadMore' && (
+              <Button variant="ghost" size="sm" onClick={() => loadMoreReviews(5)}>
+                Load more reviews
+              </Button>
+            )}
+          </div>
         </div>
 
         {cart.length > 0 && (

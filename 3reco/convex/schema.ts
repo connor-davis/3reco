@@ -8,6 +8,7 @@ import transactionRequests from './transactionRequests';
 import transactionRequestMessages from './transactionRequestMessages';
 import notifications from './notifications';
 import carts from './carts';
+import storeReviews from './storeReviews';
 
 export default defineSchema({
   ...authTables,
@@ -19,4 +20,5 @@ export default defineSchema({
   transactionRequestMessages,
   notifications,
   carts,
+  storeReviews,
 });
