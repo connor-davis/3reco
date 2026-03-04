@@ -107,6 +107,91 @@ export const exportCollections = query({
   },
 });
 
+/** Business purchases (as buyer, all types) — scoped to current business. */
+export const exportMyPurchases = query({
+  args: {
+    from: v.optional(v.number()),
+    to: v.optional(v.number()),
+  },
+  handler: async (ctx, { from, to }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
+    const [userId] = identity.subject.split('|');
+    const user = await ctx.db.get('users', userId as Id<'users'>);
+    if (!user || user.type !== 'business')
+      throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
+
+    let rows = await ctx.db
+      .query('transactions')
+      .withIndex('by_buyerId', (q) => q.eq('buyerId', userId as Id<'users'>))
+      .order('desc')
+      .collect();
+    if (from !== undefined) rows = rows.filter((r) => r._creationTime >= from);
+    if (to !== undefined) rows = rows.filter((r) => r._creationTime <= to);
+
+    const expandedRows = [];
+    for (const t of rows) {
+      const seller = await ctx.db.get('users', t.sellerId);
+      for (const item of t.items) {
+        const material = await ctx.db.get('materials', item.materialId);
+        expandedRows.push({
+          'Date': new Date(t._creationTime).toISOString(),
+          'Transaction Type': t.type.toUpperCase(),
+          'Material': material?.name ?? '',
+          'Weight (kg)': item.weight,
+          'Price per kg (R)': item.price,
+          'Total (R)': +(item.price * item.weight).toFixed(2),
+          'Seller': getUserDisplayName(seller),
+        });
+      }
+    }
+    return expandedRows;
+  },
+});
+
+/** Business sales (as seller, B2B only) — scoped to current business. */
+export const exportMySales = query({
+  args: {
+    from: v.optional(v.number()),
+    to: v.optional(v.number()),
+  },
+  handler: async (ctx, { from, to }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
+    const [userId] = identity.subject.split('|');
+    const user = await ctx.db.get('users', userId as Id<'users'>);
+    if (!user || user.type !== 'business')
+      throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
+
+    let rows = await ctx.db
+      .query('transactions')
+      .withIndex('by_sellerId_and_type', (q) =>
+        q.eq('sellerId', userId as Id<'users'>).eq('type', 'b2b')
+      )
+      .order('desc')
+      .collect();
+    if (from !== undefined) rows = rows.filter((r) => r._creationTime >= from);
+    if (to !== undefined) rows = rows.filter((r) => r._creationTime <= to);
+
+    const expandedRows = [];
+    for (const t of rows) {
+      const buyer = await ctx.db.get('users', t.buyerId);
+      for (const item of t.items) {
+        const material = await ctx.db.get('materials', item.materialId);
+        expandedRows.push({
+          'Date': new Date(t._creationTime).toISOString(),
+          'Material': material?.name ?? '',
+          'Weight (kg)': item.weight,
+          'Price per kg (R)': item.price,
+          'Total (R)': +(item.price * item.weight).toFixed(2),
+          'Buyer': getUserDisplayName(buyer),
+        });
+      }
+    }
+    return expandedRows;
+  },
+});
+
 /** All users — admin only. */
 export const exportUsers = query({
   args: {},

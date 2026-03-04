@@ -133,6 +133,43 @@ export default function AppSidebar() {
               </Link>
             </TypeGuard>
 
+            <TypeGuard type={['business']}>
+              <Collapsible defaultOpen className="group/transactions">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger
+                    render={
+                      <SidebarMenuButton tooltip="Transactions">
+                        <CreditCardIcon />
+                        <Label>Transactions</Label>
+                        <ChevronRightIcon className="ml-auto transition-transform group-data-[state=open]/transactions:rotate-90" />
+                      </SidebarMenuButton>
+                    }
+                  />
+
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <Link to="/transactions/purchases">
+                          <SidebarMenuSubButton>
+                            <VanIcon className="size-3.5" />
+                            <Label>Purchases</Label>
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <Link to="/transactions/sales">
+                          <SidebarMenuSubButton>
+                            <PackageIcon className="size-3.5" />
+                            <Label>Sales</Label>
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            </TypeGuard>
+
             <TypeGuard type={['admin', 'staff']}>
               <Link to="/materials">
                 <SidebarMenuItem>

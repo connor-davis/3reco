@@ -9,25 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TransactionsIndexRouteImport } from './routes/transactions/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as MarketIndexRouteImport } from './routes/market/index'
+import { Route as TransactionsSalesRouteImport } from './routes/transactions/sales'
+import { Route as TransactionsPurchasesRouteImport } from './routes/transactions/purchases'
 import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store.$sellerId'
 
-const TransactionsRoute = TransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const StockRoute = StockRouteImport.update({
   id: '/stock',
   path: '/stock',
@@ -53,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TransactionsIndexRoute = TransactionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TransactionsRoute,
+} as any)
 const ProfileIndexRoute = ProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
@@ -61,6 +63,16 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
 const MarketIndexRoute = MarketIndexRouteImport.update({
   id: '/market/',
   path: '/market/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsSalesRoute = TransactionsSalesRouteImport.update({
+  id: '/transactions/sales',
+  path: '/transactions/sales',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsPurchasesRoute = TransactionsPurchasesRouteImport.update({
+  id: '/transactions/purchases',
+  path: '/transactions/purchases',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketOutgoingRoute = MarketOutgoingRouteImport.update({
@@ -95,13 +107,15 @@ export interface FileRoutesByFullPath {
   '/collections': typeof CollectionsRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
-  '/transactions': typeof TransactionsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
+  '/transactions/purchases': typeof TransactionsPurchasesRoute
+  '/transactions/sales': typeof TransactionsSalesRoute
   '/market/': typeof MarketIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/transactions/': typeof TransactionsIndexRoute
   '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRoutesByTo {
@@ -110,13 +124,15 @@ export interface FileRoutesByTo {
   '/collections': typeof CollectionsRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
-  '/transactions': typeof TransactionsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
+  '/transactions/purchases': typeof TransactionsPurchasesRoute
+  '/transactions/sales': typeof TransactionsSalesRoute
   '/market': typeof MarketIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/transactions': typeof TransactionsIndexRoute
   '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRoutesById {
@@ -126,13 +142,15 @@ export interface FileRoutesById {
   '/collections': typeof CollectionsRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
-  '/transactions': typeof TransactionsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
+  '/transactions/purchases': typeof TransactionsPurchasesRoute
+  '/transactions/sales': typeof TransactionsSalesRoute
   '/market/': typeof MarketIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/transactions/': typeof TransactionsIndexRoute
   '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRouteTypes {
@@ -143,13 +161,15 @@ export interface FileRouteTypes {
     | '/collections'
     | '/materials'
     | '/stock'
-    | '/transactions'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
+    | '/transactions/purchases'
+    | '/transactions/sales'
     | '/market/'
     | '/profile/'
+    | '/transactions/'
     | '/market/store/$sellerId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -158,13 +178,15 @@ export interface FileRouteTypes {
     | '/collections'
     | '/materials'
     | '/stock'
-    | '/transactions'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
+    | '/transactions/purchases'
+    | '/transactions/sales'
     | '/market'
     | '/profile'
+    | '/transactions'
     | '/market/store/$sellerId'
   id:
     | '__root__'
@@ -173,13 +195,15 @@ export interface FileRouteTypes {
     | '/collections'
     | '/materials'
     | '/stock'
-    | '/transactions'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
+    | '/transactions/purchases'
+    | '/transactions/sales'
     | '/market/'
     | '/profile/'
+    | '/transactions/'
     | '/market/store/$sellerId'
   fileRoutesById: FileRoutesById
 }
@@ -189,11 +213,12 @@ export interface RootRouteChildren {
   CollectionsRoute: typeof CollectionsRoute
   MaterialsRoute: typeof MaterialsRoute
   StockRoute: typeof StockRoute
-  TransactionsRoute: typeof TransactionsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   MarketRequestIdRoute: typeof MarketRequestIdRoute
   MarketIncomingRoute: typeof MarketIncomingRoute
   MarketOutgoingRoute: typeof MarketOutgoingRoute
+  TransactionsPurchasesRoute: typeof TransactionsPurchasesRoute
+  TransactionsSalesRoute: typeof TransactionsSalesRoute
   MarketIndexRoute: typeof MarketIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   MarketStoreSellerIdRoute: typeof MarketStoreSellerIdRoute
@@ -201,13 +226,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/transactions': {
-      id: '/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof TransactionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/stock': {
       id: '/stock'
       path: '/stock'
@@ -243,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/transactions/': {
+      id: '/transactions/'
+      path: '/'
+      fullPath: '/transactions/'
+      preLoaderRoute: typeof TransactionsIndexRouteImport
+      parentRoute: typeof TransactionsRoute
+    }
     '/profile/': {
       id: '/profile/'
       path: '/profile'
@@ -255,6 +280,20 @@ declare module '@tanstack/react-router' {
       path: '/market'
       fullPath: '/market/'
       preLoaderRoute: typeof MarketIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transactions/sales': {
+      id: '/transactions/sales'
+      path: '/transactions/sales'
+      fullPath: '/transactions/sales'
+      preLoaderRoute: typeof TransactionsSalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transactions/purchases': {
+      id: '/transactions/purchases'
+      path: '/transactions/purchases'
+      fullPath: '/transactions/purchases'
+      preLoaderRoute: typeof TransactionsPurchasesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/market/outgoing': {
@@ -301,11 +340,12 @@ const rootRouteChildren: RootRouteChildren = {
   CollectionsRoute: CollectionsRoute,
   MaterialsRoute: MaterialsRoute,
   StockRoute: StockRoute,
-  TransactionsRoute: TransactionsRoute,
   AdminUsersRoute: AdminUsersRoute,
   MarketRequestIdRoute: MarketRequestIdRoute,
   MarketIncomingRoute: MarketIncomingRoute,
   MarketOutgoingRoute: MarketOutgoingRoute,
+  TransactionsPurchasesRoute: TransactionsPurchasesRoute,
+  TransactionsSalesRoute: TransactionsSalesRoute,
   MarketIndexRoute: MarketIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   MarketStoreSellerIdRoute: MarketStoreSellerIdRoute,

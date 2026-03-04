@@ -50,8 +50,8 @@ export const listExpensesWithPagination = query({
     if (user.type === 'business') {
       return await ctx.db
         .query('transactions')
-        .withIndex('by_buyerId_and_type', (q) =>
-          q.eq('buyerId', userId as Id<'users'>).eq('type', 'c2b')
+        .withIndex('by_buyerId', (q) =>
+          q.eq('buyerId', userId as Id<'users'>)
         )
         .order('desc')
         .paginate(paginationOpts);
@@ -93,8 +93,8 @@ export const listExpenses = query({
     if (user.type === 'business') {
       return await ctx.db
         .query('transactions')
-        .withIndex('by_buyerId_and_type', (q) =>
-          q.eq('buyerId', userId as Id<'users'>).eq('type', 'c2b')
+        .withIndex('by_buyerId', (q) =>
+          q.eq('buyerId', userId as Id<'users'>)
         )
         .collect();
     }
@@ -136,7 +136,7 @@ export const listSalesWithPagination = query({
       return await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId as Id<'users'>).eq('type', 'c2b')
+          q.eq('sellerId', userId as Id<'users'>).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .paginate(paginationOpts);
@@ -172,7 +172,7 @@ export const listSales = query({
       return await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId as Id<'users'>).eq('type', 'c2b')
+          q.eq('sellerId', userId as Id<'users'>).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .collect();
