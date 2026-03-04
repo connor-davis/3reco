@@ -10,11 +10,7 @@ export default function TransactionItemContent({
   _id: Id<'transactions'>;
 }) {
   const transaction = useConvexQuery(api.transactions.findById, { _id });
-  const items = transaction?.items ?? (
-    transaction?.materialId
-      ? [{ materialId: transaction.materialId, weight: transaction.weight ?? 0, price: transaction.price ?? 0 }]
-      : []
-  );
+  const items = transaction?.items ?? [];
   const firstMaterialId = items[0]?.materialId;
   const material = useConvexQuery(
     api.materials.findById,

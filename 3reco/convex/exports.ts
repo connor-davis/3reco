@@ -1,7 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { query } from './_generated/server';
-import { getTransactionItems } from './transactions';
 
 function getUserDisplayName(
   user: { firstName?: string; lastName?: string; businessName?: string; email?: string } | null
@@ -34,7 +33,7 @@ export const exportTransactions = query({
     for (const t of rows) {
       const seller = await ctx.db.get('users', t.sellerId);
       const buyer = await ctx.db.get('users', t.buyerId);
-      for (const item of getTransactionItems(t)) {
+      for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         expandedRows.push({
           'Date': new Date(t._creationTime).toISOString(),
@@ -91,7 +90,7 @@ export const exportCollections = query({
     for (const t of rows) {
       const seller = await ctx.db.get('users', t.sellerId);
       const buyer = await ctx.db.get('users', t.buyerId);
-      for (const item of getTransactionItems(t)) {
+      for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         expandedRows.push({
           'Date': new Date(t._creationTime).toISOString(),

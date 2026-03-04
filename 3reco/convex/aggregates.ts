@@ -6,7 +6,7 @@ import type { DataModel } from './_generated/dataModel';
  * Aggregates transactions by type (c2b / b2b).
  * - namespace: transaction type ('c2b' | 'b2b')
  * - sortKey: _creationTime (ms timestamp) — enables efficient time-range queries
- * - sumValue: weight (kg) — enables O(log n) total-volume sums
+ * - sumValue: total weight across all items (kg)
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const txByType = new TableAggregate<{
@@ -18,29 +18,5 @@ export const txByType = new TableAggregate<{
 }>((components as any).txByType, {
   namespace: (doc) => doc.type,
   sortKey: (doc) => doc._creationTime,
-  sumValue: (doc) => {
-    if (doc.items && doc.items.length > 0) {
-      return doc.items.reduce((s, i) => s + i.weight, 0);
-    }
-    return doc.weight ?? 0;
-  },
-});
-
-/**
- * Aggregates transactions by material.
- * - namespace: materialId string
- * - sortKey: _creationTime
- * - sumValue: weight
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const txByMaterial = new TableAggregate<{
-  Namespace: string;
-  Key: number;
-  DataModel: DataModel;
-  TableName: 'transactions';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-}>((components as any).txByMaterial, {
-  namespace: (doc) => doc.materialId ?? '',
-  sortKey: (doc) => doc._creationTime,
-  sumValue: (doc) => doc.weight ?? 0,
+  sumValue: (doc) => doc.items.reduce((s, i) => s + i.weight, 0),
 });

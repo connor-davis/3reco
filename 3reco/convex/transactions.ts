@@ -11,34 +11,17 @@ export const txItemValidator = v.object({
   price: v.number(),
 });
 
-/** Normalise both legacy (materialId/weight/price) and new (items) transactions. */
-export function getTransactionItems(t: {
-  items?: Array<{ materialId: Id<'materials'>; weight: number; price: number }>;
-  materialId?: Id<'materials'>;
-  weight?: number;
-  price?: number;
-}): Array<{ materialId: Id<'materials'>; weight: number; price: number }> {
-  if (t.items && t.items.length > 0) return t.items;
-  if (t.materialId) return [{ materialId: t.materialId, weight: t.weight!, price: t.price! }];
-  return [];
-}
-
 export default defineTable({
   sellerId: v.id('users'),
   buyerId: v.id('users'),
-  // Multi-item transactions
-  items: v.optional(v.array(txItemValidator)),
-  // Legacy single-item fields (kept for backward compatibility)
-  materialId: v.optional(v.id('materials')),
-  weight: v.optional(v.number()),
-  price: v.optional(v.number()),
+  items: v.array(txItemValidator),
+  totalPrice: v.number(),
   type: v.union(v.literal('c2b'), v.literal('b2b')),
   invoiceStorageId: v.optional(v.id('_storage')),
 })
   .index('by_sellerId', ['sellerId'])
   .index('by_buyerId', ['buyerId'])
   .index('by_type', ['type'])
-  .index('by_materialId', ['materialId'])
   .index('by_sellerId_and_type', ['sellerId', 'type'])
   .index('by_buyerId_and_type', ['buyerId', 'type']);
 
@@ -254,10 +237,12 @@ export const collectorToBusinessSale = mutation({
         });
     }
 
+    const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
     const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId as Id<'users'>,
       sellerId: collectorId,
       items,
+      totalPrice,
       type: 'c2b',
     });
 
@@ -338,10 +323,12 @@ export const businessToBusinessSale= mutation({
         });
     }
 
+    const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
     const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId,
       sellerId: sellerId as Id<'users'>,
       items,
+      totalPrice,
       type: 'b2b',
     });
 

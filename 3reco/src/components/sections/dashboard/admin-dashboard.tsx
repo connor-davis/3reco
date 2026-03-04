@@ -170,9 +170,9 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PackageIcon className="size-4" />
-              Material Volume
+              Stock by Material
             </CardTitle>
-            <CardDescription>Total weight transacted per material (kg)</CardDescription>
+            <CardDescription>Current volume held in the system per material (kg)</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={barChartConfig} className="h-56 w-full">

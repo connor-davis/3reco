@@ -265,6 +265,7 @@ export const acceptOffer = mutation({
       sellerId: request.sellerId,
       buyerId: request.buyerId,
       items: txItems,
+      totalPrice: txItems.reduce((s, i) => s + i.price * i.weight, 0),
       type: 'b2b',
     });
 

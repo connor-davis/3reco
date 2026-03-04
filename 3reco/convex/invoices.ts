@@ -8,7 +8,6 @@ import {
 } from './_generated/server';
 import { internal } from './_generated/api';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-import { getTransactionItems } from './transactions';
 
 export const getTransactionData = internalQuery({
   args: { transactionId: v.id('transactions') },
@@ -17,9 +16,8 @@ export const getTransactionData = internalQuery({
     if (!transaction) return null;
     const seller = await ctx.db.get('users', transaction.sellerId);
     const buyer = await ctx.db.get('users', transaction.buyerId);
-    const rawItems = getTransactionItems(transaction);
     const resolvedItems = await Promise.all(
-      rawItems.map(async (item) => {
+      transaction.items.map(async (item) => {
         const material = await ctx.db.get('materials', item.materialId);
         return { ...item, materialName: material?.name ?? 'Unknown' };
       })

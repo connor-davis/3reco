@@ -1,8 +1,7 @@
-﻿import { ConvexError, v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { query } from './_generated/server';
 import { txByType } from './aggregates';
-import { getTransactionItems } from './transactions';
 
 function toDateString(ts: number): string {
   return new Date(ts).toISOString().split('T')[0];
@@ -91,7 +90,7 @@ export const adminStats = query({
       : recentScan;
     const latestTransactions = await Promise.all(
       filteredForLatest.slice(0, 5).map(async (t) => {
-        const items = getTransactionItems(t);
+        const items = t.items;
         const totalWeight = items.reduce((s, i) => s + i.weight, 0);
         const firstMaterial = items.length > 0 ? await ctx.db.get('materials', items[0].materialId) : null;
         const materialName = items.length === 1 ? (firstMaterial?.name ?? 'Unknown') : `${items.length} materials`;
@@ -102,7 +101,7 @@ export const adminStats = query({
           _creationTime: t._creationTime,
           type: t.type,
           weight: totalWeight,
-          price: items.reduce((s, i) => s + i.price * i.weight, 0),
+          price: t.totalPrice,
           materialName,
           sellerName: getUserDisplayName(seller),
           buyerName: getUserDisplayName(buyer),
@@ -126,16 +125,12 @@ export const adminStats = query({
     });
     const dailyTransactions = await Promise.all(dayDataPromises);
 
-    // --- Material volume via direct query (handles multi-item transactions) ---
+    // --- Material volume: current stock in the system per material ---
     const allMaterials = await ctx.db.query('materials').collect();
-    const allTxsForMaterial = hasRange
-      ? recentScan.filter((t) => t._creationTime >= from! && t._creationTime <= to!)
-      : await ctx.db.query('transactions').collect();
+    const allStock = await ctx.db.query('stock').collect();
     const materialWeightMap = new Map<string, number>();
-    for (const t of allTxsForMaterial) {
-      for (const item of getTransactionItems(t)) {
-        materialWeightMap.set(item.materialId, (materialWeightMap.get(item.materialId) ?? 0) + item.weight);
-      }
+    for (const s of allStock) {
+      materialWeightMap.set(s.materialId, (materialWeightMap.get(s.materialId) ?? 0) + s.weight);
     }
     const materialVolume = allMaterials
       .map((m) => ({ materialName: m.name, totalWeight: materialWeightMap.get(m._id) ?? 0 }))
@@ -196,7 +191,7 @@ export const businessStats = query({
 
     const latestTransactions = await Promise.all(
       filteredAll.slice(0, 5).map(async (t) => {
-        const items = getTransactionItems(t);
+        const items = t.items;
         const totalWeight = items.reduce((s, i) => s + i.weight, 0);
         const firstMaterial = items.length > 0 ? await ctx.db.get('materials', items[0].materialId) : null;
         const materialName = items.length === 1 ? (firstMaterial?.name ?? 'Unknown') : `${items.length} materials`;
@@ -207,7 +202,7 @@ export const businessStats = query({
           _creationTime: t._creationTime,
           type: t.type,
           weight: totalWeight,
-          price: items.reduce((s, i) => s + i.price * i.weight, 0),
+          price: t.totalPrice,
           materialName,
           counterpartyName: getUserDisplayName(counterparty),
           direction: isBuy ? ('buy' as const) : ('sell' as const),
@@ -222,21 +217,21 @@ export const businessStats = query({
       const d = toDateString(t._creationTime);
       if (!dayMap[d]) continue;
       dayMap[d].count++;
-      dayMap[d].volume += getTransactionItems(t).reduce((s, i) => s + i.weight, 0);
+      dayMap[d].volume += t.items.reduce((s, i) => s + i.weight, 0);
     }
     const dailyTransactions = days.map((d) => ({ date: d, ...dayMap[d] }));
 
     let carbonSavings = 0;
     for (const t of filteredAll) {
-      for (const item of getTransactionItems(t)) {
+      for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         if (material) carbonSavings += co2Savings(item.weight, 0, material.carbonFactor);
       }
     }
 
     const totals = {
-      totalSpend: filteredBuyer.reduce((s, t) => s + getTransactionItems(t).reduce((ss, i) => ss + i.price * i.weight, 0), 0),
-      totalVolume: filteredBuyer.reduce((s, t) => s + getTransactionItems(t).reduce((ss, i) => ss + i.weight, 0), 0),
+      totalSpend: filteredBuyer.reduce((s, t) => s + t.totalPrice, 0),
+      totalVolume: filteredBuyer.reduce((s, t) => s + t.items.reduce((ss, i) => ss + i.weight, 0), 0),
       transactionCount: filteredBuyer.length,
     };
 
@@ -291,7 +286,7 @@ export const collectorStats = query({
 
     const latestTransactions = await Promise.all(
       filteredSales.slice(0, 5).map(async (t) => {
-        const items = getTransactionItems(t);
+        const items = t.items;
         const totalWeight = items.reduce((s, i) => s + i.weight, 0);
         const firstMaterial = items.length > 0 ? await ctx.db.get('materials', items[0].materialId) : null;
         const materialName = items.length === 1 ? (firstMaterial?.name ?? 'Unknown') : `${items.length} materials`;
@@ -300,7 +295,7 @@ export const collectorStats = query({
           _id: t._id,
           _creationTime: t._creationTime,
           weight: totalWeight,
-          price: items.reduce((s, i) => s + i.price * i.weight, 0),
+          price: t.totalPrice,
           materialName,
           buyerName: getUserDisplayName(buyer),
         };
@@ -314,24 +309,25 @@ export const collectorStats = query({
       const d = toDateString(t._creationTime);
       if (!dayMap[d]) continue;
       dayMap[d].count++;
-      dayMap[d].volume += getTransactionItems(t).reduce((s, i) => s + i.weight, 0);
+      dayMap[d].volume += t.items.reduce((s, i) => s + i.weight, 0);
     }
     const dailyTransactions = days.map((d) => ({ date: d, ...dayMap[d] }));
 
     let carbonSavings = 0;
     for (const t of filteredSales) {
-      for (const item of getTransactionItems(t)) {
+      for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         if (material) carbonSavings += co2Savings(item.weight, 0, material.carbonFactor);
       }
     }
 
     const totals = {
-      totalRevenue: filteredSales.reduce((s, t) => s + getTransactionItems(t).reduce((ss, i) => ss + i.price * i.weight, 0), 0),
-      totalVolume: filteredSales.reduce((s, t) => s + getTransactionItems(t).reduce((ss, i) => ss + i.weight, 0), 0),
+      totalRevenue: filteredSales.reduce((s, t) => s + t.totalPrice, 0),
+      totalVolume: filteredSales.reduce((s, t) => s + t.items.reduce((ss, i) => ss + i.weight, 0), 0),
       transactionCount: filteredSales.length,
     };
 
     return { latestTransactions, dailyTransactions, carbonSavings, totals };
   },
 });
+
