@@ -42,6 +42,7 @@ function RouteComponent() {
   const removeReview = useMutation(api.reviews.removeReview);
   const currentUser = useQuery(api.users.currentUser, {});
   const isAdmin = currentUser?.type === 'admin';
+  const canRequest = currentUser?.type === 'business' || currentUser?.type === 'collector';
   const [submitted, setSubmitted] = useState(false);
 
   const averageRating = useConvexQuery(api.reviews.averageForSeller, {
@@ -131,7 +132,7 @@ function RouteComponent() {
           <BackButton />
           <Label className="text-lg">{sellerName}</Label>
         </div>
-        {cart.length > 0 && (
+        {canRequest && cart.length > 0 && (
           <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
             <ShoppingCartIcon className="size-4" />
             {cart.length} item{cart.length !== 1 ? 's' : ''} in request
@@ -175,7 +176,7 @@ function RouteComponent() {
                     </span>
                   </div>
                   {inCart ? (
-                    <Button
+                    canRequest && <Button
                       variant="outline"
                       size="sm"
                       onClick={() => removeFromCart(item._id)}
@@ -183,7 +184,7 @@ function RouteComponent() {
                       <MinusIcon className="size-3" /> Remove
                     </Button>
                   ) : (
-                    <Button size="sm" onClick={() => addToCart(item)}>
+                    canRequest && <Button size="sm" onClick={() => addToCart(item)}>
                       <PlusIcon className="size-3" /> Add to Request
                     </Button>
                   )}
@@ -201,7 +202,7 @@ function RouteComponent() {
                   <Stars rating={averageRating.average} count={averageRating.count} size="sm" />
                 )}
               </div>
-              {reviewableTransactions && reviewableTransactions.length > 0 && reviewableTransactions[0] && (
+              {canRequest && reviewableTransactions && reviewableTransactions.length > 0 && reviewableTransactions[0] && (
                 <ReviewDialog
                   transactionId={reviewableTransactions[0]._id}
                   sellerName={sellerName}
@@ -250,7 +251,7 @@ function RouteComponent() {
           </div>
         </div>
 
-        {cart.length > 0 && (
+        {canRequest && cart.length > 0 && (
           <div className="flex flex-col gap-3 lg:w-72 border rounded-xl p-4 bg-muted/30 shrink-0 overflow-y-auto">
             <Label className="text-sm font-semibold">Request Summary</Label>
             <div className="flex flex-col gap-2">

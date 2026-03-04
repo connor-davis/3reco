@@ -12,7 +12,6 @@ import {
   UsersIcon,
   VanIcon,
 } from 'lucide-react';
-import NotificationTray from '../notifications/tray';
 import TypeGuard from '../guards/type';
 import {
   Collapsible,
@@ -186,9 +185,6 @@ export default function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <NotificationTray />
-          </SidebarMenuItem>
           <TypeGuard type="admin">
             <Link to="/admin/users">
               <SidebarMenuItem>
