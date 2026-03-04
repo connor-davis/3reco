@@ -57,15 +57,27 @@ The `docker-compose.local.yml` override pre-fills all environment variables with
   Modern browsers resolve `*.localhost` to `127.0.0.1` natively — no `/etc/hosts` edits required. If a browser doesn't resolve them, add the five entries manually.
 </Callout>
 
-### Production setup
-
-**1. Configure environment**
+### Production deploy (single command)
 
 ```bash
-cp .env.example .env
+chmod +x deploy.sh
+./deploy.sh yourdomain.com
 ```
 
-Open `.env` and fill in:
+The script:
+1. Derives all service URLs from the domain (`convex.`, `convex-site.`, etc.)
+2. Generates a secure `INSTANCE_SECRET` via `openssl rand -hex 64` and writes `.env`
+3. Runs `docker compose up -d --build`
+
+On re-deploys the existing `INSTANCE_SECRET` is preserved so Convex data stays accessible.
+
+<Callout type="warning" title="DNS must be live first">
+  Caddy requests TLS certificates from Let's Encrypt on first boot. All five subdomains must have DNS A records pointing at your server **before** you run the script, otherwise Caddy will fail to obtain certificates.
+</Callout>
+
+### Manual production setup
+
+If you prefer to configure things by hand, copy `.env.example` to `.env` and fill in:
 
 | Variable | Description |
 |---|---|
@@ -77,15 +89,9 @@ Open `.env` and fill in:
 | `VITE_CONVEX_URL` | Same as `CONVEX_CLOUD_ORIGIN` |
 | `VITE_CONVEX_AUTH_DOMAIN` | Same as `CONVEX_SITE_ORIGIN` |
 
-**2. Start the stack**
+Then run `docker compose up -d --build`.
 
-```bash
-docker compose up -d --build
-```
-
-Caddy will request TLS certificates on first boot — this requires ports 80 and 443 to be reachable from the internet.
-
-**3. Generate the Convex admin key**
+**Generate the Convex admin key**
 
 ```bash
 docker compose exec convex-backend ./generate_admin_key.sh
