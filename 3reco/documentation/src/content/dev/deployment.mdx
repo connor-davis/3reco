@@ -75,6 +75,27 @@ On re-deploys the existing `INSTANCE_SECRET` is preserved so Convex data stays a
   Caddy requests TLS certificates from Let's Encrypt on first boot. All five subdomains must have DNS A records pointing at your server **before** you run the script, otherwise Caddy will fail to obtain certificates.
 </Callout>
 
+**First deploy only — generate the Convex admin key:**
+
+```bash
+docker compose exec convex-backend ./generate_admin_key.sh
+```
+
+Copy the printed key — you'll need it to log in to `https://convex-dashboard.yourdomain.com` and to deploy functions.
+
+**First deploy only — push Convex functions:**
+
+```bash
+cd 3reco
+CONVEX_SELF_HOSTED_URL=https://convex.yourdomain.com \
+CONVEX_SELF_HOSTED_ADMIN_KEY=<key from above> \
+bunx convex deploy
+```
+
+<Callout type="note" title="Re-deploying">
+  For subsequent deploys (code changes, updates) just run `./deploy.sh yourdomain.com` again, then re-run `bunx convex deploy` if any Convex functions changed.
+</Callout>
+
 ### Manual production setup
 
 If you prefer to configure things by hand, copy `.env.example` to `.env` and fill in:
@@ -89,24 +110,7 @@ If you prefer to configure things by hand, copy `.env.example` to `.env` and fil
 | `VITE_CONVEX_URL` | Same as `CONVEX_CLOUD_ORIGIN` |
 | `VITE_CONVEX_AUTH_DOMAIN` | Same as `CONVEX_SITE_ORIGIN` |
 
-Then run `docker compose up -d --build`.
-
-**Generate the Convex admin key**
-
-```bash
-docker compose exec convex-backend ./generate_admin_key.sh
-```
-
-Copy the key — you'll need it to log in to the Convex dashboard and to deploy functions.
-
-**4. Deploy Convex functions**
-
-```bash
-cd 3reco
-CONVEX_SELF_HOSTED_URL=https://convex.yourdomain.com \
-CONVEX_SELF_HOSTED_ADMIN_KEY=<key from step 3> \
-bunx convex deploy
-```
+Then run `docker compose up -d --build`, followed by the same admin key and `bunx convex deploy` steps above.
 
 <Callout type="warning" title="VITE_ variables are baked at build time">
   `VITE_CONVEX_URL` and `VITE_CONVEX_AUTH_DOMAIN` are inlined into the JS bundle when the Docker image is built. If you change these values you must rebuild the frontend image: `docker compose build frontend`.
