@@ -20,20 +20,87 @@ import {
   ItemDescription,
   ItemTitle,
 } from '@/components/ui/item';
+import { ItemActionsMenu } from '@/components/ui/item-actions-menu';
 import { Label } from '@/components/ui/label';
-import { useConvexQuery } from '@convex-dev/react-query';
+import { useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { PackageIcon, PencilIcon, SearchIcon, TrashIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 export const Route = createFileRoute('/materials')({
   component: RouteComponent,
 });
 
+function MaterialItem({
+  material,
+}: {
+  material: { _id: Id<'materials'>; name: string; carbonFactor: string; gwCode: string; price: number };
+}) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  return (
+    <>
+      <Item variant="muted">
+        <ItemContent>
+          <ItemTitle>{material.name}</ItemTitle>
+          <ItemDescription>
+            The material has a carbon factor of {material.carbonFactor} kg
+            CO2e per kg, a GW code of {material.gwCode}, and a price of R
+            {material.price} per kg.
+          </ItemDescription>
+        </ItemContent>
+
+        <ItemActions>
+          <ItemActionsMenu
+            actions={[
+              {
+                label: 'Edit',
+                icon: <PencilIcon className="size-4" />,
+                onClick: () => setEditOpen(true),
+              },
+              {
+                label: 'Delete',
+                icon: <TrashIcon className="size-4" />,
+                onClick: () => setDeleteOpen(true),
+                variant: 'destructive',
+              },
+            ]}
+          />
+        </ItemActions>
+      </Item>
+
+      <EditMaterialByIdDialog _id={material._id} open={editOpen} onOpenChange={setEditOpen} />
+      <RemoveMaterialByIdDialog _id={material._id} open={deleteOpen} onOpenChange={setDeleteOpen} />
+    </>
+  );
+}
+
 function RouteComponent() {
-  const materials = useConvexQuery(api.materials.list, {});
+  const {
+    results: materials,
+    isLoading,
+    status,
+    loadMore,
+  } = useConvexPaginatedQuery(
+    api.materials.listWithPagination,
+    {},
+    { initialNumItems: 50 }
+  );
+
   const [search, setSearch] = useState('');
+
+  const sentinelRef = useInfiniteScroll(
+    () => {
+      if (status === 'CanLoadMore') {
+        loadMore(50);
+      }
+    },
+    status === 'CanLoadMore'
+  );
 
   const filtered = materials?.filter((m) =>
     m.name.toLowerCase().includes(search.toLowerCase())
@@ -96,31 +163,12 @@ function RouteComponent() {
       {filtered && filtered.length > 0 && (
         <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
           {filtered?.map((material) => (
-            <Item variant="muted" key={material._id}>
-              <ItemContent>
-                <ItemTitle>{material.name}</ItemTitle>
-                <ItemDescription>
-                  The material has a carbon factor of {material.carbonFactor} kg
-                  CO2e per kg, a GW code of {material.gwCode}, and a price of R
-                  {material.price} per kg.
-                </ItemDescription>
-              </ItemContent>
-
-              <ItemActions>
-                <EditMaterialByIdDialog _id={material._id}>
-                  <Button variant="ghost" size="icon">
-                    <PencilIcon />
-                  </Button>
-                </EditMaterialByIdDialog>
-
-                <RemoveMaterialByIdDialog _id={material._id}>
-                  <Button variant="destructiveGhost" size="icon">
-                    <TrashIcon />
-                  </Button>
-                </RemoveMaterialByIdDialog>
-              </ItemActions>
-            </Item>
+            <MaterialItem
+              key={material._id}
+              material={material}
+            />
           ))}
+          <div ref={sentinelRef} className="h-px" />
         </div>
       )}
     </div>
