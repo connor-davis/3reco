@@ -33,6 +33,30 @@ Caddy (80/443)
 - A server with a public IP
 - DNS A records for all five subdomains pointing at that IP
 
+### Self-hosted authentication with a modern UI
+
+If you want a **self-hosted** identity provider with a polished admin and end-user experience, the best fit for 3rEco's current requirements is **[ZITADEL](https://zitadel.com)**.
+
+Why ZITADEL is the recommended option here:
+
+- **Modern UI** for both sign-in flows and admin management
+- **Passkeys / WebAuthn** support out of the box
+- **TOTP MFA** support out of the box
+- **OIDC-compliant**, which makes it a practical match for Convex custom JWT / OIDC authentication
+- **Self-hostable**, so it can live alongside the rest of this Docker-based deployment
+
+Other viable self-hosted options:
+
+| Provider | Best for | Notes |
+|---|---|---|
+| **ZITADEL** | Best overall fit for this repo | Modern UI, strong passkey + TOTP support, good OIDC story |
+| **Logto** | Simpler product-focused setup | Modern UI, but a lighter ecosystem than ZITADEL |
+| **Authentik** | Flexible self-hosted SSO | Powerful, but the UX is more ops-oriented than product-oriented |
+
+<Callout type="tip" title="Recommended direction for this project">
+  If the goal is to move away from password-only auth while keeping a modern hosted experience, use ZITADEL as the external identity provider and let Convex trust its OIDC-issued tokens. That avoids building passkeys and MFA from scratch while staying self-hosted.
+</Callout>
+
 ### Localhost quickstart (single command)
 
 To run the full stack locally with no DNS setup and no TLS:
