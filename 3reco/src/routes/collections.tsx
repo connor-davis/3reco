@@ -26,6 +26,7 @@ import { Activity } from 'react';
 import TransactionUserDetails from '@/components/transactions/user-details';
 import { useQuery } from 'convex/react';
 import { downloadCsv } from '@/lib/export-csv';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 export const Route = createFileRoute('/collections')({
   component: RouteComponent,
@@ -44,6 +45,15 @@ function RouteComponent() {
   );
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
+  const sentinelRef = useInfiniteScroll(
+    () => {
+      if (collectionsStatus === 'CanLoadMore') {
+        loadMoreCollections(50);
+      }
+    },
+    collectionsStatus === 'CanLoadMore'
+  );
 
   const exportData = useQuery(api.exports.exportCollections, {
     from: dateRange?.from?.getTime(),
@@ -146,14 +156,7 @@ function RouteComponent() {
                 </ItemFooter>
               </Item>
             ))}
-
-            <Activity
-              mode={collectionsStatus === 'CanLoadMore' ? 'visible' : 'hidden'}
-            >
-              <Button variant="outline" onClick={() => loadMoreCollections(50)}>
-                Load More
-              </Button>
-            </Activity>
+            <div ref={sentinelRef} className="h-px" />
           </div>
         )}
       </Activity>
