@@ -25,6 +25,23 @@ import { toast } from 'sonner';
 import z from 'zod/v4';
 import { ConvexError } from 'convex/values';
 
+// Helper function to convert phone number to email format
+// Normalizes South African phone numbers to format: phone@3reco.co.za
+function phoneToEmail(phone: string): string {
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '');
+
+  // Normalize to international format (remove leading 0, add 27)
+  let normalized = digits;
+  if (digits.startsWith('0')) {
+    normalized = '27' + digits.slice(1);
+  } else if (!digits.startsWith('27')) {
+    normalized = '27' + digits;
+  }
+
+  return `${normalized}@3reco.co.za`;
+}
+
 const formSchema = z.object({
   email: z.string().min(1).max(100).optional(),
   phone: z.string().regex(/^(0\d{9}|\+27\d{9})$/).optional(),
@@ -77,12 +94,18 @@ export default function AuthenticationGuard() {
                       duration: 2000,
                     });
 
-                  const formData = new FormData();
+                  // Determine the email to use - either provided or converted from phone
+                  const authEmail = values.email || (values.phone ? phoneToEmail(values.phone) : '');
 
-                  if (values.email) formData.append('email', values.email);
-                  if (values.phone) formData.append('phone', values.phone);
+                  const formData = new FormData();
+                  formData.append('email', authEmail);
                   formData.append('password', values.password);
                   formData.append('flow', 'signIn');
+
+                  // Store the original phone number for later use if provided
+                  if (values.phone) {
+                    formData.append('phone', values.phone);
+                  }
 
                   signIn('password', formData)
                     .then(() => router.navigate({ to: '/' }))
@@ -226,12 +249,19 @@ export default function AuthenticationGuard() {
                       duration: 2000,
                     });
 
-                  signIn('password', {
-                    flow: 'signUp',
-                    ...values,
+                  // Determine the email to use - either provided or converted from phone
+                  const authEmail = values.email || (values.phone ? phoneToEmail(values.phone) : '');
+
+                  const signUpData = {
+                    flow: 'signUp' as const,
+                    email: authEmail,
+                    password: values.password,
                     agreedToTerms: false,
                     profileComplete: false,
-                  })
+                    ...(values.phone ? { phone: values.phone } : {}),
+                  };
+
+                  signIn('password', signUpData)
                     .then(() => router.navigate({ to: '/' }))
                     .catch((error) => {
                       if (error instanceof ConvexError) {

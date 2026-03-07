@@ -214,6 +214,12 @@ export const removeUser = mutation({
 });
 
 // Admin/Staff can create users manually (requires MFA)
+// NOTE: This is a placeholder. Convex Auth does not support programmatic user creation
+// in mutations. Recommended approach:
+// 1. Admin creates an invitation record
+// 2. Send invitation link/code to user
+// 3. User signs up with the invitation code
+// 4. Post-signup mutation sets user type and permissions
 export const createUser = mutation({
   args: {
     email: v.optional(v.string()),
@@ -253,12 +259,22 @@ export const createUser = mutation({
         message: 'Either email or phone number must be provided.'
       });
 
-    // This is a placeholder - actual user creation with password would need to be
-    // integrated with the Convex Auth system. For now, we'll throw an error
-    // directing to use the standard signup flow
+    // LIMITATION: Convex Auth does not support programmatic user creation in mutations.
+    // User creation happens at the HTTP layer via signIn('password', { flow: 'signUp' })
+    // which can only be called from the frontend.
+    //
+    // Recommended Implementation:
+    // 1. Create an 'invitations' table to store pending invitations
+    // 2. Admin creates invitation with email/phone and desired user type
+    // 3. Send invitation link to user (email/SMS)
+    // 4. User clicks link and completes signup
+    // 5. After signup, a mutation checks for invitation and sets user type
+    //
+    // For phone-based invitations, convert phone to email format:
+    // const authEmail = args.phone ? `${args.phone.replace(/\D/g, '')}@3reco.co.za` : args.email;
     throw new ConvexError({
       name: 'Not Implemented',
-      message: 'User creation must be done through the Convex Auth system. This feature will be implemented with custom auth endpoints.'
+      message: 'Direct user creation is not supported by Convex Auth. Please implement an invitation system instead. See code comments for details.'
     });
   },
 });
