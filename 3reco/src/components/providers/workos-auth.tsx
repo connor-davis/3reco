@@ -1,13 +1,8 @@
 /**
  * WorkOS auth context for the React app.
  *
- * Responsibilities:
- *  - Calls the Convex HTTP actions that proxy WorkOS User Management.
- *  - Stores the access / refresh tokens in localStorage.
- *  - Keeps `ConvexReactClient.setAuth()` up-to-date so every Convex
- *    query/mutation is automatically authenticated.
- *  - Exposes `signIn`, `signUp`, `signOut`, `verifyMfa`, `enrollTotp`,
- *    `verifyTotpEnrollment`, `enrollPasskey`, `verifyPasskeyEnrollment`.
+ * Tokens are kept in localStorage; the Convex client is kept in sync via
+ * `convex.setAuth()` so every query/mutation is automatically authenticated.
  */
 
 import {
@@ -49,12 +44,18 @@ function getRefreshToken() {
 
 export interface AuthFactor {
   id: string;
-  type: 'totp' | 'webauthn' | string;
+  type: string;
 }
 
 export type SignInResult =
   | { success: true }
-  | { requiresMfa: true; pendingAuthToken: string; authFactors: AuthFactor[] };
+  | {
+      requiresMfa: true;
+      pendingAuthToken: string;
+      /** challengeId of the first enrolled factor (use directly with verifyMfa). */
+      challengeId: string | null;
+      authFactors: AuthFactor[];
+    };
 
 export interface TotpEnrollmentResult {
   factorId: string;
@@ -62,13 +63,6 @@ export interface TotpEnrollmentResult {
   qrCode: string | null;
   secret: string | null;
   uri: string | null;
-}
-
-export interface PasskeyEnrollmentResult {
-  factorId: string;
-  challengeId: string;
-  /** WebAuthn `PublicKeyCredentialCreationOptions` (JSON-serialisable form). */
-  publicKeyOptions: Record<string, unknown> | null;
 }
 
 interface WorkOSAuthContextValue {
@@ -82,21 +76,22 @@ interface WorkOSAuthContextValue {
     lastName?: string,
   ) => Promise<SignInResult>;
   signOut: () => Promise<void>;
+  /**
+   * Complete TOTP MFA after a sign-in that returned requiresMfa.
+   * @param pendingAuthToken - from the sign-in response
+   * @param challengeId      - from the sign-in response (first challenge)
+   * @param code             - 6-digit TOTP code from authenticator app
+   */
   verifyMfa: (
     pendingAuthToken: string,
-    factorId: string,
+    challengeId: string,
     code: string,
-    credential?: unknown,
   ) => Promise<{ success: true }>;
   enrollTotp: (userId: string) => Promise<TotpEnrollmentResult>;
   verifyTotpEnrollment: (
+    pendingAuthToken: string,
     challengeId: string,
     code: string,
-  ) => Promise<{ success: true }>;
-  enrollPasskey: (userId: string) => Promise<PasskeyEnrollmentResult>;
-  verifyPasskeyEnrollment: (
-    challengeId: string,
-    credential: unknown,
   ) => Promise<{ success: true }>;
 }
 
@@ -108,7 +103,7 @@ const WorkOSAuthContext = createContext<WorkOSAuthContextValue | null>(null);
 
 interface WorkOSAuthProviderProps {
   convex: ConvexReactClient;
-  /** URL of the Convex HTTP-actions site (e.g. https://convex-site.example.com). */
+  /** Convex HTTP-actions origin (e.g. https://convex-site.example.com). */
   siteUrl: string;
   children: ReactNode;
 }
@@ -120,26 +115,20 @@ export function WorkOSAuthProvider({
 }: WorkOSAuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  // Keep siteUrl stable in callbacks via ref.
   const siteRef = useRef(siteUrl);
   siteRef.current = siteUrl;
 
-  /** POST to a Convex HTTP action. */
-  const post = useCallback(
-    async (path: string, body?: unknown) => {
-      const res = await fetch(`${siteRef.current}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      return json;
-    },
-    [],
-  );
+  const post = useCallback(async (path: string, body?: unknown) => {
+    const res = await fetch(`${siteRef.current}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+    return json;
+  }, []);
 
-  /** Attach (or clear) the token on the Convex client. */
   const applyAuth = useCallback(
     (authenticated: boolean) => {
       if (authenticated) {
@@ -154,9 +143,7 @@ export function WorkOSAuthProvider({
                 return null;
               }
               try {
-                const data = await post('/auth/refresh', {
-                  refreshToken: refresh,
-                });
+                const data = await post('/auth/refresh', { refreshToken: refresh });
                 storeTokens(data.accessToken, data.refreshToken);
                 return data.accessToken as string;
               } catch {
@@ -181,14 +168,14 @@ export function WorkOSAuthProvider({
     [convex, post],
   );
 
-  // On mount, restore an existing session from localStorage.
+  // Restore session from localStorage on mount.
   useEffect(() => {
     const token = getAccessToken();
     applyAuth(!!token);
     setIsLoading(false);
   }, [applyAuth]);
 
-  // ── Auth actions ────────────────────────────────────────────────────────
+  // ── Auth actions ──────────────────────────────────────────────────────────
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<SignInResult> => {
@@ -197,6 +184,7 @@ export function WorkOSAuthProvider({
         return {
           requiresMfa: true,
           pendingAuthToken: data.pendingAuthToken,
+          challengeId: data.challengeId ?? null,
           authFactors: data.authFactors ?? [],
         };
       }
@@ -214,12 +202,7 @@ export function WorkOSAuthProvider({
       firstName?: string,
       lastName?: string,
     ): Promise<SignInResult> => {
-      const data = await post('/auth/sign-up', {
-        email,
-        password,
-        firstName,
-        lastName,
-      });
+      const data = await post('/auth/sign-up', { email, password, firstName, lastName });
       storeTokens(data.accessToken, data.refreshToken);
       applyAuth(true);
       return { success: true };
@@ -228,29 +211,14 @@ export function WorkOSAuthProvider({
   );
 
   const signOut = useCallback(async () => {
-    const refresh = getRefreshToken();
     clearTokens();
     applyAuth(false);
-    // Best-effort server-side revocation (no sessionId available client-side).
-    if (refresh) post('/auth/sign-out', {}).catch(() => {});
+    post('/auth/sign-out', {}).catch(() => {});
   }, [post, applyAuth]);
 
   const verifyMfa = useCallback(
-    async (
-      pendingAuthToken: string,
-      factorId: string,
-      code: string,
-      credential?: unknown,
-    ) => {
-      // First create the challenge for the chosen factor.
-      const { challengeId } = await post('/auth/mfa/challenge', { factorId });
-      // Then verify it.
-      const data = await post('/auth/mfa/verify', {
-        pendingAuthToken,
-        challengeId,
-        code,
-        credential,
-      });
+    async (pendingAuthToken: string, challengeId: string, code: string) => {
+      const data = await post('/auth/mfa/verify', { pendingAuthToken, challengeId, code });
       storeTokens(data.accessToken, data.refreshToken);
       applyAuth(true);
       return { success: true as const };
@@ -273,28 +241,8 @@ export function WorkOSAuthProvider({
   );
 
   const verifyTotpEnrollment = useCallback(
-    async (challengeId: string, code: string) => {
-      await post('/auth/mfa/complete/totp', { challengeId, code });
-      return { success: true as const };
-    },
-    [post],
-  );
-
-  const enrollPasskey = useCallback(
-    async (userId: string): Promise<PasskeyEnrollmentResult> => {
-      const data = await post('/auth/mfa/enroll/passkey', { userId });
-      return {
-        factorId: data.factorId,
-        challengeId: data.challengeId,
-        publicKeyOptions: data.publicKeyOptions ?? null,
-      };
-    },
-    [post],
-  );
-
-  const verifyPasskeyEnrollment = useCallback(
-    async (challengeId: string, credential: unknown) => {
-      await post('/auth/mfa/complete/passkey', { challengeId, credential });
+    async (pendingAuthToken: string, challengeId: string, code: string) => {
+      await post('/auth/mfa/complete/totp', { pendingAuthToken, challengeId, code });
       return { success: true as const };
     },
     [post],
@@ -310,8 +258,6 @@ export function WorkOSAuthProvider({
       verifyMfa,
       enrollTotp,
       verifyTotpEnrollment,
-      enrollPasskey,
-      verifyPasskeyEnrollment,
     }),
     [
       isAuthenticated,
@@ -322,8 +268,6 @@ export function WorkOSAuthProvider({
       verifyMfa,
       enrollTotp,
       verifyTotpEnrollment,
-      enrollPasskey,
-      verifyPasskeyEnrollment,
     ],
   );
 
@@ -334,7 +278,7 @@ export function WorkOSAuthProvider({
   );
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useWorkOSAuth(): WorkOSAuthContextValue {
   const ctx = useContext(WorkOSAuthContext);

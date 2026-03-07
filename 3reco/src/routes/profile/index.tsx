@@ -395,7 +395,7 @@ function RouteComponent() {
             </AccordionContent>
           </AccordionItem>
 
-          {user?.type === 'business' && (
+          {user?.role === 'business' && (
             <AccordionItem
               value="business-information"
               className="border-b px-3 last:border-b-0"

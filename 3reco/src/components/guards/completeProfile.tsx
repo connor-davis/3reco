@@ -182,6 +182,8 @@ export default function CompleteProfileGuard() {
       </div>
     );
 
+  if (!user) return null;
+
   return (
     <Tabs value={tab} className="flex flex-col w-screen h-screen bg-background">
       <TabsContent value="basicInfo">
@@ -194,7 +196,7 @@ export default function CompleteProfileGuard() {
                   updateUser({
                     _id: user._id,
                     name: [values.firstName, values.lastName].join(' '),
-                    type: 'collector',
+                    role: 'collector',
                     ...values,
                   }),
                   {
@@ -404,7 +406,7 @@ export default function CompleteProfileGuard() {
                 toast.promise(
                   updateUser({
                     _id: user._id,
-                    type: 'business',
+                    role: 'business',
                     ...values,
                   }),
                   {
