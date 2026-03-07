@@ -2,7 +2,6 @@ import { api } from '@convex/_generated/api';
 import { useQuery } from 'convex/react';
 import { format } from 'date-fns';
 import { ArrowRightLeftIcon, PackageIcon, TrendingUpIcon, WeightIcon } from 'lucide-react';
-import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import {
   Bar,
@@ -23,8 +22,6 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const lineChartConfig = {
@@ -36,8 +33,11 @@ const barChartConfig = {
   totalWeight: { label: 'Volume (kg)', color: 'var(--chart-3)' },
 } satisfies ChartConfig;
 
-export default function AdminDashboard() {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+interface AdminDashboardProps {
+  dateRange?: DateRange;
+}
+
+export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
   const stats = useQuery(api.dashboard.adminStats, {
     from: dateRange?.from?.getTime(),
     to: dateRange?.to
@@ -69,11 +69,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Date range filter */}
-      <div className="flex items-center justify-between">
-        <Label className="text-lg">Dashboard</Label>
-        <DateRangePicker value={dateRange} onChange={setDateRange} placeholder="All time" />
-      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
