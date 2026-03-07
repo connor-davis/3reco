@@ -27,7 +27,6 @@ export const Route = createFileRoute('/stock')({
 function RouteComponent() {
   const {
     results: stock,
-    isLoading,
     status,
     loadMore,
   } = useConvexPaginatedQuery(

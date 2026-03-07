@@ -82,7 +82,6 @@ function MaterialItem({
 function RouteComponent() {
   const {
     results: materials,
-    isLoading,
     status,
     loadMore,
   } = useConvexPaginatedQuery(
