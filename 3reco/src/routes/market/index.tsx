@@ -1,5 +1,6 @@
 import BackButton from '@/components/back-button';
 import Stars from '@/components/reviews/stars';
+import PageHeaderDrawer from '@/components/page-header-drawer';
 import {
   Empty,
   EmptyDescription,
@@ -88,15 +89,20 @@ function RouteComponent() {
           <Label className="text-lg">Browse Market</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search sellers or materials..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 w-56"
-            />
-          </div>
+          <PageHeaderDrawer
+            title="Market Actions"
+            description="Search for sellers or materials"
+          >
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search sellers or materials..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 w-full"
+              />
+            </div>
+          </PageHeaderDrawer>
         </div>
       </div>
 

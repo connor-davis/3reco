@@ -2,6 +2,7 @@ import BackButton from '@/components/back-button';
 import TransactionUserDetails from '@/components/transactions/user-details';
 import TransactionItemContent from '@/components/transactions/item-content';
 import { InvoiceDownloadButton } from '@/components/transactions/invoice-download';
+import PageHeaderDrawer from '@/components/page-header-drawer';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
@@ -70,33 +71,38 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3 flex-wrap">
+      <div className="flex items-center w-full h-auto gap-3">
         <div className="flex items-center gap-3">
           <BackButton />
 
           <Label className="text-lg">Transactions</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto flex-wrap">
-          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-            <SelectTrigger size="sm" className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="c2b">C2B</SelectItem>
-              <SelectItem value="b2b">B2B</SelectItem>
-            </SelectContent>
-          </Select>
-          <DateRangePicker value={dateRange} onChange={setDateRange} align="end" />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!exportData || exportData.length === 0}
-            onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'transactions.csv')}
+        <div className="flex items-center gap-3 ml-auto">
+          <PageHeaderDrawer
+            title="Transactions Actions"
+            description="Filter transactions by type and date, or export data"
           >
-            <DownloadIcon className="size-4" />
-            Export CSV
-          </Button>
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="c2b">C2B</SelectItem>
+                <SelectItem value="b2b">B2B</SelectItem>
+              </SelectContent>
+            </Select>
+            <DateRangePicker value={dateRange} onChange={setDateRange} align="start" />
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={!exportData || exportData.length === 0}
+              onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'transactions.csv')}
+            >
+              <DownloadIcon className="size-4" />
+              Export CSV
+            </Button>
+          </PageHeaderDrawer>
         </div>
       </div>
 
