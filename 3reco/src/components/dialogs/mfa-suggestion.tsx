@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import {
   Field,
   FieldDescription,
-  FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
@@ -23,10 +22,15 @@ import { ConvexError } from 'convex/values';
 import { Shield, ShieldCheck, QrCode as QrCodeIcon } from 'lucide-react';
 
 export default function MfaSuggestionDialog() {
+  // @ts-expect-error - MFA API will be available after running `convex dev` to generate types
   const shouldShow = useConvexQuery(api.mfa.shouldShowMfaSuggestion);
+  // @ts-expect-error - MFA API will be available after running `convex dev` to generate types
   const skip = useConvexMutation(api.mfa.skipMfaSuggestion);
+  // @ts-expect-error - MFA API will be available after running `convex dev` to generate types
   const setupTotp = useConvexMutation(api.mfa.setupTOTP);
+  // @ts-expect-error - MFA API will be available after running `convex dev` to generate types
   const verifyTotp = useConvexMutation(api.mfa.verifyAndEnableTOTP);
+  // @ts-expect-error - MFA API will be available after running `convex dev` to generate types
   const markShown = useConvexMutation(api.mfa.markMfaSuggestionShown);
 
   const [open, setOpen] = useState(false);
