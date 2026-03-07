@@ -45,6 +45,7 @@ export default defineTable({
 })
   .index('workosUserId', ['workosUserId'])
   .index('email', ['email'])
+  .index('phone', ['phone'])
   .index('role', ['role']);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -143,7 +144,8 @@ export const listAll = query({
  */
 export const upsertFromWorkOS = mutation({
   args: {
-    email: v.string(),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     /** Role slug as returned by WorkOS in the access token (`role` claim). */
@@ -171,7 +173,8 @@ export const upsertFromWorkOS = mutation({
 
     if (existing) {
       await ctx.db.patch('users', existing._id, {
-        email: args.email,
+        ...(args.email !== undefined && { email: args.email }),
+        ...(args.phone !== undefined && { phone: args.phone }),
         ...(role !== undefined && { role }),
       });
       return existing._id;
@@ -179,7 +182,8 @@ export const upsertFromWorkOS = mutation({
 
     return ctx.db.insert('users', {
       workosUserId,
-      email: args.email,
+      ...(args.email !== undefined && { email: args.email }),
+      phone: args.phone,
       firstName: args.firstName,
       lastName: args.lastName,
       role,

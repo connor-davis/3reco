@@ -1,6 +1,7 @@
 /**
  * WorkOS auth context for the React app.
  *
+ * Supports both email+password and phone+password sign-in/up.
  * Tokens are kept in localStorage; the Convex client is kept in sync via
  * `convex.setAuth()` so every query/mutation is automatically authenticated.
  */
@@ -68,9 +69,20 @@ export interface TotpEnrollmentResult {
 interface WorkOSAuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** Sign in with email + password. */
   signIn: (email: string, password: string) => Promise<SignInResult>;
+  /** Sign up with email + password. */
   signUp: (
     email: string,
+    password: string,
+    firstName?: string,
+    lastName?: string,
+  ) => Promise<SignInResult>;
+  /** Sign in with phone number + password. */
+  phoneSignIn: (phone: string, password: string) => Promise<SignInResult>;
+  /** Sign up with phone number + password. */
+  phoneSignUp: (
+    phone: string,
     password: string,
     firstName?: string,
     lastName?: string,
@@ -79,8 +91,8 @@ interface WorkOSAuthContextValue {
   /**
    * Complete TOTP MFA after a sign-in that returned requiresMfa.
    * @param pendingAuthToken - from the sign-in response
-   * @param challengeId      - from the sign-in response (first challenge)
-   * @param code             - 6-digit TOTP code from authenticator app
+   * @param challengeId      - from the sign-in response
+   * @param code             - 6-digit TOTP code from the authenticator app
    */
   verifyMfa: (
     pendingAuthToken: string,
@@ -143,7 +155,9 @@ export function WorkOSAuthProvider({
                 return null;
               }
               try {
-                const data = await post('/auth/refresh', { refreshToken: refresh });
+                const data = await post('/auth/refresh', {
+                  refreshToken: refresh,
+                });
                 storeTokens(data.accessToken, data.refreshToken);
                 return data.accessToken as string;
               } catch {
@@ -202,7 +216,50 @@ export function WorkOSAuthProvider({
       firstName?: string,
       lastName?: string,
     ): Promise<SignInResult> => {
-      const data = await post('/auth/sign-up', { email, password, firstName, lastName });
+      const data = await post('/auth/sign-up', {
+        email,
+        password,
+        firstName,
+        lastName,
+      });
+      storeTokens(data.accessToken, data.refreshToken);
+      applyAuth(true);
+      return { success: true };
+    },
+    [post, applyAuth],
+  );
+
+  const phoneSignIn = useCallback(
+    async (phone: string, password: string): Promise<SignInResult> => {
+      const data = await post('/auth/phone/sign-in', { phone, password });
+      if (data.requiresMfa) {
+        return {
+          requiresMfa: true,
+          pendingAuthToken: data.pendingAuthToken,
+          challengeId: data.challengeId ?? null,
+          authFactors: data.authFactors ?? [],
+        };
+      }
+      storeTokens(data.accessToken, data.refreshToken);
+      applyAuth(true);
+      return { success: true };
+    },
+    [post, applyAuth],
+  );
+
+  const phoneSignUp = useCallback(
+    async (
+      phone: string,
+      password: string,
+      firstName?: string,
+      lastName?: string,
+    ): Promise<SignInResult> => {
+      const data = await post('/auth/phone/sign-up', {
+        phone,
+        password,
+        firstName,
+        lastName,
+      });
       storeTokens(data.accessToken, data.refreshToken);
       applyAuth(true);
       return { success: true };
@@ -218,7 +275,11 @@ export function WorkOSAuthProvider({
 
   const verifyMfa = useCallback(
     async (pendingAuthToken: string, challengeId: string, code: string) => {
-      const data = await post('/auth/mfa/verify', { pendingAuthToken, challengeId, code });
+      const data = await post('/auth/mfa/verify', {
+        pendingAuthToken,
+        challengeId,
+        code,
+      });
       storeTokens(data.accessToken, data.refreshToken);
       applyAuth(true);
       return { success: true as const };
@@ -242,7 +303,11 @@ export function WorkOSAuthProvider({
 
   const verifyTotpEnrollment = useCallback(
     async (pendingAuthToken: string, challengeId: string, code: string) => {
-      await post('/auth/mfa/complete/totp', { pendingAuthToken, challengeId, code });
+      await post('/auth/mfa/complete/totp', {
+        pendingAuthToken,
+        challengeId,
+        code,
+      });
       return { success: true as const };
     },
     [post],
@@ -254,6 +319,8 @@ export function WorkOSAuthProvider({
       isLoading,
       signIn,
       signUp,
+      phoneSignIn,
+      phoneSignUp,
       signOut,
       verifyMfa,
       enrollTotp,
@@ -264,6 +331,8 @@ export function WorkOSAuthProvider({
       isLoading,
       signIn,
       signUp,
+      phoneSignIn,
+      phoneSignUp,
       signOut,
       verifyMfa,
       enrollTotp,
