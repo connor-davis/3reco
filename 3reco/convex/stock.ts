@@ -123,6 +123,55 @@ export const listSellersWithStock = query({
   },
 });
 
+export const listSellersWithStockPaginated = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+
+    // Get paginated stock items
+    const stockResult = await ctx.db
+      .query('stock')
+      .withIndex('by_isListed', (q) => q.eq('isListed', true))
+      .order('desc')
+      .paginate(paginationOpts);
+
+    // Filter out current user's stock
+    const othersStock = stockResult.page.filter((s) => s.ownerId !== (userId as Id<'users'>));
+
+    // Group by owner
+    const byOwner = new Map<Id<'users'>, typeof othersStock>();
+    for (const s of othersStock) {
+      if (!byOwner.has(s.ownerId)) byOwner.set(s.ownerId, []);
+      byOwner.get(s.ownerId)!.push(s);
+    }
+
+    // Aggregate seller information
+    const sellers = await Promise.all(
+      Array.from(byOwner.entries()).map(async ([ownerId, items]) => {
+        const owner = await ctx.db.get('users', ownerId);
+        const materialIds = [...new Set(items.map((i) => i.materialId))];
+        const materials = await Promise.all(materialIds.map((id) => ctx.db.get('materials', id)));
+        return {
+          _id: ownerId,
+          displayName: (owner?.businessName ??
+            (`${owner?.firstName ?? ''} ${owner?.lastName ?? ''}`.trim() || 'Unknown')),
+          itemCount: items.length,
+          materialNames: materials.filter(Boolean).map((m) => m!.name),
+        };
+      })
+    );
+
+    return {
+      ...stockResult,
+      page: sellers,
+    };
+  },
+});
+
 
 export const findByStockId = query({
   args: {
