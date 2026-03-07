@@ -1,4 +1,3 @@
-import { authTables } from '@convex-dev/auth/server';
 import { defineSchema } from 'convex/server';
 import users from './users';
 import materials from './materials';
@@ -11,7 +10,6 @@ import carts from './carts';
 import storeReviews from './storeReviews';
 
 export default defineSchema({
-  ...authTables,
   users,
   materials,
   stock,

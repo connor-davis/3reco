@@ -1,6 +1,5 @@
 import { paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 /** Returns paginated reviews for a seller store, with reviewer display name. */
@@ -57,11 +56,15 @@ export const reviewableTransactions = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return [];
 
-    const [buyerId] = identity.subject.split('|') as [Id<'users'>];
+    const buyer = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    if (!buyer) return [];
 
     const transactions = await ctx.db
       .query('transactions')
-      .withIndex('by_buyerId', (q) => q.eq('buyerId', buyerId))
+      .withIndex('by_buyerId', (q) => q.eq('buyerId', buyer._id))
       .collect();
 
     const withSeller = transactions.filter((t) => t.sellerId === sellerId);
@@ -96,12 +99,17 @@ export const addReview = mutation({
     if (rating < 1 || rating > 5 || !Number.isInteger(rating))
       throw new ConvexError({ name: 'InvalidRating', message: 'Rating must be a whole number between 1 and 5.' });
 
-    const [buyerId] = identity.subject.split('|') as [Id<'users'>];
+    const buyer = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    if (!buyer)
+      throw new ConvexError({ name: 'NotFound', message: 'User not found.' });
 
     const transaction = await ctx.db.get(transactionId);
     if (!transaction)
       throw new ConvexError({ name: 'NotFound', message: 'Transaction not found.' });
-    if (transaction.buyerId !== buyerId)
+    if (transaction.buyerId !== buyer._id)
       throw new ConvexError({ name: 'Forbidden', message: 'You can only review your own transactions.' });
 
     const existing = await ctx.db
@@ -113,7 +121,7 @@ export const addReview = mutation({
 
     await ctx.db.insert('storeReviews', {
       sellerId: transaction.sellerId,
-      buyerId,
+      buyerId: buyer._id,
       transactionId,
       rating,
       comment,
@@ -129,9 +137,11 @@ export const removeReview = mutation({
     if (!identity)
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorized.' });
 
-    const [userId] = identity.subject.split('|') as [Id<'users'>];
-    const user = await ctx.db.get(userId);
-    if (user?.type !== 'admin')
+    const caller = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    if (caller?.role !== 'admin')
       throw new ConvexError({ name: 'Forbidden', message: 'Only admins can remove reviews.' });
 
     await ctx.db.delete(reviewId);

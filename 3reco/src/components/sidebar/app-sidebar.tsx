@@ -12,7 +12,7 @@ import {
   UsersIcon,
   VanIcon,
 } from 'lucide-react';
-import TypeGuard from '../guards/type';
+import TypeGuard from '../guards/type';  // re-exported as RoleGuard internally
 import {
   Collapsible,
   CollapsibleContent,
@@ -52,7 +52,7 @@ export default function AppSidebar() {
               </SidebarMenuItem>
             </Link>
 
-            <TypeGuard type={['admin', 'staff', 'business']}>
+            <TypeGuard roles={['admin', 'staff', 'business']}>
               <Collapsible defaultOpen className="group/market">
                 <SidebarMenuItem>
                   <CollapsibleTrigger
@@ -75,7 +75,7 @@ export default function AppSidebar() {
                           </SidebarMenuSubButton>
                         </Link>
                       </SidebarMenuSubItem>
-                      <TypeGuard type={['business']}>
+                      <TypeGuard roles={['business']}>
                         <SidebarMenuSubItem>
                           <Link to="/market/incoming">
                             <SidebarMenuSubButton>
@@ -99,7 +99,7 @@ export default function AppSidebar() {
               </Collapsible>
             </TypeGuard>
 
-            <TypeGuard type={['business']}>
+            <TypeGuard roles={['business']}>
               <Link to="/stock">
                 <SidebarMenuItem>
                   <SidebarMenuButton tooltip="Stock">
@@ -110,7 +110,7 @@ export default function AppSidebar() {
               </Link>
             </TypeGuard>
 
-            <TypeGuard type={['business']}>
+            <TypeGuard roles={['business']}>
               <Link to="/collections">
                 <SidebarMenuItem>
                   <SidebarMenuButton tooltip="Collections">
@@ -121,7 +121,7 @@ export default function AppSidebar() {
               </Link>
             </TypeGuard>
 
-            <TypeGuard type={['admin', 'staff']}>
+            <TypeGuard roles={['admin', 'staff']}>
               <Link to="/transactions">
                 <SidebarMenuItem>
                   <SidebarMenuButton tooltip="Transactions">
@@ -132,7 +132,7 @@ export default function AppSidebar() {
               </Link>
             </TypeGuard>
 
-            <TypeGuard type={['business']}>
+            <TypeGuard roles={['business']}>
               <Collapsible defaultOpen className="group/transactions">
                 <SidebarMenuItem>
                   <CollapsibleTrigger
@@ -169,7 +169,7 @@ export default function AppSidebar() {
               </Collapsible>
             </TypeGuard>
 
-            <TypeGuard type={['admin', 'staff']}>
+            <TypeGuard roles={['admin', 'staff']}>
               <Link to="/materials">
                 <SidebarMenuItem>
                   <SidebarMenuButton tooltip="Materials">
@@ -185,7 +185,7 @@ export default function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
-          <TypeGuard type="admin">
+          <TypeGuard roles="admin">
             <Link to="/admin/users">
               <SidebarMenuItem>
                 <SidebarMenuButton tooltip="User Management">

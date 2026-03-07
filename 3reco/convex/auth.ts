@@ -1,6 +1,3 @@
-import { convexAuth } from '@convex-dev/auth/server';
-import { Password } from '@convex-dev/auth/providers/Password';
-
-export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [Password],
-});
+// @convex-dev/auth has been replaced by WorkOS User Management.
+// Authentication is now handled via WorkOS HTTP actions in workosAuth.ts.
+// JWT verification is configured in auth.config.ts.

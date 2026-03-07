@@ -11,28 +11,23 @@ import { convexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { useQuery } from '@tanstack/react-query';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
-import {
-  Authenticated,
-  AuthLoading,
-  Unauthenticated,
-  useConvexAuth,
-} from 'convex/react';
+import { useWorkOSAuth } from '@/components/providers/workos-auth';
 import { Activity } from 'react';
 
 const RootLayout = () => {
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useWorkOSAuth();
   const { data: user, isLoading: isLoadingUser } = useQuery({
     ...convexQuery(api.users.currentUser),
     enabled: isAuthenticated,
   });
 
-  if (isLoadingUser)
+  if (isAuthLoading || (isAuthenticated && isLoadingUser))
     return (
       <div className="flex flex-col w-screen h-screen items-center justify-center gap-3 bg-background text-foreground">
         <div className="flex items-center gap-3">
           <Spinner className="text-primary" />
           <Label className="text-muted-foreground">
-            Loading user profile...
+            Loading...
           </Label>
         </div>
       </div>
@@ -40,59 +35,48 @@ const RootLayout = () => {
 
   return (
     <TooltipProvider>
-      <AuthLoading>
-        <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-          <div className="flex items-center gap-3">
-            <Spinner className="text-primary" />
-            <Label className="text-muted-foreground">
-              Loading authentication...
-            </Label>
-          </div>
-        </div>
-      </AuthLoading>
+      {isAuthenticated ? (
+        <>
+          <Activity
+            mode={
+              !isLoadingUser && user && !user.profileComplete
+                ? 'visible'
+                : 'hidden'
+            }
+          >
+            <div className="flex flex-col w-screen h-screen text-foreground bg-background overflow-hidden">
+              <CompleteProfileGuard />
+            </div>
+          </Activity>
+          <Activity
+            mode={
+              !isLoadingUser && user && user.profileComplete
+                ? 'visible'
+                : 'hidden'
+            }
+          >
+            <div className="flex flex-col w-screen h-screen text-foreground bg-background">
+              <SidebarProvider>
+                <AppSidebar />
 
-      <Authenticated>
-        <Activity
-          mode={
-            !isLoadingUser && user && !user.profileComplete
-              ? 'visible'
-              : 'hidden'
-          }
-        >
-          <div className="flex flex-col w-screen h-screen text-foreground bg-background overflow-hidden">
-            <CompleteProfileGuard />
-          </div>
-        </Activity>
-        <Activity
-          mode={
-            !isLoadingUser && user && user.profileComplete
-              ? 'visible'
-              : 'hidden'
-          }
-        >
-          <div className="flex flex-col w-screen h-screen text-foreground bg-background">
-            <SidebarProvider>
-              <AppSidebar />
+                <div className="flex flex-col w-full h-full overflow-hidden">
+                  <Header />
 
-              <div className="flex flex-col w-full h-full overflow-hidden">
-                <Header />
-
-                <SidebarInset className="bg-transparent p-2 sm:pr-3 sm:pb-3 overflow-hidden">
-                  <div className="flex flex-col w-full h-full p-2 sm:p-3 gap-3 bg-background rounded-xl overflow-hidden">
-                    <Outlet />
-                  </div>
-                </SidebarInset>
-              </div>
-            </SidebarProvider>
-          </div>
-        </Activity>
-      </Authenticated>
-
-      <Unauthenticated>
+                  <SidebarInset className="bg-transparent p-2 sm:pr-3 sm:pb-3 overflow-hidden">
+                    <div className="flex flex-col w-full h-full p-2 sm:p-3 gap-3 bg-background rounded-xl overflow-hidden">
+                      <Outlet />
+                    </div>
+                  </SidebarInset>
+                </div>
+              </SidebarProvider>
+            </div>
+          </Activity>
+        </>
+      ) : (
         <div className="flex flex-col w-screen h-screen text-foreground bg-background">
           <AuthenticationGuard />
         </div>
-      </Unauthenticated>
+      )}
 
       {/*<TanStackRouterDevtools position="top-left" />*/}
 

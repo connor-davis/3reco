@@ -1,7 +1,5 @@
 import { StrictMode } from 'react';
 
-import { ConvexAuthProvider } from '@convex-dev/auth/react';
-
 import './index.css';
 import { routeTree } from './routeTree.gen';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -11,6 +9,7 @@ import { ConvexQueryClient } from '@convex-dev/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import { ThemeProvider } from './components/providers/theme';
+import { WorkOSAuthProvider } from './components/providers/workos-auth';
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 const convexQueryClient = new ConvexQueryClient(convex);
@@ -40,7 +39,10 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ConvexAuthProvider client={convex}>
+      <WorkOSAuthProvider
+        convex={convex}
+        siteUrl={import.meta.env.VITE_CONVEX_SITE_URL}
+      >
         <ConvexProvider client={convex}>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -48,7 +50,7 @@ if (!rootElement.innerHTML) {
             </ThemeProvider>
           </QueryClientProvider>
         </ConvexProvider>
-      </ConvexAuthProvider>
+      </WorkOSAuthProvider>
     </StrictMode>
   );
 }

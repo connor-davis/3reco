@@ -9,7 +9,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuthActions } from '@convex-dev/auth/react';
+import { useWorkOSAuth } from './providers/workos-auth';
 import { convexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { useQuery } from '@tanstack/react-query';
@@ -30,7 +30,7 @@ import { SidebarTrigger } from './ui/sidebar';
 import NotificationTray from './notifications/tray';
 
 export default function Header() {
-  const { signOut } = useAuthActions();
+  const { signOut } = useWorkOSAuth();
   const { setTheme } = useTheme();
 
   const { data } = useQuery(convexQuery(api.users.currentUser));

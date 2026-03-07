@@ -38,8 +38,10 @@ export const listExpensesWithPagination = query({
         message: 'You are not authorized to access this resource.',
       });
 
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const user = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
 
     if (!user)
       throw new ConvexError({
@@ -47,17 +49,17 @@ export const listExpensesWithPagination = query({
         message: 'The user was not found.',
       });
 
-    if (user.type === 'business') {
+    if (user.role === 'business') {
       return await ctx.db
         .query('transactions')
         .withIndex('by_buyerId', (q) =>
-          q.eq('buyerId', userId as Id<'users'>)
+          q.eq('buyerId', user._id)
         )
         .order('desc')
         .paginate(paginationOpts);
     }
 
-    if (user.type === 'collector') {
+    if (user.role === 'collector') {
       throw new ConvexError({
         name: 'Unauthorized',
         message: 'Collectors are not authorized to access this resource.',
@@ -81,8 +83,10 @@ export const listExpenses = query({
         message: 'You are not authorized to access this resource.',
       });
 
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const user = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
 
     if (!user)
       throw new ConvexError({
@@ -90,16 +94,16 @@ export const listExpenses = query({
         message: 'The user was not found.',
       });
 
-    if (user.type === 'business') {
+    if (user.role === 'business') {
       return await ctx.db
         .query('transactions')
         .withIndex('by_buyerId', (q) =>
-          q.eq('buyerId', userId as Id<'users'>)
+          q.eq('buyerId', user._id)
         )
         .collect();
     }
 
-    if (user.type === 'collector') {
+    if (user.role === 'collector') {
       throw new ConvexError({
         name: 'Unauthorized',
         message: 'Collectors are not authorized to access this resource.',
@@ -123,8 +127,10 @@ export const listSalesWithPagination = query({
         message: 'You are not authorized to access this resource.',
       });
 
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const user = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
 
     if (!user)
       throw new ConvexError({
@@ -132,11 +138,11 @@ export const listSalesWithPagination = query({
         message: 'The user was not found.',
       });
 
-    if (user.type === 'collector' || user.type === 'business') {
+    if (user.role === 'collector' || user.role === 'business') {
       return await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId as Id<'users'>).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
+          q.eq('sellerId', user._id).eq('type', user.role === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .paginate(paginationOpts);
@@ -159,8 +165,10 @@ export const listSales = query({
         message: 'You are not authorized to access this resource.',
       });
 
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const user = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
 
     if (!user)
       throw new ConvexError({
@@ -168,11 +176,11 @@ export const listSales = query({
         message: 'The user was not found.',
       });
 
-    if (user.type === 'collector' || user.type === 'business') {
+    if (user.role === 'collector' || user.role === 'business') {
       return await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId as Id<'users'>).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
+          q.eq('sellerId', user._id).eq('type', user.role === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .collect();
@@ -223,7 +231,13 @@ export const collectorToBusinessSale = mutation({
         message: 'You are not authorized to access this resource.',
       });
 
-    const [businessId] = identity.subject.split('|');
+    const callerUser = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    if (!callerUser)
+      throw new ConvexError({ name: 'Not Found', message: 'The user was not found.' });
+    const businessId = callerUser._id;
 
     // Validate all items
     for (const item of items) {
@@ -239,7 +253,7 @@ export const collectorToBusinessSale = mutation({
 
     const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
     const transactionId = await ctx.db.insert('transactions', {
-      buyerId: businessId as Id<'users'>,
+      buyerId: businessId,
       sellerId: collectorId,
       items,
       totalPrice,
@@ -256,13 +270,13 @@ export const collectorToBusinessSale = mutation({
       const existingStock = await ctx.db
         .query('stock')
         .withIndex('by_ownerId_by_materialId', (q) =>
-          q.eq('ownerId', businessId as Id<'users'>).eq('materialId', item.materialId)
+          q.eq('ownerId', businessId).eq('materialId', item.materialId)
         )
         .first();
 
       if (!existingStock) {
         await ctx.db.insert('stock', {
-          ownerId: businessId as Id<'users'>,
+          ownerId: businessId,
           materialId: item.materialId,
           weight: item.weight,
           price: item.price,
@@ -296,7 +310,13 @@ export const businessToBusinessSale= mutation({
         message: 'You are not authorized to access this resource.',
       });
 
-    const [sellerId] = identity.subject.split('|');
+    const callerUser = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    if (!callerUser)
+      throw new ConvexError({ name: 'Not Found', message: 'The user was not found.' });
+    const sellerId = callerUser._id;
 
     // Validate all items
     for (const item of items) {
@@ -312,7 +332,7 @@ export const businessToBusinessSale= mutation({
       const existingSellerStock = await ctx.db
         .query('stock')
         .withIndex('by_ownerId_by_materialId', (q) =>
-          q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', item.materialId)
+          q.eq('ownerId', sellerId).eq('materialId', item.materialId)
         )
         .first();
 
@@ -326,7 +346,7 @@ export const businessToBusinessSale= mutation({
     const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
     const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId,
-      sellerId: sellerId as Id<'users'>,
+      sellerId: sellerId,
       items,
       totalPrice,
       type: 'b2b',
@@ -342,7 +362,7 @@ export const businessToBusinessSale= mutation({
       const existingSellerStock = await ctx.db
         .query('stock')
         .withIndex('by_ownerId_by_materialId', (q) =>
-          q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', item.materialId)
+          q.eq('ownerId', sellerId).eq('materialId', item.materialId)
         )
         .first();
 

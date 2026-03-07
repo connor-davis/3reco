@@ -59,9 +59,11 @@ export const adminStats = query({
     if (!identity)
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-    if (!user || (user.type !== 'admin' && user.type !== 'staff'))
+    const user = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    if (!user || (user.role !== 'admin' && user.role !== 'staff'))
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
     const hasRange = from !== undefined && to !== undefined;
@@ -150,9 +152,12 @@ export const businessStats = query({
     if (!identity)
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-    if (!user || user.type !== 'business')
+    const user = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    const userId = user?._id as Id<'users'> | undefined;
+    if (!user || user.role !== 'business')
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
     const hasRange = from !== undefined && to !== undefined;
@@ -260,9 +265,12 @@ export const collectorStats = query({
     if (!identity)
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-    if (!user || user.type !== 'collector')
+    const user = await ctx.db
+      .query('users')
+      .withIndex('workosUserId', (q) => q.eq('workosUserId', identity.subject))
+      .first();
+    const userId = user?._id as Id<'users'> | undefined;
+    if (!user || user.role !== 'collector')
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
     const hasRange = from !== undefined && to !== undefined;

@@ -21,6 +21,7 @@
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1.160.0",
     "@tanstack/react-router-devtools": "^1.160.0",
+    "@workos-inc/node": "^8.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

@@ -96,8 +96,8 @@ function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string 
   );
 }
 
-function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; type?: UserType; profileComplete?: boolean }; isAdmin: boolean }) {
-  const setType = useConvexMutation(api.users.setType);
+function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; role?: UserType; profileComplete?: boolean }; isAdmin: boolean }) {
+  const setRole = useConvexMutation(api.users.setRole);
   const displayName =
     user.businessName ||
     user.name ||
@@ -113,10 +113,10 @@ function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; e
       </ItemContent>
       <ItemActions className="flex-wrap justify-end">
         <Select
-          value={user.type}
+          value={user.role}
           onValueChange={(value) =>
             toast.promise(
-              setType({ _id: user._id, type: value as UserType }),
+              setRole({ _id: user._id, role: value as UserType }),
               {
                 loading: 'Updating role...',
                 success: 'Role updated.',
@@ -161,7 +161,7 @@ function RouteComponent() {
   const [roleFilter, setRoleFilter] = useState<'all' | UserType>('all');
 
   const currentUser = useQuery(api.users.currentUser);
-  const isAdmin = currentUser?.type === 'admin';
+  const isAdmin = currentUser?.role === 'admin';
 
   const exportData = useQuery(api.exports.exportUsers, {});
 
@@ -178,7 +178,7 @@ function RouteComponent() {
       const matchEmail = ((u as { email?: string }).email ?? '').toLowerCase().includes(q);
       if (!matchName && !matchEmail) return false;
     }
-    if (roleFilter !== 'all' && (u as { type?: string }).type !== roleFilter) return false;
+    if (roleFilter !== 'all' && (u as { role?: string }).role !== roleFilter) return false;
     return true;
   });
 
