@@ -2,6 +2,7 @@ import BackButton from '@/components/back-button';
 import CreateCollectionDialog from '@/components/dialogs/collections/create';
 import CollectionItemContent from '@/components/collections/item-content';
 import { InvoiceDownloadButton } from '@/components/transactions/invoice-download';
+import PageHeaderDrawer from '@/components/page-header-drawer';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
@@ -62,24 +63,31 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3 flex-wrap">
+      <div className="flex items-center w-full h-auto gap-3">
         <div className="flex items-center gap-3">
           <BackButton />
 
           <Label className="text-lg">Collections</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto flex-wrap">
-          <DateRangePicker value={dateRange} onChange={setDateRange} align="end" />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!exportData || exportData.length === 0}
-            onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'collections.csv')}
+        <div className="flex items-center gap-3 ml-auto">
+          <PageHeaderDrawer
+            title="Collections Actions"
+            description="Filter collections by date, export data, or create new ones"
           >
-            <DownloadIcon className="size-4" />
-            Export CSV
-          </Button>
-          <CreateCollectionDialog />
+            <DateRangePicker value={dateRange} onChange={setDateRange} align="start" />
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={!exportData || exportData.length === 0}
+              onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'collections.csv')}
+            >
+              <DownloadIcon className="size-4" />
+              Export CSV
+            </Button>
+            <CreateCollectionDialog>
+              <Button className="w-full">Create Collection</Button>
+            </CreateCollectionDialog>
+          </PageHeaderDrawer>
         </div>
       </div>
 

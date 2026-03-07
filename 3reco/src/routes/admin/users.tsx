@@ -1,4 +1,5 @@
 import BackButton from '@/components/back-button';
+import PageHeaderDrawer from '@/components/page-header-drawer';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -183,42 +184,47 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3 flex-wrap">
+      <div className="flex items-center w-full h-auto gap-3">
         <div className="flex items-center gap-3">
           <BackButton />
           <Label className="text-lg">User Management</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto flex-wrap">
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search users..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 w-44"
-            />
-          </div>
-          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
-            <SelectTrigger size="sm" className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All roles</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="staff">Staff</SelectItem>
-              <SelectItem value="business">Business</SelectItem>
-              <SelectItem value="collector">Collector</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!exportData || exportData.length === 0}
-            onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'users.csv')}
+        <div className="flex items-center gap-3 ml-auto">
+          <PageHeaderDrawer
+            title="User Management Actions"
+            description="Search users, filter by role, or export data"
           >
-            <DownloadIcon className="size-4" />
-            Export CSV
-          </Button>
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 w-full"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="business">Business</SelectItem>
+                <SelectItem value="collector">Collector</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={!exportData || exportData.length === 0}
+              onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'users.csv')}
+            >
+              <DownloadIcon className="size-4" />
+              Export CSV
+            </Button>
+          </PageHeaderDrawer>
         </div>
       </div>
 
