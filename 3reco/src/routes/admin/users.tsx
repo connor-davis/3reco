@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Empty,
@@ -19,6 +18,7 @@ import {
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
+import { ItemActionsMenu } from '@/components/ui/item-actions-menu';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -33,11 +33,12 @@ import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
 import { useQuery } from 'convex/react';
-import { DownloadIcon, SearchIcon, Trash2Icon, UsersIcon } from 'lucide-react';
+import { DownloadIcon, SearchIcon, Trash2Icon, UsersIcon, UserCogIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Activity } from 'react';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/export-csv';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 export const Route = createFileRoute('/admin/users')({
   component: RouteComponent,
@@ -45,19 +46,21 @@ export const Route = createFileRoute('/admin/users')({
 
 type UserType = 'admin' | 'staff' | 'business' | 'collector';
 
-function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string }) {
-  const [open, setOpen] = useState(false);
+function DeleteUserDialog({
+  userId,
+  name,
+  open,
+  onOpenChange,
+}: {
+  userId: Id<'users'>;
+  name: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const removeUser = useConvexMutation(api.users.removeUser);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button variant="destructive" size="icon-sm" />
-        }
-      >
-        <Trash2Icon />
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Remove User</DialogTitle>
@@ -73,7 +76,7 @@ function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string 
               toast.promise(removeUser({ _id: userId }), {
                 loading: 'Removing user...',
                 success: () => {
-                  setOpen(false);
+                  onOpenChange(false);
                   return 'User removed.';
                 },
                 error: (error: Error) => {
@@ -98,6 +101,9 @@ function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string 
 
 function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; type?: UserType; profileComplete?: boolean }; isAdmin: boolean }) {
   const setType = useConvexMutation(api.users.setType);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
+
   const displayName =
     user.businessName ||
     user.name ||
@@ -105,47 +111,89 @@ function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; e
     user.email ||
     'Unknown';
 
+  const actions = [
+    {
+      label: 'Change Role',
+      icon: <UserCogIcon className="size-4" />,
+      onClick: () => setRoleOpen(true),
+    },
+  ];
+
+  if (isAdmin) {
+    actions.push({
+      label: 'Delete User',
+      icon: <Trash2Icon className="size-4" />,
+      onClick: () => setDeleteOpen(true),
+      variant: 'destructive' as const,
+    });
+  }
+
   return (
-    <Item variant="muted">
-      <ItemContent>
-        <ItemTitle>{displayName}</ItemTitle>
-        <ItemDescription>{user.email}</ItemDescription>
-      </ItemContent>
-      <ItemActions className="flex-wrap justify-end">
-        <Select
-          value={user.type}
-          onValueChange={(value) =>
-            toast.promise(
-              setType({ _id: user._id, type: value as UserType }),
-              {
-                loading: 'Updating role...',
-                success: 'Role updated.',
-                error: (error: Error) => {
-                  if (error instanceof ConvexError) {
-                    return {
-                      message: error.data.name,
-                      description: error.data.message,
-                    };
-                  }
-                  return { message: error.name, description: error.message };
-                },
-              }
-            )
-          }
-        >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Set role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
-            <SelectItem value="business">Business</SelectItem>
-            <SelectItem value="collector">Collector</SelectItem>
-          </SelectContent>
-        </Select>
-        {isAdmin && <DeleteUserDialog userId={user._id} name={displayName} />}
-      </ItemActions>
-    </Item>
+    <>
+      <Item variant="muted">
+        <ItemContent>
+          <ItemTitle>{displayName}</ItemTitle>
+          <ItemDescription>{user.email}</ItemDescription>
+        </ItemContent>
+        <ItemActions className="flex-wrap justify-end">
+          <ItemActionsMenu actions={actions} />
+        </ItemActions>
+      </Item>
+
+      <Dialog open={roleOpen} onOpenChange={setRoleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change User Role</DialogTitle>
+            <DialogDescription>
+              Select a new role for <strong>{displayName}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <Select
+            value={user.type}
+            onValueChange={(value) => {
+              toast.promise(
+                setType({ _id: user._id, type: value as UserType }),
+                {
+                  loading: 'Updating role...',
+                  success: () => {
+                    setRoleOpen(false);
+                    return 'Role updated.';
+                  },
+                  error: (error: Error) => {
+                    if (error instanceof ConvexError) {
+                      return {
+                        message: error.data.name,
+                        description: error.data.message,
+                      };
+                    }
+                    return { message: error.name, description: error.message };
+                  },
+                }
+              );
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Set role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="business">Business</SelectItem>
+              <SelectItem value="collector">Collector</SelectItem>
+            </SelectContent>
+          </Select>
+        </DialogContent>
+      </Dialog>
+
+      {isAdmin && (
+        <DeleteUserDialog
+          userId={user._id}
+          name={displayName}
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+        />
+      )}
+    </>
   );
 }
 
@@ -164,6 +212,15 @@ function RouteComponent() {
   const isAdmin = currentUser?.type === 'admin';
 
   const exportData = useQuery(api.exports.exportUsers, {});
+
+  const sentinelRef = useInfiniteScroll(
+    () => {
+      if (status === 'CanLoadMore') {
+        loadMore(50);
+      }
+    },
+    status === 'CanLoadMore'
+  );
 
   const filtered = users?.filter((u) => {
     const displayName =
@@ -263,12 +320,7 @@ function RouteComponent() {
             {filtered.map((user) => (
               <UserRow key={user._id} user={user} isAdmin={isAdmin} />
             ))}
-
-            <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>
-              <Button variant="outline" onClick={() => loadMore(50)}>
-                Load More
-              </Button>
-            </Activity>
+            <div ref={sentinelRef} className="h-px" />
           </div>
         )}
       </Activity>

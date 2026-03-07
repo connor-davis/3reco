@@ -23,6 +23,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ConvexError } from 'convex/values';
 import { PencilIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
@@ -54,15 +55,24 @@ const materialSchema = z.object({
 export default function EditMaterialByIdDialog({
   _id,
   children,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
 }: {
   children?: ReactElement;
   _id: Id<'materials'>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const existingMaterial = useConvexQuery(api.materials.findById, {
     _id,
   });
 
   const updateMaterial = useConvexMutation(api.materials.update);
+
+  const [internalOpen, setInternalOpen] = useState<boolean>(false);
+
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = externalOnOpenChange || setInternalOpen;
 
   const materialForm = useForm<z.infer<typeof materialSchema>>({
     resolver: zodResolver(materialSchema),
@@ -75,7 +85,7 @@ export default function EditMaterialByIdDialog({
   });
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
           children ? (
@@ -125,6 +135,7 @@ export default function EditMaterialByIdDialog({
                 },
                 success: () => {
                   materialForm.reset({});
+                  setOpen(false);
 
                   return 'The material has been edited.';
                 },

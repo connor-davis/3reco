@@ -10,13 +10,14 @@ import {
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useConvexQuery } from '@convex-dev/react-query';
+import { useConvexQuery, useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { BuildingIcon, SearchIcon, StoreIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Activity } from 'react';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 export const Route = createFileRoute('/market/')({
   component: RouteComponent,
@@ -67,8 +68,25 @@ function SellerCard({ seller }: { seller: { _id: string; displayName: string; it
 }
 
 function RouteComponent() {
-  const sellers = useConvexQuery(api.stock.listSellersWithStock, {});
+  const {
+    results: sellers,
+    status,
+    loadMore,
+  } = useConvexPaginatedQuery(
+    api.stock.listSellersWithStockPaginated,
+    {},
+    { initialNumItems: 50 }
+  );
   const [search, setSearch] = useState('');
+
+  const sentinelRef = useInfiniteScroll(
+    () => {
+      if (status === 'CanLoadMore') {
+        loadMore(50);
+      }
+    },
+    status === 'CanLoadMore'
+  );
 
   const filtered = sellers?.filter((seller) => {
     if (!search) return true;
@@ -134,10 +152,13 @@ function RouteComponent() {
           </div>
         )}
         {filtered && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pb-2">
-            {filtered.map((seller) => (
-              <SellerCard key={seller._id} seller={seller} />
-            ))}
+          <div className="flex flex-col w-full h-full overflow-y-auto gap-3 pb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filtered.map((seller) => (
+                <SellerCard key={seller._id} seller={seller} />
+              ))}
+            </div>
+            <div ref={sentinelRef} className="h-px" />
           </div>
         )}
       </Activity>

@@ -13,20 +13,38 @@ import {
 import { Input } from '@/components/ui/input';
 import { Item, ItemActions } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
-import { useConvexQuery } from '@convex-dev/react-query';
+import { useConvexQuery, useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { createFileRoute } from '@tanstack/react-router';
 import { PackageIcon, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 export const Route = createFileRoute('/stock')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const stock = useConvexQuery(api.stock.list, {});
+  const {
+    results: stock,
+    status,
+    loadMore,
+  } = useConvexPaginatedQuery(
+    api.stock.listWithPagination,
+    {},
+    { initialNumItems: 50 }
+  );
   const materials = useConvexQuery(api.materials.list, {});
   const [search, setSearch] = useState('');
+
+  const sentinelRef = useInfiniteScroll(
+    () => {
+      if (status === 'CanLoadMore') {
+        loadMore(50);
+      }
+    },
+    status === 'CanLoadMore'
+  );
 
   const materialNames = new Map(materials?.map((m) => [m._id, m.name]) ?? []);
 
@@ -93,6 +111,7 @@ function RouteComponent() {
               </ItemActions>
             </Item>
           ))}
+          <div ref={sentinelRef} className="h-px" />
         </div>
       )}
     </div>

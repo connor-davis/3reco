@@ -22,13 +22,20 @@ import { toast } from 'sonner';
 export default function RemoveMaterialByIdDialog({
   _id,
   children,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
 }: {
   children?: ReactElement;
   _id: Id<'materials'>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const removeMaterial = useConvexMutation(api.materials.remove);
 
-  const [open, setOpen] = useState<boolean>(false);
+  const [internalOpen, setInternalOpen] = useState<boolean>(false);
+
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = externalOnOpenChange || setInternalOpen;
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
