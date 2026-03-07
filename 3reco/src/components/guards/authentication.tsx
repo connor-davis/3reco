@@ -26,8 +26,12 @@ import z from 'zod/v4';
 import { ConvexError } from 'convex/values';
 
 const formSchema = z.object({
-  email: z.string().min(10).max(100),
+  email: z.string().min(1).max(100).optional(),
+  phone: z.string().regex(/^(0\d{9}|\+27\d{9})$/).optional(),
   password: z.string().min(8).optional(),
+}).refine((data) => data.email || data.phone, {
+  message: 'Either email or phone number is required',
+  path: ['email'],
 });
 
 export default function AuthenticationGuard() {
@@ -40,6 +44,7 @@ export default function AuthenticationGuard() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
+      phone: '',
       password: '',
     },
   });
@@ -66,9 +71,16 @@ export default function AuthenticationGuard() {
                       duration: 2000,
                     });
 
+                  if (!values.email && !values.phone)
+                    return toast.error('Uh Oh!', {
+                      description: 'Please enter either an email or phone number...',
+                      duration: 2000,
+                    });
+
                   const formData = new FormData();
 
-                  formData.append('email', values.email);
+                  if (values.email) formData.append('email', values.email);
+                  if (values.phone) formData.append('phone', values.phone);
                   formData.append('password', values.password);
                   formData.append('flow', 'signIn');
 
@@ -111,6 +123,35 @@ export default function AuthenticationGuard() {
                         )}
                         <FieldDescription>
                           Please enter your email address.
+                        </FieldDescription>
+                      </Field>
+                    )}
+                  />
+
+                  <div className="text-center text-sm text-muted-foreground">
+                    or
+                  </div>
+
+                  <Controller
+                    name="phone"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="form-sign-in-phone">
+                          Phone Number
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          id="form-sign-in-phone"
+                          aria-invalid={fieldState.invalid}
+                          placeholder="+27 or 0..."
+                          autoComplete="tel"
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                        <FieldDescription>
+                          Please enter your South African phone number.
                         </FieldDescription>
                       </Field>
                     )}
@@ -179,6 +220,12 @@ export default function AuthenticationGuard() {
                       duration: 2000,
                     });
 
+                  if (!values.email && !values.phone)
+                    return toast.error('Uh Oh!', {
+                      description: 'Please enter either an email or phone number...',
+                      duration: 2000,
+                    });
+
                   signIn('password', {
                     flow: 'signUp',
                     ...values,
@@ -223,6 +270,35 @@ export default function AuthenticationGuard() {
                         )}
                         <FieldDescription>
                           Please enter your email address.
+                        </FieldDescription>
+                      </Field>
+                    )}
+                  />
+
+                  <div className="text-center text-sm text-muted-foreground">
+                    or
+                  </div>
+
+                  <Controller
+                    name="phone"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="form-sign-up-phone">
+                          Phone Number
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          id="form-sign-up-phone"
+                          aria-invalid={fieldState.invalid}
+                          placeholder="+27 or 0..."
+                          autoComplete="tel"
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                        <FieldDescription>
+                          Please enter your South African phone number.
                         </FieldDescription>
                       </Field>
                     )}

@@ -671,6 +671,78 @@ function RouteComponent() {
               </form>
             </AccordionContent>
           </AccordionItem>
+
+          <AccordionItem
+            value="security-mfa"
+            className="border-b px-3 last:border-b-0"
+          >
+            <AccordionTrigger>Security & MFA</AccordionTrigger>
+            <AccordionContent>
+              <div className="flex flex-col w-full gap-3 p-1">
+                <p className="text-sm text-muted-foreground">
+                  Multi-Factor Authentication (MFA) adds an extra layer of security to
+                  your account.
+                </p>
+
+                {user?.mfaEnabled ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="size-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <path d="m9 12 2 2 4-4" />
+                      </svg>
+                      <span className="font-medium">MFA is enabled</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Your account is protected with Two-Factor Authentication using
+                      TOTP.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="size-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <path d="M12 8v4" />
+                        <path d="M12 16h.01" />
+                      </svg>
+                      <span className="font-medium">MFA is not enabled</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Enable MFA to add an extra layer of protection to your account.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        // User can manually enable MFA from the suggestion dialog
+                        // by triggering it or we can add inline setup here
+                      }}
+                      className="w-full"
+                    >
+                      Enable MFA
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import AuthenticationGuard from '@/components/guards/authentication';
 import CompleteProfileGuard from '@/components/guards/completeProfile';
+import MfaSuggestionDialog from '@/components/dialogs/mfa-suggestion';
 import Header from '@/components/header';
 import AppSidebar from '@/components/sidebar/app-sidebar';
 import { Label } from '@/components/ui/label';
@@ -84,6 +85,7 @@ const RootLayout = () => {
                 </SidebarInset>
               </div>
             </SidebarProvider>
+            <MfaSuggestionDialog />
           </div>
         </Activity>
       </Authenticated>

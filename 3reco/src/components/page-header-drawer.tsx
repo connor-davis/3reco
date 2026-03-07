@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import { MenuIcon, XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function PageHeaderDrawer({
   title,
@@ -20,8 +21,21 @@ export default function PageHeaderDrawer({
   description?: string;
   children: ReactNode;
 }) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
-    <Drawer direction="right">
+    <Drawer direction={isMobile ? 'bottom' : 'right'}>
       <DrawerTrigger asChild>
         <Button variant="ghost" size="icon-sm">
           <MenuIcon className="size-4" />

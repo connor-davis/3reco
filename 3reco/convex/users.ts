@@ -42,8 +42,16 @@ export default defineTable({
       v.literal('Western Cape')
     )
   ),
+  // MFA fields
+  mfaEnabled: v.optional(v.boolean()),
+  totpSecret: v.optional(v.string()),
+  mfaSuggestionShown: v.optional(v.boolean()),
+  mfaSuggestionSkipped: v.optional(v.boolean()),
+  // Admin-managed fields
+  requirePasswordReset: v.optional(v.boolean()),
 })
   .index('email', ['email'])
+  .index('phone', ['phone'])
   .index('type', ['type']);
 
 export const currentUser = query({
@@ -202,5 +210,87 @@ export const removeUser = mutation({
       throw new ConvexError({ name: 'Invalid Input', message: 'You cannot remove your own account.' });
 
     await ctx.db.delete('users', _id);
+  },
+});
+
+// Admin/Staff can create users manually (requires MFA)
+export const createUser = mutation({
+  args: {
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    password: v.string(),
+    type: v.union(
+      v.literal('admin'),
+      v.literal('staff'),
+      v.literal('business'),
+      v.literal('collector')
+    ),
+    requirePasswordReset: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+    const caller = await ctx.db.get('users', userId as Id<'users'>);
+
+    // Only admin or staff can create users
+    if (!caller || (caller.type !== 'admin' && caller.type !== 'staff'))
+      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins and staff can create users.' });
+
+    // Require MFA to be enabled for admin/staff creating users
+    if (!caller.mfaEnabled)
+      throw new ConvexError({
+        name: 'MFA Required',
+        message: 'You must enable MFA before creating users.'
+      });
+
+    // Validate that either email or phone is provided
+    if (!args.email && !args.phone)
+      throw new ConvexError({
+        name: 'Invalid Input',
+        message: 'Either email or phone number must be provided.'
+      });
+
+    // This is a placeholder - actual user creation with password would need to be
+    // integrated with the Convex Auth system. For now, we'll throw an error
+    // directing to use the standard signup flow
+    throw new ConvexError({
+      name: 'Not Implemented',
+      message: 'User creation must be done through the Convex Auth system. This feature will be implemented with custom auth endpoints.'
+    });
+  },
+});
+
+// Toggle password reset requirement for a user
+export const togglePasswordReset = mutation({
+  args: {
+    _id: v.id('users'),
+    requirePasswordReset: v.boolean(),
+  },
+  handler: async (ctx, { _id, requirePasswordReset }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity)
+      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+
+    const [userId] = identity.subject.split('|');
+    const caller = await ctx.db.get('users', userId as Id<'users'>);
+
+    // Only admin or staff can toggle password reset
+    if (!caller || (caller.type !== 'admin' && caller.type !== 'staff'))
+      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins and staff can require password resets.' });
+
+    // Require MFA to be enabled
+    if (!caller.mfaEnabled)
+      throw new ConvexError({
+        name: 'MFA Required',
+        message: 'You must enable MFA before managing user password resets.'
+      });
+
+    if (_id === (userId as Id<'users'>))
+      throw new ConvexError({ name: 'Invalid Input', message: 'You cannot require a password reset for your own account.' });
+
+    await ctx.db.patch('users', _id, { requirePasswordReset });
   },
 });
