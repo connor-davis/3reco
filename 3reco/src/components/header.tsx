@@ -45,24 +45,22 @@ export default function Header() {
       <div className="flex items-center gap-2 ml-auto">
         <NotificationTray />
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <div className="flex items-center gap-2 cursor-pointer">
-                <Avatar>
-                  <AvatarImage src={data?.image} />
-                  <AvatarFallback>
-                    {data?.firstName?.charAt(0) ?? data?.email?.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden sm:flex flex-col">
-                  <Activity mode={data?.name ? 'visible' : 'hidden'}>
-                    <Label>{data?.name}</Label>
-                  </Activity>
-                  <Label className="text-muted-foreground">{data?.email}</Label>
-                </div>
+          <DropdownMenuTrigger>
+            <div className="flex items-center gap-2 cursor-pointer">
+              <Avatar>
+                <AvatarImage src={data?.image} />
+                <AvatarFallback>
+                  {data?.firstName?.charAt(0) ?? data?.email?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden sm:flex flex-col">
+                <Activity mode={data?.name ? 'visible' : 'hidden'}>
+                  <Label>{data?.name}</Label>
+                </Activity>
+                <Label className="text-muted-foreground">{data?.email}</Label>
               </div>
-            }
-          />
+            </div>
+          </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
               <Link to="/profile">
