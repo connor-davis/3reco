@@ -61,9 +61,9 @@ export default function PageHeaderActions({
   if (isMobile) {
     return (
       <Sheet>
-        <SheetTrigger
-          render={<PageHeaderActionsTrigger />}
-        />
+        <SheetTrigger>
+          <PageHeaderActionsTrigger />
+        </SheetTrigger>
         <SheetContent
           side="right"
           className="w-[min(24rem,calc(100vw-1rem))] max-w-none p-0"
@@ -84,9 +84,9 @@ export default function PageHeaderActions({
 
   return (
     <Popover>
-      <PopoverTrigger
-        render={<PageHeaderActionsTrigger />}
-      />
+      <PopoverTrigger>
+        <PageHeaderActionsTrigger />
+      </PopoverTrigger>
       <PopoverContent
         align="end"
         sideOffset={8}
