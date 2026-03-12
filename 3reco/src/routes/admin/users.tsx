@@ -1,5 +1,5 @@
 import BackButton from '@/components/back-button';
-import PageHeaderDrawer from '@/components/page-header-drawer';
+import PageHeaderDropdown from '@/components/page-header-dropdown';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -190,10 +190,7 @@ function RouteComponent() {
           <Label className="text-lg">User Management</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <PageHeaderDrawer
-            title="User Management Actions"
-            description="Search users, filter by role, or export data"
-          >
+          <PageHeaderDropdown>
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -224,7 +221,7 @@ function RouteComponent() {
               <DownloadIcon className="size-4" />
               Export CSV
             </Button>
-          </PageHeaderDrawer>
+          </PageHeaderDropdown>
         </div>
       </div>
 

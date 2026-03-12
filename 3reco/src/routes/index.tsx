@@ -2,7 +2,7 @@ import AdminDashboard from '@/components/sections/dashboard/admin-dashboard';
 import BackButton from '@/components/back-button';
 import BusinessDashboard from '@/components/sections/dashboard/business-dashboard';
 import CollectorDashboard from '@/components/sections/dashboard/collector-dashboard';
-import PageHeaderDrawer from '@/components/page-header-drawer';
+import PageHeaderDropdown from '@/components/page-header-dropdown';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,12 +44,9 @@ function Index() {
           <Label className="text-lg">Dashboard</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <PageHeaderDrawer
-            title="Dashboard Filters"
-            description="Filter dashboard data by date range"
-          >
+          <PageHeaderDropdown>
             <DateRangePicker value={dateRange} onChange={setDateRange} placeholder="All time" />
-          </PageHeaderDrawer>
+          </PageHeaderDropdown>
         </div>
       </div>
 

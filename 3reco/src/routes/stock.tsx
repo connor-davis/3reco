@@ -1,7 +1,7 @@
 import BackButton from '@/components/back-button';
 import ListToggle from '@/components/stock/list-toggle';
 import StockItemContent from '@/components/stock/item-content';
-import PageHeaderDrawer from '@/components/page-header-drawer';
+import PageHeaderDropdown from '@/components/page-header-dropdown';
 import {
   Empty,
   EmptyContent,
@@ -45,10 +45,7 @@ function RouteComponent() {
           <Label className="text-lg">Stock</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <PageHeaderDrawer
-            title="Stock Actions"
-            description="Search stock by material"
-          >
+          <PageHeaderDropdown>
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -58,7 +55,7 @@ function RouteComponent() {
                 className="pl-9 w-full"
               />
             </div>
-          </PageHeaderDrawer>
+          </PageHeaderDropdown>
         </div>
       </div>
 

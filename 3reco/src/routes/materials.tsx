@@ -2,7 +2,7 @@
 import CreateMaterialDialog from '@/components/dialogs/materials/create';
 import RemoveMaterialByIdDialog from '@/components/dialogs/materials/remove';
 import EditMaterialByIdDialog from '@/components/dialogs/materials/update';
-import PageHeaderDrawer from '@/components/page-header-drawer';
+import PageHeaderDropdown from '@/components/page-header-dropdown';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -47,10 +47,7 @@ function RouteComponent() {
           <Label className="text-lg">Materials</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <PageHeaderDrawer
-            title="Materials Actions"
-            description="Search materials or create new ones"
-          >
+          <PageHeaderDropdown>
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -63,7 +60,7 @@ function RouteComponent() {
             <CreateMaterialDialog>
               <Button className="w-full">Create Material</Button>
             </CreateMaterialDialog>
-          </PageHeaderDrawer>
+          </PageHeaderDropdown>
         </div>
       </div>
 
