@@ -21,7 +21,7 @@ import { api } from '@convex/_generated/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConvexError } from 'convex/values';
 import { PlusIcon } from 'lucide-react';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
@@ -53,13 +53,14 @@ export default function CreateMaterialDialog({
   children?: ReactElement;
 }) {
   const createMaterial = useConvexMutation(api.materials.create);
+  const [open, setOpen] = useState<boolean>(false);
 
   const materialForm = useForm<z.infer<typeof materialSchema>>({
     resolver: zodResolver(materialSchema),
   });
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
           children ? (
@@ -108,6 +109,7 @@ export default function CreateMaterialDialog({
                 },
                 success: () => {
                   materialForm.reset({});
+                  setOpen(false);
 
                   return 'The new material has been created.';
                 },
