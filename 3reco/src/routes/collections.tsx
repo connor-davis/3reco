@@ -74,7 +74,12 @@ function RouteComponent() {
             title="Manage collections"
             description="Filter collections, export data, or create a new collection."
           >
-            <DateRangePicker value={dateRange} onChange={setDateRange} align="start" />
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              align="start"
+              fullWidth
+            />
             <Button
               variant="outline"
               className="w-full"

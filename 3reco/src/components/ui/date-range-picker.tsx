@@ -2,6 +2,7 @@ import type { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { CalendarIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from './button';
 import { Calendar } from './calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
@@ -11,6 +12,7 @@ interface DateRangePickerProps {
   onChange: (range: DateRange | undefined) => void;
   placeholder?: string;
   align?: 'start' | 'center' | 'end';
+  fullWidth?: boolean;
 }
 
 export function DateRangePicker({
@@ -18,6 +20,7 @@ export function DateRangePicker({
   onChange,
   placeholder = 'Pick date range',
   align = 'end',
+  fullWidth = false,
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -34,20 +37,36 @@ export function DateRangePicker({
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <Popover open={open} onOpenChange={(v) => setOpen(v)}>
-        <PopoverTrigger
-          render={(props) => (
-            <Button variant="outline" className="gap-2 text-sm font-normal h-9" {...props}>
-              <CalendarIcon className="size-4 shrink-0" />
-              <span className={value?.from ? '' : 'text-muted-foreground'}>{label}</span>
-            </Button>
-          )}
-        />
-        <PopoverContent align={align} className="w-auto p-0">
-          <Calendar mode="range" selected={value} onSelect={handleSelect} />
-        </PopoverContent>
-      </Popover>
+    <div className={cn('flex items-center gap-1', fullWidth && 'w-full')}>
+      <div className={cn(fullWidth && 'min-w-0 flex-1')}>
+        <Popover open={open} onOpenChange={(v) => setOpen(v)}>
+          <PopoverTrigger
+            render={(props) => (
+              <Button
+                variant="outline"
+                className={cn(
+                  'h-9 gap-2 text-sm font-normal',
+                  fullWidth && 'w-full justify-start'
+                )}
+                {...props}
+              >
+                <CalendarIcon className="size-4 shrink-0" />
+                <span
+                  className={cn(
+                    'truncate',
+                    !value?.from && 'text-muted-foreground'
+                  )}
+                >
+                  {label}
+                </span>
+              </Button>
+            )}
+          />
+          <PopoverContent align={align} className="w-auto p-0">
+            <Calendar mode="range" selected={value} onSelect={handleSelect} />
+          </PopoverContent>
+        </Popover>
+      </div>
       {value?.from && (
         <Button variant="ghost" size="icon" onClick={() => onChange(undefined)}>
           <XIcon className="size-4" />

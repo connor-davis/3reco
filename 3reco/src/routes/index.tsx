@@ -48,7 +48,12 @@ function Index() {
             title="Filter dashboard"
             description="Choose the date range used across the dashboard."
           >
-            <DateRangePicker value={dateRange} onChange={setDateRange} placeholder="All time" />
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder="All time"
+              fullWidth
+            />
           </PageHeaderActions>
         </div>
       </div>

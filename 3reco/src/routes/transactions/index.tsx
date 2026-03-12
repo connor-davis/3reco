@@ -92,7 +92,12 @@ function RouteComponent() {
                 <SelectItem value="b2b">B2B</SelectItem>
               </SelectContent>
             </Select>
-            <DateRangePicker value={dateRange} onChange={setDateRange} align="start" />
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              align="start"
+              fullWidth
+            />
             <Button
               variant="outline"
               className="w-full"
