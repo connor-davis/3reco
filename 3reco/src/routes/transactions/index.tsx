@@ -2,7 +2,7 @@ import BackButton from '@/components/back-button';
 import TransactionUserDetails from '@/components/transactions/user-details';
 import TransactionItemContent from '@/components/transactions/item-content';
 import { InvoiceDownloadButton } from '@/components/transactions/invoice-download';
-import PageHeaderDropdown from '@/components/page-header-dropdown';
+import PageHeaderActions from '@/components/page-header-actions';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
@@ -78,7 +78,10 @@ function RouteComponent() {
           <Label className="text-lg">Transactions</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <PageHeaderDropdown>
+          <PageHeaderActions
+            title="Manage transactions"
+            description="Filter transactions by type or date, or export the current data."
+          >
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -99,7 +102,7 @@ function RouteComponent() {
               <DownloadIcon className="size-4" />
               Export CSV
             </Button>
-          </PageHeaderDropdown>
+          </PageHeaderActions>
         </div>
       </div>
 

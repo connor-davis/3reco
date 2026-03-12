@@ -2,7 +2,7 @@ import BackButton from '@/components/back-button';
 import CreateCollectionDialog from '@/components/dialogs/collections/create';
 import CollectionItemContent from '@/components/collections/item-content';
 import { InvoiceDownloadButton } from '@/components/transactions/invoice-download';
-import PageHeaderDropdown from '@/components/page-header-dropdown';
+import PageHeaderActions from '@/components/page-header-actions';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
@@ -70,7 +70,10 @@ function RouteComponent() {
           <Label className="text-lg">Collections</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <PageHeaderDropdown>
+          <PageHeaderActions
+            title="Manage collections"
+            description="Filter collections, export data, or create a new collection."
+          >
             <DateRangePicker value={dateRange} onChange={setDateRange} align="start" />
             <Button
               variant="outline"
@@ -84,7 +87,7 @@ function RouteComponent() {
             <CreateCollectionDialog>
               <Button className="w-full">Create Collection</Button>
             </CreateCollectionDialog>
-          </PageHeaderDropdown>
+          </PageHeaderActions>
         </div>
       </div>
 

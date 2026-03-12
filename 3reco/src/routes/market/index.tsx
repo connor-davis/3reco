@@ -1,6 +1,6 @@
 import BackButton from '@/components/back-button';
 import Stars from '@/components/reviews/stars';
-import PageHeaderDropdown from '@/components/page-header-dropdown';
+import PageHeaderActions from '@/components/page-header-actions';
 import {
   Empty,
   EmptyDescription,
@@ -89,7 +89,10 @@ function RouteComponent() {
           <Label className="text-lg">Browse Market</Label>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <PageHeaderDropdown>
+          <PageHeaderActions
+            title="Filter market"
+            description="Search sellers and materials."
+          >
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -99,7 +102,7 @@ function RouteComponent() {
                 className="pl-9 w-full"
               />
             </div>
-          </PageHeaderDropdown>
+          </PageHeaderActions>
         </div>
       </div>
 
