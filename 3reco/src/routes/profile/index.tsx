@@ -1,5 +1,6 @@
 import BackButton from '@/components/back-button';
 import AvatarCropper from '@/components/dialogs/avatar-cropper';
+import { BankDetailsFields } from '@/components/profile/bank-details-fields';
 import {
   Accordion,
   AccordionContent,
@@ -33,6 +34,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  bankDetailsFormSchema,
+  type BankDetailsFormInputValues,
+  type BankDetailsFormValues,
+  requiredBankDetailsFormSchema,
+} from '@/lib/bank-details';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -139,7 +146,74 @@ function RouteComponent() {
     },
   });
 
+  const bankDetailsForm = useForm<
+    BankDetailsFormInputValues,
+    undefined,
+    BankDetailsFormValues
+  >({
+    resolver: zodResolver(bankDetailsFormSchema),
+    defaultValues: {
+      bankAccountHolderName: user?.bankAccountHolderName,
+      bankName: user?.bankName,
+      bankAccountNumber: user?.bankAccountNumber,
+      bankBranchCode: user?.bankBranchCode,
+      bankAccountType: user?.bankAccountType,
+    },
+  });
+
   if (!user) return undefined;
+
+  const submitBankDetails = (values: BankDetailsFormValues) => {
+    const parsedValues =
+      user.type === 'business'
+        ? requiredBankDetailsFormSchema.safeParse(values)
+        : bankDetailsFormSchema.safeParse(values);
+
+    if (!parsedValues.success) {
+      for (const issue of parsedValues.error.issues) {
+        const fieldName = issue.path[0];
+
+        if (typeof fieldName === 'string') {
+          bankDetailsForm.setError(
+            fieldName as keyof BankDetailsFormInputValues,
+            {
+              message: issue.message,
+            }
+          );
+        }
+      }
+
+      return;
+    }
+
+    toast.promise(
+      saveProfile({
+        _id: user?._id,
+        ...parsedValues.data,
+      }),
+      {
+        loading: 'Saving your bank details...',
+        error: (error: Error) => {
+          if (error instanceof ConvexError) {
+            return {
+              message: error.data.name,
+              description: error.data.message,
+            };
+          }
+
+          return {
+            message: error.name,
+            description: error.message,
+          };
+        },
+        success: () => {
+          bankDetailsForm.reset({});
+
+          return 'Bank details saved successfully!';
+        },
+      }
+    );
+  };
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
@@ -495,6 +569,29 @@ function RouteComponent() {
               </AccordionContent>
             </AccordionItem>
           )}
+
+          <AccordionItem
+            value="bank-details"
+            className="border-b px-3 last:border-b-0"
+          >
+            <AccordionTrigger>Bank Details</AccordionTrigger>
+            <AccordionContent>
+              <form
+                className="flex flex-col w-full gap-3 p-1"
+                onSubmit={bankDetailsForm.handleSubmit(submitBankDetails)}
+              >
+                <BankDetailsFields
+                  control={bankDetailsForm.control}
+                  idPrefix="profile-bank-details"
+                  required={user.type === 'business'}
+                />
+
+                <Button type="submit" className="w-full">
+                  Save Information
+                </Button>
+              </form>
+            </AccordionContent>
+          </AccordionItem>
 
           <AccordionItem
             value="location-information"

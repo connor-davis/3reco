@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod/v4';
+import { BankDetailsFields } from '../profile/bank-details-fields';
 import { Button } from '../ui/button';
 import {
   Field,
@@ -34,6 +35,12 @@ import {
 } from '../ui/select';
 import { Spinner } from '../ui/spinner';
 import { ConvexError } from 'convex/values';
+import {
+  bankDetailsFormSchema,
+  type BankDetailsFormInputValues,
+  type BankDetailsFormValues,
+  requiredBankDetailsFormSchema,
+} from '@/lib/bank-details';
 
 const basicInfoFormSchema = z.object({
   image: z.string().optional(),
@@ -102,8 +109,15 @@ export default function CompleteProfileGuard() {
   });
 
   const [tab, setTab] = useState<
-    'basicInfo' | 'businessOrCollector' | 'businessInfo' | 'locationInfo'
+    | 'basicInfo'
+    | 'businessOrCollector'
+    | 'businessInfo'
+    | 'bankInfo'
+    | 'locationInfo'
   >('basicInfo');
+  const [profileType, setProfileType] = useState<'business' | 'collector'>(
+    user?.type === 'business' ? 'business' : 'collector'
+  );
 
   const updateUser = useConvexMutation(api.users.update);
 
@@ -163,11 +177,75 @@ export default function CompleteProfileGuard() {
     defaultValues: {},
   });
 
+  const bankInfoForm = useForm<
+    BankDetailsFormInputValues,
+    undefined,
+    BankDetailsFormValues
+  >({
+    resolver: zodResolver(bankDetailsFormSchema),
+    defaultValues: {
+      bankAccountHolderName: user?.bankAccountHolderName,
+      bankName: user?.bankName,
+      bankAccountNumber: user?.bankAccountNumber,
+      bankBranchCode: user?.bankBranchCode,
+      bankAccountType: user?.bankAccountType,
+    },
+  });
+
   const onCropComplete = (pixelCrop: PixelCrop) => {
     if (imgRef.current && pixelCrop.width && pixelCrop.height) {
       const base64 = getCroppedImg(imgRef.current, pixelCrop);
       basicInfoForm.setValue('image', base64);
     }
+  };
+
+  const submitBankInfo = (values: BankDetailsFormValues) => {
+    const parsedValues =
+      profileType === 'business'
+        ? requiredBankDetailsFormSchema.safeParse(values)
+        : bankDetailsFormSchema.safeParse(values);
+
+    if (!parsedValues.success) {
+      for (const issue of parsedValues.error.issues) {
+        const fieldName = issue.path[0];
+
+        if (typeof fieldName === 'string') {
+          bankInfoForm.setError(fieldName as keyof BankDetailsFormInputValues, {
+            message: issue.message,
+          });
+        }
+      }
+
+      return;
+    }
+
+    toast.promise(
+      updateUser({
+        _id: user._id,
+        ...parsedValues.data,
+      }),
+      {
+        loading: 'Updating your bank details...',
+        error: (error: Error) => {
+          if (error instanceof ConvexError) {
+            return {
+              message: error.data.name,
+              description: error.data.message,
+            };
+          }
+
+          return {
+            message: error.name,
+            description: error.message,
+          };
+        },
+        success: () => {
+          setTab('locationInfo');
+
+          return 'Your bank details have been updated.';
+        },
+      }
+    );
   };
 
   if (isLoadingUser)
@@ -213,6 +291,7 @@ export default function CompleteProfileGuard() {
                       };
                     },
                     success: () => {
+                      setProfileType('collector');
                       setTab('businessOrCollector');
 
                       return 'Your profile has been updated.';
@@ -385,10 +464,20 @@ export default function CompleteProfileGuard() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-3 w-full max-w-120">
-            <Button onClick={() => setTab('businessInfo')}>
+            <Button
+              onClick={() => {
+                setProfileType('business');
+                setTab('businessInfo');
+              }}
+            >
               I'm A Business
             </Button>
-            <Button onClick={() => setTab('locationInfo')}>
+            <Button
+              onClick={() => {
+                setProfileType('collector');
+                setTab('bankInfo');
+              }}
+            >
               I'm A Collector
             </Button>
           </div>
@@ -423,7 +512,8 @@ export default function CompleteProfileGuard() {
                       };
                     },
                     success: () => {
-                      setTab('locationInfo');
+                      setProfileType('business');
+                      setTab('bankInfo');
 
                       return 'Your profile has been updated.';
                     },
@@ -487,6 +577,38 @@ export default function CompleteProfileGuard() {
 
             <div className="grid md:grid-cols-2 md:flex-row-reverse">
               <Button type="button" onClick={() => setTab('basicInfo')}>
+                Previous
+              </Button>
+              <Button type="submit">Next</Button>
+            </div>
+          </form>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="bankInfo">
+        <div className="flex flex-col w-full h-full items-center justify-center gap-10">
+          <form
+            id="form-bank-info"
+            onSubmit={bankInfoForm.handleSubmit(submitBankInfo, console.log)}
+            className="flex flex-col w-full max-w-120 h-auto gap-5"
+          >
+            <BankDetailsFields
+              control={bankInfoForm.control}
+              idPrefix="complete-profile-bank-details"
+              required={profileType === 'business'}
+            />
+
+            <div className="grid md:grid-cols-2 md:flex-row-reverse">
+              <Button
+                type="button"
+                onClick={() =>
+                  setTab(
+                    profileType === 'business'
+                      ? 'businessInfo'
+                      : 'businessOrCollector'
+                  )
+                }
+              >
                 Previous
               </Button>
               <Button type="submit">Next</Button>
@@ -666,7 +788,7 @@ export default function CompleteProfileGuard() {
             </FieldGroup>
 
             <div className="grid md:grid-cols-2 md:flex-row-reverse">
-              <Button type="button" onClick={() => setTab('basicInfo')}>
+              <Button type="button" onClick={() => setTab('bankInfo')}>
                 Previous
               </Button>
               <Button type="submit">Complete Profile</Button>

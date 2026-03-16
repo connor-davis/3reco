@@ -86,6 +86,9 @@ export const generateForTransaction = internalAction({
     const sellerName = seller.businessName ?? (sellerFullName || (seller.name ?? 'Unknown'));
     const buyerFullName = `${buyer.firstName ?? ''} ${buyer.lastName ?? ''}`.trim();
     const buyerName = buyer.businessName ?? (buyerFullName || (buyer.name ?? 'Unknown'));
+    const payeeHasBankDetails = hasCompleteBankDetails(seller);
+    const shouldShowPaymentDetails =
+      transaction.type === 'b2b' || payeeHasBankDetails;
     const col2 = width / 2 + 20;
 
     page.drawText('FROM', { x: 40, y, size: 9, font: boldFont, color: gray });
@@ -163,6 +166,73 @@ export const generateForTransaction = internalAction({
       color: gray,
     });
 
+    if (shouldShowPaymentDetails) {
+      y -= 24;
+      page.drawLine({
+        start: { x: 40, y },
+        end: { x: width - 40, y },
+        thickness: 0.5,
+        color: light,
+      });
+      y -= 22;
+
+      page.drawText('PAYMENT DETAILS', {
+        x: 40,
+        y,
+        size: 10,
+        font: boldFont,
+        color: dark,
+      });
+      y -= 16;
+
+      if (payeeHasBankDetails) {
+        page.drawText(`Pay ${sellerName} using the account below.`, {
+          x: 40,
+          y,
+          size: 9,
+          font: regularFont,
+          color: gray,
+        });
+        y -= 18;
+
+        const paymentRows = [
+          ['Account holder', seller.bankAccountHolderName],
+          ['Bank name', seller.bankName],
+          ['Account number', seller.bankAccountNumber],
+          ['Branch code', seller.bankBranchCode],
+          ['Account type', seller.bankAccountType],
+        ] as const;
+
+        for (const [label, value] of paymentRows) {
+          if (!value) continue;
+
+          page.drawText(`${label}:`, {
+            x: 40,
+            y,
+            size: 9,
+            font: boldFont,
+            color: dark,
+          });
+          page.drawText(value, {
+            x: 145,
+            y,
+            size: 9,
+            font: regularFont,
+            color: dark,
+          });
+          y -= 14;
+        }
+      } else {
+        page.drawText('Bank details are not yet available on file for this business.', {
+          x: 40,
+          y,
+          size: 9,
+          font: regularFont,
+          color: gray,
+        });
+      }
+    }
+
     // ── Footer ────────────────────────────────────────────────────────────────
     page.drawLine({ start: { x: 40, y: 55 }, end: { x: width - 40, y: 55 }, thickness: 0.5, color: light });
     page.drawText('This invoice was generated automatically by 3rEco.', {
@@ -192,3 +262,28 @@ export const getInvoiceUrl = query({
     return await ctx.storage.getUrl(transaction.invoiceStorageId);
   },
 });
+
+function hasCompleteBankDetails(
+  user:
+    | {
+        bankAccountHolderName?: string;
+        bankName?: string;
+        bankAccountNumber?: string;
+        bankBranchCode?: string;
+        bankAccountType?: string;
+      }
+    | null
+    | undefined
+) {
+  return (
+    hasBankValue(user?.bankAccountHolderName) &&
+    hasBankValue(user?.bankName) &&
+    hasBankValue(user?.bankAccountNumber) &&
+    hasBankValue(user?.bankBranchCode) &&
+    hasBankValue(user?.bankAccountType)
+  );
+}
+
+function hasBankValue(value: string | undefined) {
+  return typeof value === 'string' && value.trim().length > 0;
+}

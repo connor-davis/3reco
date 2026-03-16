@@ -26,6 +26,17 @@ export default defineTable({
   idNumber: v.optional(v.string()),
   businessName: v.optional(v.string()),
   businessRegistrationNumber: v.optional(v.string()),
+  bankAccountHolderName: v.optional(v.string()),
+  bankName: v.optional(v.string()),
+  bankAccountNumber: v.optional(v.string()),
+  bankBranchCode: v.optional(v.string()),
+  bankAccountType: v.optional(
+    v.union(
+      v.literal('Cheque'),
+      v.literal('Savings'),
+      v.literal('Transmission')
+    )
+  ),
   streetAddress: v.optional(v.string()),
   city: v.optional(v.string()),
   areaCode: v.optional(v.number()),
@@ -92,6 +103,17 @@ export const update = mutation({
     idNumber: v.optional(v.string()),
     businessName: v.optional(v.string()),
     businessRegistrationNumber: v.optional(v.string()),
+    bankAccountHolderName: v.optional(v.string()),
+    bankName: v.optional(v.string()),
+    bankAccountNumber: v.optional(v.string()),
+    bankBranchCode: v.optional(v.string()),
+    bankAccountType: v.optional(
+      v.union(
+        v.literal('Cheque'),
+        v.literal('Savings'),
+        v.literal('Transmission')
+      )
+    ),
     streetAddress: v.optional(v.string()),
     city: v.optional(v.string()),
     areaCode: v.optional(v.number()),
@@ -110,6 +132,46 @@ export const update = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const existingUser = await ctx.db.get(args._id);
+
+    if (!existingUser)
+      throw new ConvexError({
+        name: 'Not Found',
+        message: 'The user was not found.',
+      });
+
+    const nextUser = {
+      ...existingUser,
+      ...args,
+    };
+
+    const providedBankDetailCount = bankDetailFields.filter((fieldName) =>
+      isBankDetailValueFilled(nextUser[fieldName])
+    ).length;
+
+    if (
+      providedBankDetailCount > 0 &&
+      providedBankDetailCount < bankDetailFields.length
+    ) {
+      throw new ConvexError({
+        name: 'Invalid Input',
+        message:
+          'Please complete all bank details or leave every bank detail field blank.',
+      });
+    }
+
+    if (
+      nextUser.type === 'business' &&
+      nextUser.profileComplete &&
+      providedBankDetailCount < bankDetailFields.length
+    ) {
+      throw new ConvexError({
+        name: 'Invalid Input',
+        message:
+          'Businesses must provide complete bank details before completing their profile.',
+      });
+    }
+
     await ctx.db.patch('users', args._id, { ...args, _id: undefined });
   },
 });
@@ -204,3 +266,15 @@ export const removeUser = mutation({
     await ctx.db.delete('users', _id);
   },
 });
+
+const bankDetailFields = [
+  'bankAccountHolderName',
+  'bankName',
+  'bankAccountNumber',
+  'bankBranchCode',
+  'bankAccountType',
+] as const;
+
+function isBankDetailValueFilled(value: string | undefined) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
