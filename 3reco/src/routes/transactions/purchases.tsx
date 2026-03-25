@@ -24,6 +24,7 @@ import { Activity } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { useQuery } from 'convex/react';
 import { downloadCsv } from '@/lib/export-csv';
+import { getEffectiveTransactionDate } from '@/lib/transactions';
 
 export const Route = createFileRoute('/transactions/purchases')({
   component: RouteComponent,
@@ -51,10 +52,12 @@ function RouteComponent() {
   });
 
   const filtered = transactions?.filter((t) => {
-    if (dateRange?.from && t._creationTime < dateRange.from.getTime()) return false;
+    const effectiveDate = getEffectiveTransactionDate(t);
+
+    if (dateRange?.from && effectiveDate < dateRange.from.getTime()) return false;
     if (dateRange?.to) {
       const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
-      if (t._creationTime > toEnd.getTime()) return false;
+      if (effectiveDate > toEnd.getTime()) return false;
     }
     return true;
   });
@@ -117,22 +120,30 @@ function RouteComponent() {
 
         {filtered && filtered.length > 0 && (
           <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {filtered.map((transaction) => (
-              <Item variant="muted" key={transaction._id}>
-                <TransactionItemContent _id={transaction._id} />
+            {filtered.map((transaction) => {
+              const effectiveDate = getEffectiveTransactionDate(transaction);
 
-                <ItemActions>
-                  <InvoiceDownloadButton transactionId={transaction._id} creationTime={transaction._creationTime} />
-                  <TransactionUserDetails _id={transaction.sellerId} />
-                  <ChevronRightIcon className="size-4" />
-                  <TransactionUserDetails _id={transaction.buyerId} />
-                </ItemActions>
+              return (
+                <Item variant="muted" key={transaction._id}>
+                  <TransactionItemContent _id={transaction._id} />
 
-                <ItemFooter>
-                  {format(new Date(transaction._creationTime), 'PPP p')}
-                </ItemFooter>
-              </Item>
-            ))}
+                  <ItemActions>
+                    <InvoiceDownloadButton
+                      transactionId={transaction._id}
+                      creationTime={transaction._creationTime}
+                      transactionDate={effectiveDate}
+                    />
+                    <TransactionUserDetails _id={transaction.sellerId} />
+                    <ChevronRightIcon className="size-4" />
+                    <TransactionUserDetails _id={transaction.buyerId} />
+                  </ItemActions>
+
+                  <ItemFooter>
+                    {format(new Date(effectiveDate), 'PPP p')}
+                  </ItemFooter>
+                </Item>
+              );
+            })}
 
             <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>
               <Button variant="outline" onClick={() => loadMore(50)}>

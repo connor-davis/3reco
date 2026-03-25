@@ -1,13 +1,16 @@
 import { useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { Badge } from '../ui/badge';
 import { ItemContent, ItemDescription, ItemTitle } from '../ui/item';
 import { Skeleton } from '../ui/skeleton';
 
 export default function CollectionItemContent({
   _id,
+  receiptCount = 0,
 }: {
   _id: Id<'transactions'>;
+  receiptCount?: number;
 }) {
   const transaction = useConvexQuery(api.transactions.findById, { _id });
   const items = transaction?.items ?? [];
@@ -36,7 +39,14 @@ export default function CollectionItemContent({
 
   return (
     <ItemContent>
-      <ItemTitle>{titleText}</ItemTitle>
+      <ItemTitle>
+        {titleText}
+        {receiptCount > 0 && (
+          <Badge variant="secondary" className="ml-1 shrink-0">
+            {receiptCount} receipt{receiptCount === 1 ? '' : 's'}
+          </Badge>
+        )}
+      </ItemTitle>
       <ItemDescription>
         {totalWeight.toFixed(2)} kg · R{totalValue.toFixed(2)}
       </ItemDescription>

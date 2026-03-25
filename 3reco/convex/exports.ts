@@ -1,6 +1,27 @@
 import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { query } from './_generated/server';
+import {
+  getEffectiveTransactionDate,
+  getTransactionCollectionDay,
+} from './lib/collectionDay';
+
+function formatTransactionDateForExport(transaction: {
+  _creationTime: number;
+  type: 'c2b' | 'b2b';
+  collectionDay?: string;
+  collectionDate?: number;
+}) {
+  if (transaction.type === 'c2b') {
+    const collectionDay = getTransactionCollectionDay(transaction);
+
+    if (collectionDay) {
+      return `${collectionDay}T00:00:00.000+02:00`;
+    }
+  }
+
+  return new Date(getEffectiveTransactionDate(transaction)).toISOString();
+}
 
 function getUserDisplayName(
   user: { firstName?: string; lastName?: string; businessName?: string; email?: string } | null
@@ -26,8 +47,10 @@ export const exportTransactions = query({
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
 
     let rows = await ctx.db.query('transactions').order('desc').collect();
-    if (from !== undefined) rows = rows.filter((r) => r._creationTime >= from);
-    if (to !== undefined) rows = rows.filter((r) => r._creationTime <= to);
+    if (from !== undefined)
+      rows = rows.filter((r) => getEffectiveTransactionDate(r) >= from);
+    if (to !== undefined)
+      rows = rows.filter((r) => getEffectiveTransactionDate(r) <= to);
 
     const expandedRows = [];
     for (const t of rows) {
@@ -36,7 +59,7 @@ export const exportTransactions = query({
       for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         expandedRows.push({
-          'Date': new Date(t._creationTime).toISOString(),
+          'Date': formatTransactionDateForExport(t),
           'Transaction Type': t.type.toUpperCase(),
           'Material': material?.name ?? '',
           'Weight (kg)': item.weight,
@@ -83,8 +106,10 @@ export const exportCollections = query({
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
     }
 
-    if (from !== undefined) rows = rows.filter((r) => r._creationTime >= from);
-    if (to !== undefined) rows = rows.filter((r) => r._creationTime <= to);
+    if (from !== undefined)
+      rows = rows.filter((r) => getEffectiveTransactionDate(r) >= from);
+    if (to !== undefined)
+      rows = rows.filter((r) => getEffectiveTransactionDate(r) <= to);
 
     const expandedRows = [];
     for (const t of rows) {
@@ -93,7 +118,7 @@ export const exportCollections = query({
       for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         expandedRows.push({
-          'Date': new Date(t._creationTime).toISOString(),
+          'Date': formatTransactionDateForExport(t),
           'Material': material?.name ?? '',
           'Weight (kg)': item.weight,
           'Price per kg (R)': item.price,
@@ -126,8 +151,10 @@ export const exportMyPurchases = query({
       .withIndex('by_buyerId', (q) => q.eq('buyerId', userId as Id<'users'>))
       .order('desc')
       .collect();
-    if (from !== undefined) rows = rows.filter((r) => r._creationTime >= from);
-    if (to !== undefined) rows = rows.filter((r) => r._creationTime <= to);
+    if (from !== undefined)
+      rows = rows.filter((r) => getEffectiveTransactionDate(r) >= from);
+    if (to !== undefined)
+      rows = rows.filter((r) => getEffectiveTransactionDate(r) <= to);
 
     const expandedRows = [];
     for (const t of rows) {
@@ -135,7 +162,7 @@ export const exportMyPurchases = query({
       for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         expandedRows.push({
-          'Date': new Date(t._creationTime).toISOString(),
+          'Date': formatTransactionDateForExport(t),
           'Transaction Type': t.type.toUpperCase(),
           'Material': material?.name ?? '',
           'Weight (kg)': item.weight,

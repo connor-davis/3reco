@@ -1,13 +1,60 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import {
   internalAction,
   internalMutation,
   internalQuery,
   query,
+  type QueryCtx,
 } from './_generated/server';
 import { internal } from './_generated/api';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { getEffectiveTransactionDate } from './lib/collectionDay';
+
+const SOUTH_AFRICA_TIME_ZONE = 'Africa/Johannesburg';
+
+function formatTransactionDateLabel(timestamp: number) {
+  return new Intl.DateTimeFormat('en-ZA', {
+    timeZone: SOUTH_AFRICA_TIME_ZONE,
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(timestamp));
+}
+
+function unauthorizedError() {
+  return new ConvexError({
+    name: 'Unauthorized',
+    message: 'You are not authorized to access this resource.',
+  });
+}
+
+async function getParticipantTransaction(
+  ctx: QueryCtx,
+  transactionId: Id<'transactions'>
+) {
+  const identity = await ctx.auth.getUserIdentity();
+
+  if (!identity) {
+    throw unauthorizedError();
+  }
+
+  const [userId] = identity.subject.split('|') as [Id<'users'>];
+  const transaction = await ctx.db.get('transactions', transactionId);
+
+  if (!transaction) {
+    throw new ConvexError({
+      name: 'Not Found',
+      message: 'The transaction was not found.',
+    });
+  }
+
+  if (transaction.sellerId !== userId && transaction.buyerId !== userId) {
+    throw unauthorizedError();
+  }
+
+  return transaction;
+}
 
 export const getTransactionData = internalQuery({
   args: { transactionId: v.id('transactions') },
@@ -68,11 +115,7 @@ export const generateForTransaction = internalAction({
     let y = height - 110;
 
     const invoiceNum = transactionId.slice(-8).toUpperCase();
-    const date = new Date(transaction._creationTime).toLocaleDateString('en-ZA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const date = formatTransactionDateLabel(getEffectiveTransactionDate(transaction));
 
     page.drawText(`Invoice #: ${invoiceNum}`, { x: 40, y, size: 11, font: boldFont, color: dark });
     page.drawText(`Date: ${date}`, { x: width - 200, y, size: 11, font: regularFont, color: dark });
@@ -257,7 +300,7 @@ export const generateForTransaction = internalAction({
 export const getInvoiceUrl = query({
   args: { transactionId: v.id('transactions') },
   handler: async (ctx, { transactionId }) => {
-    const transaction = await ctx.db.get('transactions', transactionId as Id<'transactions'>);
+    const transaction = await getParticipantTransaction(ctx, transactionId as Id<'transactions'>);
     if (!transaction?.invoiceStorageId) return null;
     return await ctx.storage.getUrl(transaction.invoiceStorageId);
   },

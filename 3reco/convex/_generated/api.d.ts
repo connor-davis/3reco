@@ -15,6 +15,7 @@ import type * as dashboard from "../dashboard.js";
 import type * as exports from "../exports.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
+import type * as lib_collectionDay from "../lib/collectionDay.js";
 import type * as materials from "../materials.js";
 import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   exports: typeof exports;
   http: typeof http;
   invoices: typeof invoices;
+  "lib/collectionDay": typeof lib_collectionDay;
   materials: typeof materials;
   migrations: typeof migrations;
   notifications: typeof notifications;

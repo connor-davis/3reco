@@ -1,7 +1,10 @@
 import BackButton from '@/components/back-button';
 import CreateCollectionDialog from '@/components/dialogs/collections/create';
 import CollectionItemContent from '@/components/collections/item-content';
-import { InvoiceDownloadButton } from '@/components/transactions/invoice-download';
+import {
+  InvoiceDownloadButton,
+  ReceiptDownloadButton,
+} from '@/components/transactions/invoice-download';
 import PageHeaderActions from '@/components/page-header-actions';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -26,6 +29,7 @@ import { Activity } from 'react';
 import TransactionUserDetails from '@/components/transactions/user-details';
 import { useQuery } from 'convex/react';
 import { downloadCsv } from '@/lib/export-csv';
+import { getEffectiveTransactionDate } from '@/lib/transactions';
 
 export const Route = createFileRoute('/collections')({
   component: RouteComponent,
@@ -53,10 +57,14 @@ function RouteComponent() {
   });
 
   const filtered = collections?.filter((c) => {
-    if (dateRange?.from && c._creationTime < dateRange.from.getTime()) return false;
+    if (c.type !== 'c2b') return false;
+
+    const effectiveDate = getEffectiveTransactionDate(c);
+
+    if (dateRange?.from && effectiveDate < dateRange.from.getTime()) return false;
     if (dateRange?.to) {
       const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
-      if (c._creationTime > toEnd.getTime()) return false;
+      if (effectiveDate > toEnd.getTime()) return false;
     }
     return true;
   });
@@ -137,20 +145,35 @@ function RouteComponent() {
 
         {filtered && filtered.length > 0 && (
           <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {filtered?.map((collection) => (
-              <Item variant="muted" key={collection._id}>
-                <CollectionItemContent _id={collection._id} />
+            {filtered?.map((collection) => {
+              const effectiveDate = getEffectiveTransactionDate(collection);
 
-                <ItemActions>
-                  <InvoiceDownloadButton transactionId={collection._id} creationTime={collection._creationTime} />
-                  <TransactionUserDetails _id={collection.sellerId} />
-                </ItemActions>
+              return (
+                <Item variant="muted" key={collection._id}>
+                  <CollectionItemContent
+                    _id={collection._id}
+                    receiptCount={collection.receiptAttachments?.length ?? 0}
+                  />
 
-                <ItemFooter>
-                  {format(new Date(collection._creationTime), 'PPP p')}
-                </ItemFooter>
-              </Item>
-            ))}
+                  <ItemActions>
+                    <ReceiptDownloadButton
+                      transactionId={collection._id}
+                      attachments={collection.receiptAttachments ?? []}
+                    />
+                    <InvoiceDownloadButton
+                      transactionId={collection._id}
+                      creationTime={collection._creationTime}
+                      transactionDate={effectiveDate}
+                    />
+                    <TransactionUserDetails _id={collection.sellerId} />
+                  </ItemActions>
+
+                  <ItemFooter>
+                    {format(new Date(effectiveDate), 'PPP p')}
+                  </ItemFooter>
+                </Item>
+              );
+            })}
 
             <Activity
               mode={collectionsStatus === 'CanLoadMore' ? 'visible' : 'hidden'}
