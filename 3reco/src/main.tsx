@@ -33,6 +33,7 @@ const redirectPathname = configuredRedirectUri
   ? new URL(configuredRedirectUri).pathname
   : '/callback';
 const redirectUri = `${window.location.origin}${redirectPathname}`;
+const workOsApiHostname = import.meta.env.VITE_WORKOS_API_HOSTNAME;
 
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
@@ -49,6 +50,7 @@ if (!rootElement.innerHTML) {
     <StrictMode>
       <AuthKitProvider
         clientId={import.meta.env.VITE_WORKOS_CLIENT_ID}
+        apiHostname={workOsApiHostname || undefined}
         redirectUri={redirectUri}
         onRedirectCallback={({ state }) => {
           const returnTo =

@@ -30,6 +30,7 @@ set -euo pipefail
 DOMAIN="${1:-}"
 VITE_WORKOS_CLIENT_ID="${2:-}"
 WORKOS_REDIRECT_URI_OVERRIDE="${3:-}"
+VITE_WORKOS_API_HOSTNAME="${VITE_WORKOS_API_HOSTNAME:-}"
 WORKOS_CLIENT_ID="${WORKOS_CLIENT_ID:-}"
 WORKOS_API_KEY="${WORKOS_API_KEY:-}"
 WORKOS_WEBHOOK_SECRET="${WORKOS_WEBHOOK_SECRET:-}"
@@ -60,12 +61,14 @@ else
 fi
 
 EXISTING_WORKOS_CLIENT_ID=""
+EXISTING_WORKOS_API_HOSTNAME=""
 EXISTING_WORKOS_API_KEY=""
 EXISTING_WORKOS_WEBHOOK_SECRET=""
 EXISTING_WORKOS_ACTION_SECRET=""
 
 if [[ -f "$ENV_FILE" ]]; then
   EXISTING_WORKOS_CLIENT_ID=$(grep -E '^VITE_WORKOS_CLIENT_ID=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
+  EXISTING_WORKOS_API_HOSTNAME=$(grep -E '^VITE_WORKOS_API_HOSTNAME=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
   EXISTING_WORKOS_API_KEY=$(grep -E '^WORKOS_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
   EXISTING_WORKOS_WEBHOOK_SECRET=$(grep -E '^WORKOS_WEBHOOK_SECRET=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
   EXISTING_WORKOS_ACTION_SECRET=$(grep -E '^WORKOS_ACTION_SECRET=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
@@ -74,6 +77,16 @@ fi
 if [[ -n "$EXISTING_WORKOS_CLIENT_ID" ]]; then
   VITE_WORKOS_CLIENT_ID="$EXISTING_WORKOS_CLIENT_ID"
   echo "ℹ️  Reusing existing VITE_WORKOS_CLIENT_ID from $ENV_FILE"
+fi
+
+if [[ -z "$VITE_WORKOS_API_HOSTNAME" && -n "$EXISTING_WORKOS_API_HOSTNAME" ]]; then
+  VITE_WORKOS_API_HOSTNAME="$EXISTING_WORKOS_API_HOSTNAME"
+  echo "ℹ️  Reusing existing VITE_WORKOS_API_HOSTNAME from $ENV_FILE"
+fi
+
+if [[ -z "$VITE_WORKOS_API_HOSTNAME" ]]; then
+  VITE_WORKOS_API_HOSTNAME="app.$DOMAIN"
+  echo "ℹ️  Using app-domain WorkOS proxy hostname: $VITE_WORKOS_API_HOSTNAME"
 fi
 
 if [[ -z "$WORKOS_CLIENT_ID" ]]; then
@@ -109,6 +122,12 @@ if [[ -z "$VITE_WORKOS_CLIENT_ID" ]]; then
   echo "⚠️  VITE_WORKOS_CLIENT_ID is not set. SSO login via WorkOS will be disabled."
 else
   echo "✅ Using VITE_WORKOS_CLIENT_ID: $VITE_WORKOS_CLIENT_ID"
+fi
+
+if [[ -z "$VITE_WORKOS_API_HOSTNAME" ]]; then
+  echo "⚠️  VITE_WORKOS_API_HOSTNAME is not set. Production AuthKit will fall back to api.workos.com."
+else
+  echo "✅ Using VITE_WORKOS_API_HOSTNAME: $VITE_WORKOS_API_HOSTNAME"
 fi
 
 if [[ -z "$WORKOS_CLIENT_ID" ]]; then
@@ -154,6 +173,8 @@ CONVEX_SITE_ORIGIN=https://convex-site.$DOMAIN
 
 VITE_CONVEX_URL=https://convex.$DOMAIN
 VITE_CONVEX_AUTH_DOMAIN=https://convex-site.$DOMAIN
+
+VITE_WORKOS_API_HOSTNAME=$VITE_WORKOS_API_HOSTNAME
 
 WORKOS_CLIENT_ID=$WORKOS_CLIENT_ID
 WORKOS_API_KEY=$WORKOS_API_KEY
