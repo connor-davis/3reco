@@ -42,7 +42,7 @@ function RouteComponent() {
               <EmptyMedia variant="icon">
                 <InboxIcon />
               </EmptyMedia>
-              <EmptyTitle>Loading Requests...</EmptyTitle>
+              <EmptyTitle>Loading requests...</EmptyTitle>
             </EmptyHeader>
           </Empty>
         </div>
@@ -58,7 +58,7 @@ function RouteComponent() {
                 </EmptyMedia>
                 <EmptyTitle>No Incoming Requests</EmptyTitle>
                 <EmptyDescription>
-                  Requests from other businesses will appear here.
+                  Offers from buyers will appear here.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

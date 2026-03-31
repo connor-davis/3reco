@@ -46,8 +46,8 @@ function RouteComponent() {
         </div>
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
-            title="Filter stock"
-            description="Search stock by material."
+            title="Stock"
+            description="Find stock by material."
           >
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -70,11 +70,11 @@ function RouteComponent() {
                 <EmptyMedia variant="icon">
                   <PackageIcon />
                 </EmptyMedia>
-                <EmptyTitle>{search ? 'No results found' : 'No Stock Yet'}</EmptyTitle>
+                <EmptyTitle>{search ? 'No results found' : 'No stock yet'}</EmptyTitle>
                 <EmptyDescription>
                   {search
                     ? `No stock matches "${search}".`
-                    : 'It looks like you haven\'t added any stock yet. Start by creating a new collection or by purchasing stock from the market.'}
+                    : 'Add stock from a collection, or buy from the marketplace.'}
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>

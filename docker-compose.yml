@@ -71,6 +71,11 @@ services:
       # Public origin URLs (used by Convex for CORS and auth token issuer)
       - CONVEX_CLOUD_ORIGIN=${CONVEX_CLOUD_ORIGIN}
       - CONVEX_SITE_ORIGIN=${CONVEX_SITE_ORIGIN}
+      # WorkOS AuthKit backend configuration
+      - WORKOS_CLIENT_ID=${WORKOS_CLIENT_ID}
+      - WORKOS_API_KEY=${WORKOS_API_KEY}
+      - WORKOS_WEBHOOK_SECRET=${WORKOS_WEBHOOK_SECRET}
+      - WORKOS_ACTION_SECRET=${WORKOS_ACTION_SECRET}
       # Allow HTTP (set to false once HTTPS certs are in place)
       - DO_NOT_REQUIRE_SSL=true
       # JVM heap – increase on servers with more RAM

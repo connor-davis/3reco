@@ -42,7 +42,7 @@ function RouteComponent() {
               <EmptyMedia variant="icon">
                 <SendIcon />
               </EmptyMedia>
-              <EmptyTitle>Loading Requests...</EmptyTitle>
+              <EmptyTitle>Loading requests...</EmptyTitle>
             </EmptyHeader>
           </Empty>
         </div>
@@ -58,7 +58,7 @@ function RouteComponent() {
                 </EmptyMedia>
                 <EmptyTitle>No Outgoing Requests</EmptyTitle>
                 <EmptyDescription>
-                  Requests you send to other businesses will appear here.
+                  The offers you send will appear here.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

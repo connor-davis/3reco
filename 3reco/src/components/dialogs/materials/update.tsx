@@ -91,9 +91,9 @@ export default function EditMaterialByIdDialog({
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Material</DialogTitle>
+          <DialogTitle>Edit material</DialogTitle>
           <DialogDescription>
-            Please fill out the fields below to edit an existing material.
+            Update the main details for this material.
           </DialogDescription>
         </DialogHeader>
 
@@ -110,7 +110,7 @@ export default function EditMaterialByIdDialog({
                 price: values.price,
               }),
               {
-                loading: 'Editing the material...',
+                loading: 'Saving changes...',
                 error: (error: Error) => {
                   if (error instanceof ConvexError) {
                     return {
@@ -128,7 +128,7 @@ export default function EditMaterialByIdDialog({
                   materialForm.reset({});
                   setOpen(false);
 
-                  return 'The material has been edited.';
+                  return 'Material updated.';
                 },
               }
             )
@@ -141,19 +141,19 @@ export default function EditMaterialByIdDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-name">
-                    Name
+                    Material name
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-name"
                     aria-invalid={fieldState.invalid}
-                    placeholder="Name"
+                    placeholder="Material name"
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a name for the material.
+                    Give this material a clear name.
                   </FieldDescription>
                 </Field>
               )}
@@ -165,20 +165,20 @@ export default function EditMaterialByIdDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-carbon-factor">
-                    Carbon Factor
+                     Carbon footprint
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-carbon-factor"
                     aria-invalid={fieldState.invalid}
-                    placeholder="Carbon Factor"
+                     placeholder="Carbon footprint"
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a Carbon Factor for the material, e.g. 10.5
-                  </FieldDescription>
+                     Enter the carbon value, for example 10.5.
+                   </FieldDescription>
                 </Field>
               )}
             />
@@ -189,20 +189,20 @@ export default function EditMaterialByIdDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-gw-code">
-                    GW Code
+                     Waste code
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-gw-code"
                     aria-invalid={fieldState.invalid}
-                    placeholder="GW Code"
+                     placeholder="Waste code"
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a GW Code for the material, e.g. GW 100
-                  </FieldDescription>
+                     Use the waste code, for example GW 100.
+                   </FieldDescription>
                 </Field>
               )}
             />
@@ -213,13 +213,13 @@ export default function EditMaterialByIdDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-price">
-                    Price
+                    Price per kg
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-price"
                     aria-invalid={fieldState.invalid}
-                    placeholder="Price"
+                    placeholder="Price per kg"
                     type="number"
                     step={0.01}
                     onChange={(event) =>
@@ -230,14 +230,14 @@ export default function EditMaterialByIdDialog({
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a price for the material, e.g. 10.5
+                    Enter the price per kg, for example 10.5.
                   </FieldDescription>
                 </Field>
               )}
             />
           </FieldGroup>
 
-          <Button type="submit">Edit Material</Button>
+           <Button type="submit">Save changes</Button>
         </form>
       </DialogContent>
     </Dialog>

@@ -3,10 +3,11 @@
 #  3reco – one-command production deploy
 #
 #  Usage:
-#    ./deploy.sh <domain>
+#    WORKOS_API_KEY=... WORKOS_WEBHOOK_SECRET=... ./deploy.sh <domain> [workos_client_id] [workos_redirect_uri]
 #
 #  Example:
 #    ./deploy.sh yourdomain.com
+#    ./deploy.sh yourdomain.com client_XXXXXXXXXXXXXXXXXXXXXXXXXXXX https://app.yourdomain.com/callback
 #
 #  What it does:
 #    1. Derives all service URLs from the domain you provide
@@ -28,7 +29,11 @@ set -euo pipefail
 
 DOMAIN="${1:-}"
 VITE_WORKOS_CLIENT_ID="${2:-}"
-VITE_WORKOS_REDIRECT_URI="${3:-}"
+WORKOS_REDIRECT_URI_OVERRIDE="${3:-}"
+WORKOS_CLIENT_ID="${WORKOS_CLIENT_ID:-}"
+WORKOS_API_KEY="${WORKOS_API_KEY:-}"
+WORKOS_WEBHOOK_SECRET="${WORKOS_WEBHOOK_SECRET:-}"
+WORKOS_ACTION_SECRET="${WORKOS_ACTION_SECRET:-}"
 
 if [[ -z "$DOMAIN" ]]; then
   echo "Usage: $0 <domain> [workos_client_id] [workos_redirect_uri]"
@@ -55,11 +60,15 @@ else
 fi
 
 EXISTING_WORKOS_CLIENT_ID=""
-EXISTING_WORKOS_REDIRECT_URI=""
+EXISTING_WORKOS_API_KEY=""
+EXISTING_WORKOS_WEBHOOK_SECRET=""
+EXISTING_WORKOS_ACTION_SECRET=""
 
 if [[ -f "$ENV_FILE" ]]; then
   EXISTING_WORKOS_CLIENT_ID=$(grep -E '^VITE_WORKOS_CLIENT_ID=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
-  EXISTING_WORKOS_REDIRECT_URI=$(grep -E '^VITE_WORKOS_REDIRECT_URI=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
+  EXISTING_WORKOS_API_KEY=$(grep -E '^WORKOS_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
+  EXISTING_WORKOS_WEBHOOK_SECRET=$(grep -E '^WORKOS_WEBHOOK_SECRET=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
+  EXISTING_WORKOS_ACTION_SECRET=$(grep -E '^WORKOS_ACTION_SECRET=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"' || true)
 fi
 
 if [[ -n "$EXISTING_WORKOS_CLIENT_ID" ]]; then
@@ -67,15 +76,63 @@ if [[ -n "$EXISTING_WORKOS_CLIENT_ID" ]]; then
   echo "ℹ️  Reusing existing VITE_WORKOS_CLIENT_ID from $ENV_FILE"
 fi
 
-if [[ -n "$EXISTING_WORKOS_REDIRECT_URI" ]]; then
-  VITE_WORKOS_REDIRECT_URI="$EXISTING_WORKOS_REDIRECT_URI"
-  echo "ℹ️  Reusing existing VITE_WORKOS_REDIRECT_URI from $ENV_FILE"
+if [[ -z "$WORKOS_CLIENT_ID" ]]; then
+  WORKOS_CLIENT_ID="$VITE_WORKOS_CLIENT_ID"
+fi
+
+if [[ -z "$WORKOS_API_KEY" && -n "$EXISTING_WORKOS_API_KEY" ]]; then
+  WORKOS_API_KEY="$EXISTING_WORKOS_API_KEY"
+  echo "ℹ️  Reusing existing WORKOS_API_KEY from $ENV_FILE"
+fi
+
+if [[ -z "$WORKOS_WEBHOOK_SECRET" && -n "$EXISTING_WORKOS_WEBHOOK_SECRET" ]]; then
+  WORKOS_WEBHOOK_SECRET="$EXISTING_WORKOS_WEBHOOK_SECRET"
+  echo "ℹ️  Reusing existing WORKOS_WEBHOOK_SECRET from $ENV_FILE"
+fi
+
+if [[ -z "$WORKOS_ACTION_SECRET" && -n "$EXISTING_WORKOS_ACTION_SECRET" ]]; then
+  WORKOS_ACTION_SECRET="$EXISTING_WORKOS_ACTION_SECRET"
+  echo "ℹ️  Reusing existing WORKOS_ACTION_SECRET from $ENV_FILE"
+fi
+
+DEFAULT_VITE_WORKOS_REDIRECT_URI="https://app.$DOMAIN/callback"
+VITE_WORKOS_REDIRECT_URI="$DEFAULT_VITE_WORKOS_REDIRECT_URI"
+
+if [[ -n "$WORKOS_REDIRECT_URI_OVERRIDE" ]]; then
+  VITE_WORKOS_REDIRECT_URI="$WORKOS_REDIRECT_URI_OVERRIDE"
+  echo "ℹ️  Using explicit VITE_WORKOS_REDIRECT_URI override: $VITE_WORKOS_REDIRECT_URI"
+else
+  echo "ℹ️  Using domain-derived VITE_WORKOS_REDIRECT_URI: $VITE_WORKOS_REDIRECT_URI"
 fi
 
 if [[ -z "$VITE_WORKOS_CLIENT_ID" ]]; then
   echo "⚠️  VITE_WORKOS_CLIENT_ID is not set. SSO login via WorkOS will be disabled."
 else
   echo "✅ Using VITE_WORKOS_CLIENT_ID: $VITE_WORKOS_CLIENT_ID"
+fi
+
+if [[ -z "$WORKOS_CLIENT_ID" ]]; then
+  echo "⚠️  WORKOS_CLIENT_ID is not set. Convex WorkOS auth will not initialize correctly."
+else
+  echo "✅ Using WORKOS_CLIENT_ID: $WORKOS_CLIENT_ID"
+fi
+
+if [[ -z "$WORKOS_API_KEY" ]]; then
+  echo "⚠️  WORKOS_API_KEY is not set. Convex WorkOS auth will not initialize correctly."
+else
+  echo "✅ Using WORKOS_API_KEY from environment/.env"
+fi
+
+if [[ -z "$WORKOS_WEBHOOK_SECRET" ]]; then
+  echo "⚠️  WORKOS_WEBHOOK_SECRET is not set. WorkOS user sync webhooks will fail."
+else
+  echo "✅ Using WORKOS_WEBHOOK_SECRET from environment/.env"
+fi
+
+if [[ -z "$WORKOS_ACTION_SECRET" ]]; then
+  echo "ℹ️  WORKOS_ACTION_SECRET is not set. This is fine unless you enabled WorkOS actions."
+else
+  echo "✅ Using WORKOS_ACTION_SECRET from environment/.env"
 fi
 
 if [[ -z "$VITE_WORKOS_REDIRECT_URI" ]]; then
@@ -97,6 +154,11 @@ CONVEX_SITE_ORIGIN=https://convex-site.$DOMAIN
 
 VITE_CONVEX_URL=https://convex.$DOMAIN
 VITE_CONVEX_AUTH_DOMAIN=https://convex-site.$DOMAIN
+
+WORKOS_CLIENT_ID=$WORKOS_CLIENT_ID
+WORKOS_API_KEY=$WORKOS_API_KEY
+WORKOS_WEBHOOK_SECRET=$WORKOS_WEBHOOK_SECRET
+WORKOS_ACTION_SECRET=$WORKOS_ACTION_SECRET
 
 VITE_WORKOS_CLIENT_ID=$VITE_WORKOS_CLIENT_ID
 VITE_WORKOS_REDIRECT_URI=$VITE_WORKOS_REDIRECT_URI

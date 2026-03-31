@@ -80,8 +80,8 @@ function RouteComponent() {
         </div>
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
-            title="Manage collections"
-            description="Filter collections, export data, or create a new collection."
+            title="Collections"
+            description="Filter, download, or add a collection."
           >
             <DateRangePicker
               value={dateRange}
@@ -96,10 +96,10 @@ function RouteComponent() {
               onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'collections.csv')}
             >
               <DownloadIcon className="size-4" />
-              Export CSV
+              Download CSV
             </Button>
             <CreateCollectionDialog>
-              <Button className="w-full">Create Collection</Button>
+              <Button className="w-full">Add Collection</Button>
             </CreateCollectionDialog>
           </PageHeaderActions>
         </div>
@@ -112,9 +112,9 @@ function RouteComponent() {
               <EmptyMedia variant="icon">
                 <VanIcon />
               </EmptyMedia>
-              <EmptyTitle>Loading Collections...</EmptyTitle>
+              <EmptyTitle>Loading collections...</EmptyTitle>
               <EmptyDescription>
-                Please wait while we load your collections.
+                Getting your collections ready...
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -130,14 +130,14 @@ function RouteComponent() {
                   <EmptyMedia variant="icon">
                     <VanIcon />
                   </EmptyMedia>
-                  <EmptyTitle>No Collections Yet</EmptyTitle>
+                  <EmptyTitle>No collections yet</EmptyTitle>
                   <EmptyDescription>
-                    It looks like you haven't added any collections yet.
+                    Add a collection to start tracking what has been received.
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2">
                   <CreateCollectionDialog>
-                    <Button>Create Collection</Button>
+                    <Button>Add Collection</Button>
                   </CreateCollectionDialog>
                 </EmptyContent>
               </Empty>

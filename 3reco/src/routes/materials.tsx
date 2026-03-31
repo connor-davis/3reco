@@ -48,8 +48,8 @@ function RouteComponent() {
         </div>
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
-            title="Manage materials"
-            description="Search materials or create a new material."
+            title="Materials"
+            description="Search or add a material."
           >
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -75,20 +75,20 @@ function RouteComponent() {
                 <EmptyMedia variant="icon">
                   <PackageIcon />
                 </EmptyMedia>
-                <EmptyTitle>{search ? 'No results found' : 'No Materials Yet'}</EmptyTitle>
+                <EmptyTitle>{search ? 'No results found' : 'No materials yet'}</EmptyTitle>
                 <EmptyDescription>
                   {search
                     ? `No materials match "${search}".`
-                    : "It looks like you haven't added any materials yet. Start by creating a new material to track its carbon footprint and price."}
+                    : 'Add your first material to track pricing and carbon impact.'}
                 </EmptyDescription>
               </EmptyHeader>
               {!search && (
                 <EmptyContent className="flex-row justify-center gap-2">
                   <CreateMaterialDialog>
-                    <Button>Create Material</Button>
-                  </CreateMaterialDialog>
-                </EmptyContent>
-              )}
+                      <Button>Add Material</Button>
+                    </CreateMaterialDialog>
+                  </EmptyContent>
+                )}
             </Empty>
           </div>
         ))}
@@ -97,14 +97,14 @@ function RouteComponent() {
         <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
           {filtered?.map((material) => (
             <Item variant="muted" key={material._id}>
-              <ItemContent>
-                <ItemTitle>{material.name}</ItemTitle>
-                <ItemDescription>
-                  The material has a carbon factor of {material.carbonFactor} kg
-                  CO2e per kg, a GW code of {material.gwCode}, and a price of R
-                  {material.price} per kg.
-                </ItemDescription>
-              </ItemContent>
+                <ItemContent>
+                  <ItemTitle>{material.name}</ItemTitle>
+                  <ItemDescription>
+                    Carbon footprint: {material.carbonFactor} kg CO2e per kg
+                    {' · '}Waste code: {material.gwCode}
+                    {' · '}Price: R{material.price} per kg
+                  </ItemDescription>
+                </ItemContent>
 
               <ItemActions>
                 <EditMaterialByIdDialog _id={material._id}>

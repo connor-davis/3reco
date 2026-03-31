@@ -77,8 +77,8 @@ export function BankDetailsFields<T extends FieldValues>({
             </CardTitle>
             <CardDescription>
               {required
-                ? 'Businesses must add bank details before completing their profile.'
-                : 'Add bank details now if you would like them to appear on invoices.'}
+                ? 'Add bank details to finish setting up your business profile.'
+                : 'Add bank details if you want them to show on invoices.'}
             </CardDescription>
           </CardHeader>
 
@@ -135,7 +135,7 @@ export function BankDetailsFields<T extends FieldValues>({
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               <FieldDescription>
-                Enter the name attached to the bank account.
+                Enter the name on the account.
               </FieldDescription>
             </Field>
           )}
@@ -159,7 +159,7 @@ export function BankDetailsFields<T extends FieldValues>({
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               <FieldDescription>
-                Enter the bank where this account is held.
+                Enter the bank name.
               </FieldDescription>
             </Field>
           )}
@@ -186,7 +186,7 @@ export function BankDetailsFields<T extends FieldValues>({
                   <FieldError errors={[fieldState.error]} />
                 )}
                 <FieldDescription>
-                  Use digits only for the account number.
+                  Numbers only.
                 </FieldDescription>
               </Field>
             )}
@@ -212,7 +212,7 @@ export function BankDetailsFields<T extends FieldValues>({
                   <FieldError errors={[fieldState.error]} />
                 )}
                 <FieldDescription>
-                  Branch codes should be 6 digits long.
+                  Your bank's 6-digit branch code.
                 </FieldDescription>
               </Field>
             )}
@@ -247,7 +247,7 @@ export function BankDetailsFields<T extends FieldValues>({
               </Select>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               <FieldDescription>
-                Select the type of account that should receive payment.
+                Choose the account type for payments.
               </FieldDescription>
             </Field>
           )}

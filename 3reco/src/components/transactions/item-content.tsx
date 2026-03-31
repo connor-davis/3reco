@@ -34,7 +34,7 @@ export default function TransactionItemContent({
   const totalValue = items.reduce((s, i) => s + i.weight * i.price, 0);
 
   const titleText = items.length > 1
-    ? `${material?.name ?? '...'} +${items.length - 1} more`
+    ? `${material?.name ?? '...'} +${items.length - 1} more item${items.length - 1 === 1 ? '' : 's'}`
     : (material?.name ?? '...');
 
   return (
@@ -42,7 +42,7 @@ export default function TransactionItemContent({
       <ItemTitle>{titleText}</ItemTitle>
       <ItemDescription>
         {totalWeight.toFixed(2)} kg · R{totalValue.toFixed(2)}
-        {items.length > 1 && ` · ${items.length} materials`}
+        {items.length > 1 && ` · ${items.length} items`}
       </ItemDescription>
     </ItemContent>
   );

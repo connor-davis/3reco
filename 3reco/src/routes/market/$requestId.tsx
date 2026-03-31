@@ -64,7 +64,7 @@ const statusVariant: Record<
 
 const statusLabel: Record<string, string> = {
   pending: 'Pending',
-  offered: 'Offer Made',
+  offered: 'Offer sent',
   accepted: 'Accepted',
   rejected: 'Rejected',
   cancelled: 'Cancelled',
@@ -172,14 +172,14 @@ function RouteComponent() {
               <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
                 <DialogTrigger render={<Button size="sm" />}>
                   <SendIcon />
-                  <span className="hidden sm:inline">Make Offer</span>
+                  <span className="hidden sm:inline">Send offer</span>
                 </DialogTrigger>
                 <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Make an Offer</DialogTitle>
+                    <DialogTitle>Send an offer</DialogTitle>
                     <DialogDescription>
-                      Set the weight and price for each requested item. The buyer
-                      will need to accept before the transaction is finalised.
+                      Add the weight and price for each item. The buyer can review
+                      and accept the offer before anything is confirmed.
                     </DialogDescription>
                   </DialogHeader>
                   <form
@@ -199,7 +199,7 @@ function RouteComponent() {
                           loading: 'Sending offer...',
                           success: () => {
                             setOfferOpen(false);
-                            return 'Offer sent to buyer!';
+                            return 'Offer sent.';
                           },
                           error: handleMutationError,
                         }
@@ -209,9 +209,9 @@ function RouteComponent() {
                     {fields.map((field, index) => (
                       <FieldGroup key={field.id} className="gap-2 p-3 border rounded-lg">
                         <Label className="text-xs text-muted-foreground font-medium">
-                          {offerForm.watch(`items.${index}.materialName`) || `Item ${index + 1}`}
-                        </Label>
-                        <div className="grid grid-cols-2 gap-2">
+                            {offerForm.watch(`items.${index}.materialName`) || `Item ${index + 1}`}
+                          </Label>
+                          <div className="grid grid-cols-2 gap-2">
                           <Controller
                             name={`items.${index}.offerWeight`}
                             control={offerForm.control}

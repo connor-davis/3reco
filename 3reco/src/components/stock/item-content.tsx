@@ -35,7 +35,7 @@ export default function StockItemContent({ _id }: { _id: Id<'stock'> }) {
         )}
       </ItemTitle>
       <ItemDescription>
-        {stock.weight} kg · R{stock.price}/kg
+        {stock.weight} kg · R{stock.price} per kg
       </ItemDescription>
     </ItemContent>
   );

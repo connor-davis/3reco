@@ -86,17 +86,17 @@ function RouteComponent() {
         </div>
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
-            title="Manage transactions"
-            description="Filter transactions by type or date, or export the current data."
+            title="Transactions"
+            description="Filter by sale type or date, or download the list."
           >
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="c2b">C2B</SelectItem>
-                <SelectItem value="b2b">B2B</SelectItem>
+                <SelectItem value="all">All sales</SelectItem>
+                <SelectItem value="c2b">Collector to business</SelectItem>
+                <SelectItem value="b2b">Business to business</SelectItem>
               </SelectContent>
             </Select>
             <DateRangePicker
@@ -112,7 +112,7 @@ function RouteComponent() {
               onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'transactions.csv')}
             >
               <DownloadIcon className="size-4" />
-              Export CSV
+              Download CSV
             </Button>
           </PageHeaderActions>
         </div>
@@ -125,9 +125,9 @@ function RouteComponent() {
               <EmptyMedia variant="icon">
                 <VanIcon />
               </EmptyMedia>
-              <EmptyTitle>Loading Transactions...</EmptyTitle>
+              <EmptyTitle>Loading transactions...</EmptyTitle>
               <EmptyDescription>
-                Please wait while we load your transactions.
+                Getting your transactions ready...
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -143,9 +143,9 @@ function RouteComponent() {
                   <EmptyMedia variant="icon">
                     <CreditCardIcon />
                   </EmptyMedia>
-                  <EmptyTitle>No Transactions Yet</EmptyTitle>
+                  <EmptyTitle>No transactions yet</EmptyTitle>
                   <EmptyDescription>
-                    It looks like there haven't been any transactions yet.
+                    Your sales and purchases will appear here.
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
@@ -197,8 +197,8 @@ function RouteComponent() {
                 variant="outline"
                 onClick={() => loadMoreTransactions(50)}
               >
-                Load More
-              </Button>
+                  Show more
+                </Button>
             </Activity>
           </div>
         )}

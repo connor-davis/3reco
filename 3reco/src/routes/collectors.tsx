@@ -419,24 +419,24 @@ function CreateCollectorDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button className="w-full" />}>
         <PlusIcon />
-        Create Collector
+        Add Collector
       </DialogTrigger>
       <DialogContent className="w-screen max-w-screen-md flex max-h-[90vh] flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Create collector</DialogTitle>
+          <DialogTitle>Add collector</DialogTitle>
           <DialogDescription>
-            Add a managed collector record for future collection transactions.
+            Save a collector's details so you can use them in future collections.
           </DialogDescription>
         </DialogHeader>
         <form
           className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
           onSubmit={form.handleSubmit((values) =>
             toast.promise(createCollector(values), {
-              loading: 'Creating collector...',
+              loading: 'Adding collector...',
               success: () => {
                 form.reset();
                 setOpen(false);
-                return 'Collector created.';
+                return 'Collector added.';
               },
               error: getErrorDetails,
             })
@@ -446,7 +446,7 @@ function CreateCollectorDialog() {
             <CollectorFormFields form={form} idPrefix="create-collector" />
           </div>
           <DialogFooter className="shrink-0" showCloseButton>
-            <Button type="submit">Create collector</Button>
+            <Button type="submit">Add collector</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -637,8 +637,8 @@ function RouteComponent() {
         </div>
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
-            title="Manage collectors"
-            description="Create, update, search, and remove managed collectors."
+            title="Collectors"
+            description="Search, add, or update collector details."
           >
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -681,7 +681,7 @@ function RouteComponent() {
                 <EmptyDescription>
                   {search
                     ? 'Try adjusting your search.'
-                    : 'Create your first managed collector to use in future collections.'}
+                    : 'Add your first collector so you can use them in collections.'}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

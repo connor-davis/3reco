@@ -135,7 +135,7 @@ function RouteComponent() {
         {canRequest && cart.length > 0 && (
           <div className="flex w-full items-center justify-end gap-2 text-sm text-muted-foreground sm:ml-auto sm:w-auto">
             <ShoppingCartIcon className="size-4" />
-            {cart.length} item{cart.length !== 1 ? 's' : ''} in request
+              {cart.length} item{cart.length !== 1 ? 's' : ''} selected
           </div>
         )}
       </div>
@@ -149,9 +149,9 @@ function RouteComponent() {
                   <EmptyMedia variant="icon">
                     <StoreIcon />
                   </EmptyMedia>
-                  <EmptyTitle>No Listings</EmptyTitle>
+                  <EmptyTitle>Nothing for sale yet</EmptyTitle>
                   <EmptyDescription>
-                    This seller has no active stock listings.
+                    This seller has not listed any stock yet.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -182,13 +182,13 @@ function RouteComponent() {
                       className="w-full sm:w-auto"
                       onClick={() => removeFromCart(item._id)}
                     >
-                      <MinusIcon className="size-3" /> Remove
-                    </Button>
-                  ) : (
+                       <MinusIcon className="size-3" /> Remove
+                     </Button>
+                   ) : (
                     canRequest && <Button size="sm" className="w-full sm:w-auto" onClick={() => addToCart(item)}>
-                      <PlusIcon className="size-3" /> Add to Request
-                    </Button>
-                  )}
+                       <PlusIcon className="size-3" /> Add to request
+                     </Button>
+                   )}
                 </div>
               );
             })}
@@ -208,14 +208,14 @@ function RouteComponent() {
                   transactionId={reviewableTransactions[0]._id}
                   sellerName={sellerName}
                 >
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto">Leave a Review</Button>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">Leave a review</Button>
                 </ReviewDialog>
               )}
             </div>
 
             {reviews && reviews.length === 0 && (
-              <p className="text-sm text-muted-foreground">No reviews yet. Be the first!</p>
-            )}
+               <p className="text-sm text-muted-foreground">No reviews yet. Be the first to leave one.</p>
+             )}
 
             {reviews && reviews.map((review) => (
               <div key={review._id} className="flex flex-col gap-1 p-3 border rounded-xl">
@@ -246,7 +246,7 @@ function RouteComponent() {
 
             {reviewsStatus === 'CanLoadMore' && (
               <Button variant="ghost" size="sm" onClick={() => loadMoreReviews(5)}>
-                Load more reviews
+                Show more reviews
               </Button>
             )}
           </div>
@@ -254,7 +254,7 @@ function RouteComponent() {
 
         {canRequest && cart.length > 0 && (
           <div className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto rounded-xl border bg-muted/30 p-4 lg:w-72">
-            <Label className="text-sm font-semibold">Request Summary</Label>
+            <Label className="text-sm font-semibold">Selected items</Label>
             <div className="flex flex-col gap-2">
               {cart.map((item) => (
                 <div
@@ -269,23 +269,23 @@ function RouteComponent() {
               ))}
             </div>
             <div className="border-t pt-2 flex items-center justify-between text-sm font-medium">
-              <span>Est. Total</span>
+              <span>Estimated total</span>
               <span>R{cartTotal.toFixed(2)}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              The seller will confirm weights and final price.
+              The seller will confirm the final weight and price.
             </p>
             <Button onClick={handleSubmit} disabled={submitted}>
-              Send Request
+              Send request
             </Button>
             <Button variant="outline" onClick={handleClear}>
-              Clear Cart
+              Clear selection
             </Button>
             <Link
               to="/market/outgoing"
               className="text-xs text-center text-muted-foreground hover:underline"
             >
-              View Outgoing Requests
+              View sent requests
             </Link>
           </div>
         )}

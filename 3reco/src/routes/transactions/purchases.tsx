@@ -82,8 +82,8 @@ function RouteComponent() {
             onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'purchases.csv')}
           >
             <DownloadIcon className="size-4" />
-            Export CSV
-          </Button>
+              Download CSV
+            </Button>
         </div>
       </div>
 
@@ -94,9 +94,9 @@ function RouteComponent() {
               <EmptyMedia variant="icon">
                 <VanIcon />
               </EmptyMedia>
-              <EmptyTitle>Loading Purchases...</EmptyTitle>
+              <EmptyTitle>Loading purchases...</EmptyTitle>
               <EmptyDescription>
-                Please wait while we load your purchases.
+                Getting your purchases ready...
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -112,9 +112,9 @@ function RouteComponent() {
                   <EmptyMedia variant="icon">
                     <CreditCardIcon />
                   </EmptyMedia>
-                  <EmptyTitle>No Purchases Yet</EmptyTitle>
+                  <EmptyTitle>No purchases yet</EmptyTitle>
                   <EmptyDescription>
-                    Transactions where you are the buyer will appear here.
+                    Purchases you make will appear here.
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
@@ -161,8 +161,8 @@ function RouteComponent() {
 
             <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>
               <Button variant="outline" onClick={() => loadMore(50)}>
-                Load More
-              </Button>
+                  Show more
+                </Button>
             </Activity>
           </div>
         )}

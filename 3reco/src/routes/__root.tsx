@@ -59,10 +59,10 @@ const RootLayout = () => {
       <div className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 bg-background text-foreground">
         <div className="flex items-center gap-3">
           <Spinner className="text-primary" />
-          <Label className="text-muted-foreground">
+              <Label className="text-muted-foreground">
             {isProvisioningUser
-              ? 'Preparing your account...'
-              : 'Loading user profile...'}
+              ? 'Setting up your account...'
+              : 'Getting your profile ready...'}
           </Label>
         </div>
       </div>
@@ -75,7 +75,7 @@ const RootLayout = () => {
           <div className="flex items-center gap-3">
             <Spinner className="text-primary" />
             <Label className="text-muted-foreground">
-              Loading authentication...
+              Signing you in...
             </Label>
           </div>
         </div>

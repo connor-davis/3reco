@@ -276,7 +276,7 @@ function RouteComponent() {
             value="profile-information"
             className="border-b px-3 last:border-b-0"
           >
-            <AccordionTrigger>Profile Information</AccordionTrigger>
+            <AccordionTrigger>Personal Details</AccordionTrigger>
             <AccordionContent>
               <form
                 className="flex flex-col w-full gap-3 p-1"
@@ -295,7 +295,7 @@ function RouteComponent() {
                       ].join(' '),
                     }),
                     {
-                      loading: 'Saving your profile information...',
+                        loading: 'Saving your details...',
                       error: (error: Error) => {
                         if (error instanceof ConvexError) {
                           return {
@@ -312,7 +312,7 @@ function RouteComponent() {
                       success: () => {
                         profileForm.reset({});
 
-                        return 'Profile information saved successfully!';
+                        return 'Your details have been saved.';
                       },
                     }
                   )
@@ -360,7 +360,7 @@ function RouteComponent() {
                                   </div>
                                 }
                               />
-                              <TooltipContent>Click To Change</TooltipContent>
+                              <TooltipContent>Change photo</TooltipContent>
                             </Tooltip>
 
                             <DialogContent>
@@ -372,9 +372,8 @@ function RouteComponent() {
                                   }}
                                 />
                                 <Field data-invalid={fieldState.invalid}>
-                                  <FieldLabel>Choose Image</FieldLabel>
+                                  <FieldLabel>Profile Photo</FieldLabel>
                                   <Input
-                                    placeholder="https://example.com/my-avatar.png"
                                     type="file"
                                     accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
                                     onChange={(e) => {
@@ -391,9 +390,8 @@ function RouteComponent() {
                                     }}
                                   />
                                   <FieldDescription>
-                                    Choose a profile image from your device.
-                                    Supported formats: PNG, JPEG, JPG, WEBP,
-                                    GIF.
+                                    Choose a photo from your device. PNG, JPG,
+                                    WEBP, and GIF files work best.
                                   </FieldDescription>
                                   {fieldState.invalid && (
                                     <FieldError errors={[fieldState.error]} />
@@ -414,21 +412,21 @@ function RouteComponent() {
                       render={({ field, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
                           <FieldLabel htmlFor="form-complete-profile-first-name">
-                            First Name
+                            First name
                           </FieldLabel>
                           <Input
                             {...field}
                             value={field.value ?? ''}
                             id="form-complete-profile-first-name"
                             aria-invalid={fieldState.invalid}
-                            placeholder="First Name"
+                            placeholder="First name"
                             autoComplete="given-name"
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />
                           )}
                           <FieldDescription>
-                            Please enter your first name.
+                            Enter your first name.
                           </FieldDescription>
                         </Field>
                       )}
@@ -440,21 +438,21 @@ function RouteComponent() {
                       render={({ field, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
                           <FieldLabel htmlFor="form-complete-profile-last-name">
-                            Last Name
+                            Last name
                           </FieldLabel>
                           <Input
                             {...field}
                             value={field.value ?? ''}
                             id="form-complete-profile-last-name"
                             aria-invalid={fieldState.invalid}
-                            placeholder="Last Name"
+                            placeholder="Last name"
                             autoComplete="family-name"
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />
                           )}
                           <FieldDescription>
-                            Please enter your last name.
+                            Enter your last name.
                           </FieldDescription>
                         </Field>
                       )}
@@ -467,20 +465,20 @@ function RouteComponent() {
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
                         <FieldLabel htmlFor="form-complete-profile-id-number">
-                          ID Number
+                           ID number
                         </FieldLabel>
                         <Input
                           {...field}
                           value={field.value ?? ''}
                           id="form-complete-profile-id-number"
                           aria-invalid={fieldState.invalid}
-                          placeholder="ID Number"
+                           placeholder="ID number"
                         />
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
                         <FieldDescription>
-                          Please enter your South African ID number.
+                           Enter your South African ID number.
                         </FieldDescription>
                       </Field>
                     )}
@@ -492,20 +490,20 @@ function RouteComponent() {
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
                         <FieldLabel htmlFor="form-complete-profile-phone">
-                          Phone Number
+                           Phone number
                         </FieldLabel>
                         <Input
                           {...field}
                           value={field.value ?? ''}
                           id="form-complete-profile-phone"
                           aria-invalid={fieldState.invalid}
-                          placeholder="Phone Number"
+                           placeholder="Phone number"
                         />
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
                         <FieldDescription>
-                          Please enter your phone number.
+                           Enter the best number to reach you on.
                         </FieldDescription>
                       </Field>
                     )}
@@ -513,7 +511,7 @@ function RouteComponent() {
                 </FieldGroup>
 
                 <Button type="submit" className="w-full">
-                  Save Information
+                  Save details
                 </Button>
               </form>
             </AccordionContent>
@@ -524,7 +522,7 @@ function RouteComponent() {
               value="business-information"
               className="border-b px-3 last:border-b-0"
             >
-              <AccordionTrigger>Business Information</AccordionTrigger>
+                <AccordionTrigger>Business Details</AccordionTrigger>
               <AccordionContent>
                 <form
                   className="flex flex-col w-full gap-3 p-1"
@@ -537,7 +535,7 @@ function RouteComponent() {
                           values.businessRegistrationNumber,
                       }),
                       {
-                        loading: 'Saving your business information...',
+                          loading: 'Saving your business details...',
                         error: (error: Error) => {
                           if (error instanceof ConvexError) {
                             return {
@@ -554,7 +552,7 @@ function RouteComponent() {
                         success: () => {
                           businessProfileForm.reset({});
 
-                          return 'Business information saved successfully!';
+                            return 'Your business details have been saved.';
                         },
                       }
                     )
@@ -567,21 +565,21 @@ function RouteComponent() {
                       render={({ field, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
                           <FieldLabel htmlFor="form-complete-profile-business-name">
-                            Business Name
+                             Business name
                           </FieldLabel>
                           <Input
                             {...field}
                             value={field.value ?? ''}
                             id="form-complete-profile-business-name"
                             aria-invalid={fieldState.invalid}
-                            placeholder="Business Name"
+                             placeholder="Business name"
                             autoComplete="name"
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />
                           )}
                           <FieldDescription>
-                            Please enter your business's name.
+                             Enter your business name.
                           </FieldDescription>
                         </Field>
                       )}
@@ -593,21 +591,21 @@ function RouteComponent() {
                       render={({ field, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
                           <FieldLabel htmlFor="form-complete-profile-business-registration-number">
-                            Business Registration Number
+                             Business registration number
                           </FieldLabel>
                           <Input
                             {...field}
                             value={field.value ?? ''}
                             id="form-complete-profile-business-registration-number"
                             aria-invalid={fieldState.invalid}
-                            placeholder="Business Registration Number"
+                             placeholder="Business registration number"
                             autoComplete="name"
                           />
                           {fieldState.invalid && (
                             <FieldError errors={[fieldState.error]} />
                           )}
                           <FieldDescription>
-                            Please enter your business's registration number.
+                             Enter your business registration number.
                           </FieldDescription>
                         </Field>
                       )}
@@ -615,8 +613,8 @@ function RouteComponent() {
                   </FieldGroup>
 
                   <Button type="submit" className="w-full">
-                    Save Information
-                  </Button>
+                     Save details
+                   </Button>
                 </form>
               </AccordionContent>
             </AccordionItem>
@@ -639,7 +637,7 @@ function RouteComponent() {
                 />
 
                 <Button type="submit" className="w-full">
-                  Save Information
+                  Save details
                 </Button>
               </form>
             </AccordionContent>
@@ -649,7 +647,7 @@ function RouteComponent() {
             value="location-information"
             className="border-b px-3 last:border-b-0"
           >
-            <AccordionTrigger>Location Information</AccordionTrigger>
+            <AccordionTrigger>Address</AccordionTrigger>
             <AccordionContent>
               <form
                 className="flex flex-col w-full gap-3 p-1"
@@ -663,7 +661,7 @@ function RouteComponent() {
                       province: values.province,
                     }),
                     {
-                      loading: 'Saving your location information...',
+                        loading: 'Saving your address...',
                       error: (error: Error) => {
                         if (error instanceof ConvexError) {
                           return {
@@ -680,7 +678,7 @@ function RouteComponent() {
                       success: () => {
                         locationForm.reset({});
 
-                        return 'Location information saved successfully!';
+                            return 'Your address has been saved.';
                       },
                     }
                   )
@@ -693,21 +691,21 @@ function RouteComponent() {
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
                         <FieldLabel htmlFor="form-complete-profile-street-address">
-                          Street Address
+                           Street address
                         </FieldLabel>
                         <Input
                           {...field}
                           value={field.value ?? ''}
                           id="form-complete-profile-street-address"
                           aria-invalid={fieldState.invalid}
-                          placeholder="Street Address"
+                           placeholder="Street address"
                           autoComplete="street-address"
                         />
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
                         <FieldDescription>
-                          Please enter your street address.
+                           Enter your street address.
                         </FieldDescription>
                       </Field>
                     )}
@@ -733,7 +731,7 @@ function RouteComponent() {
                           <FieldError errors={[fieldState.error]} />
                         )}
                         <FieldDescription>
-                          Please enter your city.
+                           Enter your city or town.
                         </FieldDescription>
                       </Field>
                     )}
@@ -745,7 +743,7 @@ function RouteComponent() {
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
                         <FieldLabel htmlFor="form-complete-profile-area-code">
-                          Area/Postal Code
+                           Postal code
                         </FieldLabel>
                         <Input
                           {...field}
@@ -760,14 +758,14 @@ function RouteComponent() {
                             )
                           }
                           aria-invalid={fieldState.invalid}
-                          placeholder="Area/Postal Code"
+                           placeholder="Postal code"
                           autoComplete="postal-code"
                         />
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
                         <FieldDescription>
-                          Please enter your postal code.
+                           Enter your postal code.
                         </FieldDescription>
                       </Field>
                     )}
@@ -814,7 +812,7 @@ function RouteComponent() {
                           <FieldError errors={[fieldState.error]} />
                         )}
                         <FieldDescription>
-                          Please select your province.
+                           Select your province.
                         </FieldDescription>
                       </Field>
                     )}
@@ -822,7 +820,7 @@ function RouteComponent() {
                 </FieldGroup>
 
                 <Button type="submit" className="w-full">
-                  Save Information
+                  Save details
                 </Button>
               </form>
             </AccordionContent>

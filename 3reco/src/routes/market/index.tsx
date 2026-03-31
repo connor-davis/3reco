@@ -90,7 +90,7 @@ function RouteComponent() {
         </div>
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
-            title="Filter market"
+            title="Marketplace"
             description="Search sellers and materials."
           >
             <div className="relative">
@@ -111,7 +111,7 @@ function RouteComponent() {
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon"><StoreIcon /></EmptyMedia>
-              <EmptyTitle>Loading Stores...</EmptyTitle>
+              <EmptyTitle>Finding sellers...</EmptyTitle>
             </EmptyHeader>
           </Empty>
         </div>
@@ -123,11 +123,11 @@ function RouteComponent() {
             <Empty>
               <EmptyHeader>
                 <EmptyMedia variant="icon"><StoreIcon /></EmptyMedia>
-                <EmptyTitle>{search ? 'No results found' : 'No Stores Yet'}</EmptyTitle>
+                <EmptyTitle>{search ? 'No results found' : 'No sellers yet'}</EmptyTitle>
                 <EmptyDescription>
                   {search
-                    ? `No stores match "${search}".`
-                    : 'No businesses have listed stock for sale yet.'}
+                    ? `No sellers match "${search}".`
+                    : 'No one is selling stock right now.'}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

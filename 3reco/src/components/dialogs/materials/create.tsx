@@ -75,9 +75,9 @@ export default function CreateMaterialDialog({
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Material</DialogTitle>
+          <DialogTitle>Add material</DialogTitle>
           <DialogDescription>
-            Please fill out the fields below to create a new material.
+            Add the main details for this material.
           </DialogDescription>
         </DialogHeader>
 
@@ -93,7 +93,7 @@ export default function CreateMaterialDialog({
                 price: values.price,
               }),
               {
-                loading: 'Creating the new material...',
+                loading: 'Adding material...',
                 error: (error: Error) => {
                   if (error instanceof ConvexError) {
                     return {
@@ -111,7 +111,7 @@ export default function CreateMaterialDialog({
                   materialForm.reset({});
                   setOpen(false);
 
-                  return 'The new material has been created.';
+                  return 'Material added.';
                 },
               }
             )
@@ -124,19 +124,19 @@ export default function CreateMaterialDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-name">
-                    Name
+                    Material name
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-name"
                     aria-invalid={fieldState.invalid}
-                    placeholder="Name"
+                    placeholder="Material name"
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a name for the new material.
+                    Give this material a clear name.
                   </FieldDescription>
                 </Field>
               )}
@@ -148,20 +148,20 @@ export default function CreateMaterialDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-carbon-factor">
-                    Carbon Factor
+                     Carbon footprint
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-carbon-factor"
                     aria-invalid={fieldState.invalid}
-                    placeholder="Carbon Factor"
+                     placeholder="Carbon footprint"
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a Carbon Factor for the new material, e.g. 10.5
-                  </FieldDescription>
+                     Enter the carbon value, for example 10.5.
+                   </FieldDescription>
                 </Field>
               )}
             />
@@ -172,20 +172,20 @@ export default function CreateMaterialDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-gw-code">
-                    GW Code
+                     Waste code
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-gw-code"
                     aria-invalid={fieldState.invalid}
-                    placeholder="GW Code"
+                     placeholder="Waste code"
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a GW Code for the new material, e.g. GW 100
-                  </FieldDescription>
+                     Use the waste code, for example GW 100.
+                   </FieldDescription>
                 </Field>
               )}
             />
@@ -196,13 +196,13 @@ export default function CreateMaterialDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="form-create-material-price">
-                    Price
+                    Price per kg
                   </FieldLabel>
                   <Input
                     {...field}
                     id="form-create-material-price"
                     aria-invalid={fieldState.invalid}
-                    placeholder="Price"
+                    placeholder="Price per kg"
                     type="number"
                     step={0.01}
                     onChange={(event) =>
@@ -213,14 +213,14 @@ export default function CreateMaterialDialog({
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Please enter a price for the new material, e.g. 10.5
+                    Enter the price per kg, for example 10.5.
                   </FieldDescription>
                 </Field>
               )}
             />
           </FieldGroup>
 
-          <Button type="submit">Create Material</Button>
+           <Button type="submit">Add material</Button>
         </form>
       </DialogContent>
     </Dialog>

@@ -34,7 +34,7 @@ export default function CollectionItemContent({
   const totalWeight = items.reduce((s, i) => s + i.weight, 0);
   const totalValue = items.reduce((s, i) => s + i.weight * i.price, 0);
   const titleText = items.length > 1
-    ? `${material?.name ?? '...'} +${items.length - 1} more`
+    ? `${material?.name ?? '...'} +${items.length - 1} more item${items.length - 1 === 1 ? '' : 's'}`
     : (material?.name ?? '...');
 
   return (

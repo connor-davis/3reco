@@ -44,10 +44,9 @@ export default function RemoveMaterialByIdDialog({
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Are you absolutely sure?</DialogTitle>
+          <DialogTitle>Delete this material?</DialogTitle>
           <DialogDescription>
-            This action cannot be undone. This will permanently delete the
-            material record from the database.
+            This will permanently remove the material from your list.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter showCloseButton>
@@ -55,7 +54,7 @@ export default function RemoveMaterialByIdDialog({
             variant="destructive"
             onClick={() =>
               toast.promise(removeMaterial({ _id }), {
-                loading: 'Removing the material...',
+                loading: 'Deleting material...',
                 error: (error: Error) => {
                   if (error instanceof ConvexError) {
                     return {
@@ -72,12 +71,12 @@ export default function RemoveMaterialByIdDialog({
                 success: () => {
                   setOpen(false);
 
-                  return 'The material has been removed.';
+                  return 'Material deleted.';
                 },
               })
             }
           >
-            Remove Material
+            Delete material
           </Button>
         </DialogFooter>
       </DialogContent>

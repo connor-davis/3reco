@@ -26,8 +26,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 const lineChartConfig = {
-  c2bCount: { label: 'C2B', color: 'var(--chart-1)' },
-  b2bCount: { label: 'B2B', color: 'var(--chart-2)' },
+  c2bCount: { label: 'Collector to business', color: 'var(--chart-1)' },
+  b2bCount: { label: 'Business to business', color: 'var(--chart-2)' },
 } satisfies ChartConfig;
 
 const barChartConfig = {
@@ -73,29 +73,29 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">C2B Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">Collector sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.c2bCount}</p>
-            <p className="text-xs text-muted-foreground">Collector to business</p>
+            <p className="text-xs text-muted-foreground">From collectors to businesses</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">B2B Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">Business sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.b2bCount}</p>
-            <p className="text-xs text-muted-foreground">Business to business</p>
+            <p className="text-xs text-muted-foreground">From one business to another</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">C2B Volume</CardTitle>
+            <CardTitle className="text-sm font-medium">Collector volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -106,7 +106,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">B2B Volume</CardTitle>
+            <CardTitle className="text-sm font-medium">Business volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -125,7 +125,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
               <TrendingUpIcon className="size-4" />
               Daily Transactions (30 days)
             </CardTitle>
-            <CardDescription>C2B vs B2B transaction counts per day</CardDescription>
+            <CardDescription>Collector sales compared with business-to-business sales each day</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">

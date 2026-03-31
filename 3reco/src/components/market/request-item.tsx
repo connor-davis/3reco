@@ -28,7 +28,7 @@ const statusVariant: Record<
 
 const statusLabel: Record<RequestDoc['status'], string> = {
   pending: 'Pending',
-  offered: 'Offer Made',
+  offered: 'Offer sent',
   accepted: 'Accepted',
   rejected: 'Rejected',
   cancelled: 'Cancelled',
@@ -59,10 +59,10 @@ export default function RequestItem({
             <>
               <ItemTitle>
                 {material?.name ?? <Skeleton className="w-32 h-3 inline-block" />}
-                {itemCount > 1 && ` +${itemCount - 1} more`}
+                {itemCount > 1 && ` +${itemCount - 1} more item${itemCount - 1 === 1 ? '' : 's'}`}
               </ItemTitle>
               <ItemDescription>
-                {perspective === 'buyer' ? 'Seller' : 'Buyer'}:{' '}
+                {perspective === 'buyer' ? 'Selling business' : 'Buyer'}:{' '}
                 {counterparty?.businessName ?? counterparty?.firstName ?? '...'}
               </ItemDescription>
             </>
