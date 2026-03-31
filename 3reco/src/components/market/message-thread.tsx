@@ -70,7 +70,7 @@ export default function MessageThread({
               className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
             >
               <div
-                className={`flex flex-col gap-1 max-w-[78%] sm:max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}
+                className={`flex max-w-[min(85%,20rem)] flex-col gap-1 sm:max-w-xs lg:max-w-md ${isOwn ? 'items-end' : 'items-start'}`}
               >
                 <div
                   className={`rounded-2xl px-4 py-2.5 text-sm ${
@@ -89,7 +89,7 @@ export default function MessageThread({
         <div ref={bottomRef} />
       </div>
 
-      <div className="flex gap-2 items-end">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <Textarea
           placeholder="Type a message..."
           value={content}
@@ -100,9 +100,14 @@ export default function MessageThread({
               handleSend();
             }
           }}
-          className="flex-1"
+          className="min-h-24 flex-1 sm:min-h-20"
         />
-        <Button onClick={handleSend} size="icon" disabled={!content.trim()}>
+        <Button
+          onClick={handleSend}
+          size="icon"
+          disabled={!content.trim()}
+          className="self-end sm:self-auto"
+        >
           <SendIcon />
         </Button>
       </div>

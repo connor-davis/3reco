@@ -38,7 +38,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
 
   if (stats === undefined) {
     return (
-      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
@@ -60,7 +60,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
   return (
     <div className="flex flex-col gap-6">
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -105,7 +105,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           <CardDescription>Material weight sold per day (kg)</CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={lineChartConfig} className="h-56 w-full">
+          <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">
             <LineChart data={dailyTransactions}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
@@ -140,8 +140,32 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           {latestTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No sales yet.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <>
+              <div className="space-y-3 md:hidden">
+                {latestTransactions.map((t) => (
+                  <div key={t._id} className="rounded-lg border p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{t.materialName}</p>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(getEffectiveTransactionDate(t)), 'dd/MM/yyyy')}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">{t.buyerName}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Weight</p>
+                        <p>{t.weight.toFixed(1)} kg</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Price</p>
+                        <p>R {t.price.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground">
                     <th className="py-3 px-3 text-left font-medium">Material</th>
@@ -164,8 +188,9 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

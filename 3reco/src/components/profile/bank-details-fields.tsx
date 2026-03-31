@@ -66,7 +66,7 @@ export function BankDetailsFields<T extends FieldValues>({
 
   return (
     <div className="space-y-4">
-      <div className="flex w-full h-auto justify-center">
+      <div className="flex h-auto w-full justify-center px-1 sm:px-0">
         <Card className="relative w-full max-w-[640px] border border-primary/20 bg-linear-to-br from-primary/15 via-card to-amber-100/10 shadow-sm">
           <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/25 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-14 left-6 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
@@ -82,8 +82,8 @@ export function BankDetailsFields<T extends FieldValues>({
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="relative flex min-h-52 flex-col justify-between space-y-0 pb-6">
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted-foreground">
+          <CardContent className="relative flex min-h-48 flex-col justify-between space-y-0 pb-6 sm:min-h-52">
+            <div className="flex flex-col gap-1 text-xs uppercase tracking-[0.3em] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <span>{bankName ?? 'Your bank'}</span>
               <span>{accountType ?? 'Account type'}</span>
             </div>
@@ -92,12 +92,12 @@ export function BankDetailsFields<T extends FieldValues>({
               <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
                 Account number
               </div>
-              <div className="font-mono text-xl tracking-[0.32em] text-foreground">
+              <div className="break-all font-mono text-lg tracking-[0.24em] text-foreground sm:text-xl sm:tracking-[0.32em]">
                 {formatAccountNumberPreview(accountNumber)}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+            <div className="grid grid-cols-1 gap-3 text-xs uppercase tracking-[0.22em] text-muted-foreground sm:grid-cols-2 sm:gap-4">
               <div className="space-y-1">
                 <div>Account holder</div>
                 <div className="truncate text-sm font-medium tracking-[0.08em] text-foreground">
@@ -105,7 +105,7 @@ export function BankDetailsFields<T extends FieldValues>({
                 </div>
               </div>
 
-              <div className="space-y-1 text-right">
+              <div className="space-y-1 sm:text-right">
                 <div>Branch code</div>
                 <div className="font-mono text-sm font-medium tracking-[0.18em] text-foreground">
                   {branchCode ?? '000000'}

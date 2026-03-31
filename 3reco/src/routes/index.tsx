@@ -23,7 +23,7 @@ function Index() {
   if (user === undefined) {
     return (
       <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-        <div className="flex items-center w-full h-auto gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <Skeleton className="h-6 w-32" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -38,12 +38,12 @@ function Index() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <BackButton />
           <Label className="text-lg">Dashboard</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
             title="Filter dashboard"
             description="Choose the date range used across the dashboard."

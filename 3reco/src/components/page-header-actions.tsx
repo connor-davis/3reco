@@ -66,7 +66,7 @@ export default function PageHeaderActions({
         </SheetTrigger>
         <SheetContent
           side="right"
-          className="w-[min(24rem,calc(100vw-1rem))] max-w-none p-0"
+          className="w-[calc(100vw-1rem)] max-w-sm p-0 sm:w-[min(24rem,calc(100vw-3rem))]"
         >
           <div className="flex h-full min-h-0 flex-col">
             <SheetHeader className="border-b px-4 py-3">
@@ -90,7 +90,7 @@ export default function PageHeaderActions({
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[min(24rem,calc(100vw-1rem))] max-w-none p-0"
+        className="w-[min(20rem,calc(100vw-1rem))] max-w-none p-0 sm:w-[min(24rem,calc(100vw-3rem))]"
       >
         <PageHeaderActionsPanel
           title={title}

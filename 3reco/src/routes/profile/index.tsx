@@ -258,13 +258,12 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <BackButton />
 
           <Label className="text-lg">Your Profile</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto"></div>
       </div>
 
       <div className="flex flex-col w-full h-full overflow-y-auto">

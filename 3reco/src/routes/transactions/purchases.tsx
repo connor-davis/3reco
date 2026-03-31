@@ -68,12 +68,12 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <BackButton />
           <Label className="text-lg">Purchases</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto flex-wrap">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <DateRangePicker value={dateRange} onChange={setDateRange} align="end" />
           <Button
             variant="outline"

@@ -127,13 +127,13 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <BackButton />
-          <Label className="text-lg">{sellerName}</Label>
+          <Label className="truncate text-lg">{sellerName}</Label>
         </div>
         {canRequest && cart.length > 0 && (
-          <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex w-full items-center justify-end gap-2 text-sm text-muted-foreground sm:ml-auto sm:w-auto">
             <ShoppingCartIcon className="size-4" />
             {cart.length} item{cart.length !== 1 ? 's' : ''} in request
           </div>
@@ -164,9 +164,9 @@ function RouteComponent() {
               return (
                 <div
                   key={item._id}
-                  className="flex items-center justify-between p-3 border rounded-xl"
+                  className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex flex-col">
+                  <div className="flex min-w-0 flex-col">
                     <span className="font-medium text-sm">
                       {material?.name ?? 'Unknown'}
                     </span>
@@ -179,12 +179,13 @@ function RouteComponent() {
                     canRequest && <Button
                       variant="outline"
                       size="sm"
+                      className="w-full sm:w-auto"
                       onClick={() => removeFromCart(item._id)}
                     >
                       <MinusIcon className="size-3" /> Remove
                     </Button>
                   ) : (
-                    canRequest && <Button size="sm" onClick={() => addToCart(item)}>
+                    canRequest && <Button size="sm" className="w-full sm:w-auto" onClick={() => addToCart(item)}>
                       <PlusIcon className="size-3" /> Add to Request
                     </Button>
                   )}
@@ -194,8 +195,8 @@ function RouteComponent() {
 
           {/* Reviews section */}
           <div className="flex flex-col gap-3 mt-2 border-t pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
                 <StarIcon className="size-4 text-muted-foreground" />
                 <Label className="text-sm font-semibold">Reviews</Label>
                 {averageRating && (
@@ -207,7 +208,7 @@ function RouteComponent() {
                   transactionId={reviewableTransactions[0]._id}
                   sellerName={sellerName}
                 >
-                  <Button variant="outline" size="sm">Leave a Review</Button>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">Leave a Review</Button>
                 </ReviewDialog>
               )}
             </div>
@@ -218,7 +219,7 @@ function RouteComponent() {
 
             {reviews && reviews.map((review) => (
               <div key={review._id} className="flex flex-col gap-1 p-3 border rounded-xl">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm font-medium">{review.reviewerName}</span>
                   <div className="flex items-center gap-2">
                     <Stars rating={review.rating} size="sm" />
@@ -252,15 +253,15 @@ function RouteComponent() {
         </div>
 
         {canRequest && cart.length > 0 && (
-          <div className="flex flex-col gap-3 lg:w-72 border rounded-xl p-4 bg-muted/30 shrink-0 overflow-y-auto">
+          <div className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto rounded-xl border bg-muted/30 p-4 lg:w-72">
             <Label className="text-sm font-semibold">Request Summary</Label>
             <div className="flex flex-col gap-2">
               {cart.map((item) => (
                 <div
                   key={item.stockId}
-                  className="flex items-center justify-between text-sm"
+                  className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <span className="truncate max-w-32">{item.materialName}</span>
+                  <span className="max-w-full truncate sm:max-w-32">{item.materialName}</span>
                   <span className="text-muted-foreground shrink-0">
                     {item.weight}kg x R{item.price}
                   </span>
@@ -292,4 +293,3 @@ function RouteComponent() {
     </div>
   );
 }
-

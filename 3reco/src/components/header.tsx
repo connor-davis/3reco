@@ -36,28 +36,30 @@ export default function Header() {
   const { data } = useQuery(convexQuery(api.users.currentUser));
 
   return (
-    <div className="flex items-center w-full h-auto gap-2 px-3 py-2">
+    <div className="flex w-full flex-wrap items-center gap-2 px-3 py-2 sm:flex-nowrap">
       <SidebarTrigger className="md:hidden shrink-0" />
       <div className="flex items-center gap-2">
-        <img src="/logo.png" className="w-10 sm:w-14" />
+        <img src="/logo.png" alt="3rEco" className="w-10 sm:w-14" />
       </div>
 
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="ml-auto flex min-w-0 items-center gap-2">
         <NotificationTray />
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <div className="flex items-center gap-2 cursor-pointer">
-              <Avatar>
+            <div className="flex min-w-0 items-center gap-2 cursor-pointer">
+              <Avatar className="shrink-0">
                 <AvatarImage src={data?.image} />
                 <AvatarFallback>
                   {data?.firstName?.charAt(0) ?? data?.email?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden sm:flex flex-col">
+              <div className="hidden min-w-0 sm:flex sm:flex-col">
                 <Activity mode={data?.name ? 'visible' : 'hidden'}>
-                  <Label>{data?.name}</Label>
+                  <Label className="truncate">{data?.name}</Label>
                 </Activity>
-                <Label className="text-muted-foreground">{data?.email}</Label>
+                <Label className="max-w-[10rem] truncate text-muted-foreground md:max-w-[14rem]">
+                  {data?.email}
+                </Label>
               </div>
             </div>
           </DropdownMenuTrigger>

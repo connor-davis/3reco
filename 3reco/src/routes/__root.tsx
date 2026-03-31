@@ -56,7 +56,7 @@ const RootLayout = () => {
 
   if (isLoadingUser || (isAuthenticated && (isProvisioningUser || !user)))
     return (
-      <div className="flex flex-col w-screen h-screen items-center justify-center gap-3 bg-background text-foreground">
+      <div className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 bg-background text-foreground">
         <div className="flex items-center gap-3">
           <Spinner className="text-primary" />
           <Label className="text-muted-foreground">
@@ -89,7 +89,7 @@ const RootLayout = () => {
               : 'hidden'
           }
         >
-          <div className="flex flex-col w-screen h-screen text-foreground bg-background overflow-hidden">
+          <div className="flex min-h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
             <CompleteProfileGuard />
           </div>
         </Activity>
@@ -100,15 +100,15 @@ const RootLayout = () => {
               : 'hidden'
           }
         >
-          <div className="flex flex-col w-screen h-screen text-foreground bg-background">
+          <div className="flex min-h-dvh w-full flex-col bg-background text-foreground">
             <SidebarProvider>
               <AppSidebar />
 
-              <div className="flex flex-col w-full h-screen overflow-hidden">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <Header />
 
-                <SidebarInset className="flex flex-col w-full h-full bg-transparent p-2 sm:pr-3 sm:pb-3 overflow-hidden">
-                  <div className="flex flex-col w-full h-full p-2 sm:p-3 gap-3 bg-background rounded-xl overflow-hidden">
+                <SidebarInset className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-transparent p-2 sm:p-3">
+                  <div className="flex h-full w-full min-w-0 flex-col gap-3 overflow-hidden rounded-xl bg-background p-2 sm:p-3">
                     <Outlet />
                   </div>
                 </SidebarInset>
@@ -119,7 +119,7 @@ const RootLayout = () => {
       </Authenticated>
 
       <Unauthenticated>
-        <div className="flex flex-col w-screen h-screen text-foreground bg-background">
+        <div className="flex min-h-dvh w-full flex-col bg-background text-foreground">
           <AuthenticationGuard />
         </div>
       </Unauthenticated>

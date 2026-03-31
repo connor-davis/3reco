@@ -83,12 +83,12 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <BackButton />
           <Label className="text-lg">Browse Market</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
             title="Filter market"
             description="Search sellers and materials."
@@ -134,7 +134,7 @@ function RouteComponent() {
           </div>
         )}
         {filtered && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pb-2">
+          <div className="grid grid-cols-1 gap-3 overflow-y-auto pb-2 sm:grid-cols-2 xl:grid-cols-4">
             {filtered.map((seller) => (
               <SellerCard key={seller._id} seller={seller} />
             ))}

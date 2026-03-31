@@ -630,16 +630,16 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex items-center w-full h-auto gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <BackButton />
           <Label className="text-lg">Collectors</Label>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
-            <PageHeaderActions
-              title="Manage collectors"
-              description="Create, update, search, and remove managed collectors."
-            >
+        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
+          <PageHeaderActions
+            title="Manage collectors"
+            description="Create, update, search, and remove managed collectors."
+          >
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <Input

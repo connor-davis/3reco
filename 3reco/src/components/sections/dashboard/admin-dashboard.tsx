@@ -48,7 +48,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
 
   if (stats === undefined) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
@@ -70,7 +70,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">C2B Transactions</CardTitle>
@@ -117,7 +117,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
         {/* Daily transactions line chart */}
         <Card>
           <CardHeader>
@@ -128,7 +128,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
             <CardDescription>C2B vs B2B transaction counts per day</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={lineChartConfig} className="h-56 w-full">
+            <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">
               <LineChart data={dailyTransactions}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
@@ -171,7 +171,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
             <CardDescription>Current volume held in the system per material (kg)</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={barChartConfig} className="h-56 w-full">
+            <ChartContainer config={barChartConfig} className="h-48 w-full sm:h-56">
               <BarChart data={materialVolume} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11 }} />
@@ -203,8 +203,39 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           {latestTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No transactions yet.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <>
+              <div className="space-y-3 md:hidden">
+                {latestTransactions.map((t) => (
+                  <div key={t._id} className="rounded-lg border p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Badge variant={t.type === 'c2b' ? 'default' : 'secondary'}>
+                        {t.type.toUpperCase()}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(getEffectiveTransactionDate(t)), 'dd/MM/yyyy')}
+                      </span>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <p className="text-sm font-medium">{t.materialName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {t.sellerName} to {t.buyerName}
+                      </p>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Weight</p>
+                        <p>{t.weight.toFixed(1)} kg</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Price</p>
+                        <p>R {t.price.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground">
                     <th className="py-3 px-3 text-left font-medium">Type</th>
@@ -235,8 +266,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
