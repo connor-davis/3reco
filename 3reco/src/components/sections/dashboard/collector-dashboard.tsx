@@ -17,6 +17,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import { getEffectiveTransactionDate } from '@/lib/transactions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const lineChartConfig = {
@@ -158,7 +159,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
                       <td className="py-2 px-3 text-right">R {t.price.toFixed(2)}</td>
                       <td className="py-2 px-3">{t.buyerName}</td>
                       <td className="py-2 px-3 text-right whitespace-nowrap">
-                        {format(new Date(t._creationTime), 'dd MMM yyyy')}
+                        {format(new Date(getEffectiveTransactionDate(t)), 'dd/MM/yyyy')}
                       </td>
                     </tr>
                   ))}

@@ -18,6 +18,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '../ui/collapsible';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { Label } from '../ui/label';
 import {
   Sidebar,
@@ -32,7 +38,182 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarTrigger,
+  useSidebar,
 } from '../ui/sidebar';
+
+function CollapsedSidebarGroup({
+  tooltip,
+  icon,
+  label,
+  children,
+}: {
+  tooltip: string;
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <DropdownMenu>
+      <SidebarMenuItem>
+        <DropdownMenuTrigger
+          render={<SidebarMenuButton tooltip={tooltip} />}
+        >
+          {icon}
+          <Label>{label}</Label>
+        </DropdownMenuTrigger>
+      </SidebarMenuItem>
+      <DropdownMenuContent align="start" side="right" className="min-w-48">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function MarketNavigation() {
+  const { state } = useSidebar();
+
+  if (state === 'collapsed') {
+    return (
+      <CollapsedSidebarGroup
+        tooltip="Market"
+        icon={<StoreIcon />}
+        label="Market"
+      >
+        <Link to="/market">
+          <DropdownMenuItem>
+            <EyeIcon className="size-4" />
+            <span>Browse</span>
+          </DropdownMenuItem>
+        </Link>
+        <TypeGuard type={['business']}>
+          <Link to="/market/incoming">
+            <DropdownMenuItem>
+              <InboxIcon className="size-4" />
+              <span>Incoming</span>
+            </DropdownMenuItem>
+          </Link>
+          <Link to="/market/outgoing">
+            <DropdownMenuItem>
+              <SendIcon className="size-4" />
+              <span>Outgoing</span>
+            </DropdownMenuItem>
+          </Link>
+        </TypeGuard>
+      </CollapsedSidebarGroup>
+    );
+  }
+
+  return (
+    <Collapsible defaultOpen className="group/market">
+      <SidebarMenuItem>
+        <CollapsibleTrigger
+          render={
+            <SidebarMenuButton tooltip="Market">
+              <StoreIcon />
+              <Label>Market</Label>
+              <ChevronRightIcon className="ml-auto transition-transform group-data-[state=open]/market:rotate-90" />
+            </SidebarMenuButton>
+          }
+        />
+
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            <SidebarMenuSubItem>
+              <Link to="/market">
+                <SidebarMenuSubButton>
+                  <EyeIcon className="size-3.5" />
+                  <Label>Browse</Label>
+                </SidebarMenuSubButton>
+              </Link>
+            </SidebarMenuSubItem>
+            <TypeGuard type={['business']}>
+              <SidebarMenuSubItem>
+                <Link to="/market/incoming">
+                  <SidebarMenuSubButton>
+                    <InboxIcon className="size-3.5" />
+                    <Label>Incoming</Label>
+                  </SidebarMenuSubButton>
+                </Link>
+              </SidebarMenuSubItem>
+              <SidebarMenuSubItem>
+                <Link to="/market/outgoing">
+                  <SidebarMenuSubButton>
+                    <SendIcon className="size-3.5" />
+                    <Label>Outgoing</Label>
+                  </SidebarMenuSubButton>
+                </Link>
+              </SidebarMenuSubItem>
+            </TypeGuard>
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
+function BusinessTransactionsNavigation() {
+  const { state } = useSidebar();
+
+  if (state === 'collapsed') {
+    return (
+      <CollapsedSidebarGroup
+        tooltip="Transactions"
+        icon={<CreditCardIcon />}
+        label="Transactions"
+      >
+        <Link to="/transactions/purchases">
+          <DropdownMenuItem>
+            <VanIcon className="size-4" />
+            <span>Purchases</span>
+          </DropdownMenuItem>
+        </Link>
+        <Link to="/transactions/sales">
+          <DropdownMenuItem>
+            <PackageIcon className="size-4" />
+            <span>Sales</span>
+          </DropdownMenuItem>
+        </Link>
+      </CollapsedSidebarGroup>
+    );
+  }
+
+  return (
+    <Collapsible defaultOpen className="group/transactions">
+      <SidebarMenuItem>
+        <CollapsibleTrigger
+          render={
+            <SidebarMenuButton tooltip="Transactions">
+              <CreditCardIcon />
+              <Label>Transactions</Label>
+              <ChevronRightIcon className="ml-auto transition-transform group-data-[state=open]/transactions:rotate-90" />
+            </SidebarMenuButton>
+          }
+        />
+
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            <SidebarMenuSubItem>
+              <Link to="/transactions/purchases">
+                <SidebarMenuSubButton>
+                  <VanIcon className="size-3.5" />
+                  <Label>Purchases</Label>
+                </SidebarMenuSubButton>
+              </Link>
+            </SidebarMenuSubItem>
+            <SidebarMenuSubItem>
+              <Link to="/transactions/sales">
+                <SidebarMenuSubButton>
+                  <PackageIcon className="size-3.5" />
+                  <Label>Sales</Label>
+                </SidebarMenuSubButton>
+              </Link>
+            </SidebarMenuSubItem>
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
 
 export default function AppSidebar() {
   return (
@@ -53,50 +234,7 @@ export default function AppSidebar() {
             </Link>
 
             <TypeGuard type={['admin', 'staff', 'business']}>
-              <Collapsible defaultOpen className="group/market">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger
-                    render={
-                      <SidebarMenuButton tooltip="Market">
-                        <StoreIcon />
-                        <Label>Market</Label>
-                        <ChevronRightIcon className="ml-auto transition-transform group-data-[state=open]/market:rotate-90" />
-                      </SidebarMenuButton>
-                    }
-                  />
-
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      <SidebarMenuSubItem>
-                        <Link to="/market">
-                          <SidebarMenuSubButton>
-                            <EyeIcon className="size-3.5" />
-                            <Label>Browse</Label>
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                      <TypeGuard type={['business']}>
-                        <SidebarMenuSubItem>
-                          <Link to="/market/incoming">
-                            <SidebarMenuSubButton>
-                              <InboxIcon className="size-3.5" />
-                              <Label>Incoming</Label>
-                            </SidebarMenuSubButton>
-                          </Link>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <Link to="/market/outgoing">
-                            <SidebarMenuSubButton>
-                              <SendIcon className="size-3.5" />
-                              <Label>Outgoing</Label>
-                            </SidebarMenuSubButton>
-                          </Link>
-                        </SidebarMenuSubItem>
-                      </TypeGuard>
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              <MarketNavigation />
             </TypeGuard>
 
             <TypeGuard type={['business']}>
@@ -110,12 +248,23 @@ export default function AppSidebar() {
               </Link>
             </TypeGuard>
 
-            <TypeGuard type={['business']}>
+            <TypeGuard type={['admin', 'staff', 'business']}>
               <Link to="/collections">
                 <SidebarMenuItem>
                   <SidebarMenuButton tooltip="Collections">
                     <VanIcon />
                     <Label>Collections</Label>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </Link>
+            </TypeGuard>
+
+            <TypeGuard type={['admin', 'staff', 'business']}>
+              <Link to="/collectors">
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="Collectors">
+                    <UsersIcon />
+                    <Label>Collectors</Label>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </Link>
@@ -133,40 +282,7 @@ export default function AppSidebar() {
             </TypeGuard>
 
             <TypeGuard type={['business']}>
-              <Collapsible defaultOpen className="group/transactions">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger
-                    render={
-                      <SidebarMenuButton tooltip="Transactions">
-                        <CreditCardIcon />
-                        <Label>Transactions</Label>
-                        <ChevronRightIcon className="ml-auto transition-transform group-data-[state=open]/transactions:rotate-90" />
-                      </SidebarMenuButton>
-                    }
-                  />
-
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      <SidebarMenuSubItem>
-                        <Link to="/transactions/purchases">
-                          <SidebarMenuSubButton>
-                            <VanIcon className="size-3.5" />
-                            <Label>Purchases</Label>
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <Link to="/transactions/sales">
-                          <SidebarMenuSubButton>
-                            <PackageIcon className="size-3.5" />
-                            <Label>Sales</Label>
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              <BusinessTransactionsNavigation />
             </TypeGuard>
 
             <TypeGuard type={['admin', 'staff']}>

@@ -1,5 +1,6 @@
 import { defineSchema } from 'convex/server';
 import users from './users';
+import collectors from './collectors';
 import materials from './materials';
 import stock from './stock';
 import transactions from './transactions';
@@ -11,6 +12,7 @@ import storeReviews from './storeReviews';
 
 export default defineSchema({
   users,
+  collectors,
   materials,
   stock,
   transactions,

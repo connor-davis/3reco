@@ -1,18 +1,18 @@
 # =============================================================================
 #  3reco – Docker Compose local override
 #
-#  Merges with docker-compose.yml to run the full stack on localhost with no
-#  DNS setup and no TLS certificates required.
+#  Merges with docker-compose.yml to run the full stack on localhost using the
+#  host-exposed ports from the base compose file.
 #
 #  Single command:
 #    docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 #
 #  Services will be available at:
-#    http://app.localhost
-#    http://docs.localhost
-#    http://convex.localhost
-#    http://convex-site.localhost
-#    http://convex-dashboard.localhost
+#    http://localhost:3000   frontend
+#    http://localhost:3001   docs
+#    http://localhost:3210   Convex backend API + WebSocket
+#    http://localhost:3211   Convex site / HTTP actions
+#    http://localhost:6791   Convex dashboard
 # =============================================================================
 
 services:
@@ -21,27 +21,18 @@ services:
     build:
       args:
         # Bake localhost URLs into the JS bundle
-        VITE_CONVEX_URL: http://convex.localhost
-        VITE_CONVEX_AUTH_DOMAIN: http://convex-site.localhost
+        VITE_CONVEX_URL: http://localhost:3210
+        VITE_CONVEX_AUTH_DOMAIN: http://localhost:3211
 
   convex-backend:
     environment:
       - INSTANCE_NAME=3reco-local
       # Dummy secret — fine for local dev, never use in production
       - INSTANCE_SECRET=0000000000000000000000000000000000000000000000000000000000000001
-      - CONVEX_CLOUD_ORIGIN=http://convex.localhost
-      - CONVEX_SITE_ORIGIN=http://convex-site.localhost
+      - CONVEX_CLOUD_ORIGIN=http://localhost:3210
+      - CONVEX_SITE_ORIGIN=http://localhost:3211
       - DO_NOT_REQUIRE_SSL=true
 
   convex-dashboard:
     environment:
-      - NEXT_PUBLIC_DEPLOYMENT_URL=http://convex.localhost
-
-  caddy:
-    environment:
-      - DOMAIN=localhost   # not used by Caddyfile.local but keeps compose happy
-    volumes:
-      # Override the Caddyfile with the HTTP-only localhost version
-      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
+      - NEXT_PUBLIC_DEPLOYMENT_URL=http://localhost:3210

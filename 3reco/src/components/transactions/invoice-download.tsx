@@ -3,16 +3,20 @@ import { convexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
-import { formatTransactionDateForFileName } from '@/lib/transactions';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { formatTransactionDateForFileName } from '@/lib/transactions';
 import { useConvex } from 'convex/react';
 import { DownloadIcon, FileImageIcon, Loader2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 const GENERATION_GRACE_MS = 5 * 60 * 1000; // 5 minutes
 type ReceiptAttachment = NonNullable<Doc<'transactions'>['receiptAttachments']>[number];
@@ -104,71 +108,184 @@ export function ReceiptDownloadButton({
   attachments: ReceiptAttachment[];
 }) {
   const convex = useConvex();
+  const [open, setOpen] = useState(false);
   const [loadingStorageId, setLoadingStorageId] = useState<Id<'_storage'> | null>(null);
+  const [selectedStorageId, setSelectedStorageId] = useState<Id<'_storage'>>(attachments[0].storageId);
+  const [previewUrls, setPreviewUrls] = useState<Partial<Record<Id<'_storage'>, string>>>({});
 
   if (attachments.length === 0) {
     return null;
   }
 
-  const downloadReceipt = async (attachment: ReceiptAttachment) => {
+  const selectedAttachment = useMemo(
+    () =>
+      attachments.find((attachment) => attachment.storageId === selectedStorageId) ?? attachments[0],
+    [attachments, selectedStorageId]
+  );
+
+  const getReceiptUrl = async (attachment: ReceiptAttachment) => {
     setLoadingStorageId(attachment.storageId);
 
     try {
-      const url = await convex.query(api.transactions.getReceiptDownloadUrl, {
+      return await convex.query(api.transactions.getReceiptDownloadUrl, {
         transactionId,
         storageId: attachment.storageId,
       });
-
-      if (!url) {
-        return;
-      }
-
-      await downloadFile(url, attachment.fileName);
     } finally {
       setLoadingStorageId(null);
     }
   };
 
-  const isLoading = loadingStorageId !== null;
-  if (attachments.length === 1) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isLoading}
-        onClick={() => downloadReceipt(attachments[0])}
-      >
-        {isLoading ? (
-          <Loader2Icon className="size-3 animate-spin" />
-        ) : (
-          <FileImageIcon className="size-3" />
-        )}
-        <span className="hidden sm:inline">Receipt</span>
-      </Button>
-    );
-  }
+  const downloadReceipt = async (attachment: ReceiptAttachment) => {
+    try {
+      const url = await getReceiptUrl(attachment);
+      if (!url) {
+        toast.error('Unable to download receipt.');
+        return;
+      }
+
+      await downloadFile(url, attachment.fileName);
+    } catch (error) {
+      toast.error('Unable to download receipt.', {
+        description: error instanceof Error ? error.message : 'Please try again.',
+      });
+    }
+  };
+
+  useEffect(() => {
+    setSelectedStorageId((current) => {
+      if (attachments.some((attachment) => attachment.storageId === current)) {
+        return current;
+      }
+
+      return attachments[0].storageId;
+    });
+  }, [attachments]);
+
+  useEffect(() => {
+    if (!open || previewUrls[selectedAttachment.storageId]) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const url = await getReceiptUrl(selectedAttachment);
+        if (!url || cancelled) {
+          if (!cancelled && !url) {
+            toast.error('Unable to load receipt preview.');
+          }
+          return;
+        }
+
+        setPreviewUrls((current) => ({
+          ...current,
+          [selectedAttachment.storageId]: url,
+        }));
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        toast.error('Unable to load receipt preview.', {
+          description: error instanceof Error ? error.message : 'Please try again.',
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getReceiptUrl, open, previewUrls, selectedAttachment]);
+
+  const isLoading = loadingStorageId === selectedAttachment.storageId;
+  const selectedPreviewUrl = previewUrls[selectedAttachment.storageId];
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="sm" disabled={isLoading} />}>
-        {isLoading ? (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={<Button variant="outline" size="sm" disabled={loadingStorageId !== null} />}
+      >
+        {loadingStorageId !== null ? (
           <Loader2Icon className="size-3 animate-spin" />
         ) : (
           <FileImageIcon className="size-3" />
         )}
         <span className="hidden sm:inline">Receipt</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-56">
-        {attachments.map((attachment) => (
-          <DropdownMenuItem
-            key={attachment.storageId}
-            onClick={() => downloadReceipt(attachment)}
-          >
-            <FileImageIcon className="size-4" />
-            <span className="truncate">{attachment.fileName}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </DialogTrigger>
+      <DialogContent className="w-screen max-w-screen-lg p-0 sm:max-w-screen-lg">
+        <div className="flex min-h-0 flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Receipt preview</DialogTitle>
+            <DialogDescription>
+              View the receipt in-app and download the original image when needed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-4 px-6 pb-6">
+            {attachments.length > 1 ? (
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((attachment, index) => (
+                  <Button
+                    key={attachment.storageId}
+                    type="button"
+                    variant={
+                      attachment.storageId === selectedAttachment.storageId ? 'default' : 'outline'
+                    }
+                    size="sm"
+                    className="max-w-full"
+                    onClick={() => setSelectedStorageId(attachment.storageId)}
+                  >
+                    <span className="truncate">
+                      Receipt {index + 1}
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="rounded-3xl border bg-muted/30 p-3">
+              <div className="flex min-h-[50vh] items-center justify-center overflow-hidden rounded-2xl bg-background">
+                {isLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2Icon className="size-4 animate-spin" />
+                    <span>Loading receipt...</span>
+                  </div>
+                ) : selectedPreviewUrl ? (
+                  <img
+                    src={selectedPreviewUrl}
+                    alt={selectedAttachment.fileName}
+                    className="max-h-[70vh] w-full object-contain"
+                  />
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Preparing receipt preview...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate font-medium">{selectedAttachment.fileName}</p>
+              <p className="text-sm text-muted-foreground">
+                {(selectedAttachment.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+
+            <DialogFooter showCloseButton className="shrink-0">
+              <Button
+                type="button"
+                onClick={() => void downloadReceipt(selectedAttachment)}
+                disabled={loadingStorageId !== null}
+              >
+                <DownloadIcon className="size-4" />
+                Download receipt
+              </Button>
+            </DialogFooter>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

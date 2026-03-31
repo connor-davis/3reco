@@ -1,7 +1,10 @@
 import BackButton from '@/components/back-button';
-import TransactionUserDetails from '@/components/transactions/user-details';
+import TransactionPartyDetails from '@/components/transactions/party-details';
 import TransactionItemContent from '@/components/transactions/item-content';
-import { InvoiceDownloadButton } from '@/components/transactions/invoice-download';
+import {
+  InvoiceDownloadButton,
+  ReceiptDownloadButton,
+} from '@/components/transactions/invoice-download';
 import PageHeaderActions from '@/components/page-header-actions';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -24,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { ChevronRightIcon, CreditCardIcon, DownloadIcon, VanIcon } from 'lucide-react';
@@ -159,18 +163,28 @@ function RouteComponent() {
                   <TransactionItemContent _id={transaction._id} />
 
                   <ItemActions>
+                    {transaction.type === 'c2b' ? (
+                      <ReceiptDownloadButton
+                        transactionId={transaction._id}
+                        attachments={transaction.receiptAttachments ?? []}
+                      />
+                    ) : null}
                     <InvoiceDownloadButton
                       transactionId={transaction._id}
                       creationTime={transaction._creationTime}
                       transactionDate={effectiveDate}
                     />
-                    <TransactionUserDetails _id={transaction.sellerId} />
+                    <TransactionPartyDetails
+                      {...(transaction.type === 'c2b'
+                        ? { collectorId: transaction.sellerId as Id<'collectors'> }
+                        : { userId: transaction.sellerId as Id<'users'> })}
+                    />
                     <ChevronRightIcon className="size-4" />
-                    <TransactionUserDetails _id={transaction.buyerId} />
+                    <TransactionPartyDetails userId={transaction.buyerId} />
                   </ItemActions>
 
                   <ItemFooter>
-                    {format(new Date(effectiveDate), 'PPP p')}
+                    {format(new Date(effectiveDate), 'dd/MM/yyyy')}
                   </ItemFooter>
                 </Item>
               );

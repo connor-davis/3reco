@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
 
@@ -104,8 +105,15 @@ export const addReview = mutation({
     if (existing)
       throw new ConvexError({ name: 'AlreadyReviewed', message: 'You have already reviewed this transaction.' });
 
+    if (transaction.type === 'c2b') {
+      throw new ConvexError({
+        name: 'Invalid Input',
+        message: 'Collector transactions cannot be reviewed.',
+      });
+    }
+
     await ctx.db.insert('storeReviews', {
-      sellerId: transaction.sellerId,
+      sellerId: transaction.sellerId as Id<'users'>,
       buyerId,
       transactionId,
       rating,

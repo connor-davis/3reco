@@ -36,19 +36,15 @@ const ALLOWED_RECEIPT_CONTENT_TYPES = new Set([
   'image/png',
   'image/jpeg',
   'image/jpg',
-  'image/webp',
-  'image/gif',
 ]);
 const RECEIPT_FILE_EXTENSION_BY_TYPE: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
 };
 
 export default defineTable({
-  sellerId: v.id('users'),
+  sellerId: v.union(v.id('users'), v.id('collectors')),
   buyerId: v.id('users'),
   items: v.array(txItemValidator),
   totalPrice: v.number(),
@@ -84,9 +80,20 @@ function canReadAllTransactions(userType: string | undefined) {
 function sanitizeTransaction<T extends { receiptUploadBindings?: unknown }>(
   transaction: T
 ) {
-  const { receiptUploadBindings: _receiptUploadBindings, ...publicTransaction } =
-    transaction;
+  const publicTransaction = { ...transaction };
+  delete publicTransaction.receiptUploadBindings;
   return publicTransaction;
+}
+
+function getTransactionSellerUserId(transaction: {
+  sellerId: Id<'users'> | Id<'collectors'>;
+  type: 'c2b' | 'b2b';
+}): Id<'users'> | undefined {
+  if (transaction.type === 'c2b') {
+    return undefined;
+  }
+
+  return transaction.sellerId as Id<'users'>;
 }
 
 function mergeTransactionsByNewestFirst<
@@ -146,18 +153,21 @@ async function listVisibleTransactions(ctx: QueryCtx, userId: Id<'users'>, userT
     return await ctx.db.query('transactions').order('desc').collect();
   }
 
-  const [asBuyer, asSeller] = await Promise.all([
-    ctx.db
-      .query('transactions')
-      .withIndex('by_buyerId', (query) => query.eq('buyerId', userId))
-      .collect(),
+  const sellerQueries = await Promise.all([
     ctx.db
       .query('transactions')
       .withIndex('by_sellerId', (query) => query.eq('sellerId', userId))
       .collect(),
   ]);
 
-  return mergeTransactionsByNewestFirst([...asBuyer, ...asSeller]);
+  const [asBuyer] = await Promise.all([
+    ctx.db
+      .query('transactions')
+      .withIndex('by_buyerId', (query) => query.eq('buyerId', userId))
+      .collect(),
+  ]);
+
+  return mergeTransactionsByNewestFirst([...asBuyer, ...sellerQueries.flat()]);
 }
 
 async function getAuthorizedTransaction(
@@ -176,7 +186,7 @@ async function getAuthorizedTransaction(
 
   if (
     !canReadAllTransactions(user.type) &&
-    transaction.sellerId !== userId &&
+    getTransactionSellerUserId(transaction) !== userId &&
     transaction.buyerId !== userId
   ) {
     throw unauthorizedError();
@@ -191,7 +201,7 @@ async function getParticipantTransaction(
 ) {
   const { transaction, userId } = await getAuthorizedTransaction(ctx, transactionId);
 
-  if (transaction.sellerId !== userId && transaction.buyerId !== userId) {
+  if (getTransactionSellerUserId(transaction) !== userId && transaction.buyerId !== userId) {
     throw unauthorizedError();
   }
 
@@ -347,13 +357,15 @@ export const listSalesWithPagination = query({
     const userId = user._id;
 
     if (user.type === 'collector' || user.type === 'business') {
-      const results = await ctx.db
+      const transactions = await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
           q.eq('sellerId', userId).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
-        .paginate(paginationOpts);
+        .collect();
+
+      const results = paginateResults(transactions, paginationOpts);
 
       return {
         ...results,
@@ -579,13 +591,21 @@ export const getReceiptDownloadUrl = query({
 
 export const collectorToBusinessSale = mutation({
   args: {
-    collectorId: v.id('users'),
+    collectorId: v.id('collectors'),
     items: v.array(txItemValidator),
     collectionDay: v.optional(v.string()),
     collectionDate: v.optional(v.number()),
   },
   handler: async (ctx, { collectorId, items, collectionDay, collectionDate }) => {
     const businessId = await getCurrentUserIdOrThrow(ctx);
+    const collector = await ctx.db.get(collectorId);
+
+    if (!collector) {
+      throw new ConvexError({
+        name: 'Not Found',
+        message: 'The collector was not found.',
+      });
+    }
 
     // Validate all items
     for (const item of items) {
@@ -604,12 +624,12 @@ export const collectorToBusinessSale = mutation({
     }
 
     const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
-    const transactionId = await ctx.db.insert('transactions', {
-      buyerId: businessId,
-      sellerId: collectorId,
-      items,
-      totalPrice,
-      type: 'c2b',
+      const transactionId = await ctx.db.insert('transactions', {
+        buyerId: businessId,
+        sellerId: collectorId,
+        items,
+        totalPrice,
+        type: 'c2b',
       ...(collectionDay === undefined ? {} : { collectionDay }),
       ...(collectionDate === undefined ? {} : { collectionDate }),
     });

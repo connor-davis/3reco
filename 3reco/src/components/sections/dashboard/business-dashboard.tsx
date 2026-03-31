@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getEffectiveTransactionDate } from '@/lib/transactions';
 import {
   ChartContainer,
   ChartTooltip,
@@ -221,7 +222,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
                       <td className="py-2 px-3 text-right">R {t.price.toFixed(2)}</td>
                       <td className="py-2 px-3">{t.counterpartyName}</td>
                       <td className="py-2 px-3 text-right whitespace-nowrap">
-                        {format(new Date(t._creationTime), 'dd MMM yyyy')}
+                        {format(new Date(getEffectiveTransactionDate(t)), 'dd/MM/yyyy')}
                       </td>
                     </tr>
                   ))}

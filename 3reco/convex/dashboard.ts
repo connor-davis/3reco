@@ -1,5 +1,6 @@
 import { ConvexError, v } from 'convex/values';
-import { query } from './_generated/server';
+import { query, type QueryCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 import { txByType } from './aggregates';
 import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
 
@@ -49,6 +50,30 @@ function getUserDisplayName(
   return user.email ?? 'Unknown';
 }
 
+async function getSellerDisplayName(
+  ctx: QueryCtx,
+  transaction: {
+    sellerId: Id<'users'> | Id<'collectors'>;
+    type: 'c2b' | 'b2b';
+  }
+) {
+  if (transaction.type === 'c2b') {
+    const collector = await ctx.db.get(
+      'collectors',
+      transaction.sellerId as Id<'collectors'>
+    );
+    if (collector) {
+      return collector.name || collector.email || collector.phone;
+    }
+
+    return 'Unknown';
+  }
+
+  const sellerId = transaction.sellerId as Id<'users'>;
+  const seller = await ctx.db.get('users', sellerId);
+  return getUserDisplayName(seller);
+}
+
 export const adminStats = query({
   args: {
     from: v.optional(v.number()),
@@ -89,16 +114,17 @@ export const adminStats = query({
         const totalWeight = items.reduce((s, i) => s + i.weight, 0);
         const firstMaterial = items.length > 0 ? await ctx.db.get('materials', items[0].materialId) : null;
         const materialName = items.length === 1 ? (firstMaterial?.name ?? 'Unknown') : `${items.length} materials`;
-        const seller = await ctx.db.get('users', t.sellerId);
         const buyer = await ctx.db.get('users', t.buyerId);
         return {
           _id: t._id,
           _creationTime: t._creationTime,
           type: t.type,
+          collectionDay: t.collectionDay,
+          collectionDate: t.collectionDate,
           weight: totalWeight,
           price: t.totalPrice,
           materialName,
-          sellerName: getUserDisplayName(seller),
+          sellerName: await getSellerDisplayName(ctx, t),
           buyerName: getUserDisplayName(buyer),
         };
       })
@@ -187,15 +213,20 @@ export const businessStats = query({
         const firstMaterial = items.length > 0 ? await ctx.db.get('materials', items[0].materialId) : null;
         const materialName = items.length === 1 ? (firstMaterial?.name ?? 'Unknown') : `${items.length} materials`;
         const isBuy = t.buyerId === userId;
-        const counterparty = await ctx.db.get('users', isBuy ? t.sellerId : t.buyerId);
+        const counterpartyName =
+          isBuy && t.type === 'c2b'
+            ? await getSellerDisplayName(ctx, t)
+            : getUserDisplayName(await ctx.db.get('users', t.buyerId));
         return {
           _id: t._id,
           _creationTime: t._creationTime,
           type: t.type,
+          collectionDay: t.collectionDay,
+          collectionDate: t.collectionDate,
           weight: totalWeight,
           price: t.totalPrice,
           materialName,
-          counterpartyName: getUserDisplayName(counterparty),
+          counterpartyName,
           direction: isBuy ? ('buy' as const) : ('sell' as const),
         };
       })
@@ -281,6 +312,9 @@ export const collectorStats = query({
         return {
           _id: t._id,
           _creationTime: t._creationTime,
+          type: t.type,
+          collectionDay: t.collectionDay,
+          collectionDate: t.collectionDate,
           weight: totalWeight,
           price: t.totalPrice,
           materialName,

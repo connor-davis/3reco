@@ -20,13 +20,14 @@ import { Item, ItemActions, ItemFooter } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
 import { useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
+import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { DownloadIcon, VanIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Activity } from 'react';
-import TransactionUserDetails from '@/components/transactions/user-details';
+import TransactionPartyDetails from '@/components/transactions/party-details';
 import { useQuery } from 'convex/react';
 import { downloadCsv } from '@/lib/export-csv';
 import { getEffectiveTransactionDate } from '@/lib/transactions';
@@ -165,11 +166,13 @@ function RouteComponent() {
                       creationTime={collection._creationTime}
                       transactionDate={effectiveDate}
                     />
-                    <TransactionUserDetails _id={collection.sellerId} />
+                    <TransactionPartyDetails
+                      collectorId={collection.sellerId as Id<'collectors'>}
+                    />
                   </ItemActions>
 
                   <ItemFooter>
-                    {format(new Date(effectiveDate), 'PPP p')}
+                    {format(new Date(effectiveDate), 'dd/MM/yyyy')}
                   </ItemFooter>
                 </Item>
               );

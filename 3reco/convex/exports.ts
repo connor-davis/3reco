@@ -1,5 +1,6 @@
 import { ConvexError, v } from 'convex/values';
-import { query } from './_generated/server';
+import { query, type QueryCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 import {
   getEffectiveTransactionDate,
   getTransactionCollectionDay,
@@ -12,15 +13,28 @@ function formatTransactionDateForExport(transaction: {
   collectionDay?: string;
   collectionDate?: number;
 }) {
+  const formatTimestamp = (timestamp: number) =>
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Johannesburg',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(timestamp));
+
   if (transaction.type === 'c2b') {
+    if (transaction.collectionDate !== undefined) {
+      return formatTimestamp(transaction.collectionDate);
+    }
+
     const collectionDay = getTransactionCollectionDay(transaction);
 
     if (collectionDay) {
-      return `${collectionDay}T00:00:00.000+02:00`;
+      const [year, month, day] = collectionDay.split('-');
+      return `${day}/${month}/${year}`;
     }
   }
 
-  return new Date(getEffectiveTransactionDate(transaction)).toISOString();
+  return formatTimestamp(getEffectiveTransactionDate(transaction));
 }
 
 function getUserDisplayName(
@@ -30,6 +44,30 @@ function getUserDisplayName(
   if (user.businessName) return user.businessName;
   if (user.firstName) return `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`;
   return user.email ?? 'Unknown';
+}
+
+async function getSellerDisplayName(
+  ctx: QueryCtx,
+  transaction: {
+    sellerId: Id<'users'> | Id<'collectors'>;
+    type: 'c2b' | 'b2b';
+  }
+) {
+  if (transaction.type === 'c2b') {
+    const collector = await ctx.db.get(
+      'collectors',
+      transaction.sellerId as Id<'collectors'>
+    );
+    if (collector) {
+      return collector.name || collector.email || collector.phone;
+    }
+
+    return 'Unknown';
+  }
+
+  const sellerId = transaction.sellerId as Id<'users'>;
+
+  return getUserDisplayName(await ctx.db.get('users', sellerId));
 }
 
 /** All transactions — admin/staff only. */
@@ -51,7 +89,6 @@ export const exportTransactions = query({
 
     const expandedRows = [];
     for (const t of rows) {
-      const seller = await ctx.db.get('users', t.sellerId);
       const buyer = await ctx.db.get('users', t.buyerId);
       for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
@@ -62,7 +99,7 @@ export const exportTransactions = query({
           'Weight (kg)': item.weight,
           'Price per kg (R)': item.price,
           'Total (R)': +(item.price * item.weight).toFixed(2),
-          'Seller': getUserDisplayName(seller),
+          'Seller': await getSellerDisplayName(ctx, t),
           'Buyer': getUserDisplayName(buyer),
         });
       }
@@ -108,7 +145,6 @@ export const exportCollections = query({
 
     const expandedRows = [];
     for (const t of rows) {
-      const seller = await ctx.db.get('users', t.sellerId);
       const buyer = await ctx.db.get('users', t.buyerId);
       for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
@@ -118,7 +154,7 @@ export const exportCollections = query({
           'Weight (kg)': item.weight,
           'Price per kg (R)': item.price,
           'Total (R)': +(item.price * item.weight).toFixed(2),
-          'Collector': getUserDisplayName(seller),
+          'Collector': await getSellerDisplayName(ctx, t),
           'Business': getUserDisplayName(buyer),
         });
       }
@@ -151,7 +187,6 @@ export const exportMyPurchases = query({
 
     const expandedRows = [];
     for (const t of rows) {
-      const seller = await ctx.db.get('users', t.sellerId);
       for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         expandedRows.push({
@@ -161,7 +196,7 @@ export const exportMyPurchases = query({
           'Weight (kg)': item.weight,
           'Price per kg (R)': item.price,
           'Total (R)': +(item.price * item.weight).toFixed(2),
-          'Seller': getUserDisplayName(seller),
+          'Seller': await getSellerDisplayName(ctx, t),
         });
       }
     }
@@ -197,7 +232,7 @@ export const exportMySales = query({
       for (const item of t.items) {
         const material = await ctx.db.get('materials', item.materialId);
         expandedRows.push({
-          'Date': new Date(t._creationTime).toISOString(),
+          'Date': formatTransactionDateForExport(t),
           'Material': material?.name ?? '',
           'Weight (kg)': item.weight,
           'Price per kg (R)': item.price,

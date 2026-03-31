@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getEffectiveTransactionDate } from '@/lib/transactions';
 import {
   ChartContainer,
   ChartLegend,
@@ -229,7 +230,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
                       <td className="py-2 px-3">{t.sellerName}</td>
                       <td className="py-2 px-3">{t.buyerName}</td>
                       <td className="py-2 px-3 text-right whitespace-nowrap">
-                        {format(new Date(t._creationTime), 'dd MMM yyyy')}
+                        {format(new Date(getEffectiveTransactionDate(t)), 'dd/MM/yyyy')}
                       </td>
                     </tr>
                   ))}

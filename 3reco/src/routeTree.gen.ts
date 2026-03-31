@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as MaterialsRouteImport } from './routes/materials'
+import { Route as CollectorsRouteImport } from './routes/collectors'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -33,6 +34,11 @@ const StockRoute = StockRouteImport.update({
 const MaterialsRoute = MaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectorsRoute = CollectorsRouteImport.update({
+  id: '/collectors',
+  path: '/collectors',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollectionsRoute = CollectionsRouteImport.update({
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/collections': typeof CollectionsRoute
+  '/collectors': typeof CollectorsRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/collections': typeof CollectionsRoute
+  '/collectors': typeof CollectorsRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/collections': typeof CollectionsRoute
+  '/collectors': typeof CollectorsRoute
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/collections'
+    | '/collectors'
     | '/materials'
     | '/stock'
     | '/admin/users'
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/collections'
+    | '/collectors'
     | '/materials'
     | '/stock'
     | '/admin/users'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/collections'
+    | '/collectors'
     | '/materials'
     | '/stock'
     | '/admin/users'
@@ -211,6 +223,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   CollectionsRoute: typeof CollectionsRoute
+  CollectorsRoute: typeof CollectorsRoute
   MaterialsRoute: typeof MaterialsRoute
   StockRoute: typeof StockRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/materials'
       fullPath: '/materials'
       preLoaderRoute: typeof MaterialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collectors': {
+      id: '/collectors'
+      path: '/collectors'
+      fullPath: '/collectors'
+      preLoaderRoute: typeof CollectorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collections': {
@@ -339,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   CollectionsRoute: CollectionsRoute,
+  CollectorsRoute: CollectorsRoute,
   MaterialsRoute: MaterialsRoute,
   StockRoute: StockRoute,
   AdminUsersRoute: AdminUsersRoute,

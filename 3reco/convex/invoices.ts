@@ -1,5 +1,5 @@
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import {
   internalAction,
   internalMutation,
@@ -51,12 +51,42 @@ async function getParticipantTransaction(
   return transaction;
 }
 
+async function getInvoiceSeller(
+  ctx: QueryCtx,
+  transaction: {
+    sellerId: Id<'users'> | Id<'collectors'>;
+    type: 'c2b' | 'b2b';
+  }
+) {
+  if (transaction.type === 'c2b') {
+    return await ctx.db.get(
+      'collectors',
+      transaction.sellerId as Id<'collectors'>
+    );
+  }
+
+  const sellerId = transaction.sellerId as Id<'users'>;
+
+  return await ctx.db.get('users', sellerId);
+}
+
+function getSellerDisplayName(
+  seller: Doc<'users'> | Doc<'collectors'>
+): string {
+  if ('businessName' in seller) {
+    const sellerFullName = `${seller.firstName ?? ''} ${seller.lastName ?? ''}`.trim();
+    return seller.businessName ?? (sellerFullName || (seller.name ?? 'Unknown'));
+  }
+
+  return seller.name || seller.email || seller.phone || 'Unknown';
+}
+
 export const getTransactionData = internalQuery({
   args: { transactionId: v.id('transactions') },
   handler: async (ctx, { transactionId }) => {
     const transaction = await ctx.db.get('transactions', transactionId as Id<'transactions'>);
     if (!transaction) return null;
-    const seller = await ctx.db.get('users', transaction.sellerId);
+    const seller = await getInvoiceSeller(ctx, transaction);
     const buyer = await ctx.db.get('users', transaction.buyerId);
     const resolvedItems = await Promise.all(
       transaction.items.map(async (item) => {
@@ -120,8 +150,7 @@ export const generateForTransaction = internalAction({
     y -= 30;
 
     // ── Seller / Buyer ────────────────────────────────────────────────────────
-    const sellerFullName = `${seller.firstName ?? ''} ${seller.lastName ?? ''}`.trim();
-    const sellerName = seller.businessName ?? (sellerFullName || (seller.name ?? 'Unknown'));
+    const sellerName = getSellerDisplayName(seller);
     const buyerFullName = `${buyer.firstName ?? ''} ${buyer.lastName ?? ''}`.trim();
     const buyerName = buyer.businessName ?? (buyerFullName || (buyer.name ?? 'Unknown'));
     const payeeHasBankDetails = hasCompleteBankDetails(seller);

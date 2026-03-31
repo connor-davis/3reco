@@ -22,7 +22,6 @@ import { useRef } from 'react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { toast } from 'sonner';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Label } from '../ui/label';
 import {
   Select,
@@ -110,14 +109,11 @@ export default function CompleteProfileGuard() {
 
   const [tab, setTab] = useState<
     | 'basicInfo'
-    | 'businessOrCollector'
     | 'businessInfo'
     | 'bankInfo'
     | 'locationInfo'
   >('basicInfo');
-  const [profileType, setProfileType] = useState<'business' | 'collector'>(
-    user?.type === 'business' ? 'business' : 'collector'
-  );
+  const [profileType, setProfileType] = useState<'business'>('business');
 
   const updateUser = useConvexMutation(api.users.update);
 
@@ -272,7 +268,10 @@ export default function CompleteProfileGuard() {
                   updateUser({
                     _id: user._id,
                     name: [values.firstName, values.lastName].join(' '),
-                    type: 'collector',
+                    type:
+                      user.type === 'admin' || user.type === 'staff'
+                        ? user.type
+                        : 'business',
                     ...values,
                   }),
                   {
@@ -291,8 +290,8 @@ export default function CompleteProfileGuard() {
                       };
                     },
                     success: () => {
-                      setProfileType('collector');
-                      setTab('businessOrCollector');
+                      setProfileType('business');
+                      setTab('businessInfo');
 
                       return 'Your profile has been updated.';
                     },
@@ -449,41 +448,6 @@ export default function CompleteProfileGuard() {
         </div>
       </TabsContent>
 
-      <TabsContent value="businessOrCollector">
-        <div className="flex flex-col w-full h-full items-center justify-center gap-10">
-          <div className="flex flex-col gap-3 items-center w-full max-w-120">
-            <Avatar className="w-1/2 h-1/2 md:w-64 md:h-64">
-              <AvatarImage src={user.image} />
-              <AvatarFallback>{user.firstName?.charAt(0)}</AvatarFallback>
-            </Avatar>
-
-            <Label className="text-lg">Hello, {user.name}</Label>
-            <Label className="text-muted-foreground">
-              Are you a business or a collector?
-            </Label>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-3 w-full max-w-120">
-            <Button
-              onClick={() => {
-                setProfileType('business');
-                setTab('businessInfo');
-              }}
-            >
-              I'm A Business
-            </Button>
-            <Button
-              onClick={() => {
-                setProfileType('collector');
-                setTab('bankInfo');
-              }}
-            >
-              I'm A Collector
-            </Button>
-          </div>
-        </div>
-      </TabsContent>
-
       <TabsContent value="businessInfo">
         <div className="flex flex-col w-full h-full items-center justify-center gap-10">
           <form
@@ -601,13 +565,7 @@ export default function CompleteProfileGuard() {
             <div className="grid md:grid-cols-2 md:flex-row-reverse">
               <Button
                 type="button"
-                onClick={() =>
-                  setTab(
-                    profileType === 'business'
-                      ? 'businessInfo'
-                      : 'businessOrCollector'
-                  )
-                }
+                onClick={() => setTab('businessInfo')}
               >
                 Previous
               </Button>

@@ -16,6 +16,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Item,
   ItemActions,
@@ -25,6 +26,7 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -40,7 +42,15 @@ import type { Id } from '@convex/_generated/dataModel';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { ConvexError } from 'convex/values';
-import { CheckIcon, Loader2Icon, PlusIcon, TrashIcon, XIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import {
+  CalendarIcon,
+  CheckIcon,
+  Loader2Icon,
+  PlusIcon,
+  TrashIcon,
+  XIcon,
+} from 'lucide-react';
 import { type ChangeEvent, type ReactElement, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -148,7 +158,7 @@ const itemSchema = z.object({
 
 const collectionSchema = z.object({
   collectorId: z.string({ error: 'Please select a collector.' }),
-  collectionDate: z.string().optional(),
+  collectionDate: z.date().optional(),
   items: z.array(itemSchema).min(1, { error: 'At least one item is required.' }),
 });
 
@@ -162,7 +172,7 @@ export default function CreateCollectionDialog({
   const [receiptErrors, setReceiptErrors] = useState<string[]>([]);
 
   const materials = useConvexQuery(api.materials.list, {});
-  const collectors = useConvexQuery(api.users.listCollectors, {});
+  const collectors = useConvexQuery(api.collectors.listForSelection, {});
 
   const createCollection = useConvexMutation(
     api.transactions.collectorToBusinessSale
@@ -178,11 +188,11 @@ export default function CreateCollectionDialog({
 
   const form = useForm<CollectionFormValues>({
     resolver: zodResolver(collectionSchema),
-    defaultValues: {
-      collectorId: '',
-      collectionDate: '',
-      items: [{ materialId: '', weight: 0, price: 0 }],
-    },
+      defaultValues: {
+        collectorId: '',
+        collectionDate: undefined,
+        items: [{ materialId: '', weight: 0, price: 0 }],
+      },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -208,8 +218,11 @@ export default function CreateCollectionDialog({
       }
 
       const { transactionId } = await createCollection({
-        collectorId: values.collectorId as Id<'users'>,
-        collectionDay: parseCollectionDayInput(values.collectionDate),
+        collectorId: values.collectorId as Id<'collectors'>,
+        collectionDay: values.collectionDate
+          ? parseCollectionDayInput(values.collectionDate.toISOString())
+          : undefined,
+        collectionDate: values.collectionDate?.getTime(),
         items: values.items.map((item) => ({
           materialId: item.materialId as Id<'materials'>,
           weight: item.weight,
@@ -248,7 +261,7 @@ export default function CreateCollectionDialog({
     onSuccess: ({ attemptedReceiptCount, uploadFailures }) => {
       form.reset({
         collectorId: '',
-        collectionDate: '',
+        collectionDate: undefined,
         items: [{ materialId: '', weight: 0, price: 0 }],
       });
       resetReceiptSelection();
@@ -306,7 +319,7 @@ export default function CreateCollectionDialog({
           )
         }
       />
-      <DialogContent className="w-screen max-w-screen-sm flex flex-col max-h-[90vh]">
+      <DialogContent className="flex flex-col max-h-[90vh]">
         <DialogHeader className="shrink-0">
           <DialogTitle>Create Collection</DialogTitle>
           <DialogDescription>
@@ -337,10 +350,10 @@ export default function CreateCollectionDialog({
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a collector">
-                      {(() => {
-                        const c = collectors?.find((m) => m._id === field.value);
-                        return c ? (c.businessName ?? c.name ?? c.email) : undefined;
-                      })()}
+                       {(() => {
+                         const c = collectors?.find((collector) => collector._id === field.value);
+                         return c ? (c.name || c.email || c.phone) : undefined;
+                       })()}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -359,19 +372,22 @@ export default function CreateCollectionDialog({
                               <ItemMedia>
                                 <Avatar>
                                   <AvatarImage src={collector.image} />
-                                  <AvatarFallback>
-                                    {collector.firstName?.charAt(0) ??
-                                      collector.email?.charAt(0)}
-                                  </AvatarFallback>
+                                   <AvatarFallback>
+                                      {collector.name?.charAt(0) ??
+                                        collector.email?.charAt(0) ??
+                                        collector.phone?.charAt(0)}
+                                   </AvatarFallback>
                                 </Avatar>
                               </ItemMedia>
                               <ItemContent>
-                                <ItemTitle>
-                                  {collector.businessName ?? collector.name}
-                                </ItemTitle>
-                                <ItemDescription>
-                                  {collector.phone} | {collector.email}
-                                </ItemDescription>
+                                 <ItemTitle>
+                                    {collector.name}
+                                 </ItemTitle>
+                                 <ItemDescription>
+                                   {collector.email
+                                     ? `${collector.phone} | ${collector.email}`
+                                     : collector.phone}
+                                 </ItemDescription>
                               </ItemContent>
                               <ItemActions>
                                 {field.value === collector._id && <CheckIcon />}
@@ -396,16 +412,45 @@ export default function CreateCollectionDialog({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid} className="shrink-0">
-                <FieldLabel htmlFor="form-create-collection-date">
-                  Collection Date
-                </FieldLabel>
-                <Input
-                  {...field}
-                  id="form-create-collection-date"
-                  type="date"
-                  value={field.value ?? ''}
-                  disabled={isPending}
-                />
+                <FieldLabel>Collection Date</FieldLabel>
+                <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger
+                      render={(props) => (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                          disabled={isPending}
+                          {...props}
+                        >
+                          <CalendarIcon className="size-4" />
+                          {field.value
+                            ? format(field.value, 'dd/MM/yyyy')
+                            : 'Select collection date'}
+                        </Button>
+                      )}
+                    />
+                    <PopoverContent align="start" className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => field.onChange(date)}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {field.value ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => field.onChange(undefined)}
+                      disabled={isPending}
+                    >
+                      <XIcon className="size-4" />
+                    </Button>
+                  ) : null}
+                </div>
                 <FieldDescription>
                   Optional. Leave blank to use the current transaction timestamp.
                 </FieldDescription>

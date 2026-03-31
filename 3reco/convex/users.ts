@@ -3,6 +3,7 @@ import { ConvexError, v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import type { Doc } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
+import { normalizeSouthAfricanPhoneNumber } from './lib/phone';
 
 export default defineTable({
   authId: v.optional(v.string()),
@@ -13,6 +14,7 @@ export default defineTable({
   email: v.optional(v.string()),
   emailVerificationTime: v.optional(v.number()),
   phone: v.optional(v.string()),
+  normalizedPhone: v.optional(v.string()),
   phoneVerificationTime: v.optional(v.number()),
   isAnonymous: v.optional(v.boolean()),
   type: v.optional(
@@ -61,6 +63,7 @@ export default defineTable({
   .index('by_authId', ['authId'])
   .index('by_tokenIdentifier', ['tokenIdentifier'])
   .index('by_authSubject', ['authSubject'])
+  .index('by_normalizedPhone', ['normalizedPhone'])
   .index('email', ['email'])
   .index('type', ['type']);
 
@@ -354,7 +357,16 @@ export const update = mutation({
       });
     }
 
-    await ctx.db.patch('users', args._id, { ...args, _id: undefined });
+    const normalizedPhone =
+      args.phone === undefined
+        ? undefined
+        : normalizeSouthAfricanPhoneNumber(args.phone);
+
+    await ctx.db.patch('users', args._id, {
+      ...args,
+      ...(args.phone === undefined ? {} : { normalizedPhone }),
+      _id: undefined,
+    });
   },
 });
 

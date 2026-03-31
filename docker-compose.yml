@@ -2,11 +2,10 @@
 #  3reco – Docker Compose
 #
 #  Services:
-#    frontend          React 19 + Vite (static, served by nginx)
-#    docs              Documentation site (static, served by nginx)
+#    frontend          React 19 + Vite frontend
+#    docs              Documentation site
 #    convex-backend    Convex self-hosted backend  (ports 3210 / 3211)
 #    convex-dashboard  Convex admin dashboard      (port 6791)
-#    caddy             Reverse proxy + automatic HTTPS via Let's Encrypt
 #
 #  Required env vars – copy .env.example to .env and fill in your values.
 # =============================================================================
@@ -26,6 +25,8 @@ services:
       args:
         VITE_CONVEX_URL: ${VITE_CONVEX_URL}
         VITE_CONVEX_AUTH_DOMAIN: ${VITE_CONVEX_AUTH_DOMAIN}
+    ports:
+      - "127.0.0.1:3000:80"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/"]
@@ -41,6 +42,8 @@ services:
     build:
       context: ./3reco/documentation
       dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3001:80"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/"]
@@ -80,6 +83,9 @@ services:
       # - S3_STORAGE_FILES_BUCKET=${S3_STORAGE_FILES_BUCKET}
     volumes:
       - convex-data:/convex/data
+    ports:
+      - "127.0.0.1:3210:3210"
+      - "127.0.0.1:3211:3211"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:3210/version || wget -qO- http://localhost:3210/version > /dev/null 2>&1"]
       interval: 10s
@@ -103,35 +109,8 @@ services:
     depends_on:
       convex-backend:
         condition: service_healthy
-    restart: unless-stopped
-
-  # ──────────────────────────────────────────────────────────────────────────
-  # Caddy reverse proxy
-  #   Routes subdomains to the correct upstream service.
-  #   Automatically provisions and renews TLS certificates via Let's Encrypt.
-  #   HTTP → HTTPS redirects are handled automatically.
-  #   WebSocket proxying (required for Convex) is transparent.
-  # ──────────────────────────────────────────────────────────────────────────
-  caddy:
-    image: caddy:alpine
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"   # HTTP/3 (QUIC)
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
-    environment:
-      - DOMAIN=${DOMAIN}
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data       # TLS certificates + ACME state (persisted)
-      - caddy-config:/config   # Caddy runtime config (persisted)
-    depends_on:
-      - frontend
-      - docs
-      - convex-backend
-      - convex-dashboard
+      - "127.0.0.1:6791:6791"
     restart: unless-stopped
 
 # =============================================================================
@@ -140,6 +119,3 @@ services:
 volumes:
   # Persistent Convex backend data (SQLite DB + uploaded files)
   convex-data:
-  # Caddy certificate storage (persisted so certs survive restarts)
-  caddy-data:
-  caddy-config:

@@ -11,11 +11,13 @@
 import type * as aggregates from "../aggregates.js";
 import type * as auth from "../auth.js";
 import type * as carts from "../carts.js";
+import type * as collectors from "../collectors.js";
 import type * as dashboard from "../dashboard.js";
 import type * as exports from "../exports.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
 import type * as lib_collectionDay from "../lib/collectionDay.js";
+import type * as lib_phone from "../lib/phone.js";
 import type * as materials from "../materials.js";
 import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
@@ -37,11 +39,13 @@ declare const fullApi: ApiFromModules<{
   aggregates: typeof aggregates;
   auth: typeof auth;
   carts: typeof carts;
+  collectors: typeof collectors;
   dashboard: typeof dashboard;
   exports: typeof exports;
   http: typeof http;
   invoices: typeof invoices;
   "lib/collectionDay": typeof lib_collectionDay;
+  "lib/phone": typeof lib_phone;
   materials: typeof materials;
   migrations: typeof migrations;
   notifications: typeof notifications;

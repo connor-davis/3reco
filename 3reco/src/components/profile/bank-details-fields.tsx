@@ -67,11 +67,11 @@ export function BankDetailsFields<T extends FieldValues>({
   return (
     <div className="space-y-4">
       <div className="flex w-full h-auto justify-center">
-        <Card className="relative border w-full max-w-[512px] border-primary/20 bg-linear-to-br from-primary/15 via-card to-amber-100/10 shadow-sm">
+        <Card className="relative w-full max-w-[640px] border border-primary/20 bg-linear-to-br from-primary/15 via-card to-amber-100/10 shadow-sm">
           <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/25 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-14 left-6 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
 
-          <CardHeader className="relative">
+          <CardHeader className="relative pb-3">
             <CardTitle className="text-sm uppercase tracking-[0.35em] text-muted-foreground">
               3rEco payout
             </CardTitle>
@@ -82,7 +82,7 @@ export function BankDetailsFields<T extends FieldValues>({
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="relative space-y-6 pb-6">
+          <CardContent className="relative flex min-h-52 flex-col justify-between space-y-0 pb-6">
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted-foreground">
               <span>{bankName ?? 'Your bank'}</span>
               <span>{accountType ?? 'Account type'}</span>
