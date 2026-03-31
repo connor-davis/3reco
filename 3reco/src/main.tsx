@@ -56,10 +56,7 @@ if (!rootElement.innerHTML) {
               ? state.returnTo
               : '/';
 
-          void router.navigate({
-            to: returnTo,
-            replace: true,
-          });
+          window.location.href = returnTo;
         }}
       >
         <DirectionProvider direction="ltr">
