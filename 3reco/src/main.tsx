@@ -56,7 +56,7 @@ if (!rootElement.innerHTML) {
               ? state.returnTo
               : '/';
 
-          window.history.replaceState({}, document.title, returnTo);
+          window.location.replace(returnTo);
         }}
       >
         <DirectionProvider direction="ltr">
