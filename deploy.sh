@@ -104,10 +104,15 @@ EOF
 
 echo "✅ Written $ENV_FILE for domain: $DOMAIN"
 
+# ── Build Docker images ─────────────────────────────────────────────────────
+echo ""
+echo "🔧 Building Docker images..."
+docker compose build --no-cache
+
 # ── Deploy ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "🚀 Starting stack..."
-docker compose up -d --build
+docker compose up -d
 
 echo ""
 echo "✅ Stack is up. Services:"
