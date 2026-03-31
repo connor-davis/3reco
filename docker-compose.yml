@@ -25,6 +25,8 @@ services:
       args:
         VITE_CONVEX_URL: ${VITE_CONVEX_URL}
         VITE_CONVEX_AUTH_DOMAIN: ${VITE_CONVEX_AUTH_DOMAIN}
+        VITE_WORKOS_CLIENT_ID: ${VITE_WORKOS_CLIENT_ID}
+        VITE_WORKOS_REDIRECT_URI: ${VITE_WORKOS_REDIRECT_URI}
     ports:
       - "127.0.0.1:3000:80"
     restart: unless-stopped
