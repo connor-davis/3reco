@@ -36,9 +36,9 @@ export default function Header() {
   const { data } = useQuery(convexQuery(api.users.currentUser));
 
   return (
-    <div className="flex w-full flex-wrap items-center gap-2 px-3 py-2 sm:flex-nowrap">
+    <div className="sticky top-2 z-30 mx-2 flex w-auto flex-wrap items-center gap-2 rounded-[1.75rem] border border-[var(--glass-border)] bg-[var(--glass-shell)] px-3 py-2 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:top-3 sm:mx-3 sm:flex-nowrap">
       <SidebarTrigger className="md:hidden shrink-0" />
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 rounded-2xl border border-white/35 bg-white/65 px-2 py-1 shadow-[var(--shadow-soft)] dark:border-white/10 dark:bg-white/5">
         <img src="/logo.png" alt="3rEco" className="w-10 sm:w-14" />
       </div>
 
@@ -46,8 +46,8 @@ export default function Header() {
         <NotificationTray />
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <div className="flex min-w-0 items-center gap-2 cursor-pointer">
-              <Avatar className="shrink-0">
+            <div className="flex min-w-0 cursor-pointer items-center gap-2 rounded-full border border-white/35 bg-white/65 px-2 py-1 shadow-[var(--shadow-soft)] backdrop-blur-md transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
+              <Avatar className="shrink-0 border border-white/40 dark:border-white/10">
                 <AvatarImage src={data?.image} />
                 <AvatarFallback>
                   {data?.firstName?.charAt(0) ?? data?.email?.charAt(0)}

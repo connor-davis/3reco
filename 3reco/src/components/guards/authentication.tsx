@@ -45,13 +45,13 @@ function CollectorLookupPanel({
   );
 
   return (
-    <div
-      className={
-        mode === 'desktop'
-          ? 'flex h-full flex-col rounded-3xl border bg-card/60 p-6 shadow-sm backdrop-blur-sm'
-          : 'flex flex-col gap-4'
-      }
-    >
+      <div
+        className={
+          mode === 'desktop'
+            ? 'flex h-full flex-col rounded-[1.75rem] border border-[var(--glass-border)] bg-[var(--glass-surface)] p-6 shadow-[var(--shadow-glass)] backdrop-blur-2xl'
+            : 'flex flex-col gap-4'
+        }
+      >
       <div className="flex flex-col gap-2">
         <Label className="text-lg font-semibold">Collector lookup</Label>
         <p className="text-sm text-muted-foreground">
@@ -83,13 +83,13 @@ function CollectorLookupPanel({
       )}
 
       {submittedPhone && collectorStats === null && (
-        <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-dashed border-white/30 bg-white/45 p-6 text-sm text-muted-foreground dark:border-white/10 dark:bg-white/5">
           Collector not found.
         </div>
       )}
 
       {!submittedPhone && mode === 'desktop' && (
-        <div className="mt-6 grid flex-1 place-items-center rounded-2xl border border-dashed bg-muted/30 p-8 text-center">
+        <div className="mt-6 grid flex-1 place-items-center rounded-2xl border border-dashed border-white/30 bg-white/45 p-8 text-center dark:border-white/10 dark:bg-white/5">
           <div className="max-w-md space-y-3">
             <Label className="text-xl">Quick collector overview</Label>
             <p className="text-sm leading-6 text-muted-foreground">
@@ -110,7 +110,7 @@ function CollectorLookupPanel({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border p-3">
+            <div className="rounded-2xl border border-white/30 bg-white/55 p-3 shadow-[var(--shadow-soft)] dark:border-white/10 dark:bg-white/5">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CreditCardIcon className="size-4" />
                 Revenue
@@ -119,7 +119,7 @@ function CollectorLookupPanel({
                 R {collectorStats.totals.totalRevenue.toFixed(2)}
               </p>
             </div>
-            <div className="rounded-lg border p-3">
+            <div className="rounded-2xl border border-white/30 bg-white/55 p-3 shadow-[var(--shadow-soft)] dark:border-white/10 dark:bg-white/5">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <WeightIcon className="size-4" />
                 Volume
@@ -128,7 +128,7 @@ function CollectorLookupPanel({
                 {collectorStats.totals.totalVolume.toFixed(1)} kg
               </p>
             </div>
-            <div className="rounded-lg border p-3">
+            <div className="rounded-2xl border border-white/30 bg-white/55 p-3 shadow-[var(--shadow-soft)] dark:border-white/10 dark:bg-white/5">
               <div className="text-sm text-muted-foreground">Transactions</div>
               <p className="mt-2 text-lg font-semibold">
                 {collectorStats.totals.transactionCount}
@@ -136,7 +136,7 @@ function CollectorLookupPanel({
             </div>
           </div>
 
-          <div className="rounded-lg border p-3">
+          <div className="rounded-2xl border border-white/30 bg-white/55 p-3 shadow-[var(--shadow-soft)] dark:border-white/10 dark:bg-white/5">
             <div className="flex items-center justify-between gap-3">
               <Label>Latest sales</Label>
               <span className="text-xs text-muted-foreground">
@@ -202,11 +202,11 @@ export default function AuthenticationGuard() {
   const isBusy = isLoading || signInMutation.isPending || signUpMutation.isPending;
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-background p-4">
+    <div className="flex h-full w-full items-center justify-center bg-transparent p-4 sm:p-6">
       <div className="grid h-full w-full max-w-7xl gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
-        <Card className="flex h-full max-w-full flex-col gap-8 lg:rounded-3xl">
+        <Card className="flex h-full max-w-full flex-col gap-8 lg:rounded-[1.75rem]">
           <CardHeader className="items-center text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="flex size-12 items-center justify-center rounded-full border border-white/40 bg-white/65 text-primary shadow-[var(--shadow-soft)] dark:border-white/10 dark:bg-white/8">
               <ShieldCheckIcon className="size-6" />
             </div>
             <CardTitle>Sign in with WorkOS</CardTitle>
