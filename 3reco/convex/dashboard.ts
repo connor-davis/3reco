@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { query } from './_generated/server';
 import { txByType } from './aggregates';
+import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
 
 function toDateString(ts: number): string {
   return new Date(ts).toISOString().split('T')[0];
@@ -55,12 +55,7 @@ export const adminStats = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user || (user.type !== 'admin' && user.type !== 'staff'))
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
@@ -146,12 +141,8 @@ export const businessStats = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const userId = await getCurrentUserIdOrThrow(ctx);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user || user.type !== 'business')
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
@@ -161,12 +152,12 @@ export const businessStats = query({
     const [asBuyer, asSeller] = await Promise.all([
       ctx.db
         .query('transactions')
-        .withIndex('by_buyerId', (q) => q.eq('buyerId', userId as Id<'users'>))
+        .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
         .order('desc')
         .collect(),
       ctx.db
         .query('transactions')
-        .withIndex('by_sellerId', (q) => q.eq('sellerId', userId as Id<'users'>))
+        .withIndex('by_sellerId', (q) => q.eq('sellerId', userId))
         .order('desc')
         .collect(),
     ]);
@@ -195,7 +186,7 @@ export const businessStats = query({
         const totalWeight = items.reduce((s, i) => s + i.weight, 0);
         const firstMaterial = items.length > 0 ? await ctx.db.get('materials', items[0].materialId) : null;
         const materialName = items.length === 1 ? (firstMaterial?.name ?? 'Unknown') : `${items.length} materials`;
-        const isBuy = t.buyerId === (userId as Id<'users'>);
+        const isBuy = t.buyerId === userId;
         const counterparty = await ctx.db.get('users', isBuy ? t.sellerId : t.buyerId);
         return {
           _id: t._id,
@@ -237,7 +228,7 @@ export const businessStats = query({
 
     const stockItems = await ctx.db
       .query('stock')
-      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId as Id<'users'>))
+      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId))
       .collect();
     const stockSummary = await Promise.all(
       stockItems.map(async (s) => {
@@ -256,12 +247,8 @@ export const collectorStats = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const userId = await getCurrentUserIdOrThrow(ctx);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user || user.type !== 'collector')
       throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
@@ -270,7 +257,7 @@ export const collectorStats = query({
 
     const allSales = await ctx.db
       .query('transactions')
-      .withIndex('by_sellerId', (q) => q.eq('sellerId', userId as Id<'users'>))
+      .withIndex('by_sellerId', (q) => q.eq('sellerId', userId))
       .order('desc')
       .collect();
 

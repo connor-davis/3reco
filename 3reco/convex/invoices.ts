@@ -10,6 +10,7 @@ import {
 import { internal } from './_generated/api';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { getEffectiveTransactionDate } from './lib/collectionDay';
+import { getCurrentUserIdOrThrow } from './users';
 
 const SOUTH_AFRICA_TIME_ZONE = 'Africa/Johannesburg';
 
@@ -33,13 +34,7 @@ async function getParticipantTransaction(
   ctx: QueryCtx,
   transactionId: Id<'transactions'>
 ) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw unauthorizedError();
-  }
-
-  const [userId] = identity.subject.split('|') as [Id<'users'>];
+  const userId = await getCurrentUserIdOrThrow(ctx);
   const transaction = await ctx.db.get('transactions', transactionId);
 
   if (!transaction) {

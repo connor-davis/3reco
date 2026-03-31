@@ -1,10 +1,10 @@
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { query } from './_generated/server';
 import {
   getEffectiveTransactionDate,
   getTransactionCollectionDay,
 } from './lib/collectionDay';
+import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
 
 function formatTransactionDateForExport(transaction: {
   _creationTime: number;
@@ -39,10 +39,7 @@ export const exportTransactions = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user || (user.type !== 'admin' && user.type !== 'staff'))
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
 
@@ -81,10 +78,8 @@ export const exportCollections = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const userId = await getCurrentUserIdOrThrow(ctx);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user) throw new ConvexError({ name: 'Not Found', message: 'User not found.' });
 
     let rows;
@@ -98,7 +93,7 @@ export const exportCollections = query({
       rows = await ctx.db
         .query('transactions')
         .withIndex('by_buyerId_and_type', (q) =>
-          q.eq('buyerId', userId as Id<'users'>).eq('type', 'c2b')
+          q.eq('buyerId', userId).eq('type', 'c2b')
         )
         .order('desc')
         .collect();
@@ -139,16 +134,14 @@ export const exportMyPurchases = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const userId = await getCurrentUserIdOrThrow(ctx);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user || user.type !== 'business')
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
 
     let rows = await ctx.db
       .query('transactions')
-      .withIndex('by_buyerId', (q) => q.eq('buyerId', userId as Id<'users'>))
+      .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
       .order('desc')
       .collect();
     if (from !== undefined)
@@ -183,17 +176,15 @@ export const exportMySales = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const userId = await getCurrentUserIdOrThrow(ctx);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user || user.type !== 'business')
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
 
     let rows = await ctx.db
       .query('transactions')
       .withIndex('by_sellerId_and_type', (q) =>
-        q.eq('sellerId', userId as Id<'users'>).eq('type', 'b2b')
+        q.eq('sellerId', userId).eq('type', 'b2b')
       )
       .order('desc')
       .collect();
@@ -223,10 +214,7 @@ export const exportMySales = query({
 export const exportUsers = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
+    const user = await getCurrentUserOrThrow(ctx);
     if (!user || user.type !== 'admin')
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
 

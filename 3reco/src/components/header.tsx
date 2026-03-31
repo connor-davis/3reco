@@ -9,10 +9,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuthActions } from '@convex-dev/auth/react';
 import { convexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@workos-inc/authkit-react';
 import {
   ComputerIcon,
   IdCardIcon,
@@ -30,7 +30,7 @@ import { SidebarTrigger } from './ui/sidebar';
 import NotificationTray from './notifications/tray';
 
 export default function Header() {
-  const { signOut } = useAuthActions();
+  const { signOut } = useAuth();
   const { setTheme } = useTheme();
 
   const { data } = useQuery(convexQuery(api.users.currentUser));
@@ -90,7 +90,7 @@ export default function Header() {
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => signOut()}>
+              <DropdownMenuItem variant="destructive" onClick={() => void signOut()}>
                 <LogOutIcon />
                 <Label>Log Out</Label>
               </DropdownMenuItem>

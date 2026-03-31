@@ -1,5 +1,3 @@
-import { useRouter } from '@tanstack/react-router';
-
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -8,269 +6,75 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { useAuthActions } from '@convex-dev/auth/react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import z from 'zod/v4';
-import { ConvexError } from 'convex/values';
-
-const formSchema = z.object({
-  email: z.string().min(10).max(100),
-  password: z.string().min(8).optional(),
-});
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { useMutation } from '@tanstack/react-query';
+import { useAuth } from '@workos-inc/authkit-react';
+import { ArrowRightIcon, ShieldCheckIcon } from 'lucide-react';
 
 export default function AuthenticationGuard() {
-  const router = useRouter();
-  const { signIn } = useAuthActions();
+  const { signIn, signUp, isLoading } = useAuth();
+  const returnTo =
+    window.location.pathname === '/callback'
+      ? '/'
+      : `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-  const [tab, setTab] = useState<'signIn' | 'signUp'>('signIn');
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
+  const signInMutation = useMutation({
+    mutationFn: async () => {
+      await signIn({ state: { returnTo } });
     },
   });
 
+  const signUpMutation = useMutation({
+    mutationFn: async () => {
+      await signUp({ state: { returnTo } });
+    },
+  });
+
+  const isBusy = isLoading || signInMutation.isPending || signUpMutation.isPending;
+
   return (
-    <Tabs value={tab} className="flex flex-col w-screen h-screen bg-background">
-      <TabsContent value="signIn">
-        <div className="flex flex-col w-full h-full items-center justify-center">
-          <Card className="max-w-96 w-full gap-10">
-            <CardHeader>
-              <CardTitle className="text-center">Sign In</CardTitle>
-              <CardDescription>
-                Please use your existing email and password to sign in to the
-                application.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col w-full h-auto gap-10">
-              <form
-                id="form-sign-in"
-                onSubmit={form.handleSubmit(async (values) => {
-                  if (!values.password)
-                    return toast.error('Uh Oh!', {
-                      description: 'Please enter a valid password...',
-                      duration: 2000,
-                    });
+    <div className="flex flex-col w-full h-full items-center justify-center p-4 bg-background">
+      <Card className="max-w-md w-full gap-8">
+        <CardHeader className="items-center text-center">
+          <div className="flex items-center justify-center size-12 rounded-full bg-primary/10 text-primary">
+            <ShieldCheckIcon className="size-6" />
+          </div>
+          <CardTitle>Sign in with WorkOS</CardTitle>
+          <CardDescription>
+            Authentication now uses WorkOS. Continue to the hosted sign-in flow
+            to access 3rEco.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Button
+            className="w-full"
+            disabled={isBusy}
+            onClick={() => signInMutation.mutate()}
+          >
+            {signInMutation.isPending ? (
+              <Spinner className="text-current" />
+            ) : (
+              <ArrowRightIcon />
+            )}
+            <Label>Continue to sign in</Label>
+          </Button>
 
-                  const formData = new FormData();
-
-                  formData.append('email', values.email);
-                  formData.append('password', values.password);
-                  formData.append('flow', 'signIn');
-
-                  signIn('password', formData)
-                    .then(() => router.navigate({ to: '/' }))
-                    .catch((error) => {
-                      if (error instanceof ConvexError) {
-                        return toast.error(error.data.name, {
-                          description: error.data.message,
-                          duration: 2000,
-                        });
-                      }
-
-                      return toast.error(error.name, {
-                        description: error.message,
-                        duration: 2000,
-                      });
-                    });
-                })}
-                className="flex flex-col w-full h-auto gap-5"
-              >
-                <FieldGroup>
-                  <Controller
-                    name="email"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-sign-in-email">
-                          Email
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id="form-sign-in-email"
-                          aria-invalid={fieldState.invalid}
-                          placeholder="Email"
-                          autoComplete="email"
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                          Please enter your email address.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
-
-                  <Controller
-                    name="password"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-sign-in-password">
-                          Password
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id="form-sign-in-password"
-                          aria-invalid={fieldState.invalid}
-                          placeholder="Password"
-                          type="password"
-                          autoComplete="current-password"
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                          Please enter your password.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
-                </FieldGroup>
-
-                <Button type="submit">Sign In</Button>
-              </form>
-
-              <p>
-                Don't have an account?{' '}
-                <span
-                  className="text-primary cursor-pointer"
-                  onClick={() => setTab('signUp')}
-                >
-                  Sign Up
-                </span>
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </TabsContent>
-      <TabsContent value="signUp">
-        <div className="flex flex-col w-full h-full items-center justify-center">
-          <Card className="max-w-96 w-full gap-10">
-            <CardHeader>
-              <CardTitle className="text-center">Sign Up</CardTitle>
-              <CardDescription>
-                Please enter your email address and password below to create a
-                new account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col w-full h-auto gap-10">
-              <form
-                id="form-sign-up"
-                onSubmit={form.handleSubmit(async (values) => {
-                  if (!values.password)
-                    return toast.error('Uh Oh!', {
-                      description: 'Please enter a valid password...',
-                      duration: 2000,
-                    });
-
-                  signIn('password', {
-                    flow: 'signUp',
-                    ...values,
-                    agreedToTerms: false,
-                    profileComplete: false,
-                  })
-                    .then(() => router.navigate({ to: '/' }))
-                    .catch((error) => {
-                      if (error instanceof ConvexError) {
-                        return toast.error(error.data.name, {
-                          description: error.data.message,
-                          duration: 2000,
-                        });
-                      }
-
-                      return toast.error(error.name, {
-                        description: error.message,
-                        duration: 2000,
-                      });
-                    });
-                })}
-                className="flex flex-col w-full h-auto gap-5"
-              >
-                <FieldGroup>
-                  <Controller
-                    name="email"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-sign-up-email">
-                          Email
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id="form-sign-up-email"
-                          aria-invalid={fieldState.invalid}
-                          placeholder="Email"
-                          autoComplete="email"
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                          Please enter your email address.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
-
-                  <Controller
-                    name="password"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-sign-up-password">
-                          Password
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id="form-sign-up-password"
-                          aria-invalid={fieldState.invalid}
-                          placeholder="Password"
-                          type="password"
-                          autoComplete="current-password"
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                          Please enter your password.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
-                </FieldGroup>
-
-                <Button type="submit">Sign Up</Button>
-              </form>
-
-              <p>
-                Already have an account?{' '}
-                <span
-                  className="text-primary cursor-pointer"
-                  onClick={() => setTab('signIn')}
-                >
-                  Sign In
-                </span>
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </TabsContent>
-    </Tabs>
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={isBusy}
+            onClick={() => signUpMutation.mutate()}
+          >
+            {signUpMutation.isPending ? (
+              <Spinner className="text-current" />
+            ) : (
+              <ArrowRightIcon />
+            )}
+            <Label>Create an account</Label>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

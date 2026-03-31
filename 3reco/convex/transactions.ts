@@ -5,6 +5,7 @@ import { internal } from './_generated/api';
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import { txByType } from './aggregates';
 import { assertValidCollectionDay } from './lib/collectionDay';
+import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
 
 export const txItemValidator = v.object({
   materialId: v.id('materials'),
@@ -71,29 +72,9 @@ function unauthorizedError() {
   });
 }
 
-async function getAuthenticatedUserId(ctx: QueryCtx | MutationCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw unauthorizedError();
-  }
-
-  const [userId] = identity.subject.split('|') as [Id<'users'>];
-  return userId;
-}
-
 async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
-  const userId = await getAuthenticatedUserId(ctx);
-  const user = await ctx.db.get('users', userId);
-
-  if (!user) {
-    throw new ConvexError({
-      name: 'Not Found',
-      message: 'The user was not found.',
-    });
-  }
-
-  return { userId, user };
+  const user = await getCurrentUserOrThrow(ctx);
+  return { userId: user._id, user };
 }
 
 function canReadAllTransactions(userType: string | undefined) {
@@ -295,29 +276,13 @@ export const listExpensesWithPagination = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, { paginationOpts }) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity)
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'You are not authorized to access this resource.',
-      });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-
-    if (!user)
-      throw new ConvexError({
-        name: 'Not Found',
-        message: 'The user was not found.',
-      });
+    const user = await getCurrentUserOrThrow(ctx);
+    const userId = user._id;
 
     if (user.type === 'business') {
       const results = await ctx.db
         .query('transactions')
-        .withIndex('by_buyerId', (q) =>
-          q.eq('buyerId', userId as Id<'users'>)
-        )
+        .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
         .order('desc')
         .paginate(paginationOpts);
 
@@ -348,29 +313,13 @@ export const listExpensesWithPagination = query({
 
 export const listExpenses = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity)
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'You are not authorized to access this resource.',
-      });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-
-    if (!user)
-      throw new ConvexError({
-        name: 'Not Found',
-        message: 'The user was not found.',
-      });
+    const user = await getCurrentUserOrThrow(ctx);
+    const userId = user._id;
 
     if (user.type === 'business') {
       const transactions = await ctx.db
         .query('transactions')
-        .withIndex('by_buyerId', (q) =>
-          q.eq('buyerId', userId as Id<'users'>)
-        )
+        .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
         .collect();
 
       return transactions.map((transaction) => sanitizeTransaction(transaction));
@@ -394,28 +343,14 @@ export const listSalesWithPagination = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, { paginationOpts }) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity)
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'You are not authorized to access this resource.',
-      });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-
-    if (!user)
-      throw new ConvexError({
-        name: 'Not Found',
-        message: 'The user was not found.',
-      });
+    const user = await getCurrentUserOrThrow(ctx);
+    const userId = user._id;
 
     if (user.type === 'collector' || user.type === 'business') {
       const results = await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId as Id<'users'>).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
+          q.eq('sellerId', userId).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .paginate(paginationOpts);
@@ -440,28 +375,14 @@ export const listSalesWithPagination = query({
 
 export const listSales = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity)
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'You are not authorized to access this resource.',
-      });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-
-    if (!user)
-      throw new ConvexError({
-        name: 'Not Found',
-        message: 'The user was not found.',
-      });
+    const user = await getCurrentUserOrThrow(ctx);
+    const userId = user._id;
 
     if (user.type === 'collector' || user.type === 'business') {
       const transactions = await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId as Id<'users'>).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
+          q.eq('sellerId', userId).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .collect();
@@ -664,15 +585,7 @@ export const collectorToBusinessSale = mutation({
     collectionDate: v.optional(v.number()),
   },
   handler: async (ctx, { collectorId, items, collectionDay, collectionDate }) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity)
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'You are not authorized to access this resource.',
-      });
-
-    const [businessId] = identity.subject.split('|');
+    const businessId = await getCurrentUserIdOrThrow(ctx);
 
     // Validate all items
     for (const item of items) {
@@ -692,7 +605,7 @@ export const collectorToBusinessSale = mutation({
 
     const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
     const transactionId = await ctx.db.insert('transactions', {
-      buyerId: businessId as Id<'users'>,
+      buyerId: businessId,
       sellerId: collectorId,
       items,
       totalPrice,
@@ -711,13 +624,13 @@ export const collectorToBusinessSale = mutation({
       const existingStock = await ctx.db
         .query('stock')
         .withIndex('by_ownerId_by_materialId', (q) =>
-          q.eq('ownerId', businessId as Id<'users'>).eq('materialId', item.materialId)
+          q.eq('ownerId', businessId).eq('materialId', item.materialId)
         )
         .first();
 
       if (!existingStock) {
         await ctx.db.insert('stock', {
-          ownerId: businessId as Id<'users'>,
+          ownerId: businessId,
           materialId: item.materialId,
           weight: item.weight,
           price: item.price,
@@ -745,15 +658,7 @@ export const businessToBusinessSale= mutation({
     items: v.array(txItemValidator),
   },
   handler: async (ctx, { businessId, items }) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity)
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'You are not authorized to access this resource.',
-      });
-
-    const [sellerId] = identity.subject.split('|');
+    const sellerId = await getCurrentUserIdOrThrow(ctx);
 
     // Validate all items
     for (const item of items) {
@@ -769,7 +674,7 @@ export const businessToBusinessSale= mutation({
       const existingSellerStock = await ctx.db
         .query('stock')
         .withIndex('by_ownerId_by_materialId', (q) =>
-          q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', item.materialId)
+          q.eq('ownerId', sellerId).eq('materialId', item.materialId)
         )
         .first();
 
@@ -783,7 +688,7 @@ export const businessToBusinessSale= mutation({
     const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
     const transactionId = await ctx.db.insert('transactions', {
       buyerId: businessId,
-      sellerId: sellerId as Id<'users'>,
+      sellerId,
       items,
       totalPrice,
       type: 'b2b',
@@ -799,7 +704,7 @@ export const businessToBusinessSale= mutation({
       const existingSellerStock = await ctx.db
         .query('stock')
         .withIndex('by_ownerId_by_materialId', (q) =>
-          q.eq('ownerId', sellerId as Id<'users'>).eq('materialId', item.materialId)
+          q.eq('ownerId', sellerId).eq('materialId', item.materialId)
         )
         .first();
 

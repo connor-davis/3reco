@@ -1,7 +1,7 @@
 import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { getCurrentUserIdOrThrow } from './users';
 
 export default defineTable({
   userId: v.id('users'),
@@ -26,15 +26,11 @@ export default defineTable({
 export const listForUser = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, { paginationOpts }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     return await ctx.db
       .query('notifications')
       .withIndex('by_userId_dismissed', (q) =>
-        q.eq('userId', userId as Id<'users'>).eq('dismissed', false)
+        q.eq('userId', userId).eq('dismissed', false)
       )
       .order('desc')
       .paginate(paginationOpts);
@@ -43,14 +39,11 @@ export const listForUser = query({
 
 export const unreadCount = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return 0;
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const notifications = await ctx.db
       .query('notifications')
       .withIndex('by_userId_dismissed', (q) =>
-        q.eq('userId', userId as Id<'users'>).eq('dismissed', false)
+        q.eq('userId', userId).eq('dismissed', false)
       )
       .collect();
 
@@ -61,14 +54,10 @@ export const unreadCount = query({
 export const markRead = mutation({
   args: { _id: v.id('notifications') },
   handler: async (ctx, { _id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const notification = await ctx.db.get('notifications', _id);
 
-    if (!notification || notification.userId !== (userId as Id<'users'>))
+    if (!notification || notification.userId !== userId)
       throw new ConvexError({ name: 'Unauthorized', message: 'Not your notification.' });
 
     await ctx.db.patch('notifications', _id, { read: true });
@@ -77,15 +66,11 @@ export const markRead = mutation({
 
 export const markAllRead = mutation({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const unread = await ctx.db
       .query('notifications')
       .withIndex('by_userId_dismissed', (q) =>
-        q.eq('userId', userId as Id<'users'>).eq('dismissed', false)
+        q.eq('userId', userId).eq('dismissed', false)
       )
       .filter((q) => q.eq(q.field('read'), false))
       .collect();
@@ -97,14 +82,10 @@ export const markAllRead = mutation({
 export const dismiss = mutation({
   args: { _id: v.id('notifications') },
   handler: async (ctx, { _id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const notification = await ctx.db.get('notifications', _id);
 
-    if (!notification || notification.userId !== (userId as Id<'users'>))
+    if (!notification || notification.userId !== userId)
       throw new ConvexError({ name: 'Unauthorized', message: 'Not your notification.' });
 
     await ctx.db.patch('notifications', _id, { read: true, dismissed: true });
@@ -113,15 +94,11 @@ export const dismiss = mutation({
 
 export const dismissAll = mutation({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const active = await ctx.db
       .query('notifications')
       .withIndex('by_userId_dismissed', (q) =>
-        q.eq('userId', userId as Id<'users'>).eq('dismissed', false)
+        q.eq('userId', userId).eq('dismissed', false)
       )
       .collect();
 

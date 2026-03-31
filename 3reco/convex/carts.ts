@@ -1,7 +1,7 @@
 import { defineTable } from 'convex/server';
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { getCurrentUserIdOrThrow } from './users';
 
 export default defineTable({
   buyerId: v.id('users'),
@@ -18,9 +18,7 @@ export default defineTable({
 export const get = query({
   args: { sellerId: v.id('users') },
   handler: async (ctx, { sellerId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    const [buyerId] = identity.subject.split('|') as [Id<'users'>];
+    const buyerId = await getCurrentUserIdOrThrow(ctx);
 
     const cart = await ctx.db
       .query('carts')
@@ -61,9 +59,7 @@ export const upsert = mutation({
     ),
   },
   handler: async (ctx, { sellerId, items }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return;
-    const [buyerId] = identity.subject.split('|') as [Id<'users'>];
+    const buyerId = await getCurrentUserIdOrThrow(ctx);
 
     const existing = await ctx.db
       .query('carts')
@@ -87,9 +83,7 @@ export const upsert = mutation({
 export const clear = mutation({
   args: { sellerId: v.id('users') },
   handler: async (ctx, { sellerId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return;
-    const [buyerId] = identity.subject.split('|') as [Id<'users'>];
+    const buyerId = await getCurrentUserIdOrThrow(ctx);
 
     const existing = await ctx.db
       .query('carts')

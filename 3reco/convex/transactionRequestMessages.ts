@@ -1,7 +1,7 @@
 import { defineTable } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { getCurrentUserIdOrThrow } from './users';
 
 export default defineTable({
   transactionId: v.id('transactionRequests'),
@@ -30,11 +30,7 @@ export const send = mutation({
     content: v.string(),
   },
   handler: async (ctx, { transactionId, content }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const request = await ctx.db.get('transactionRequests', transactionId);
 
     if (!request)
@@ -46,11 +42,11 @@ export const send = mutation({
 
     await ctx.db.insert('transactionRequestMessages', {
       transactionId,
-      senderId: userId as Id<'users'>,
+      senderId: userId,
       content,
     });
 
-    const recipientId = request.sellerId === (userId as Id<'users'>) ? request.buyerId : request.sellerId;
+    const recipientId = request.sellerId === userId ? request.buyerId : request.sellerId;
     await ctx.db.insert('notifications', {
       userId: recipientId,
       type: 'message_received',

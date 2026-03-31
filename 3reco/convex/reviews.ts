@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
 
 /** Returns paginated reviews for a seller store, with reviewer display name. */
 export const listBySeller = query({
@@ -54,10 +54,7 @@ export const averageForSeller = query({
 export const reviewableTransactions = query({
   args: { sellerId: v.id('users') },
   handler: async (ctx, { sellerId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-
-    const [buyerId] = identity.subject.split('|') as [Id<'users'>];
+    const buyerId = await getCurrentUserIdOrThrow(ctx);
 
     const transactions = await ctx.db
       .query('transactions')
@@ -89,14 +86,10 @@ export const addReview = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, { transactionId, rating, comment }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You must be logged in to leave a review.' });
+    const buyerId = await getCurrentUserIdOrThrow(ctx);
 
     if (rating < 1 || rating > 5 || !Number.isInteger(rating))
       throw new ConvexError({ name: 'InvalidRating', message: 'Rating must be a whole number between 1 and 5.' });
-
-    const [buyerId] = identity.subject.split('|') as [Id<'users'>];
 
     const transaction = await ctx.db.get(transactionId);
     if (!transaction)
@@ -125,12 +118,7 @@ export const addReview = mutation({
 export const removeReview = mutation({
   args: { reviewId: v.id('storeReviews') },
   handler: async (ctx, { reviewId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'Not authorized.' });
-
-    const [userId] = identity.subject.split('|') as [Id<'users'>];
-    const user = await ctx.db.get(userId);
+    const user = await getCurrentUserOrThrow(ctx);
     if (user?.type !== 'admin')
       throw new ConvexError({ name: 'Forbidden', message: 'Only admins can remove reviews.' });
 

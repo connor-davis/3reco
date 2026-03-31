@@ -7,7 +7,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import { Spinner } from '@/components/ui/spinner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { convexQuery } from '@convex-dev/react-query';
+import { convexQuery, useConvexMutation } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { useQuery } from '@tanstack/react-query';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
@@ -17,22 +17,52 @@ import {
   Unauthenticated,
   useConvexAuth,
 } from 'convex/react';
-import { Activity } from 'react';
+import { Activity, useEffect, useState } from 'react';
 
 const RootLayout = () => {
   const { isAuthenticated } = useConvexAuth();
+  const syncCurrentUserFromAuth = useConvexMutation(
+    api.users.syncCurrentUserFromAuth
+  );
+  const [isProvisioningUser, setIsProvisioningUser] = useState(false);
   const { data: user, isLoading: isLoadingUser } = useQuery({
-    ...convexQuery(api.users.currentUser),
+    ...convexQuery(api.users.currentUserOrNull),
     enabled: isAuthenticated,
+    retry: false,
   });
 
-  if (isLoadingUser)
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      if (!isAuthenticated || isLoadingUser || user || isProvisioningUser) {
+        return;
+      }
+
+      setIsProvisioningUser(true);
+      void syncCurrentUserFromAuth({}).finally(() => {
+        setIsProvisioningUser(false);
+      });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    isAuthenticated,
+    isLoadingUser,
+    isProvisioningUser,
+    syncCurrentUserFromAuth,
+    user,
+  ]);
+
+  if (isLoadingUser || (isAuthenticated && (isProvisioningUser || !user)))
     return (
       <div className="flex flex-col w-screen h-screen items-center justify-center gap-3 bg-background text-foreground">
         <div className="flex items-center gap-3">
           <Spinner className="text-primary" />
           <Label className="text-muted-foreground">
-            Loading user profile...
+            {isProvisioningUser
+              ? 'Preparing your account...'
+              : 'Loading user profile...'}
           </Label>
         </div>
       </div>
@@ -74,10 +104,10 @@ const RootLayout = () => {
             <SidebarProvider>
               <AppSidebar />
 
-              <div className="flex flex-col w-full h-full overflow-hidden">
+              <div className="flex flex-col w-full h-screen overflow-hidden">
                 <Header />
 
-                <SidebarInset className="bg-transparent p-2 sm:pr-3 sm:pb-3 overflow-hidden">
+                <SidebarInset className="flex flex-col w-full h-full bg-transparent p-2 sm:pr-3 sm:pb-3 overflow-hidden">
                   <div className="flex flex-col w-full h-full p-2 sm:p-3 gap-3 bg-background rounded-xl overflow-hidden">
                     <Outlet />
                   </div>

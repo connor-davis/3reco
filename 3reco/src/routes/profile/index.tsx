@@ -46,6 +46,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
 import { Controller, useForm } from 'react-hook-form';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
@@ -161,6 +162,46 @@ function RouteComponent() {
     },
   });
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    profileForm.reset({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      image: user.image,
+      idNumber: user.idNumber,
+    });
+
+    businessProfileForm.reset({
+      businessName: user.businessName,
+      businessRegistrationNumber: user.businessRegistrationNumber,
+    });
+
+    locationForm.reset({
+      streetAddress: user.streetAddress,
+      city: user.city,
+      areaCode: user.areaCode,
+      province: user.province,
+    });
+
+    bankDetailsForm.reset({
+      bankAccountHolderName: user.bankAccountHolderName,
+      bankName: user.bankName,
+      bankAccountNumber: user.bankAccountNumber,
+      bankBranchCode: user.bankBranchCode,
+      bankAccountType: user.bankAccountType,
+    });
+  }, [
+    bankDetailsForm,
+    businessProfileForm,
+    locationForm,
+    profileForm,
+    user,
+  ]);
+
   if (!user) return undefined;
 
   const submitBankDetails = (values: BankDetailsFormValues) => {
@@ -230,7 +271,7 @@ function RouteComponent() {
         <Accordion
           defaultValue={['profile-information']}
           multiple
-          className="rounded-xl border"
+          className="rounded-xl border overflow-y-auto"
         >
           <AccordionItem
             value="profile-information"
@@ -285,77 +326,83 @@ function RouteComponent() {
                     render={({ fieldState, field }) => {
                       return (
                         <div className="flex items-center justify-center">
-                          <Tooltip>
-                            <Dialog>
+                          <Dialog>
+                            <Tooltip>
                               <TooltipTrigger
                                 render={
-                                  <DialogTrigger
-                                    render={
-                                      <AspectRatio
-                                        ratio={1 / 1}
-                                        className="w-24 sm:w-32 lg:w-48"
-                                      >
-                                        <Avatar className="w-full h-full">
-                                          <AvatarImage
-                                            src={field.value}
-                                            alt={
-                                              user?.firstName?.charAt(0) ??
-                                              'None'
-                                            }
-                                            className="hover:cursor-pointer"
-                                          />
-                                          <AvatarFallback className="text-3xl sm:text-4xl lg:text-7xl">
-                                            {user?.firstName?.charAt(0) ??
-                                              'None'}
-                                          </AvatarFallback>
-                                        </Avatar>
-                                      </AspectRatio>
-                                    }
-                                  />
+                                  <div className="w-24 sm:w-32 lg:w-48">
+                                    <DialogTrigger
+                                      render={
+                                        <button
+                                          type="button"
+                                          className="block w-full cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                        >
+                                          <AspectRatio
+                                            ratio={1 / 1}
+                                            className="w-full"
+                                          >
+                                            <Avatar className="w-full h-full">
+                                              <AvatarImage
+                                                src={field.value}
+                                                alt={
+                                                  user?.firstName?.charAt(0) ??
+                                                  'None'
+                                                }
+                                              />
+                                              <AvatarFallback className="text-3xl sm:text-4xl lg:text-7xl">
+                                                {user?.firstName?.charAt(0) ??
+                                                  'None'}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                          </AspectRatio>
+                                        </button>
+                                      }
+                                    />
+                                  </div>
                                 }
                               />
+                              <TooltipContent>Click To Change</TooltipContent>
+                            </Tooltip>
 
-                              <DialogContent>
-                                <FieldGroup className="gap-3">
-                                  <AvatarCropper
-                                    src={field.value || ''}
-                                    onComplete={(dataUrl) => {
-                                      field.onChange(dataUrl);
+                            <DialogContent>
+                              <FieldGroup className="gap-3">
+                                <AvatarCropper
+                                  src={field.value || ''}
+                                  onComplete={(dataUrl) => {
+                                    field.onChange(dataUrl);
+                                  }}
+                                />
+                                <Field data-invalid={fieldState.invalid}>
+                                  <FieldLabel>Choose Image</FieldLabel>
+                                  <Input
+                                    placeholder="https://example.com/my-avatar.png"
+                                    type="file"
+                                    accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          field.onChange(
+                                            reader.result as string
+                                          );
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
                                     }}
                                   />
-                                  <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel>Choose Image</FieldLabel>
-                                    <Input
-                                      placeholder="https://example.com/my-avatar.png"
-                                      type="file"
-                                      accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          const reader = new FileReader();
-                                          reader.onloadend = () => {
-                                            field.onChange(
-                                              reader.result as string
-                                            );
-                                          };
-                                          reader.readAsDataURL(file);
-                                        }
-                                      }}
-                                    />
-                                    <FieldDescription>
-                                      Choose a profile image from your device.
-                                      Supported formats: PNG, JPEG, JPG, WEBP,
-                                      GIF.
-                                    </FieldDescription>
-                                    {fieldState.invalid && (
-                                      <FieldError errors={[fieldState.error]} />
-                                    )}
-                                  </Field>
-                                </FieldGroup>
-                              </DialogContent>
-                            </Dialog>
-                            <TooltipContent>Click To Change</TooltipContent>
-                          </Tooltip>
+                                  <FieldDescription>
+                                    Choose a profile image from your device.
+                                    Supported formats: PNG, JPEG, JPG, WEBP,
+                                    GIF.
+                                  </FieldDescription>
+                                  {fieldState.invalid && (
+                                    <FieldError errors={[fieldState.error]} />
+                                  )}
+                                </Field>
+                              </FieldGroup>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       );
                     }}
@@ -372,6 +419,7 @@ function RouteComponent() {
                           </FieldLabel>
                           <Input
                             {...field}
+                            value={field.value ?? ''}
                             id="form-complete-profile-first-name"
                             aria-invalid={fieldState.invalid}
                             placeholder="First Name"
@@ -397,6 +445,7 @@ function RouteComponent() {
                           </FieldLabel>
                           <Input
                             {...field}
+                            value={field.value ?? ''}
                             id="form-complete-profile-last-name"
                             aria-invalid={fieldState.invalid}
                             placeholder="Last Name"
@@ -423,6 +472,7 @@ function RouteComponent() {
                         </FieldLabel>
                         <Input
                           {...field}
+                          value={field.value ?? ''}
                           id="form-complete-profile-id-number"
                           aria-invalid={fieldState.invalid}
                           placeholder="ID Number"
@@ -447,6 +497,7 @@ function RouteComponent() {
                         </FieldLabel>
                         <Input
                           {...field}
+                          value={field.value ?? ''}
                           id="form-complete-profile-phone"
                           aria-invalid={fieldState.invalid}
                           placeholder="Phone Number"
@@ -521,6 +572,7 @@ function RouteComponent() {
                           </FieldLabel>
                           <Input
                             {...field}
+                            value={field.value ?? ''}
                             id="form-complete-profile-business-name"
                             aria-invalid={fieldState.invalid}
                             placeholder="Business Name"
@@ -546,6 +598,7 @@ function RouteComponent() {
                           </FieldLabel>
                           <Input
                             {...field}
+                            value={field.value ?? ''}
                             id="form-complete-profile-business-registration-number"
                             aria-invalid={fieldState.invalid}
                             placeholder="Business Registration Number"
@@ -645,6 +698,7 @@ function RouteComponent() {
                         </FieldLabel>
                         <Input
                           {...field}
+                          value={field.value ?? ''}
                           id="form-complete-profile-street-address"
                           aria-invalid={fieldState.invalid}
                           placeholder="Street Address"
@@ -670,6 +724,7 @@ function RouteComponent() {
                         </FieldLabel>
                         <Input
                           {...field}
+                          value={field.value ?? ''}
                           id="form-complete-profile-city"
                           aria-invalid={fieldState.invalid}
                           placeholder="City"
@@ -695,10 +750,15 @@ function RouteComponent() {
                         </FieldLabel>
                         <Input
                           {...field}
+                          value={field.value ?? ''}
                           id="form-complete-profile-area-code"
                           type="number"
                           onChange={(event) =>
-                            field.onChange(event.target.valueAsNumber)
+                            field.onChange(
+                              Number.isNaN(event.target.valueAsNumber)
+                                ? undefined
+                                : event.target.valueAsNumber
+                            )
                           }
                           aria-invalid={fieldState.invalid}
                           placeholder="Area/Postal Code"

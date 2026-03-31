@@ -7,19 +7,19 @@ import {
 } from 'react-hook-form';
 
 import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from '@/components/ui/field';
-import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -66,53 +66,55 @@ export function BankDetailsFields<T extends FieldValues>({
 
   return (
     <div className="space-y-4">
-      <Card className="relative border border-primary/20 bg-linear-to-br from-primary/15 via-card to-amber-100/10 shadow-sm">
-        <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/25 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-14 left-6 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
+      <div className="flex w-full h-auto justify-center">
+        <Card className="relative border w-full max-w-[512px] border-primary/20 bg-linear-to-br from-primary/15 via-card to-amber-100/10 shadow-sm">
+          <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/25 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-14 left-6 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
 
-        <CardHeader className="relative">
-          <CardTitle className="text-sm uppercase tracking-[0.35em] text-muted-foreground">
-            3rEco payout
-          </CardTitle>
-          <CardDescription>
-            {required
-              ? 'Businesses must add bank details before completing their profile.'
-              : 'Add bank details now if you would like them to appear on invoices.'}
-          </CardDescription>
-        </CardHeader>
+          <CardHeader className="relative">
+            <CardTitle className="text-sm uppercase tracking-[0.35em] text-muted-foreground">
+              3rEco payout
+            </CardTitle>
+            <CardDescription>
+              {required
+                ? 'Businesses must add bank details before completing their profile.'
+                : 'Add bank details now if you would like them to appear on invoices.'}
+            </CardDescription>
+          </CardHeader>
 
-        <CardContent className="relative space-y-6 pb-6">
-          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            <span>{bankName ?? 'Your bank'}</span>
-            <span>{accountType ?? 'Account type'}</span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-              Account number
+          <CardContent className="relative space-y-6 pb-6">
+            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              <span>{bankName ?? 'Your bank'}</span>
+              <span>{accountType ?? 'Account type'}</span>
             </div>
-            <div className="font-mono text-xl tracking-[0.32em] text-foreground">
-              {formatAccountNumberPreview(accountNumber)}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4 text-xs uppercase tracking-[0.22em] text-muted-foreground">
-            <div className="space-y-1">
-              <div>Account holder</div>
-              <div className="truncate text-sm font-medium tracking-[0.08em] text-foreground">
-                {accountHolderName ?? 'Your name'}
+            <div className="space-y-2">
+              <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+                Account number
+              </div>
+              <div className="font-mono text-xl tracking-[0.32em] text-foreground">
+                {formatAccountNumberPreview(accountNumber)}
               </div>
             </div>
 
-            <div className="space-y-1 text-right">
-              <div>Branch code</div>
-              <div className="font-mono text-sm font-medium tracking-[0.18em] text-foreground">
-                {branchCode ?? '000000'}
+            <div className="grid grid-cols-2 gap-4 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+              <div className="space-y-1">
+                <div>Account holder</div>
+                <div className="truncate text-sm font-medium tracking-[0.08em] text-foreground">
+                  {accountHolderName ?? 'Your name'}
+                </div>
+              </div>
+
+              <div className="space-y-1 text-right">
+                <div>Branch code</div>
+                <div className="font-mono text-sm font-medium tracking-[0.18em] text-foreground">
+                  {branchCode ?? '000000'}
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       <FieldGroup className="gap-3">
         <Controller
@@ -144,7 +146,9 @@ export function BankDetailsFields<T extends FieldValues>({
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={`${idPrefix}-bank-name`}>Bank Name</FieldLabel>
+              <FieldLabel htmlFor={`${idPrefix}-bank-name`}>
+                Bank Name
+              </FieldLabel>
               <Input
                 {...field}
                 value={field.value ?? ''}
@@ -260,6 +264,9 @@ function formatAccountNumberPreview(value: string | undefined) {
     return '•••• •••• ••••';
   }
 
-  const masked = digits.length > 4 ? `${'•'.repeat(digits.length - 4)}${digits.slice(-4)}` : digits;
+  const masked =
+    digits.length > 4
+      ? `${'•'.repeat(digits.length - 4)}${digits.slice(-4)}`
+      : digits;
   return masked.match(/.{1,4}/g)?.join(' ') ?? masked;
 }

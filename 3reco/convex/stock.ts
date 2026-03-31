@@ -2,6 +2,7 @@ import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
+import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
 
 export default defineTable({
   ownerId: v.id('users'),
@@ -18,11 +19,7 @@ export default defineTable({
 export const listListed = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, { paginationOpts }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
 
     const result = await ctx.db
       .query('stock')
@@ -32,7 +29,7 @@ export const listListed = query({
 
     return {
       ...result,
-      page: result.page.filter((s) => s.ownerId !== (userId as Id<'users'>)),
+      page: result.page.filter((s) => s.ownerId !== userId),
     };
   },
 });
@@ -42,28 +39,20 @@ export const listWithPagination = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, { paginationOpts }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     return await ctx.db
       .query('stock')
-      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId as Id<'users'>))
+      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId))
       .paginate(paginationOpts);
   },
 });
 
 export const list = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     return await ctx.db
       .query('stock')
-      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId as Id<'users'>))
+      .withIndex('by_ownerId', (q) => q.eq('ownerId', userId))
       .collect();
   },
 });
@@ -85,18 +74,14 @@ export const listListedBySeller = query({
 
 export const listSellersWithStock = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
 
     const allListed = await ctx.db
       .query('stock')
       .withIndex('by_isListed', (q) => q.eq('isListed', true))
       .collect();
 
-    const othersStock = allListed.filter((s) => s.ownerId !== (userId as Id<'users'>));
+    const othersStock = allListed.filter((s) => s.ownerId !== userId);
 
     const byOwner = new Map<Id<'users'>, typeof othersStock>();
     for (const s of othersStock) {
@@ -140,22 +125,7 @@ export const create = mutation({
     price: v.number(),
   },
   handler: async (ctx, { materialId, weight, price }) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity)
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'You are not authorized to access this resource.',
-      });
-
-    const [userId] = identity.subject.split('|');
-    const user = await ctx.db.get('users', userId as Id<'users'>);
-
-    if (!user)
-      throw new ConvexError({
-        name: 'Not Found',
-        message: 'The user was not found.',
-      });
+    const user = await getCurrentUserOrThrow(ctx);
 
     const material = await ctx.db.get('materials', materialId);
 

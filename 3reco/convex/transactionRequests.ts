@@ -1,9 +1,9 @@
 import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { txByType } from './aggregates';
+import { getCurrentUserIdOrThrow } from './users';
 
 export const requestItemValidator = v.object({
   materialId: v.id('materials'),
@@ -43,14 +43,10 @@ export const findById = query({
 export const listBySeller = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, { paginationOpts }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     return await ctx.db
       .query('transactionRequests')
-      .withIndex('by_sellerId', (q) => q.eq('sellerId', userId as Id<'users'>))
+      .withIndex('by_sellerId', (q) => q.eq('sellerId', userId))
       .order('desc')
       .paginate(paginationOpts);
   },
@@ -59,14 +55,10 @@ export const listBySeller = query({
 export const listByBuyer = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, { paginationOpts }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     return await ctx.db
       .query('transactionRequests')
-      .withIndex('by_buyerId', (q) => q.eq('buyerId', userId as Id<'users'>))
+      .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
       .order('desc')
       .paginate(paginationOpts);
   },
@@ -78,11 +70,7 @@ export const create = mutation({
     items: v.array(v.object({ materialId: v.id('materials'), stockId: v.id('stock') })),
   },
   handler: async (ctx, { sellerId, items }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [buyerId] = identity.subject.split('|');
+    const buyerId = await getCurrentUserIdOrThrow(ctx);
 
     if (buyerId === sellerId)
       throw new ConvexError({ name: 'Invalid Input', message: 'You cannot request your own listing.' });
@@ -104,7 +92,7 @@ export const create = mutation({
 
     const id = await ctx.db.insert('transactionRequests', {
       sellerId,
-      buyerId: buyerId as Id<'users'>,
+      buyerId,
       items: requestItems,
       // legacy: use first item's materialId for backward compat
       materialId: items[0].materialId,
@@ -141,11 +129,7 @@ export const makeOffer = mutation({
     })),
   },
   handler: async (ctx, { _id, offerItems }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const request = await ctx.db.get('transactionRequests', _id);
 
     if (!request)
@@ -156,7 +140,7 @@ export const makeOffer = mutation({
       throw new ConvexError({ name: 'Invalid Input', message: 'An offer can only be made on a pending request.' });
 
     const requestItems = request.items ?? (request.materialId
-      ? [{ materialId: request.materialId, stockId: '' as Id<'stock'> }]
+      ? [{ materialId: request.materialId, stockId: '' as never }]
       : []);
 
     // Validate each item
@@ -214,11 +198,7 @@ export const makeOffer = mutation({
 export const acceptOffer = mutation({
   args: { _id: v.id('transactionRequests') },
   handler: async (ctx, { _id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const request = await ctx.db.get('transactionRequests', _id);
 
     if (!request)
@@ -232,7 +212,7 @@ export const acceptOffer = mutation({
     const requestItems = request.items && request.items.length > 0
       ? request.items
       : (request.materialId && request.offerWeight != null && request.offerPrice != null
-          ? [{ materialId: request.materialId, stockId: '' as Id<'stock'>, offerWeight: request.offerWeight, offerPrice: request.offerPrice }]
+          ? [{ materialId: request.materialId, stockId: '' as never, offerWeight: request.offerWeight, offerPrice: request.offerPrice }]
           : []);
 
     const offeredItems = requestItems.filter(
@@ -338,11 +318,7 @@ export const acceptOffer = mutation({
 export const declineOffer = mutation({
   args: { _id: v.id('transactionRequests') },
   handler: async (ctx, { _id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const request = await ctx.db.get('transactionRequests', _id);
 
     if (!request)
@@ -370,11 +346,7 @@ export const declineOffer = mutation({
 export const withdrawOffer = mutation({
   args: { _id: v.id('transactionRequests') },
   handler: async (ctx, { _id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const request = await ctx.db.get('transactionRequests', _id);
 
     if (!request)
@@ -402,11 +374,7 @@ export const withdrawOffer = mutation({
 export const reject = mutation({
   args: { _id: v.id('transactionRequests') },
   handler: async (ctx, { _id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const request = await ctx.db.get('transactionRequests', _id);
 
     if (!request)
@@ -434,11 +402,7 @@ export const reject = mutation({
 export const cancel = mutation({
   args: { _id: v.id('transactionRequests') },
   handler: async (ctx, { _id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity)
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
-
-    const [userId] = identity.subject.split('|');
+    const userId = await getCurrentUserIdOrThrow(ctx);
     const request = await ctx.db.get('transactionRequests', _id);
 
     if (!request)
