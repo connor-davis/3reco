@@ -360,7 +360,6 @@ export function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const signInMutation = useMutation({
     mutationFn: async () => {
@@ -378,40 +377,18 @@ export function SignInPage() {
     },
   });
 
-  const resendVerificationMutation = useMutation({
-    mutationFn: async () => {
-      if (!email.trim()) {
-        throw new Error('Enter an email address first.');
-      }
-
-      await authClient.sendVerificationEmail({
-        email,
-        callbackURL: '/',
-      });
-    },
-    onSuccess: () => {
-      setErrorMessage(null);
-      setSuccessMessage('Verification email sent. Please check your inbox.');
-    },
-    onError: (error) => {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Could not resend verification email.'
-      );
-    },
-  });
-
   if (redirect) {
     return redirect;
   }
 
-  const isBusy = signInMutation.isPending || resendVerificationMutation.isPending;
+  const isBusy = signInMutation.isPending;
 
   return (
     <AuthShell
       title="Welcome to 3rEco"
       description="Please sign in to continue."
     >
-      <AuthStatus errorMessage={errorMessage} successMessage={successMessage} />
+      <AuthStatus errorMessage={errorMessage} />
 
       <div className="space-y-4">
         <div className="space-y-2">
@@ -447,19 +424,6 @@ export function SignInPage() {
             <ArrowRightIcon />
           )}
           <span>Sign in</span>
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full"
-          disabled={isBusy || email.trim().length === 0}
-          onClick={() => resendVerificationMutation.mutate()}
-        >
-          {resendVerificationMutation.isPending ? (
-            <Spinner className="text-current" />
-          ) : (
-            <RotateCcwIcon />
-          )}
-          <span>Resend verification email</span>
         </Button>
       </div>
 
@@ -505,33 +469,11 @@ export function SignUpPage() {
     },
   });
 
-  const resendVerificationMutation = useMutation({
-    mutationFn: async () => {
-      if (!email.trim()) {
-        throw new Error('Enter an email address first.');
-      }
-
-      await authClient.sendVerificationEmail({
-        email,
-        callbackURL: '/',
-      });
-    },
-    onSuccess: () => {
-      setErrorMessage(null);
-      setSuccessMessage('Verification email sent. Please check your inbox.');
-    },
-    onError: (error) => {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Could not resend verification email.'
-      );
-    },
-  });
-
   if (redirect) {
     return redirect;
   }
 
-  const isBusy = signUpMutation.isPending || resendVerificationMutation.isPending;
+  const isBusy = signUpMutation.isPending;
 
   return (
     <AuthShell
@@ -589,19 +531,6 @@ export function SignUpPage() {
             <MailIcon />
           )}
           <span>Create account</span>
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full"
-          disabled={isBusy || email.trim().length === 0}
-          onClick={() => resendVerificationMutation.mutate()}
-        >
-          {resendVerificationMutation.isPending ? (
-            <Spinner className="text-current" />
-          ) : (
-            <RotateCcwIcon />
-          )}
-          <span>Resend verification email</span>
         </Button>
       </div>
 
