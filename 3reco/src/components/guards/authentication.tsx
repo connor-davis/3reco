@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import {
   Link,
   Navigate,
+  useNavigate,
   useSearch,
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
@@ -475,6 +476,7 @@ export function SignInPage() {
 
 export function SignUpPage() {
   const redirect = useAuthRouteRedirect();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -492,9 +494,11 @@ export function SignUpPage() {
     },
     onSuccess: () => {
       setErrorMessage(null);
-      setSuccessMessage(
-        'Account created. Please verify your email before signing in.'
-      );
+      setSuccessMessage(null);
+      void navigate({
+        to: '/auth/verify-email',
+        search: { email },
+      });
     },
     onError: (error) => {
       setErrorMessage(error instanceof Error ? error.message : 'Sign up failed.');
@@ -605,6 +609,88 @@ export function SignUpPage() {
         primaryPrompt="Already have an account?"
         primaryHref="/auth/sign-in"
         primaryLabel="Sign in"
+        secondaryHref="/"
+        secondaryLabel="Back to welcome"
+      />
+    </AuthShell>
+  );
+}
+
+export function VerifyEmailPage() {
+  const redirect = useAuthRouteRedirect();
+  const search = useSearch({ strict: false });
+  const searchParams = search as Record<string, unknown>;
+  const email =
+    typeof searchParams.email === 'string' && searchParams.email.length > 0
+      ? searchParams.email
+      : null;
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: async () => {
+      if (!email) {
+        throw new Error('Missing email address.');
+      }
+
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: '/',
+      });
+    },
+    onSuccess: () => {
+      setErrorMessage(null);
+      setSuccessMessage('Verification email sent. Please check your inbox.');
+    },
+    onError: (error) => {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Could not resend verification email.'
+      );
+    },
+  });
+
+  if (redirect) {
+    return redirect;
+  }
+
+  return (
+    <AuthShell
+      title="Welcome to 3rEco"
+      description="Check your email to verify your account."
+    >
+      <AuthStatus errorMessage={errorMessage} successMessage={successMessage} />
+
+      <div className="space-y-4">
+        <p className="text-sm leading-6 text-muted-foreground">
+          We sent a verification email
+          {email ? (
+            <>
+              {' '}
+              to <strong className="text-foreground">{email}</strong>
+            </>
+          ) : null}
+          . Open your mailbox and click the verification link to continue.
+        </p>
+
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={resendVerificationMutation.isPending || !email}
+          onClick={() => resendVerificationMutation.mutate()}
+        >
+          {resendVerificationMutation.isPending ? (
+            <Spinner className="text-current" />
+          ) : (
+            <RotateCcwIcon />
+          )}
+          <span>Resend verification email</span>
+        </Button>
+      </div>
+
+      <AuthLinks
+        primaryPrompt="Already verified?"
+        primaryHref="/auth/sign-in"
+        primaryLabel="Back to sign in"
         secondaryHref="/"
         secondaryLabel="Back to welcome"
       />

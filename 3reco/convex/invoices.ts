@@ -9,6 +9,7 @@ import {
 } from './_generated/server';
 import { internal } from './_generated/api';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { Resend } from 'resend';
 import { getEffectiveTransactionDate } from './lib/collectionDay';
 import { getCurrentUserIdOrThrow } from './users';
 
@@ -28,6 +29,26 @@ function unauthorizedError() {
     name: 'Unauthorized',
     message: 'You are not authorized to access this resource.',
   });
+}
+
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('Missing RESEND_API_KEY environment variable.');
+  }
+
+  return new Resend(apiKey);
+}
+
+function getFromEmail() {
+  const fromEmail = process.env.AUTH_FROM_EMAIL;
+
+  if (!fromEmail) {
+    throw new Error('Missing AUTH_FROM_EMAIL environment variable.');
+  }
+
+  return fromEmail;
 }
 
 async function getParticipantTransaction(
@@ -318,6 +339,35 @@ export const generateForTransaction = internalAction({
       transactionId,
       storageId,
     });
+
+    if (buyer.email) {
+      const invoiceDate = formatTransactionDateLabel(
+        getEffectiveTransactionDate(transaction)
+      );
+
+      await getResendClient().emails.send({
+        from: getFromEmail(),
+        to: buyer.email,
+        subject: `Your 3rEco invoice ${invoiceNum}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827; max-width: 560px; margin: 0 auto; padding: 24px;">
+            <h2 style="margin-bottom: 12px;">Your invoice is ready</h2>
+            <p style="margin-bottom: 16px;">Hi ${buyerName},</p>
+            <p style="margin-bottom: 16px;">
+              Please find your invoice for transaction <strong>${invoiceNum}</strong> dated <strong>${invoiceDate}</strong> attached to this email.
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">This invoice was generated automatically by 3rEco.</p>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: `3rEco-Invoice-${invoiceNum}.pdf`,
+            content: Buffer.from(pdfBytes).toString('base64'),
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+    }
   },
 });
 
