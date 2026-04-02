@@ -1,4 +1,8 @@
 import BackButton from '@/components/back-button';
+import {
+  TypedConfirmationField,
+  matchesTypedConfirmation,
+} from '@/components/dialogs/typed-confirmation';
 import PageHeaderActions from '@/components/page-header-actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,12 +56,31 @@ const USER_TYPE_LABELS: Record<UserType, string> = {
   collector: 'Collector',
 };
 
-function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string }) {
+function DeleteUserDialog({
+  userId,
+  name,
+  confirmationLabel,
+  confirmationValue,
+}: {
+  userId: Id<'users'>;
+  name: string;
+  confirmationLabel: string;
+  confirmationValue: string;
+}) {
   const [open, setOpen] = useState(false);
+  const [confirmationInput, setConfirmationInput] = useState('');
   const removeUser = useConvexMutation(api.users.removeUser);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          setConfirmationInput('');
+        }
+      }}
+    >
       <DialogTrigger
         render={
           <Button variant="destructive" size="icon-sm" />
@@ -69,18 +92,28 @@ function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string 
         <DialogHeader>
           <DialogTitle>Remove User</DialogTitle>
           <DialogDescription>
-            Are you sure you want to remove <strong>{name}</strong>? This cannot
-            be undone.
+            Enter <strong>{confirmationValue}</strong> ({confirmationLabel}) to
+            remove <strong>{name}</strong>.
           </DialogDescription>
         </DialogHeader>
+        <TypedConfirmationField
+          expectedValue={confirmationValue}
+          confirmationLabel={confirmationLabel}
+          value={confirmationInput}
+          onChange={setConfirmationInput}
+        />
         <DialogFooter showCloseButton>
           <Button
             variant="destructive"
+            disabled={
+              !matchesTypedConfirmation(confirmationInput, confirmationValue)
+            }
             onClick={() =>
               toast.promise(removeUser({ _id: userId }), {
                 loading: 'Removing user...',
                 success: () => {
                   setOpen(false);
+                  setConfirmationInput('');
                   return 'User removed.';
                 },
                 error: (error: Error) => {
@@ -152,7 +185,14 @@ function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; e
             <SelectItem value="collector">Collector</SelectItem>
           </SelectContent>
         </Select>
-        {isAdmin && <DeleteUserDialog userId={user._id} name={displayName} />}
+        {isAdmin && (
+          <DeleteUserDialog
+            userId={user._id}
+            name={displayName}
+            confirmationLabel={user.email ? 'email' : 'name'}
+            confirmationValue={user.email ?? displayName}
+          />
+        )}
       </ItemActions>
     </Item>
   );

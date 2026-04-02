@@ -115,7 +115,10 @@ function RouteComponent() {
                   </Button>
                 </EditMaterialByIdDialog>
 
-                <RemoveMaterialByIdDialog _id={material._id}>
+                <RemoveMaterialByIdDialog
+                  _id={material._id}
+                  materialName={material.name}
+                >
                   <Button variant="destructiveGhost" size="icon">
                     <TrashIcon />
                   </Button>

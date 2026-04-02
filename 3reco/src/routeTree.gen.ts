@@ -23,7 +23,10 @@ import { Route as TransactionsPurchasesRouteImport } from './routes/transactions
 import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
+import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
+import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store.$sellerId'
 
@@ -97,9 +100,24 @@ const MarketRequestIdRoute = MarketRequestIdRouteImport.update({
   path: '/market/$requestId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSignUpRoute = AuthSignUpRouteImport.update({
+  id: '/auth/sign-up',
+  path: '/auth/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignInRoute = AuthSignInRouteImport.update({
+  id: '/auth/sign-in',
+  path: '/auth/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
   id: '/auth/reset-password',
   path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -121,7 +139,10 @@ export interface FileRoutesByFullPath {
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
+  '/auth/sign-up': typeof AuthSignUpRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
@@ -140,7 +161,10 @@ export interface FileRoutesByTo {
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
+  '/auth/sign-up': typeof AuthSignUpRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
@@ -160,7 +184,10 @@ export interface FileRoutesById {
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
+  '/auth/sign-up': typeof AuthSignUpRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
@@ -181,7 +208,10 @@ export interface FileRouteTypes {
     | '/materials'
     | '/stock'
     | '/admin/users'
+    | '/auth/forgot-password'
     | '/auth/reset-password'
+    | '/auth/sign-in'
+    | '/auth/sign-up'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
@@ -200,7 +230,10 @@ export interface FileRouteTypes {
     | '/materials'
     | '/stock'
     | '/admin/users'
+    | '/auth/forgot-password'
     | '/auth/reset-password'
+    | '/auth/sign-in'
+    | '/auth/sign-up'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
@@ -219,7 +252,10 @@ export interface FileRouteTypes {
     | '/materials'
     | '/stock'
     | '/admin/users'
+    | '/auth/forgot-password'
     | '/auth/reset-password'
+    | '/auth/sign-in'
+    | '/auth/sign-up'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
@@ -239,7 +275,10 @@ export interface RootRouteChildren {
   MaterialsRoute: typeof MaterialsRoute
   StockRoute: typeof StockRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthSignInRoute: typeof AuthSignInRoute
+  AuthSignUpRoute: typeof AuthSignUpRoute
   MarketRequestIdRoute: typeof MarketRequestIdRoute
   MarketIncomingRoute: typeof MarketIncomingRoute
   MarketOutgoingRoute: typeof MarketOutgoingRoute
@@ -351,11 +390,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketRequestIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/sign-up': {
+      id: '/auth/sign-up'
+      path: '/auth/sign-up'
+      fullPath: '/auth/sign-up'
+      preLoaderRoute: typeof AuthSignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/sign-in': {
+      id: '/auth/sign-in'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in'
+      preLoaderRoute: typeof AuthSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/reset-password': {
       id: '/auth/reset-password'
       path: '/auth/reset-password'
       fullPath: '/auth/reset-password'
       preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -383,7 +443,10 @@ const rootRouteChildren: RootRouteChildren = {
   MaterialsRoute: MaterialsRoute,
   StockRoute: StockRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthSignInRoute: AuthSignInRoute,
+  AuthSignUpRoute: AuthSignUpRoute,
   MarketRequestIdRoute: MarketRequestIdRoute,
   MarketIncomingRoute: MarketIncomingRoute,
   MarketOutgoingRoute: MarketOutgoingRoute,

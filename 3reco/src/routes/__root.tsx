@@ -10,7 +10,12 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { useQuery } from '@tanstack/react-query';
-import { createRootRoute, Outlet } from '@tanstack/react-router';
+import {
+  Navigate,
+  Outlet,
+  createRootRoute,
+  useLocation,
+} from '@tanstack/react-router';
 import {
   Authenticated,
   AuthLoading,
@@ -21,6 +26,7 @@ import { Activity, useEffect, useState } from 'react';
 
 const RootLayout = () => {
   const { isAuthenticated } = useConvexAuth();
+  const location = useLocation();
   const syncCurrentUserFromAuth = useConvexMutation(
     api.users.syncCurrentUserFromAuth
   );
@@ -120,7 +126,13 @@ const RootLayout = () => {
 
       <Unauthenticated>
         <div className="flex min-h-dvh w-full flex-col bg-background text-foreground">
-          <AuthenticationGuard />
+          {location.pathname === '/' ? (
+            <AuthenticationGuard />
+          ) : location.pathname.startsWith('/auth/') ? (
+            <Outlet />
+          ) : (
+            <Navigate to="/" replace />
+          )}
         </div>
       </Unauthenticated>
 

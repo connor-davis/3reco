@@ -1,6 +1,10 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { useSearch } from '@tanstack/react-router';
+import {
+  Link,
+  Navigate,
+  useSearch,
+} from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
@@ -13,8 +17,10 @@ import {
   ShieldCheckIcon,
   WeightIcon,
 } from 'lucide-react';
+import { useConvexAuth } from 'convex/react';
 import { authClient } from '@/lib/auth-client';
 import { getEffectiveTransactionDate } from '@/lib/transactions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,10 +40,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-type AuthMode = 'sign-in' | 'sign-up' | 'forgot-password' | 'reset-password';
 
 function CollectorLookupPanel({
   mode,
@@ -55,7 +57,7 @@ function CollectorLookupPanel({
     <div
       className={
         mode === 'desktop'
-          ? 'flex h-full flex-col rounded-xl border bg-card p-6 shadow-[var(--shadow-glass)]'
+          ? 'flex h-full flex-col rounded-xl border bg-card p-6 shadow-[var(--shadow-soft)]'
           : 'flex flex-col gap-4'
       }
     >
@@ -78,7 +80,7 @@ function CollectorLookupPanel({
           disabled={collectorPhone.trim().length === 0}
         >
           <SearchIcon />
-          <Label>Check stats</Label>
+          <span>Check stats</span>
         </Button>
       </div>
 
@@ -187,361 +189,39 @@ function CollectorLookupPanel({
   );
 }
 
-function getCurrentReturnTo() {
-  if (window.location.pathname.startsWith('/auth/')) {
-    return '/';
-  }
-
-  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
-}
-
 function absoluteUrl(pathname: string) {
   return new URL(pathname, window.location.origin).toString();
 }
 
-export default function AuthenticationGuard() {
-  const search = useSearch({ strict: false });
-  const searchParams = search as Record<string, unknown>;
-  const [mode, setMode] = useState<AuthMode>('sign-in');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [signInEmail, setSignInEmail] = useState('');
-  const [signInPassword, setSignInPassword] = useState('');
-  const [signUpName, setSignUpName] = useState('');
-  const [signUpEmail, setSignUpEmail] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const [resetPassword, setResetPassword] = useState('');
-
-  const resetToken = useMemo(() => {
-    return typeof searchParams.token === 'string' && searchParams.token.length > 0
-      ? searchParams.token
-      : null;
-  }, [searchParams]);
-
-  const resetLinkError = useMemo(() => {
-    return typeof searchParams.error === 'string' && searchParams.error.length > 0
-      ? searchParams.error
-      : null;
-  }, [searchParams]);
-
-  const signInMutation = useMutation({
-    mutationFn: async () => {
-      await authClient.signIn.email({
-        email: signInEmail,
-        password: signInPassword,
-        callbackURL: getCurrentReturnTo(),
-      });
-    },
-    onSuccess: () => {
-      setErrorMessage(null);
-    },
-    onError: (error) => {
-      setErrorMessage(error instanceof Error ? error.message : 'Sign in failed.');
-    },
-  });
-
-  const signUpMutation = useMutation({
-    mutationFn: async () => {
-      await authClient.signUp.email({
-        name: signUpName,
-        email: signUpEmail,
-        password: signUpPassword,
-        callbackURL: getCurrentReturnTo(),
-      });
-    },
-    onSuccess: () => {
-      setErrorMessage(null);
-      setSuccessMessage(
-        'Account created. Please verify your email before signing in.'
-      );
-    },
-    onError: (error) => {
-      setErrorMessage(error instanceof Error ? error.message : 'Sign up failed.');
-    },
-  });
-
-  const forgotPasswordMutation = useMutation({
-    mutationFn: async () => {
-      await authClient.requestPasswordReset({
-        email: forgotPasswordEmail,
-        redirectTo: absoluteUrl('/auth/reset-password'),
-      });
-    },
-    onSuccess: () => {
-      setErrorMessage(null);
-      setSuccessMessage(
-        'If the account exists, a reset link has been sent to that email address.'
-      );
-    },
-    onError: (error) => {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Could not request a reset link.'
-      );
-    },
-  });
-
-  const resetPasswordMutation = useMutation({
-    mutationFn: async () => {
-      if (!resetToken) {
-        throw new Error('Missing reset token.');
-      }
-
-      await authClient.resetPassword({
-        newPassword: resetPassword,
-        token: resetToken,
-      });
-    },
-    onSuccess: () => {
-      setErrorMessage(null);
-      setSuccessMessage('Password updated. You can now sign in.');
-      setMode('sign-in');
-      setResetPassword('');
-      window.history.replaceState({}, '', '/');
-    },
-    onError: (error) => {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Could not reset password.'
-      );
-    },
-  });
-
-  const resendVerificationMutation = useMutation({
-    mutationFn: async () => {
-      const email = signUpEmail || signInEmail;
-
-      if (!email) {
-        throw new Error('Enter an email address first.');
-      }
-
-      await authClient.sendVerificationEmail({
-        email,
-        callbackURL: getCurrentReturnTo(),
-      });
-    },
-    onSuccess: () => {
-      setErrorMessage(null);
-      setSuccessMessage('Verification email sent. Please check your inbox.');
-    },
-    onError: (error) => {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Could not resend verification email.'
-      );
-    },
-  });
-
-  const isBusy =
-    signInMutation.isPending ||
-    signUpMutation.isPending ||
-    forgotPasswordMutation.isPending ||
-    resetPasswordMutation.isPending ||
-    resendVerificationMutation.isPending;
-
+function AuthShell({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-transparent p-4 sm:p-6">
+    <div className="flex min-h-dvh w-full items-center justify-center bg-transparent p-4 sm:p-6">
       <div className="grid h-full w-full max-w-7xl gap-4 lg:grid-cols-[420px_minmax(0,1fr)]">
         <Card className="flex h-full max-w-full flex-col gap-8 lg:rounded-xl">
           <CardHeader className="items-center text-center">
             <div className="flex size-12 items-center justify-center rounded-xl border bg-primary/10 text-primary shadow-[var(--shadow-soft)]">
               <ShieldCheckIcon className="size-6" />
             </div>
-            <CardTitle>Sign in with Better Auth</CardTitle>
-            <CardDescription>
-              Use email and password, recover access with reset links, and verify
-              your email securely.
-            </CardDescription>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-4">
-            {resetLinkError && (
-              <Alert variant="destructive">
-                <AlertTitle>Reset link issue</AlertTitle>
-                <AlertDescription>
-                  This reset link is invalid or expired. Request a fresh one below.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {errorMessage && (
-              <Alert variant="destructive">
-                <AlertTitle>Authentication error</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
-
-            {successMessage && (
-              <Alert>
-                <AlertTitle>Success</AlertTitle>
-                <AlertDescription>{successMessage}</AlertDescription>
-              </Alert>
-            )}
-
-            <Tabs
-              value={mode}
-              onValueChange={(value) => {
-                setErrorMessage(null);
-                setSuccessMessage(null);
-                setMode(value as AuthMode);
-              }}
-              className="w-full"
-            >
-              <TabsList className="w-full">
-                <TabsTrigger value="sign-in">Sign in</TabsTrigger>
-                <TabsTrigger value="sign-up">Create account</TabsTrigger>
-                <TabsTrigger value="forgot-password">Forgot password</TabsTrigger>
-                <TabsTrigger value="reset-password" disabled={!resetToken}>
-                  Reset password
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="sign-in" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sign-in-email">Email</Label>
-                  <Input
-                    id="sign-in-email"
-                    type="email"
-                    value={signInEmail}
-                    onChange={(event) => setSignInEmail(event.target.value)}
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sign-in-password">Password</Label>
-                  <Input
-                    id="sign-in-password"
-                    type="password"
-                    value={signInPassword}
-                    onChange={(event) => setSignInPassword(event.target.value)}
-                    placeholder="Enter your password"
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  disabled={isBusy}
-                  onClick={() => signInMutation.mutate()}
-                >
-                  {signInMutation.isPending ? (
-                    <Spinner className="text-current" />
-                  ) : (
-                    <ArrowRightIcon />
-                  )}
-                  <Label>Continue to sign in</Label>
-                </Button>
-              </TabsContent>
-
-              <TabsContent value="sign-up" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sign-up-name">Full name</Label>
-                  <Input
-                    id="sign-up-name"
-                    value={signUpName}
-                    onChange={(event) => setSignUpName(event.target.value)}
-                    placeholder="Your full name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sign-up-email">Email</Label>
-                  <Input
-                    id="sign-up-email"
-                    type="email"
-                    value={signUpEmail}
-                    onChange={(event) => setSignUpEmail(event.target.value)}
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sign-up-password">Password</Label>
-                  <Input
-                    id="sign-up-password"
-                    type="password"
-                    value={signUpPassword}
-                    onChange={(event) => setSignUpPassword(event.target.value)}
-                    placeholder="Choose a strong password"
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  disabled={isBusy}
-                  onClick={() => signUpMutation.mutate()}
-                >
-                  {signUpMutation.isPending ? (
-                    <Spinner className="text-current" />
-                  ) : (
-                    <MailIcon />
-                  )}
-                  <Label>Create account</Label>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled={isBusy || (signUpEmail || signInEmail).trim().length === 0}
-                  onClick={() => resendVerificationMutation.mutate()}
-                >
-                  {resendVerificationMutation.isPending ? (
-                    <Spinner className="text-current" />
-                  ) : (
-                    <RotateCcwIcon />
-                  )}
-                  <Label>Resend verification email</Label>
-                </Button>
-              </TabsContent>
-
-              <TabsContent value="forgot-password" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="forgot-password-email">Email</Label>
-                  <Input
-                    id="forgot-password-email"
-                    type="email"
-                    value={forgotPasswordEmail}
-                    onChange={(event) => setForgotPasswordEmail(event.target.value)}
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  disabled={isBusy || forgotPasswordEmail.trim().length === 0}
-                  onClick={() => forgotPasswordMutation.mutate()}
-                >
-                  {forgotPasswordMutation.isPending ? (
-                    <Spinner className="text-current" />
-                  ) : (
-                    <RotateCcwIcon />
-                  )}
-                  <Label>Send reset link</Label>
-                </Button>
-              </TabsContent>
-
-              <TabsContent value="reset-password" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-password-input">New password</Label>
-                  <Input
-                    id="reset-password-input"
-                    type="password"
-                    value={resetPassword}
-                    onChange={(event) => setResetPassword(event.target.value)}
-                    placeholder="Choose a new password"
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  disabled={isBusy || !resetToken || resetPassword.trim().length < 8}
-                  onClick={() => resetPasswordMutation.mutate()}
-                >
-                  {resetPasswordMutation.isPending ? (
-                    <Spinner className="text-current" />
-                  ) : (
-                    <ArrowRightIcon />
-                  )}
-                  <Label>Update password</Label>
-                </Button>
-              </TabsContent>
-            </Tabs>
+            {children}
 
             <div className="mt-auto flex flex-col gap-3 lg:hidden">
               <Drawer>
                 <DrawerTrigger asChild>
                   <Button variant="outline" className="w-full">
                     <SearchIcon />
-                    <Label>Open collector lookup</Label>
+                    <span>Open collector lookup</span>
                   </Button>
                 </DrawerTrigger>
                 <DrawerContent>
@@ -565,5 +245,561 @@ export default function AuthenticationGuard() {
         </div>
       </div>
     </div>
+  );
+}
+
+function AuthStatus({
+  errorMessage,
+  successMessage,
+  resetLinkError,
+}: {
+  errorMessage?: string | null;
+  successMessage?: string | null;
+  resetLinkError?: string | null;
+}) {
+  return (
+    <>
+      {resetLinkError && (
+        <Alert variant="destructive">
+          <AlertTitle>Reset link issue</AlertTitle>
+          <AlertDescription>
+            This reset link is invalid or expired. Request a fresh one below.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertTitle>Authentication error</AlertTitle>
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {successMessage && (
+        <Alert>
+          <AlertTitle>Success</AlertTitle>
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
+    </>
+  );
+}
+
+function useAuthRouteRedirect() {
+  const { isAuthenticated } = useConvexAuth();
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  return null;
+}
+
+function AuthLinks({
+  primaryPrompt,
+  primaryHref,
+  primaryLabel,
+  secondaryHref,
+  secondaryLabel,
+}: {
+  primaryPrompt: string;
+  primaryHref: '/auth/sign-in' | '/auth/sign-up' | '/auth/forgot-password' | '/';
+  primaryLabel: string;
+  secondaryHref?: '/auth/sign-in' | '/auth/sign-up' | '/auth/forgot-password' | '/';
+  secondaryLabel?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm text-muted-foreground">
+      <p>
+        {primaryPrompt}{' '}
+        <Link to={primaryHref} className="text-foreground underline underline-offset-4">
+          {primaryLabel}
+        </Link>
+      </p>
+      {secondaryHref && secondaryLabel ? (
+        <Link
+          to={secondaryHref}
+          className="text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+        >
+          {secondaryLabel}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+export default function AuthenticationGuard() {
+  return (
+    <AuthShell
+      title="Welcome to 3rEco"
+      description="Please sign in to continue."
+    >
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link to="/auth/sign-in" className="flex-1">
+            <Button className="w-full">
+              <ArrowRightIcon />
+              <span>Continue to app</span>
+            </Button>
+          </Link>
+          <Link to="/auth/sign-up" className="flex-1">
+            <Button variant="outline" className="w-full">
+              <MailIcon />
+              <span>Create account</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </AuthShell>
+  );
+}
+
+export function SignInPage() {
+  const redirect = useAuthRouteRedirect();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const signInMutation = useMutation({
+    mutationFn: async () => {
+      await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: '/',
+      });
+    },
+    onSuccess: () => {
+      setErrorMessage(null);
+    },
+    onError: (error) => {
+      setErrorMessage(error instanceof Error ? error.message : 'Sign in failed.');
+    },
+  });
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: async () => {
+      if (!email.trim()) {
+        throw new Error('Enter an email address first.');
+      }
+
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: '/',
+      });
+    },
+    onSuccess: () => {
+      setErrorMessage(null);
+      setSuccessMessage('Verification email sent. Please check your inbox.');
+    },
+    onError: (error) => {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Could not resend verification email.'
+      );
+    },
+  });
+
+  if (redirect) {
+    return redirect;
+  }
+
+  const isBusy = signInMutation.isPending || resendVerificationMutation.isPending;
+
+  return (
+    <AuthShell
+      title="Welcome to 3rEco"
+      description="Please sign in to continue."
+    >
+      <AuthStatus errorMessage={errorMessage} successMessage={successMessage} />
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="sign-in-email">Email</Label>
+          <Input
+            id="sign-in-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="sign-in-password">Password</Label>
+          <Input
+            id="sign-in-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Enter your password"
+          />
+        </div>
+        <Button
+          className="w-full"
+          disabled={isBusy || email.trim().length === 0 || password.length === 0}
+          onClick={() => signInMutation.mutate()}
+        >
+          {signInMutation.isPending ? (
+            <Spinner className="text-current" />
+          ) : (
+            <ArrowRightIcon />
+          )}
+          <span>Sign in</span>
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={isBusy || email.trim().length === 0}
+          onClick={() => resendVerificationMutation.mutate()}
+        >
+          {resendVerificationMutation.isPending ? (
+            <Spinner className="text-current" />
+          ) : (
+            <RotateCcwIcon />
+          )}
+          <span>Resend verification email</span>
+        </Button>
+      </div>
+
+      <AuthLinks
+        primaryPrompt="Don't have an account?"
+        primaryHref="/auth/sign-up"
+        primaryLabel="Create one"
+        secondaryHref="/auth/forgot-password"
+        secondaryLabel="Forgot your password?"
+      />
+    </AuthShell>
+  );
+}
+
+export function SignUpPage() {
+  const redirect = useAuthRouteRedirect();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const signUpMutation = useMutation({
+    mutationFn: async () => {
+      await authClient.signUp.email({
+        name,
+        email,
+        password,
+        callbackURL: '/',
+      });
+    },
+    onSuccess: () => {
+      setErrorMessage(null);
+      setSuccessMessage(
+        'Account created. Please verify your email before signing in.'
+      );
+    },
+    onError: (error) => {
+      setErrorMessage(error instanceof Error ? error.message : 'Sign up failed.');
+    },
+  });
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: async () => {
+      if (!email.trim()) {
+        throw new Error('Enter an email address first.');
+      }
+
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: '/',
+      });
+    },
+    onSuccess: () => {
+      setErrorMessage(null);
+      setSuccessMessage('Verification email sent. Please check your inbox.');
+    },
+    onError: (error) => {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Could not resend verification email.'
+      );
+    },
+  });
+
+  if (redirect) {
+    return redirect;
+  }
+
+  const isBusy = signUpMutation.isPending || resendVerificationMutation.isPending;
+
+  return (
+    <AuthShell
+      title="Welcome to 3rEco"
+      description="Create your account."
+    >
+      <AuthStatus errorMessage={errorMessage} successMessage={successMessage} />
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="sign-up-name">Full name</Label>
+          <Input
+            id="sign-up-name"
+            autoComplete="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Your full name"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="sign-up-email">Email</Label>
+          <Input
+            id="sign-up-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="sign-up-password">Password</Label>
+          <Input
+            id="sign-up-password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Choose a strong password"
+          />
+        </div>
+        <Button
+          className="w-full"
+          disabled={
+            isBusy ||
+            name.trim().length === 0 ||
+            email.trim().length === 0 ||
+            password.length === 0
+          }
+          onClick={() => signUpMutation.mutate()}
+        >
+          {signUpMutation.isPending ? (
+            <Spinner className="text-current" />
+          ) : (
+            <MailIcon />
+          )}
+          <span>Create account</span>
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={isBusy || email.trim().length === 0}
+          onClick={() => resendVerificationMutation.mutate()}
+        >
+          {resendVerificationMutation.isPending ? (
+            <Spinner className="text-current" />
+          ) : (
+            <RotateCcwIcon />
+          )}
+          <span>Resend verification email</span>
+        </Button>
+      </div>
+
+      <AuthLinks
+        primaryPrompt="Already have an account?"
+        primaryHref="/auth/sign-in"
+        primaryLabel="Sign in"
+        secondaryHref="/"
+        secondaryLabel="Back to welcome"
+      />
+    </AuthShell>
+  );
+}
+
+export function ForgotPasswordPage() {
+  const redirect = useAuthRouteRedirect();
+  const [email, setEmail] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async () => {
+      await authClient.requestPasswordReset({
+        email,
+        redirectTo: absoluteUrl('/auth/reset-password'),
+      });
+    },
+    onSuccess: () => {
+      setErrorMessage(null);
+      setSuccessMessage(
+        'If the account exists, a reset link has been sent to that email address.'
+      );
+    },
+    onError: (error) => {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Could not request a reset link.'
+      );
+    },
+  });
+
+  if (redirect) {
+    return redirect;
+  }
+
+  return (
+    <AuthShell
+      title="Welcome to 3rEco"
+      description="Reset your password."
+    >
+      <AuthStatus errorMessage={errorMessage} successMessage={successMessage} />
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="forgot-password-email">Email</Label>
+          <Input
+            id="forgot-password-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+          />
+        </div>
+        <Button
+          className="w-full"
+          disabled={forgotPasswordMutation.isPending || email.trim().length === 0}
+          onClick={() => forgotPasswordMutation.mutate()}
+        >
+          {forgotPasswordMutation.isPending ? (
+            <Spinner className="text-current" />
+          ) : (
+            <RotateCcwIcon />
+          )}
+          <span>Send reset link</span>
+        </Button>
+      </div>
+
+      <AuthLinks
+        primaryPrompt="Remembered your password?"
+        primaryHref="/auth/sign-in"
+        primaryLabel="Back to sign in"
+        secondaryHref="/auth/sign-up"
+        secondaryLabel="Need an account instead?"
+      />
+    </AuthShell>
+  );
+}
+
+export function ResetPasswordPage() {
+  const redirect = useAuthRouteRedirect();
+  const search = useSearch({ strict: false });
+  const searchParams = search as Record<string, unknown>;
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const resetToken = useMemo(() => {
+    return typeof searchParams.token === 'string' && searchParams.token.length > 0
+      ? searchParams.token
+      : null;
+  }, [searchParams]);
+
+  const resetLinkError = useMemo(() => {
+    return typeof searchParams.error === 'string' && searchParams.error.length > 0
+      ? searchParams.error
+      : null;
+  }, [searchParams]);
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async () => {
+      if (!resetToken) {
+        throw new Error('Missing reset token.');
+      }
+
+      await authClient.resetPassword({
+        newPassword: password,
+        token: resetToken,
+      });
+    },
+    onSuccess: () => {
+      setErrorMessage(null);
+      setSuccessMessage('Password updated. You can now sign in.');
+      setPassword('');
+      window.history.replaceState({}, '', '/auth/reset-password');
+    },
+    onError: (error) => {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Could not reset password.'
+      );
+    },
+  });
+
+  if (redirect) {
+    return redirect;
+  }
+
+  return (
+    <AuthShell
+      title="Welcome to 3rEco"
+      description="Choose a new password."
+    >
+      <AuthStatus
+        errorMessage={errorMessage}
+        successMessage={successMessage}
+        resetLinkError={resetLinkError}
+      />
+
+      {!resetToken && !resetLinkError && !successMessage ? (
+        <Alert variant="destructive">
+          <AlertTitle>Missing reset link</AlertTitle>
+          <AlertDescription>
+            Open the reset link from your email, or request a fresh one below.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!successMessage ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="reset-password-input">New password</Label>
+            <Input
+              id="reset-password-input"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Choose a new password"
+            />
+          </div>
+          <Button
+            className="w-full"
+            disabled={
+              resetPasswordMutation.isPending ||
+              !resetToken ||
+              password.trim().length < 8
+            }
+            onClick={() => resetPasswordMutation.mutate()}
+          >
+            {resetPasswordMutation.isPending ? (
+              <Spinner className="text-current" />
+            ) : (
+              <ArrowRightIcon />
+            )}
+            <span>Update password</span>
+          </Button>
+        </div>
+      ) : (
+        <Link to="/auth/sign-in">
+          <Button className="w-full">
+            <ArrowRightIcon />
+            <span>Go to sign in</span>
+          </Button>
+        </Link>
+      )}
+
+      <AuthLinks
+        primaryPrompt="Need another reset email?"
+        primaryHref="/auth/forgot-password"
+        primaryLabel="Request a new link"
+        secondaryHref="/auth/sign-in"
+        secondaryLabel="Back to sign in"
+      />
+    </AuthShell>
   );
 }

@@ -1,4 +1,8 @@
 import BackButton from '@/components/back-button';
+import {
+  TypedConfirmationField,
+  matchesTypedConfirmation,
+} from '@/components/dialogs/typed-confirmation';
 import { BankDetailsFields } from '@/components/profile/bank-details-fields';
 import PageHeaderActions from '@/components/page-header-actions';
 import { Button } from '@/components/ui/button';
@@ -612,15 +616,18 @@ function RemoveCollectorDialog({
             confirm removal of <strong>{collectorName}</strong>.
           </DialogDescription>
         </DialogHeader>
-        <Input
+        <TypedConfirmationField
+          expectedValue={confirmationValue}
+          confirmationLabel={confirmationLabel}
           value={confirmationInput}
-          onChange={(event) => setConfirmationInput(event.target.value)}
-          placeholder={`Enter collector ${confirmationLabel}`}
+          onChange={setConfirmationInput}
         />
         <DialogFooter showCloseButton>
           <Button
             variant="destructive"
-            disabled={confirmationInput.trim().length === 0}
+            disabled={
+              !matchesTypedConfirmation(confirmationInput, confirmationValue)
+            }
             onClick={() =>
               toast.promise(
                 removeCollector({
