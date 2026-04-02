@@ -13,13 +13,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 const TYPE_LABELS: Record<string, string> = {
-  request_received: '📬',
-  request_accepted: '✅',
-  request_rejected: '❌',
-  request_cancelled: '🚫',
-  message_received: '💬',
-  stock_listed: '📢',
-  stock_unlisted: '📦',
+  request_received: 'Request received',
+  request_accepted: 'Request accepted',
+  request_rejected: 'Request rejected',
+  request_cancelled: 'Request cancelled',
+  message_received: 'New message',
+  stock_listed: 'Stock listed',
+  stock_unlisted: 'Stock unlisted',
 };
 
 export default function NotificationTray() {
@@ -91,7 +91,7 @@ export default function NotificationTray() {
 
   return (
     <Popover>
-      <PopoverTrigger className="relative inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent transition-colors">
+      <PopoverTrigger className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/80 bg-card text-muted-foreground shadow-[var(--shadow-soft)] transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground">
         <BellIcon className="size-4" />
         {!!unreadCount && unreadCount > 0 && (
           <Badge
@@ -110,7 +110,7 @@ export default function NotificationTray() {
         className="w-[min(22rem,calc(100vw-1rem))] p-0"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <span className="font-semibold text-sm">Notifications</span>
+       <span className="font-semibold text-sm">Notifications</span>
           <div className="flex gap-1">
             {unread.length > 0 && (
               <Button
@@ -195,7 +195,7 @@ function NotificationItem({
   onRead: () => void;
   onDismiss: () => void;
 }) {
-  const emoji = TYPE_LABELS[type] ?? '🔔';
+  const label = TYPE_LABELS[type] ?? 'Notification';
 
   const content = (
     <div
@@ -204,7 +204,13 @@ function NotificationItem({
         if (!read) onRead();
       }}
     >
-      <span className="text-base mt-0.5 shrink-0">{emoji}</span>
+      <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+        {label
+          .split(' ')
+          .map((part) => part.charAt(0))
+          .join('')
+          .slice(0, 2)}
+      </span>
       <div className="flex-1 min-w-0">
         <p
           className={`text-sm leading-tight ${!read ? 'font-medium' : 'text-muted-foreground'}`}

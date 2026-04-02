@@ -186,6 +186,10 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --color-c2bCount: hsl(183, 55%, 35%);
+  --color-b2bCount: hsl(183, 55%, 35%);
+  --color-c2bVolume: hsl(183, 55%, 35%);
+  --color-b2bVolume: hsl(183, 55%, 35%);
 }
 
 @layer base {

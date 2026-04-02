@@ -5,13 +5,13 @@ import { routeTree } from './routeTree.gen';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import ReactDOM from 'react-dom/client';
 
+import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react';
 import { ConvexQueryClient } from '@convex-dev/react-query';
-import { ConvexProviderWithAuthKit } from '@convex-dev/workos';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthKitProvider, useAuth } from '@workos-inc/authkit-react';
 import { ConvexReactClient } from 'convex/react';
 import { DirectionProvider } from './components/ui/direction';
 import { ThemeProvider } from './components/providers/theme';
+import { authClient } from './lib/auth-client';
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 const convexQueryClient = new ConvexQueryClient(convex);
@@ -28,13 +28,6 @@ convexQueryClient.connect(queryClient);
 // Create a new router instance
 const router = createRouter({ routeTree });
 
-const configuredRedirectUri = import.meta.env.VITE_WORKOS_REDIRECT_URI;
-const redirectPathname = configuredRedirectUri
-  ? new URL(configuredRedirectUri).pathname
-  : '/callback';
-const redirectUri = `${window.location.origin}${redirectPathname}`;
-const workOsApiHostname = import.meta.env.VITE_WORKOS_API_HOSTNAME;
-
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
   interface Register {
@@ -48,29 +41,15 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <AuthKitProvider
-        clientId={import.meta.env.VITE_WORKOS_CLIENT_ID}
-        apiHostname={workOsApiHostname || undefined}
-        redirectUri={redirectUri}
-        onRedirectCallback={({ state }) => {
-          const returnTo =
-            typeof state?.returnTo === 'string' && state.returnTo.length > 0
-              ? state.returnTo
-              : '/';
-
-          window.location.href = returnTo;
-        }}
-      >
-        <DirectionProvider direction="ltr">
-          <ConvexProviderWithAuthKit client={convex} useAuth={useAuth}>
-            <QueryClientProvider client={queryClient}>
-              <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-                <RouterProvider router={router} />
-              </ThemeProvider>
-            </QueryClientProvider>
-          </ConvexProviderWithAuthKit>
-        </DirectionProvider>
-      </AuthKitProvider>
+      <DirectionProvider direction="ltr">
+        <ConvexBetterAuthProvider client={convex} authClient={authClient}>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+              <RouterProvider router={router} />
+            </ThemeProvider>
+          </QueryClientProvider>
+        </ConvexBetterAuthProvider>
+      </DirectionProvider>
     </StrictMode>
   );
 }

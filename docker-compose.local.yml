@@ -22,7 +22,7 @@ services:
       args:
         # Bake localhost URLs into the JS bundle
         VITE_CONVEX_URL: http://localhost:3210
-        VITE_CONVEX_AUTH_DOMAIN: http://localhost:3211
+        VITE_CONVEX_SITE_URL: http://localhost:3211
 
   convex-backend:
     environment:
@@ -31,6 +31,10 @@ services:
       - INSTANCE_SECRET=0000000000000000000000000000000000000000000000000000000000000001
       - CONVEX_CLOUD_ORIGIN=http://localhost:3210
       - CONVEX_SITE_ORIGIN=http://localhost:3211
+      - BETTER_AUTH_SECRET=local-development-better-auth-secret-change-me
+      - SITE_URL=http://localhost:3000
+      - RESEND_API_KEY=
+      - AUTH_FROM_EMAIL=noreply@localhost.test
       - DO_NOT_REQUIRE_SSL=true
 
   convex-dashboard:

@@ -75,7 +75,9 @@ function RouteComponent() {
                 <EmptyMedia variant="icon">
                   <PackageIcon />
                 </EmptyMedia>
-                <EmptyTitle>{search ? 'No results found' : 'No materials yet'}</EmptyTitle>
+                <EmptyTitle>
+                  {search ? 'No results found' : 'No materials yet'}
+                </EmptyTitle>
                 <EmptyDescription>
                   {search
                     ? `No materials match "${search}".`
@@ -85,10 +87,10 @@ function RouteComponent() {
               {!search && (
                 <EmptyContent className="flex-row justify-center gap-2">
                   <CreateMaterialDialog>
-                      <Button>Add Material</Button>
-                    </CreateMaterialDialog>
-                  </EmptyContent>
-                )}
+                    <Button>Add Material</Button>
+                  </CreateMaterialDialog>
+                </EmptyContent>
+              )}
             </Empty>
           </div>
         ))}
@@ -96,15 +98,15 @@ function RouteComponent() {
       {filtered && filtered.length > 0 && (
         <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
           {filtered?.map((material) => (
-            <Item variant="muted" key={material._id}>
-                <ItemContent>
-                  <ItemTitle>{material.name}</ItemTitle>
-                  <ItemDescription>
-                    Carbon footprint: {material.carbonFactor} kg CO2e per kg
-                    {' · '}Waste code: {material.gwCode}
-                    {' · '}Price: R{material.price} per kg
-                  </ItemDescription>
-                </ItemContent>
+            <Item variant="backgroundOutline" key={material._id}>
+              <ItemContent>
+                <ItemTitle>{material.name}</ItemTitle>
+                <ItemDescription>
+                  Carbon footprint: {material.carbonFactor} kg CO2e per kg
+                  {' · '}Waste code: {material.gwCode}
+                  {' · '}Price: R{material.price} per kg
+                </ItemDescription>
+              </ItemContent>
 
               <ItemActions>
                 <EditMaterialByIdDialog _id={material._id}>

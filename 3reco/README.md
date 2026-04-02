@@ -2,34 +2,34 @@
 
 ## Development
 
-This app uses React, Vite, TypeScript, Convex, and WorkOS AuthKit.
+This app uses React, Vite, TypeScript, Convex, and Better Auth.
 
 Create a local `.env.local` file with:
 
 ```env
 VITE_CONVEX_URL=
-VITE_WORKOS_CLIENT_ID=
-VITE_WORKOS_API_HOSTNAME=
-VITE_WORKOS_REDIRECT_URI=http://127.0.0.1:5173/callback
+VITE_CONVEX_SITE_URL=
 ```
 
-Convex also needs these server-side WorkOS variables:
+Convex also needs these server-side Better Auth variables:
 
-- `WORKOS_CLIENT_ID`
-- `WORKOS_API_KEY`
-- `WORKOS_WEBHOOK_SECRET`
-- `WORKOS_ACTION_SECRET` if you enable WorkOS actions
+- `CONVEX_SITE_URL`
+- `BETTER_AUTH_SECRET`
+- `SITE_URL`
+- `RESEND_API_KEY`
+- `AUTH_FROM_EMAIL`
+- optional `JWKS` only if you intentionally supply Better Auth's expected static
+  JWKS format
 
-For local AuthKit provisioning, keep the frontend origin and `VITE_WORKOS_REDIRECT_URI`
-on the same host. This repo now allows both `http://localhost:5173` and
-`http://127.0.0.1:5173`, but the sign-in flow must start and finish on the same
-origin.
+For local development, set `SITE_URL` to the frontend origin (for example
+`http://127.0.0.1:5173`) and `VITE_CONVEX_SITE_URL` to the Convex site origin that
+serves the Better Auth HTTP routes.
 
-In production, set `VITE_WORKOS_API_HOSTNAME` to your WorkOS custom Authentication
-API domain (for example `auth.example.com`) so AuthKit can use first-party
-cookie-backed sessions.
+Do not pass a public `{"keys":[...]}` JWKS object to Better Auth's Convex
+helpers. If you set `JWKS`, it must use the format expected by
+`@convex-dev/better-auth`; otherwise, leave it unset and use the dynamic keys
+endpoint instead.
 
-If you are not paying for a WorkOS custom domain, this app can proxy AuthKit
-requests through the frontend domain instead. In that setup,
-`VITE_WORKOS_API_HOSTNAME` should be your app hostname (for example
-`app.example.com`), and nginx forwards `/user_management/*` to WorkOS.
+Password reset and verification emails are sent through Resend. Reset links
+return to `/auth/reset-password`, where Better Auth passes the reset token back
+to the SPA in the query string.

@@ -138,6 +138,10 @@ async function syncIdentityFields(
     patch.email = identity.email;
   }
 
+  if (identity.emailVerified) {
+    patch.emailVerificationTime = user.emailVerificationTime ?? Date.now();
+  }
+
   if (identity.name && user.name !== identity.name) {
     patch.name = identity.name;
   }
@@ -231,6 +235,17 @@ export const syncCurrentUserFromAuth = mutation({
 
     if (existingUser) {
       return await syncIdentityFields(ctx, existingUser, identity);
+    }
+
+    const existingByEmail = identity.email
+      ? await ctx.db
+          .query('users')
+          .withIndex('email', (q) => q.eq('email', identity.email))
+          .unique()
+      : null;
+
+    if (existingByEmail) {
+      return await syncIdentityFields(ctx, existingByEmail, identity);
     }
 
     const userId = await ctx.db.insert('users', {

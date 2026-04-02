@@ -85,7 +85,7 @@ function RouteComponent() {
       {filtered && filtered.length > 0 && (
         <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
           {filtered?.map((item) => (
-            <Item variant="muted" key={item._id}>
+            <Item variant="backgroundOutline" key={item._id}>
               <StockItemContent _id={item._id} />
 
               <ItemActions>

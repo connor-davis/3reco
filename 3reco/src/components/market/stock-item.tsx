@@ -19,7 +19,7 @@ export default function MarketStockItem({ stock }: { stock: StockDoc }) {
   const owner = useConvexQuery(api.users.findById, { _id: stock.ownerId });
 
   return (
-    <Item variant="outline">
+    <Item variant="backgroundOutline">
       <ItemContent>
         {material ? (
           <>

@@ -57,7 +57,7 @@ const RootLayout = () => {
   if (isLoadingUser || (isAuthenticated && (isProvisioningUser || !user)))
     return (
       <div className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 bg-transparent text-foreground">
-        <div className="flex items-center gap-3 rounded-full border border-[var(--glass-border)] bg-[var(--glass-surface)] px-5 py-3 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+        <div className="flex items-center gap-3 rounded-lg border bg-card px-5 py-3 shadow-[var(--shadow-soft)]">
           <Spinner className="text-primary" />
           <Label className="text-muted-foreground">
             {isProvisioningUser
@@ -71,8 +71,8 @@ const RootLayout = () => {
   return (
     <TooltipProvider>
       <AuthLoading>
-        <div className="flex h-full w-full flex-col items-center justify-center gap-3">
-          <div className="flex items-center gap-3 rounded-full border border-[var(--glass-border)] bg-[var(--glass-surface)] px-5 py-3 shadow-[var(--shadow-soft)] backdrop-blur-xl">
+        <div className="flex h-screen w-screen flex-col items-center justify-center gap-3">
+          <div className="flex items-center gap-3 rounded-2xl border bg-card px-5 py-3 shadow-[var(--shadow-soft)]">
             <Spinner className="text-primary" />
             <Label className="text-muted-foreground">
               Signing you in...
@@ -89,7 +89,7 @@ const RootLayout = () => {
               : 'hidden'
           }
         >
-          <div className="flex min-h-dvh w-full flex-col overflow-hidden bg-transparent text-foreground">
+          <div className="flex min-h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
             <CompleteProfileGuard />
           </div>
         </Activity>
@@ -100,15 +100,15 @@ const RootLayout = () => {
               : 'hidden'
           }
         >
-          <div className="flex min-h-dvh w-full flex-col bg-transparent text-foreground">
+          <div className="flex min-h-dvh w-full flex-col bg-background text-foreground animate-in fade-in-1">
             <SidebarProvider>
               <AppSidebar />
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <Header />
 
-                <SidebarInset className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-transparent p-2 pt-0 sm:p-3 sm:pt-0">
-                  <div className="flex h-full w-full min-w-0 flex-col gap-3 overflow-hidden rounded-[1.75rem] border border-[var(--glass-border)] bg-[var(--glass-shell)] p-2 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:p-3">
+                <SidebarInset className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-transparent">
+                  <div className="flex h-full w-full min-w-0 flex-col overflow-hidden py-3 pr-3">
                     <Outlet />
                   </div>
                 </SidebarInset>
@@ -119,7 +119,7 @@ const RootLayout = () => {
       </Authenticated>
 
       <Unauthenticated>
-        <div className="flex min-h-dvh w-full flex-col bg-transparent text-foreground">
+        <div className="flex min-h-dvh w-full flex-col bg-background text-foreground">
           <AuthenticationGuard />
         </div>
       </Unauthenticated>

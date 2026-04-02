@@ -71,7 +71,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-        <Card>
+        <Card className='border-l-chart-1 border-l-4'>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Collector sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
@@ -82,7 +82,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className='border-l-chart-2 border-l-4'>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Business sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
@@ -93,7 +93,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className='border-l-chart-3 border-l-4'>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Collector volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
@@ -104,7 +104,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className='border-l-chart-4 border-l-4'>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Business volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />

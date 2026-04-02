@@ -43,17 +43,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { bankAccountTypes } from '@/lib/bank-details';
 import {
-  bankAccountTypes,
-} from '@/lib/bank-details';
-import { useConvexMutation, useConvexPaginatedQuery } from '@convex-dev/react-query';
+  useConvexMutation,
+  useConvexPaginatedQuery,
+} from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
 import { useQuery } from 'convex/react';
-import { PencilIcon, PlusIcon, SearchIcon, Trash2Icon, UsersIcon } from 'lucide-react';
+import {
+  PencilIcon,
+  PlusIcon,
+  SearchIcon,
+  Trash2Icon,
+  UsersIcon,
+} from 'lucide-react';
 import { Activity, useEffect, useState } from 'react';
 import {
   Controller,
@@ -64,7 +71,9 @@ import {
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
-export const Route = createFileRoute('/collectors')({ component: RouteComponent });
+export const Route = createFileRoute('/collectors')({
+  component: RouteComponent,
+});
 
 const provinceOptions = [
   'Eastern Cape',
@@ -211,12 +220,12 @@ function CollectorLocationFields({
             <FieldLabel htmlFor={`${idPrefix}-street-address`}>
               Street Address
             </FieldLabel>
-              <Input
-                {...field}
-                value={typeof field.value === 'string' ? field.value : ''}
-                id={`${idPrefix}-street-address`}
-                placeholder="Street address"
-              />
+            <Input
+              {...field}
+              value={typeof field.value === 'string' ? field.value : ''}
+              id={`${idPrefix}-street-address`}
+              placeholder="Street address"
+            />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -245,7 +254,9 @@ function CollectorLocationFields({
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={`${idPrefix}-area-code`}>Area Code</FieldLabel>
+              <FieldLabel htmlFor={`${idPrefix}-area-code`}>
+                Area Code
+              </FieldLabel>
               <Input
                 value={field.value?.toString() ?? ''}
                 id={`${idPrefix}-area-code`}
@@ -307,7 +318,11 @@ function CollectorFormFields({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor={`${idPrefix}-name`}>Name</FieldLabel>
-              <Input {...field} id={`${idPrefix}-name`} placeholder="Collector name" />
+              <Input
+                {...field}
+                id={`${idPrefix}-name`}
+                placeholder="Collector name"
+              />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               <FieldDescription>
                 Use the collector&apos;s full name or operating name.
@@ -331,7 +346,8 @@ function CollectorFormFields({
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               <FieldDescription>
-                Optional. Used for admin/staff removal confirmation when available.
+                Optional. Used for admin/staff removal confirmation when
+                available.
               </FieldDescription>
             </Field>
           )}
@@ -342,7 +358,9 @@ function CollectorFormFields({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={`${idPrefix}-phone`}>Phone number</FieldLabel>
+              <FieldLabel htmlFor={`${idPrefix}-phone`}>
+                Phone number
+              </FieldLabel>
               <Input
                 {...field}
                 id={`${idPrefix}-phone`}
@@ -362,7 +380,10 @@ function CollectorFormFields({
         <p className="text-sm text-muted-foreground">
           Optional. If you add one bank field, complete them all.
         </p>
-        <BankDetailsFields control={form.control} idPrefix={`${idPrefix}-bank`} />
+        <BankDetailsFields
+          control={form.control}
+          idPrefix={`${idPrefix}-bank`}
+        />
       </div>
 
       <div className="space-y-2">
@@ -370,7 +391,10 @@ function CollectorFormFields({
         <p className="text-sm text-muted-foreground">
           Optional address details for operations and future payout workflows.
         </p>
-        <CollectorLocationFields control={form.control} idPrefix={`${idPrefix}-location`} />
+        <CollectorLocationFields
+          control={form.control}
+          idPrefix={`${idPrefix}-location`}
+        />
       </div>
     </div>
   );
@@ -397,7 +421,11 @@ function getErrorDetails(error: unknown) {
 function CreateCollectorDialog() {
   const [open, setOpen] = useState(false);
   const createCollector = useConvexMutation(api.collectors.create);
-  const form = useForm<CollectorFormInputValues, undefined, CollectorFormValues>({
+  const form = useForm<
+    CollectorFormInputValues,
+    undefined,
+    CollectorFormValues
+  >({
     resolver: zodResolver(collectorSchema),
     defaultValues: {
       name: '',
@@ -425,7 +453,8 @@ function CreateCollectorDialog() {
         <DialogHeader className="shrink-0">
           <DialogTitle>Add collector</DialogTitle>
           <DialogDescription>
-            Save a collector's details so you can use them in future collections.
+            Save a collector's details so you can use them in future
+            collections.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -461,7 +490,11 @@ function EditCollectorDialog({
 }) {
   const [open, setOpen] = useState(false);
   const updateCollector = useConvexMutation(api.collectors.update);
-  const form = useForm<CollectorFormInputValues, undefined, CollectorFormValues>({
+  const form = useForm<
+    CollectorFormInputValues,
+    undefined,
+    CollectorFormValues
+  >({
     resolver: zodResolver(collectorSchema),
     defaultValues: {
       name: collector.name,
@@ -505,24 +538,34 @@ function EditCollectorDialog({
         <DialogHeader className="shrink-0">
           <DialogTitle>Edit collector</DialogTitle>
           <DialogDescription>
-            Update managed collector details, including optional bank and location information.
+            Update managed collector details, including optional bank and
+            location information.
           </DialogDescription>
         </DialogHeader>
         <form
           className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
           onSubmit={form.handleSubmit((values) =>
-            toast.promise(updateCollector({ _id: collector._id as Id<'collectors'>, ...values }), {
-              loading: 'Updating collector...',
-              success: () => {
-                setOpen(false);
-                return 'Collector updated.';
-              },
-              error: getErrorDetails,
-            })
+            toast.promise(
+              updateCollector({
+                _id: collector._id as Id<'collectors'>,
+                ...values,
+              }),
+              {
+                loading: 'Updating collector...',
+                success: () => {
+                  setOpen(false);
+                  return 'Collector updated.';
+                },
+                error: getErrorDetails,
+              }
+            )
           )}
         >
           <div className="flex-1 overflow-y-auto pr-1">
-            <CollectorFormFields form={form} idPrefix={`edit-collector-${collector._id}`} />
+            <CollectorFormFields
+              form={form}
+              idPrefix={`edit-collector-${collector._id}`}
+            />
           </div>
           <DialogFooter className="shrink-0" showCloseButton>
             <Button type="submit">Save collector</Button>
@@ -565,8 +608,8 @@ function RemoveCollectorDialog({
         <DialogHeader>
           <DialogTitle>Remove collector</DialogTitle>
           <DialogDescription>
-            Enter <strong>{confirmationValue}</strong> ({confirmationLabel}) to confirm removal of{' '}
-            <strong>{collectorName}</strong>.
+            Enter <strong>{confirmationValue}</strong> ({confirmationLabel}) to
+            confirm removal of <strong>{collectorName}</strong>.
           </DialogDescription>
         </DialogHeader>
         <Input
@@ -580,7 +623,10 @@ function RemoveCollectorDialog({
             disabled={confirmationInput.trim().length === 0}
             onClick={() =>
               toast.promise(
-                removeCollector({ _id: collectorId, confirmationValue: confirmationInput }),
+                removeCollector({
+                  _id: collectorId,
+                  confirmationValue: confirmationInput,
+                }),
                 {
                   loading: 'Removing collector...',
                   success: () => {
@@ -607,9 +653,13 @@ function RouteComponent() {
     isLoading,
     status,
     loadMore,
-  } = useConvexPaginatedQuery(api.collectors.listManaged, {}, {
-    initialNumItems: 50,
-  });
+  } = useConvexPaginatedQuery(
+    api.collectors.listManaged,
+    {},
+    {
+      initialNumItems: 50,
+    }
+  );
   const currentUser = useQuery(api.users.currentUser);
   const [search, setSearch] = useState('');
   const canRemove =
@@ -691,26 +741,28 @@ function RouteComponent() {
         {filtered && filtered.length > 0 && (
           <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
             {filtered.map((collector) => (
-                <Item key={collector._id} variant="muted">
-                  <ItemContent>
-                    <ItemTitle>{collector.name}</ItemTitle>
-                    <ItemDescription>
-                      {collector.email
-                        ? `${collector.email} · ${collector.phone}`
-                        : collector.phone}
-                    </ItemDescription>
-                  </ItemContent>
-                  <ItemActions className="flex-wrap justify-end">
-                    <EditCollectorDialog collector={collector} />
-                    {canRemove && (
-                      <RemoveCollectorDialog
-                        collectorId={collector._id}
-                        collectorName={collector.name}
-                        confirmationLabel={collector.email ? 'email' : 'phone number'}
-                        confirmationValue={collector.email ?? collector.phone}
-                      />
-                    )}
-                  </ItemActions>
+              <Item key={collector._id} variant="backgroundOutline">
+                <ItemContent>
+                  <ItemTitle>{collector.name}</ItemTitle>
+                  <ItemDescription>
+                    {collector.email
+                      ? `${collector.email} · ${collector.phone}`
+                      : collector.phone}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions className="flex-wrap justify-end">
+                  <EditCollectorDialog collector={collector} />
+                  {canRemove && (
+                    <RemoveCollectorDialog
+                      collectorId={collector._id}
+                      collectorName={collector.name}
+                      confirmationLabel={
+                        collector.email ? 'email' : 'phone number'
+                      }
+                      confirmationValue={collector.email ?? collector.phone}
+                    />
+                  )}
+                </ItemActions>
               </Item>
             ))}
 

@@ -1,15 +1,10 @@
-import BackButton from '@/components/back-button';
 import AvatarCropper from '@/components/dialogs/avatar-cropper';
 import { BankDetailsFields } from '@/components/profile/bank-details-fields';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import {
   Field,
@@ -19,7 +14,11 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+  Progress,
+  ProgressLabel,
+} from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Tooltip,
   TooltipContent,
@@ -45,6 +45,17 @@ import { api } from '@convex/_generated/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
+import {
+  BriefcaseBusinessIcon,
+  CalendarIcon,
+  GlobeIcon,
+  MailIcon,
+  MapPinIcon,
+  PhoneIcon,
+  SparklesIcon,
+  TrendingUpIcon,
+  UsersIcon,
+} from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -111,6 +122,25 @@ const locationFormSchema = z.object({
     { error: 'Please provide your province.' }
   ),
 });
+
+function formatJoinedDate(timestamp?: number) {
+  if (!timestamp) {
+    return 'Recently joined';
+  }
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(timestamp));
+}
+
+function buildDisplayName(user: ReturnType<typeof useConvexQuery<typeof api.users.currentUser>>) {
+  if (!user) return '';
+
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+
+  return fullName || user.businessName || user.name || user.email || 'Profile';
+}
 
 function RouteComponent() {
   const user = useConvexQuery(api.users.currentUser);
@@ -194,15 +224,84 @@ function RouteComponent() {
       bankBranchCode: user.bankBranchCode,
       bankAccountType: user.bankAccountType,
     });
-  }, [
-    bankDetailsForm,
-    businessProfileForm,
-    locationForm,
-    profileForm,
-    user,
-  ]);
+  }, [bankDetailsForm, businessProfileForm, locationForm, profileForm, user]);
 
   if (!user) return undefined;
+
+  const displayName = buildDisplayName(user);
+  const profileRole =
+    user.type === 'business'
+      ? 'Business account'
+      : user.type === 'collector'
+        ? 'Collector'
+        : user.type === 'staff'
+          ? 'Staff'
+          : user.type === 'admin'
+            ? 'Admin'
+            : 'Member';
+  const location = [user.city, user.province].filter(Boolean).join(', ') || 'South Africa';
+  const memberSince = formatJoinedDate(user._creationTime);
+  const completionScore = [
+    user.image,
+    user.firstName,
+    user.lastName,
+    user.phone,
+    user.idNumber,
+    user.businessName,
+    user.streetAddress,
+    user.bankName,
+  ].filter(Boolean).length;
+  const profileStrength = Math.round((completionScore / 8) * 100);
+
+  const stats = [
+    {
+      label: 'Profile strength',
+      value: `${profileStrength}%`,
+      icon: TrendingUpIcon,
+      tint: 'text-sky-400',
+      bg: 'bg-sky-500/12',
+    },
+    {
+      label: 'Saved details',
+      value: `${[user.phone, user.idNumber, user.streetAddress, user.bankName].filter(Boolean).length}`,
+      icon: SparklesIcon,
+      tint: 'text-cyan-400',
+      bg: 'bg-cyan-500/12',
+    },
+    {
+      label: 'Status',
+      value: user.profileComplete ? 'Ready' : 'Incomplete',
+      icon: UsersIcon,
+      tint: 'text-emerald-400',
+      bg: 'bg-emerald-500/12',
+    },
+    {
+      label: 'Member since',
+      value: memberSince.split(' ').slice(-1)[0] ?? memberSince,
+      icon: CalendarIcon,
+      tint: 'text-violet-400',
+      bg: 'bg-violet-500/12',
+    },
+  ];
+
+  const setupChecks = [
+    {
+      label: 'Personal details',
+      ready: Boolean(user.firstName && user.lastName && user.idNumber),
+    },
+    {
+      label: 'Contact details',
+      ready: Boolean(user.email && user.phone),
+    },
+    {
+      label: 'Address',
+      ready: Boolean(user.streetAddress && user.city && user.province),
+    },
+    {
+      label: 'Payout details',
+      ready: Boolean(user.bankName && user.bankAccountNumber && user.bankBranchCode),
+    },
+  ];
 
   const submitBankDetails = (values: BankDetailsFormValues) => {
     const parsedValues =
@@ -215,12 +314,9 @@ function RouteComponent() {
         const fieldName = issue.path[0];
 
         if (typeof fieldName === 'string') {
-          bankDetailsForm.setError(
-            fieldName as keyof BankDetailsFormInputValues,
-            {
-              message: issue.message,
-            }
-          );
+          bankDetailsForm.setError(fieldName as keyof BankDetailsFormInputValues, {
+            message: issue.message,
+          });
         }
       }
 
@@ -229,7 +325,7 @@ function RouteComponent() {
 
     toast.promise(
       saveProfile({
-        _id: user?._id,
+        _id: user._id,
         ...parsedValues.data,
       }),
       {
@@ -247,586 +343,736 @@ function RouteComponent() {
             description: error.message,
           };
         },
-        success: () => {
-          bankDetailsForm.reset({});
-
-          return 'Bank details saved successfully!';
-        },
+        success: () => 'Bank details saved successfully!',
       }
     );
   };
 
   return (
-    <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton />
-
-          <Label className="text-lg">Your Profile</Label>
+    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto px-3 pb-6 pt-4 sm:px-4 lg:px-6">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+              Profile
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              View and manage your profile information.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-col w-full h-full overflow-y-auto">
-        <Accordion
-          defaultValue={['profile-information']}
-          multiple
-          className="rounded-xl border overflow-y-auto"
-        >
-          <AccordionItem
-            value="profile-information"
-            className="border-b px-3 last:border-b-0"
-          >
-            <AccordionTrigger>Personal Details</AccordionTrigger>
-            <AccordionContent>
-              <form
-                className="flex flex-col w-full gap-3 p-1"
-                onSubmit={profileForm.handleSubmit((values) =>
-                  toast.promise(
-                    saveProfile({
-                      _id: user?._id,
-                      firstName: values.firstName,
-                      lastName: values.lastName,
-                      phone: values.phone,
-                      image: values.image,
-                      idNumber: values.idNumber,
-                      name: [
-                        values.firstName?.trim(),
-                        values.lastName?.trim(),
-                      ].join(' '),
-                    }),
-                    {
-                        loading: 'Saving your details...',
-                      error: (error: Error) => {
-                        if (error instanceof ConvexError) {
-                          return {
-                            message: error.data.name,
-                            description: error.data.message,
-                          };
-                        }
-
-                        return {
-                          message: error.name,
-                          description: error.message,
-                        };
-                      },
-                      success: () => {
-                        profileForm.reset({});
-
-                        return 'Your details have been saved.';
-                      },
-                    }
-                  )
-                )}
-              >
-                <FieldGroup className="gap-3">
-                  <Controller
-                    name="image"
-                    control={profileForm.control}
-                    render={({ fieldState, field }) => {
-                      return (
-                        <div className="flex items-center justify-center">
-                          <Dialog>
-                            <Tooltip>
-                              <TooltipTrigger
+        <Card className="overflow-hidden border-border/80 bg-card">
+          <div className="h-40 w-full bg-[linear-gradient(135deg,hsl(200_89%_48%),hsl(196_78%_38%))]" />
+          <CardContent className="-mt-16 flex flex-col gap-6 px-5 pb-5 sm:px-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                <Controller
+                  name="image"
+                  control={profileForm.control}
+                  render={({ field, fieldState }) => (
+                    <Dialog>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <div className="w-24 shrink-0 sm:w-28">
+                              <DialogTrigger
                                 render={
-                                  <div className="w-24 sm:w-32 lg:w-48">
-                                    <DialogTrigger
-                                      render={
-                                        <button
-                                          type="button"
-                                          className="block w-full cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                        >
-                                          <AspectRatio
-                                            ratio={1 / 1}
-                                            className="w-full"
-                                          >
-                                            <Avatar className="w-full h-full">
-                                              <AvatarImage
-                                                src={field.value}
-                                                alt={
-                                                  user?.firstName?.charAt(0) ??
-                                                  'None'
-                                                }
-                                              />
-                                              <AvatarFallback className="text-3xl sm:text-4xl lg:text-7xl">
-                                                {user?.firstName?.charAt(0) ??
-                                                  'None'}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                          </AspectRatio>
-                                        </button>
-                                      }
-                                    />
-                                  </div>
-                                }
-                              />
-                              <TooltipContent>Change photo</TooltipContent>
-                            </Tooltip>
-
-                            <DialogContent>
-                              <FieldGroup className="gap-3">
-                                <AvatarCropper
-                                  src={field.value || ''}
-                                  onComplete={(dataUrl) => {
-                                    field.onChange(dataUrl);
-                                  }}
-                                />
-                                <Field data-invalid={fieldState.invalid}>
-                                  <FieldLabel>Profile Photo</FieldLabel>
-                                  <Input
-                                    type="file"
-                                    accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                          field.onChange(
-                                            reader.result as string
-                                          );
-                                        };
-                                        reader.readAsDataURL(file);
-                                      }
-                                    }}
+                                  <button
+                                    type="button"
+                                    className="block w-full cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                   />
-                                  <FieldDescription>
-                                    Choose a photo from your device. PNG, JPG,
-                                    WEBP, and GIF files work best.
-                                  </FieldDescription>
-                                  {fieldState.invalid && (
-                                    <FieldError errors={[fieldState.error]} />
-                                  )}
-                                </Field>
-                              </FieldGroup>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      );
-                    }}
-                  />
-
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <Controller
-                      name="firstName"
-                      control={profileForm.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor="form-complete-profile-first-name">
-                            First name
-                          </FieldLabel>
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            id="form-complete-profile-first-name"
-                            aria-invalid={fieldState.invalid}
-                            placeholder="First name"
-                            autoComplete="given-name"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                          <FieldDescription>
-                            Enter your first name.
-                          </FieldDescription>
-                        </Field>
-                      )}
-                    />
-
-                    <Controller
-                      name="lastName"
-                      control={profileForm.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor="form-complete-profile-last-name">
-                            Last name
-                          </FieldLabel>
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            id="form-complete-profile-last-name"
-                            aria-invalid={fieldState.invalid}
-                            placeholder="Last name"
-                            autoComplete="family-name"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                          <FieldDescription>
-                            Enter your last name.
-                          </FieldDescription>
-                        </Field>
-                      )}
-                    />
-                  </div>
-
-                  <Controller
-                    name="idNumber"
-                    control={profileForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-complete-profile-id-number">
-                           ID number
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          id="form-complete-profile-id-number"
-                          aria-invalid={fieldState.invalid}
-                           placeholder="ID number"
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                           Enter your South African ID number.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
-
-                  <Controller
-                    name="phone"
-                    control={profileForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-complete-profile-phone">
-                           Phone number
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          id="form-complete-profile-phone"
-                          aria-invalid={fieldState.invalid}
-                           placeholder="Phone number"
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                           Enter the best number to reach you on.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
-                </FieldGroup>
-
-                <Button type="submit" className="w-full">
-                  Save details
-                </Button>
-              </form>
-            </AccordionContent>
-          </AccordionItem>
-
-          {user?.type === 'business' && (
-            <AccordionItem
-              value="business-information"
-              className="border-b px-3 last:border-b-0"
-            >
-                <AccordionTrigger>Business Details</AccordionTrigger>
-              <AccordionContent>
-                <form
-                  className="flex flex-col w-full gap-3 p-1"
-                  onSubmit={businessProfileForm.handleSubmit((values) =>
-                    toast.promise(
-                      saveProfile({
-                        _id: user?._id,
-                        businessName: values.businessName,
-                        businessRegistrationNumber:
-                          values.businessRegistrationNumber,
-                      }),
-                      {
-                          loading: 'Saving your business details...',
-                        error: (error: Error) => {
-                          if (error instanceof ConvexError) {
-                            return {
-                              message: error.data.name,
-                              description: error.data.message,
-                            };
+                                }
+                              >
+                                <AspectRatio ratio={1 / 1} className="w-full">
+                                  <Avatar className="h-full w-full border-[5px] border-card bg-primary/20 shadow-[var(--shadow-glass)]">
+                                    <AvatarImage src={field.value} alt={displayName} />
+                                    <AvatarFallback className="bg-primary text-3xl font-semibold text-primary-foreground sm:text-4xl">
+                                      {displayName.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </AspectRatio>
+                              </DialogTrigger>
+                            </div>
                           }
+                        />
+                        <TooltipContent>Update photo</TooltipContent>
+                      </Tooltip>
 
-                          return {
-                            message: error.name,
-                            description: error.message,
-                          };
-                        },
-                        success: () => {
-                          businessProfileForm.reset({});
-
-                            return 'Your business details have been saved.';
-                        },
-                      }
-                    )
+                      <DialogContent>
+                        <FieldGroup className="gap-3">
+                          <AvatarCropper
+                            src={field.value || ''}
+                            onComplete={(dataUrl) => {
+                              field.onChange(dataUrl);
+                            }}
+                          />
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel>Profile Photo</FieldLabel>
+                            <Input
+                              type="file"
+                              accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    field.onChange(reader.result as string);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                            <FieldDescription>
+                              Choose a photo from your device. PNG, JPG, WEBP, and GIF files work best.
+                            </FieldDescription>
+                            {fieldState.invalid && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        </FieldGroup>
+                      </DialogContent>
+                    </Dialog>
                   )}
-                >
-                  <FieldGroup className="gap-3">
-                    <Controller
-                      name="businessName"
-                      control={businessProfileForm.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor="form-complete-profile-business-name">
-                             Business name
-                          </FieldLabel>
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            id="form-complete-profile-business-name"
-                            aria-invalid={fieldState.invalid}
-                             placeholder="Business name"
-                            autoComplete="name"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                          <FieldDescription>
-                             Enter your business name.
-                          </FieldDescription>
-                        </Field>
-                      )}
-                    />
-
-                    <Controller
-                      name="businessRegistrationNumber"
-                      control={businessProfileForm.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor="form-complete-profile-business-registration-number">
-                             Business registration number
-                          </FieldLabel>
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            id="form-complete-profile-business-registration-number"
-                            aria-invalid={fieldState.invalid}
-                             placeholder="Business registration number"
-                            autoComplete="name"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                          <FieldDescription>
-                             Enter your business registration number.
-                          </FieldDescription>
-                        </Field>
-                      )}
-                    />
-                  </FieldGroup>
-
-                  <Button type="submit" className="w-full">
-                     Save details
-                   </Button>
-                </form>
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          <AccordionItem
-            value="bank-details"
-            className="border-b px-3 last:border-b-0"
-          >
-            <AccordionTrigger>Bank Details</AccordionTrigger>
-            <AccordionContent>
-              <form
-                className="flex flex-col w-full gap-3 p-1"
-                onSubmit={bankDetailsForm.handleSubmit(submitBankDetails)}
-              >
-                <BankDetailsFields
-                  control={bankDetailsForm.control}
-                  idPrefix="profile-bank-details"
-                  required={user.type === 'business'}
                 />
 
-                <Button type="submit" className="w-full">
-                  Save details
-                </Button>
-              </form>
-            </AccordionContent>
-          </AccordionItem>
+                <div className="min-w-0 space-y-2">
+                  <h2 className="text-3xl font-semibold tracking-tight text-foreground">
+                    {displayName}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">{profileRole}</p>
+                </div>
+              </div>
 
-          <AccordionItem
-            value="location-information"
-            className="border-b px-3 last:border-b-0"
-          >
-            <AccordionTrigger>Address</AccordionTrigger>
-            <AccordionContent>
-              <form
-                className="flex flex-col w-full gap-3 p-1"
-                onSubmit={locationForm.handleSubmit((values) =>
-                  toast.promise(
-                    saveProfile({
-                      _id: user?._id,
-                      streetAddress: values.streetAddress,
-                      city: values.city,
-                      areaCode: values.areaCode,
-                      province: values.province,
-                    }),
-                    {
-                        loading: 'Saving your address...',
-                      error: (error: Error) => {
-                        if (error instanceof ConvexError) {
-                          return {
-                            message: error.data.name,
-                            description: error.data.message,
-                          };
+            </div>
+
+            <Separator className="bg-border/80" />
+
+            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2 xl:grid-cols-5">
+              <div className="flex items-center gap-2">
+                <MailIcon className="size-4 text-muted-foreground" />
+                <span className="truncate">{user.email ?? 'No email set'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPinIcon className="size-4 text-muted-foreground" />
+                <span>{location}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <PhoneIcon className="size-4 text-muted-foreground" />
+                <span>{user.phone ?? 'Add phone number'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <GlobeIcon className="size-4 text-muted-foreground" />
+                <span>3reco.app</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="size-4 text-muted-foreground" />
+                <span>Joined {memberSince}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="overview" className="gap-5">
+          <TabsList variant="line" className="w-fit gap-6 p-0 text-sm">
+            <TabsTrigger value="overview" className="px-0">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="details" className="px-0">
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="payouts" className="px-0">
+              Payouts
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid gap-4 xl:grid-cols-4">
+              {stats.map((stat) => {
+                const Icon = stat.icon;
+
+                return (
+                  <Card key={stat.label} className="border-border/80 bg-card">
+                    <CardContent className="flex items-center gap-4 px-5 py-5">
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${stat.bg}`}>
+                        <Icon className={`size-5 ${stat.tint}`} />
+                      </div>
+                      <div>
+                        <div className="text-3xl font-semibold tracking-tight text-foreground">
+                          {stat.value}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {stat.label}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
+              <Card className="border-border/80 bg-card">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-2xl font-semibold">Account summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-5">
+                      <InfoRow
+                        icon={BriefcaseBusinessIcon}
+                        label="Account"
+                        value={user.email ?? displayName}
+                      />
+                      <InfoRow
+                        icon={MailIcon}
+                        label="Email"
+                        value={user.email ?? 'No email set'}
+                      />
+                      <InfoRow
+                        icon={PhoneIcon}
+                        label="Phone"
+                        value={user.phone ?? 'No phone number'}
+                      />
+                    </div>
+                    <div className="space-y-5">
+                      <InfoRow
+                        icon={MapPinIcon}
+                        label="Location"
+                        value={location}
+                      />
+                      <InfoRow
+                        icon={CalendarIcon}
+                        label="Member Since"
+                        value={memberSince}
+                      />
+                      <InfoRow
+                        icon={GlobeIcon}
+                        label="Website"
+                        value="3reco.app"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/80 bg-card">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-2xl font-semibold">
+                    Setup status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {setupChecks.map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between rounded-xl border border-border/70 bg-background/40 px-4 py-3"
+                    >
+                      <span className="text-sm font-medium text-foreground">
+                        {item.label}
+                      </span>
+                      <Badge
+                        variant={item.ready ? 'secondary' : 'outline'}
+                        className={item.ready ? 'bg-emerald-500/12 text-emerald-400' : ''}
+                      >
+                        {item.ready ? 'Complete' : 'Pending'}
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="details" className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-2">
+              <Card className="border-border/80 bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">
+                    Personal Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    className="flex flex-col gap-4"
+                    onSubmit={profileForm.handleSubmit((values) =>
+                      toast.promise(
+                        saveProfile({
+                          _id: user._id,
+                          firstName: values.firstName,
+                          lastName: values.lastName,
+                          phone: values.phone,
+                          image: values.image,
+                          idNumber: values.idNumber,
+                          name: [
+                            values.firstName?.trim(),
+                            values.lastName?.trim(),
+                          ].join(' '),
+                        }),
+                        {
+                          loading: 'Saving your details...',
+                          error: (error: Error) => {
+                            if (error instanceof ConvexError) {
+                              return {
+                                message: error.data.name,
+                                description: error.data.message,
+                              };
+                            }
+
+                            return {
+                              message: error.name,
+                              description: error.message,
+                            };
+                          },
+                          success: () => 'Your details have been saved.',
                         }
-
-                        return {
-                          message: error.name,
-                          description: error.message,
-                        };
-                      },
-                      success: () => {
-                        locationForm.reset({});
-
-                            return 'Your address has been saved.';
-                      },
-                    }
-                  )
-                )}
-              >
-                <FieldGroup className="gap-3">
-                  <Controller
-                    name="streetAddress"
-                    control={locationForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-complete-profile-street-address">
-                           Street address
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          id="form-complete-profile-street-address"
-                          aria-invalid={fieldState.invalid}
-                           placeholder="Street address"
-                          autoComplete="street-address"
+                      )
+                    )}
+                  >
+                    <FieldGroup className="gap-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <Controller
+                          name="firstName"
+                          control={profileForm.control}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel htmlFor="profile-first-name">
+                                First name
+                              </FieldLabel>
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                id="profile-first-name"
+                                aria-invalid={fieldState.invalid}
+                                placeholder="First name"
+                                autoComplete="given-name"
+                              />
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                           Enter your street address.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
 
-                  <Controller
-                    name="city"
-                    control={locationForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-complete-profile-city">
-                          City
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          id="form-complete-profile-city"
-                          aria-invalid={fieldState.invalid}
-                          placeholder="City"
-                          autoComplete="address-level2"
+                        <Controller
+                          name="lastName"
+                          control={profileForm.control}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel htmlFor="profile-last-name">
+                                Last name
+                              </FieldLabel>
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                id="profile-last-name"
+                                aria-invalid={fieldState.invalid}
+                                placeholder="Last name"
+                                autoComplete="family-name"
+                              />
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                           Enter your city or town.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
+                      </div>
 
-                  <Controller
-                    name="areaCode"
-                    control={locationForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-complete-profile-area-code">
-                           Postal code
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          id="form-complete-profile-area-code"
-                          type="number"
-                          onChange={(event) =>
-                            field.onChange(
-                              Number.isNaN(event.target.valueAsNumber)
-                                ? undefined
-                                : event.target.valueAsNumber
-                            )
-                          }
-                          aria-invalid={fieldState.invalid}
-                           placeholder="Postal code"
-                          autoComplete="postal-code"
+                      <Controller
+                        name="idNumber"
+                        control={profileForm.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="profile-id-number">
+                              ID number
+                            </FieldLabel>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              id="profile-id-number"
+                              aria-invalid={fieldState.invalid}
+                              placeholder="ID number"
+                            />
+                            <FieldDescription>
+                              Enter your South African ID number.
+                            </FieldDescription>
+                            {fieldState.invalid && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        )}
+                      />
+
+                      <Controller
+                        name="phone"
+                        control={profileForm.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="profile-phone">
+                              Phone number
+                            </FieldLabel>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              id="profile-phone"
+                              aria-invalid={fieldState.invalid}
+                              placeholder="Phone number"
+                            />
+                            <FieldDescription>
+                              Enter the best number to reach you on.
+                            </FieldDescription>
+                            {fieldState.invalid && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        )}
+                      />
+                    </FieldGroup>
+
+                    <Button type="submit" className="w-full sm:w-auto">
+                      Save details
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/80 bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">
+                    Address
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    className="flex flex-col gap-4"
+                    onSubmit={locationForm.handleSubmit((values) =>
+                      toast.promise(
+                        saveProfile({
+                          _id: user._id,
+                          streetAddress: values.streetAddress,
+                          city: values.city,
+                          areaCode: values.areaCode,
+                          province: values.province,
+                        }),
+                        {
+                          loading: 'Saving your address...',
+                          error: (error: Error) => {
+                            if (error instanceof ConvexError) {
+                              return {
+                                message: error.data.name,
+                                description: error.data.message,
+                              };
+                            }
+
+                            return {
+                              message: error.name,
+                              description: error.message,
+                            };
+                          },
+                          success: () => 'Your address has been saved.',
+                        }
+                      )
+                    )}
+                  >
+                    <FieldGroup className="gap-4">
+                      <Controller
+                        name="streetAddress"
+                        control={locationForm.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="profile-street-address">
+                              Street address
+                            </FieldLabel>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              id="profile-street-address"
+                              aria-invalid={fieldState.invalid}
+                              placeholder="Street address"
+                              autoComplete="street-address"
+                            />
+                            {fieldState.invalid && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        )}
+                      />
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <Controller
+                          name="city"
+                          control={locationForm.control}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel htmlFor="profile-city">City</FieldLabel>
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                id="profile-city"
+                                aria-invalid={fieldState.invalid}
+                                placeholder="City"
+                                autoComplete="address-level2"
+                              />
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
                         />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                           Enter your postal code.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
 
-                  <Controller
-                    name="province"
-                    control={locationForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="form-complete-profile-street-address">
-                          Province
-                        </FieldLabel>
-                        <Select
-                          id="form-complete-profile-street-address"
-                          value={field.value}
-                          onValueChange={(value) => field.onChange(value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a province" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Provinces</SelectLabel>
-                              {[
-                                'Eastern Cape',
-                                'Free State',
-                                'Gauteng',
-                                'KwaZulu-Natal',
-                                'Limpopo',
-                                'Mpumalanga',
-                                'Northern Cape',
-                                'North West',
-                                'Western Cape',
-                              ].map((province) => (
-                                <SelectItem key={province} value={province}>
-                                  {province}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                        <FieldDescription>
-                           Select your province.
-                        </FieldDescription>
-                      </Field>
-                    )}
-                  />
-                </FieldGroup>
+                        <Controller
+                          name="areaCode"
+                          control={locationForm.control}
+                          render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel htmlFor="profile-area-code">
+                                Postal code
+                              </FieldLabel>
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                id="profile-area-code"
+                                type="number"
+                                onChange={(event) =>
+                                  field.onChange(
+                                    Number.isNaN(event.target.valueAsNumber)
+                                      ? undefined
+                                      : event.target.valueAsNumber
+                                  )
+                                }
+                                aria-invalid={fieldState.invalid}
+                                placeholder="Postal code"
+                                autoComplete="postal-code"
+                              />
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
+                        />
+                      </div>
 
-                <Button type="submit" className="w-full">
-                  Save details
-                </Button>
-              </form>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+                      <Controller
+                        name="province"
+                        control={locationForm.control}
+                        render={({ field, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="profile-province">
+                              Province
+                            </FieldLabel>
+                            <Select
+                              id="profile-province"
+                              value={field.value}
+                              onValueChange={(value) => field.onChange(value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a province" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Provinces</SelectLabel>
+                                  {[
+                                    'Eastern Cape',
+                                    'Free State',
+                                    'Gauteng',
+                                    'KwaZulu-Natal',
+                                    'Limpopo',
+                                    'Mpumalanga',
+                                    'Northern Cape',
+                                    'North West',
+                                    'Western Cape',
+                                  ].map((province) => (
+                                    <SelectItem key={province} value={province}>
+                                      {province}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            {fieldState.invalid && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        )}
+                      />
+                    </FieldGroup>
+
+                    <Button type="submit" className="w-full sm:w-auto">
+                      Save address
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payouts" className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+              <Card className="border-border/80 bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">
+                    Bank Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    className="flex flex-col gap-4"
+                    onSubmit={bankDetailsForm.handleSubmit(submitBankDetails)}
+                  >
+                    <BankDetailsFields
+                      control={bankDetailsForm.control}
+                      idPrefix="profile-bank-details"
+                      required={user.type === 'business'}
+                    />
+
+                    <Button type="submit" className="w-full sm:w-auto">
+                      Save payout details
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                {user.type === 'business' ? (
+                  <Card className="border-border/80 bg-card">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-semibold">
+                        Business Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <form
+                        className="flex flex-col gap-4"
+                        onSubmit={businessProfileForm.handleSubmit((values) =>
+                          toast.promise(
+                            saveProfile({
+                              _id: user._id,
+                              businessName: values.businessName,
+                              businessRegistrationNumber:
+                                values.businessRegistrationNumber,
+                            }),
+                            {
+                              loading: 'Saving your business details...',
+                              error: (error: Error) => {
+                                if (error instanceof ConvexError) {
+                                  return {
+                                    message: error.data.name,
+                                    description: error.data.message,
+                                  };
+                                }
+
+                                return {
+                                  message: error.name,
+                                  description: error.message,
+                                };
+                              },
+                              success: () => 'Your business details have been saved.',
+                            }
+                          )
+                        )}
+                      >
+                        <FieldGroup className="gap-4">
+                          <Controller
+                            name="businessName"
+                            control={businessProfileForm.control}
+                            render={({ field, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor="profile-business-name">
+                                  Business name
+                                </FieldLabel>
+                                <Input
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  id="profile-business-name"
+                                  aria-invalid={fieldState.invalid}
+                                  placeholder="Business name"
+                                  autoComplete="organization"
+                                />
+                                {fieldState.invalid && (
+                                  <FieldError errors={[fieldState.error]} />
+                                )}
+                              </Field>
+                            )}
+                          />
+
+                          <Controller
+                            name="businessRegistrationNumber"
+                            control={businessProfileForm.control}
+                            render={({ field, fieldState }) => (
+                              <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor="profile-business-registration-number">
+                                  Business registration number
+                                </FieldLabel>
+                                <Input
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  id="profile-business-registration-number"
+                                  aria-invalid={fieldState.invalid}
+                                  placeholder="Business registration number"
+                                />
+                                {fieldState.invalid && (
+                                  <FieldError errors={[fieldState.error]} />
+                                )}
+                              </Field>
+                            )}
+                          />
+                        </FieldGroup>
+
+                        <Button type="submit" className="w-full sm:w-auto">
+                          Save business details
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                ) : null}
+
+                <Card className="border-border/80 bg-card">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-semibold">
+                      Payout readiness
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Progress value={profileStrength} className="gap-2">
+                      <div className="flex items-center gap-3">
+                        <ProgressLabel className="text-sm font-semibold text-foreground">
+                          Profile completion
+                        </ProgressLabel>
+                        <span className="ml-auto text-sm text-muted-foreground tabular-nums">
+                          {profileStrength}%
+                        </span>
+                      </div>
+                    </Progress>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      Finish your contact, address, and bank details to keep payouts and account setup moving smoothly.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+    </div>
+  );
+}
+
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof BriefcaseBusinessIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Icon className="size-4" />
+        <span>{label}</span>
+      </div>
+      <div className="text-lg font-semibold text-foreground">{value}</div>
     </div>
   );
 }

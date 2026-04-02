@@ -67,9 +67,7 @@ export function BankDetailsFields<T extends FieldValues>({
   return (
     <div className="space-y-4">
       <div className="flex h-auto w-full justify-center px-1 sm:px-0">
-        <Card className="relative w-full max-w-[640px] border border-primary/20 bg-linear-to-br from-primary/15 via-card to-amber-100/10 shadow-sm">
-          <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/25 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-14 left-6 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
+        <Card className="relative w-full max-w-[640px] border border-primary/20 bg-linear-to-br from-card via-card to-primary/5 shadow-[var(--shadow-soft)]">
 
           <CardHeader className="relative pb-3">
             <CardTitle className="text-sm uppercase tracking-[0.35em] text-muted-foreground">

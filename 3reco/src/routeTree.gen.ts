@@ -23,6 +23,7 @@ import { Route as TransactionsPurchasesRouteImport } from './routes/transactions
 import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store.$sellerId'
 
@@ -96,6 +97,11 @@ const MarketRequestIdRoute = MarketRequestIdRouteImport.update({
   path: '/market/$requestId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/materials': typeof MaterialsRoute
   '/stock': typeof StockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/stock'
     | '/admin/users'
+    | '/auth/reset-password'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/stock'
     | '/admin/users'
+    | '/auth/reset-password'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/stock'
     | '/admin/users'
+    | '/auth/reset-password'
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
@@ -227,6 +239,7 @@ export interface RootRouteChildren {
   MaterialsRoute: typeof MaterialsRoute
   StockRoute: typeof StockRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   MarketRequestIdRoute: typeof MarketRequestIdRoute
   MarketIncomingRoute: typeof MarketIncomingRoute
   MarketOutgoingRoute: typeof MarketOutgoingRoute
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketRequestIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/admin/users'
@@ -363,6 +383,7 @@ const rootRouteChildren: RootRouteChildren = {
   MaterialsRoute: MaterialsRoute,
   StockRoute: StockRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   MarketRequestIdRoute: MarketRequestIdRoute,
   MarketIncomingRoute: MarketIncomingRoute,
   MarketOutgoingRoute: MarketOutgoingRoute,

@@ -45,6 +45,13 @@ export const Route = createFileRoute('/admin/users')({
 
 type UserType = 'admin' | 'staff' | 'business' | 'collector';
 
+const USER_TYPE_LABELS: Record<UserType, string> = {
+  admin: 'Admin',
+  staff: 'Staff',
+  business: 'Business',
+  collector: 'Collector',
+};
+
 function DeleteUserDialog({ userId, name }: { userId: Id<'users'>; name: string }) {
   const [open, setOpen] = useState(false);
   const removeUser = useConvexMutation(api.users.removeUser);
@@ -106,7 +113,7 @@ function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; e
     'Unknown';
 
   return (
-      <Item variant="muted">
+      <Item variant="backgroundOutline">
       <ItemContent>
         <ItemTitle>{displayName}</ItemTitle>
         <ItemDescription>{user.email}</ItemDescription>
@@ -134,7 +141,9 @@ function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; e
           }
         >
           <SelectTrigger size="sm" className="w-full sm:w-36">
-            <SelectValue placeholder="Set role" />
+            <SelectValue placeholder="Set role">
+              {user.type ? USER_TYPE_LABELS[user.type] : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="admin">Admin</SelectItem>
@@ -205,7 +214,9 @@ function RouteComponent() {
             </div>
             <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue>
+                  {roleFilter === 'all' ? 'All roles' : USER_TYPE_LABELS[roleFilter]}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All roles</SelectItem>

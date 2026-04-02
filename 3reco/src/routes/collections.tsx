@@ -53,7 +53,15 @@ function RouteComponent() {
   const exportData = useQuery(api.exports.exportCollections, {
     from: dateRange?.from?.getTime(),
     to: dateRange?.to
-      ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999).getTime()
+      ? new Date(
+          dateRange.to.getFullYear(),
+          dateRange.to.getMonth(),
+          dateRange.to.getDate(),
+          23,
+          59,
+          59,
+          999
+        ).getTime()
       : undefined,
   });
 
@@ -62,9 +70,18 @@ function RouteComponent() {
 
     const effectiveDate = getEffectiveTransactionDate(c);
 
-    if (dateRange?.from && effectiveDate < dateRange.from.getTime()) return false;
+    if (dateRange?.from && effectiveDate < dateRange.from.getTime())
+      return false;
     if (dateRange?.to) {
-      const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
+      const toEnd = new Date(
+        dateRange.to.getFullYear(),
+        dateRange.to.getMonth(),
+        dateRange.to.getDate(),
+        23,
+        59,
+        59,
+        999
+      );
       if (effectiveDate > toEnd.getTime()) return false;
     }
     return true;
@@ -93,7 +110,13 @@ function RouteComponent() {
               variant="outline"
               className="w-full"
               disabled={!exportData || exportData.length === 0}
-              onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'collections.csv')}
+              onClick={() =>
+                exportData &&
+                downloadCsv(
+                  exportData as Record<string, unknown>[],
+                  'collections.csv'
+                )
+              }
             >
               <DownloadIcon className="size-4" />
               Download CSV
@@ -150,7 +173,7 @@ function RouteComponent() {
               const effectiveDate = getEffectiveTransactionDate(collection);
 
               return (
-                <Item variant="muted" key={collection._id}>
+                <Item variant="backgroundOutline" key={collection._id}>
                   <CollectionItemContent
                     _id={collection._id}
                     receiptCount={collection.receiptAttachments?.length ?? 0}

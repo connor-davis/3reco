@@ -53,7 +53,7 @@ export default function RequestItem({
 
   return (
     <Link to="/market/$requestId" params={{ requestId: request._id }}>
-      <Item variant="muted">
+      <Item variant="backgroundOutline">
         <ItemContent>
           {firstMaterialId !== undefined ? (
             <>

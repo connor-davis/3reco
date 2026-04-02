@@ -24,10 +24,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_CONVEX_URL: ${VITE_CONVEX_URL}
-        VITE_CONVEX_AUTH_DOMAIN: ${VITE_CONVEX_AUTH_DOMAIN}
-        VITE_WORKOS_CLIENT_ID: ${VITE_WORKOS_CLIENT_ID}
-        VITE_WORKOS_API_HOSTNAME: ${VITE_WORKOS_API_HOSTNAME}
-        VITE_WORKOS_REDIRECT_URI: ${VITE_WORKOS_REDIRECT_URI}
+        VITE_CONVEX_SITE_URL: ${VITE_CONVEX_SITE_URL}
     ports:
       - "127.0.0.1:3000:80"
     restart: unless-stopped
@@ -72,11 +69,11 @@ services:
       # Public origin URLs (used by Convex for CORS and auth token issuer)
       - CONVEX_CLOUD_ORIGIN=${CONVEX_CLOUD_ORIGIN}
       - CONVEX_SITE_ORIGIN=${CONVEX_SITE_ORIGIN}
-      # WorkOS AuthKit backend configuration
-      - WORKOS_CLIENT_ID=${WORKOS_CLIENT_ID}
-      - WORKOS_API_KEY=${WORKOS_API_KEY}
-      - WORKOS_WEBHOOK_SECRET=${WORKOS_WEBHOOK_SECRET}
-      - WORKOS_ACTION_SECRET=${WORKOS_ACTION_SECRET}
+      # Better Auth backend configuration
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - SITE_URL=${SITE_URL}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - AUTH_FROM_EMAIL=${AUTH_FROM_EMAIL}
       # Allow HTTP (set to false once HTTPS certs are in place)
       - DO_NOT_REQUIRE_SSL=true
       # JVM heap – increase on servers with more RAM

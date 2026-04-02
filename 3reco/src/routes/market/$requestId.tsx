@@ -94,16 +94,24 @@ function RouteComponent() {
   const makeOffer = useConvexMutation(api.transactionRequests.makeOffer);
   const acceptOffer = useConvexMutation(api.transactionRequests.acceptOffer);
   const declineOffer = useConvexMutation(api.transactionRequests.declineOffer);
-  const withdrawOffer = useConvexMutation(api.transactionRequests.withdrawOffer);
+  const withdrawOffer = useConvexMutation(
+    api.transactionRequests.withdrawOffer
+  );
   const rejectRequest = useConvexMutation(api.transactionRequests.reject);
   const cancelRequest = useConvexMutation(api.transactionRequests.cancel);
 
   const materialMap = new Map(materials?.map((m) => [m._id, m]) ?? []);
 
   // Normalise items for display
-  const requestItems = request?.items ??
+  const requestItems =
+    request?.items ??
     (request?.materialId
-      ? [{ materialId: request.materialId, stockId: undefined as unknown as Id<'stock'> }]
+      ? [
+          {
+            materialId: request.materialId,
+            stockId: undefined as unknown as Id<'stock'>,
+          },
+        ]
       : []);
 
   const offerForm = useForm<z.infer<typeof offerSchema>>({
@@ -111,14 +119,19 @@ function RouteComponent() {
     values: {
       items: requestItems.map((item) => ({
         materialId: item.materialId ?? '',
-        materialName: item.materialId ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? '') : '',
+        materialName: item.materialId
+          ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? '')
+          : '',
         offerWeight: (item as { offerWeight?: number }).offerWeight ?? 0,
         offerPrice: (item as { offerPrice?: number }).offerPrice ?? 0,
       })),
     },
   });
 
-  const { fields } = useFieldArray({ control: offerForm.control, name: 'items' });
+  const { fields } = useFieldArray({
+    control: offerForm.control,
+    name: 'items',
+  });
 
   if (!request || !currentUser) {
     return (
@@ -145,13 +158,16 @@ function RouteComponent() {
 
   // Title: first material or "N materials"
   const titleItems = requestItems.map((item) =>
-    item.materialId ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? 'Unknown') : 'Unknown'
+    item.materialId
+      ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? 'Unknown')
+      : 'Unknown'
   );
-  const titleText = titleItems.length === 0
-    ? 'Request'
-    : titleItems.length === 1
-      ? titleItems[0]
-      : `${titleItems[0]} +${titleItems.length - 1} more`;
+  const titleText =
+    titleItems.length === 0
+      ? 'Request'
+      : titleItems.length === 1
+        ? titleItems[0]
+        : `${titleItems[0]} +${titleItems.length - 1} more`;
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
@@ -178,8 +194,8 @@ function RouteComponent() {
                   <DialogHeader>
                     <DialogTitle>Send an offer</DialogTitle>
                     <DialogDescription>
-                      Add the weight and price for each item. The buyer can review
-                      and accept the offer before anything is confirmed.
+                      Add the weight and price for each item. The buyer can
+                      review and accept the offer before anything is confirmed.
                     </DialogDescription>
                   </DialogHeader>
                   <form
@@ -207,11 +223,15 @@ function RouteComponent() {
                     )}
                   >
                     {fields.map((field, index) => (
-                      <FieldGroup key={field.id} className="gap-2 p-3 border rounded-lg">
+                      <FieldGroup
+                        key={field.id}
+                        className="gap-2 p-3 border rounded-lg"
+                      >
                         <Label className="text-xs text-muted-foreground font-medium">
-                            {offerForm.watch(`items.${index}.materialName`) || `Item ${index + 1}`}
-                          </Label>
-                          <div className="grid grid-cols-2 gap-2">
+                          {offerForm.watch(`items.${index}.materialName`) ||
+                            `Item ${index + 1}`}
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
                           <Controller
                             name={`items.${index}.offerWeight`}
                             control={offerForm.control}
@@ -223,9 +243,13 @@ function RouteComponent() {
                                   type="number"
                                   step={0.01}
                                   placeholder="e.g. 100"
-                                  onChange={(e) => f.onChange(e.target.valueAsNumber)}
+                                  onChange={(e) =>
+                                    f.onChange(e.target.valueAsNumber)
+                                  }
                                 />
-                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                {fieldState.invalid && (
+                                  <FieldError errors={[fieldState.error]} />
+                                )}
                               </Field>
                             )}
                           />
@@ -240,9 +264,13 @@ function RouteComponent() {
                                   type="number"
                                   step={0.01}
                                   placeholder="e.g. 15.50"
-                                  onChange={(e) => f.onChange(e.target.valueAsNumber)}
+                                  onChange={(e) =>
+                                    f.onChange(e.target.valueAsNumber)
+                                  }
                                 />
-                                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                {fieldState.invalid && (
+                                  <FieldError errors={[fieldState.error]} />
+                                )}
                               </Field>
                             )}
                           />
@@ -263,7 +291,9 @@ function RouteComponent() {
                 size="sm"
                 onClick={() =>
                   toast.promise(
-                    rejectRequest({ _id: requestId as Id<'transactionRequests'> }),
+                    rejectRequest({
+                      _id: requestId as Id<'transactionRequests'>,
+                    }),
                     {
                       loading: 'Rejecting request...',
                       success: 'Request rejected.',
@@ -286,7 +316,9 @@ function RouteComponent() {
                 size="sm"
                 onClick={() =>
                   toast.promise(
-                    withdrawOffer({ _id: requestId as Id<'transactionRequests'> }),
+                    withdrawOffer({
+                      _id: requestId as Id<'transactionRequests'>,
+                    }),
                     {
                       loading: 'Withdrawing offer...',
                       success: 'Offer withdrawn.',
@@ -304,7 +336,9 @@ function RouteComponent() {
                 size="sm"
                 onClick={() =>
                   toast.promise(
-                    rejectRequest({ _id: requestId as Id<'transactionRequests'> }),
+                    rejectRequest({
+                      _id: requestId as Id<'transactionRequests'>,
+                    }),
                     {
                       loading: 'Rejecting request...',
                       success: 'Request rejected.',
@@ -326,7 +360,9 @@ function RouteComponent() {
               size="sm"
               onClick={() =>
                 toast.promise(
-                  cancelRequest({ _id: requestId as Id<'transactionRequests'> }),
+                  cancelRequest({
+                    _id: requestId as Id<'transactionRequests'>,
+                  }),
                   {
                     loading: 'Cancelling request...',
                     success: 'Request cancelled.',
@@ -347,7 +383,9 @@ function RouteComponent() {
                 size="sm"
                 onClick={() =>
                   toast.promise(
-                    acceptOffer({ _id: requestId as Id<'transactionRequests'> }),
+                    acceptOffer({
+                      _id: requestId as Id<'transactionRequests'>,
+                    }),
                     {
                       loading: 'Accepting offer...',
                       success: 'Offer accepted! Transaction complete.',
@@ -365,10 +403,13 @@ function RouteComponent() {
                 size="sm"
                 onClick={() =>
                   toast.promise(
-                    declineOffer({ _id: requestId as Id<'transactionRequests'> }),
+                    declineOffer({
+                      _id: requestId as Id<'transactionRequests'>,
+                    }),
                     {
                       loading: 'Declining offer...',
-                      success: 'Offer declined. The seller can make a new offer.',
+                      success:
+                        'Offer declined. The seller can make a new offer.',
                       error: handleMutationError,
                     }
                   )
@@ -397,15 +438,20 @@ function RouteComponent() {
         </div>
         {requestItems.map((item, i) => {
           const matName = item.materialId
-            ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? 'Unknown')
+            ? (materialMap.get(item.materialId as Id<'materials'>)?.name ??
+              'Unknown')
             : 'Unknown';
           const offerWeight = (item as { offerWeight?: number }).offerWeight;
           const offerPrice = (item as { offerPrice?: number }).offerPrice;
           return (
             <div key={i} className="grid grid-cols-4 gap-2 px-3 py-2 border-t">
               <span>{matName}</span>
-              <span className="text-right">{offerWeight != null ? `${offerWeight} kg` : '—'}</span>
-              <span className="text-right">{offerPrice != null ? `R${offerPrice.toFixed(2)}` : '—'}</span>
+              <span className="text-right">
+                {offerWeight != null ? `${offerWeight} kg` : '—'}
+              </span>
+              <span className="text-right">
+                {offerPrice != null ? `R${offerPrice.toFixed(2)}` : '—'}
+              </span>
               <span className="text-right">
                 {offerWeight != null && offerPrice != null
                   ? `R${(offerWeight * offerPrice).toFixed(2)}`
@@ -418,11 +464,15 @@ function RouteComponent() {
           <div className="grid grid-cols-4 gap-2 px-3 py-2 border-t bg-muted/50 font-medium">
             <span className="col-span-3 text-right">Grand Total</span>
             <span className="text-right">
-              R{requestItems.reduce((sum, item) => {
-                const ow = (item as { offerWeight?: number }).offerWeight ?? 0;
-                const op = (item as { offerPrice?: number }).offerPrice ?? 0;
-                return sum + ow * op;
-              }, 0).toFixed(2)}
+              R
+              {requestItems
+                .reduce((sum, item) => {
+                  const ow =
+                    (item as { offerWeight?: number }).offerWeight ?? 0;
+                  const op = (item as { offerPrice?: number }).offerPrice ?? 0;
+                  return sum + ow * op;
+                }, 0)
+                .toFixed(2)}
             </span>
           </div>
         )}

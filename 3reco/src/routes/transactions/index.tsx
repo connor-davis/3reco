@@ -42,6 +42,12 @@ export const Route = createFileRoute('/transactions/')({
   component: RouteComponent,
 });
 
+const TRANSACTION_TYPE_LABELS = {
+  all: 'All sales',
+  c2b: 'Collector to business',
+  b2b: 'Business to business',
+} as const;
+
 function RouteComponent() {
   const {
     results: transactions,
@@ -91,7 +97,7 @@ function RouteComponent() {
           >
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue>{TRANSACTION_TYPE_LABELS[typeFilter]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All sales</SelectItem>
@@ -159,7 +165,7 @@ function RouteComponent() {
               const effectiveDate = getEffectiveTransactionDate(transaction);
 
               return (
-                <Item variant="muted" key={transaction._id}>
+                <Item variant="backgroundOutline" key={transaction._id}>
                   <TransactionItemContent _id={transaction._id} />
 
                   <ItemActions>

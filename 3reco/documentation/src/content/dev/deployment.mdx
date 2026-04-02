@@ -108,12 +108,16 @@ If you prefer to configure things by hand, copy `.env.example` to `.env` and fil
 | `CONVEX_CLOUD_ORIGIN` | `https://convex.yourdomain.com` |
 | `CONVEX_SITE_ORIGIN` | `https://convex-site.yourdomain.com` |
 | `VITE_CONVEX_URL` | Same as `CONVEX_CLOUD_ORIGIN` |
-| `VITE_CONVEX_AUTH_DOMAIN` | Same as `CONVEX_SITE_ORIGIN` |
+| `VITE_CONVEX_SITE_URL` | Same as `CONVEX_SITE_ORIGIN` |
+| `BETTER_AUTH_SECRET` | Random secret used by Better Auth |
+| `SITE_URL` | Public frontend URL, e.g. `https://app.yourdomain.com` |
+| `RESEND_API_KEY` | Resend API key for reset/verification emails |
+| `AUTH_FROM_EMAIL` | Verified sender address for Better Auth emails |
 
 Then run `docker compose up -d --build`, followed by the same admin key and `bunx convex deploy` steps above.
 
 <Callout type="warning" title="VITE_ variables are baked at build time">
-  `VITE_CONVEX_URL` and `VITE_CONVEX_AUTH_DOMAIN` are inlined into the JS bundle when the Docker image is built. If you change these values you must rebuild the frontend image: `docker compose build frontend`.
+  `VITE_CONVEX_URL` and `VITE_CONVEX_SITE_URL` are inlined into the JS bundle when the Docker image is built. If you change these values you must rebuild the frontend image: `docker compose build frontend`.
 </Callout>
 
 ### Updating
@@ -209,11 +213,15 @@ Upload the `dist/` folder to any static host:
 
 ### Authentication setup
 
-After deploying, configure auth providers in the Convex dashboard:
+For Better Auth, make sure these runtime variables are set in the environment used
+by `convex-backend`:
 
-1. Go to [dashboard.convex.dev](https://dashboard.convex.dev) → your project → **Settings → Authentication**
-2. Enable your providers (e.g. Password, Google OAuth)
-3. For OAuth providers, set the redirect URI to your production frontend URL
+1. `BETTER_AUTH_SECRET`
+2. `SITE_URL`
+3. `RESEND_API_KEY`
+4. `AUTH_FROM_EMAIL`
+
+Reset-password emails return users to `/auth/reset-password` in the SPA.
 
 ---
 

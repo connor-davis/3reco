@@ -128,7 +128,7 @@ function RouteComponent() {
               const effectiveDate = getEffectiveTransactionDate(transaction);
 
               return (
-                <Item variant="muted" key={transaction._id}>
+                <Item variant="backgroundOutline" key={transaction._id}>
                   <TransactionItemContent _id={transaction._id} />
 
                   <ItemActions>
