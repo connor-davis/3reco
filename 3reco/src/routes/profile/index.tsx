@@ -4,7 +4,13 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import {
   Field,
@@ -47,12 +53,18 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
 import {
   BriefcaseBusinessIcon,
+  CheckCircle2Icon,
   CalendarIcon,
   GlobeIcon,
+  LaptopMinimalIcon,
+  LogOutIcon,
   MailIcon,
   MapPinIcon,
   PhoneIcon,
+  RefreshCwIcon,
+  ShieldCheckIcon,
   SparklesIcon,
+  Trash2Icon,
   TrendingUpIcon,
   UsersIcon,
 } from 'lucide-react';
@@ -60,6 +72,12 @@ import { Controller, useForm } from 'react-hook-form';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
+import { authClient } from '@/lib/auth-client';
+import {
+  useMutation as useTanstackMutation,
+  useQuery as useTanstackQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 export const Route = createFileRoute('/profile/')({
   component: RouteComponent,
@@ -142,9 +160,115 @@ function buildDisplayName(user: ReturnType<typeof useConvexQuery<typeof api.user
   return fullName || user.businessName || user.name || user.email || 'Profile';
 }
 
+type BetterAuthSession = {
+  id: string;
+  token: string;
+  userId: string;
+  expiresAt: string | Date;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
+
+type BetterAuthSessionResult =
+  | BetterAuthSession[]
+  | { data?: BetterAuthSession[] | null }
+  | null
+  | undefined;
+
+type BetterAuthDeviceSession = {
+  session: BetterAuthSession;
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+  };
+};
+
+type BetterAuthDeviceSessionResult =
+  | BetterAuthDeviceSession[]
+  | { data?: BetterAuthDeviceSession[] | null }
+  | null
+  | undefined;
+
+function normalizeBetterAuthSessions(result: BetterAuthSessionResult) {
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  return result?.data ?? [];
+}
+
+function normalizeBetterAuthDeviceSessions(result: BetterAuthDeviceSessionResult) {
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  return result?.data ?? [];
+}
+
+function formatSessionExpiry(expiresAt: BetterAuthSession['expiresAt']) {
+  const date = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown expiry';
+  }
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function formatSessionDevice(session: BetterAuthSession) {
+  const agent = session.userAgent?.trim();
+
+  if (!agent) {
+    return 'Browser session';
+  }
+
+  if (/iphone|ipad|android|mobile/i.test(agent)) {
+    return 'Mobile browser';
+  }
+
+  if (/windows|macintosh|linux|x11/i.test(agent)) {
+    return 'Desktop browser';
+  }
+
+  return 'Browser session';
+}
+
 function RouteComponent() {
   const user = useConvexQuery(api.users.currentUser);
   const saveProfile = useConvexMutation(api.users.update);
+  const queryClient = useQueryClient();
+  const sessionState = authClient.useSession();
+  const sessionsQuery = useTanstackQuery({
+    queryKey: ['auth', 'sessions'],
+    queryFn: () => authClient.listSessions(),
+  });
+  const deviceSessionsQuery = useTanstackQuery({
+    queryKey: ['auth', 'device-sessions'],
+    queryFn: () => authClient.multiSession.listDeviceSessions(),
+  });
+  const switchSessionMutation = useTanstackMutation({
+    mutationFn: async (sessionToken: string) => {
+      await authClient.multiSession.setActive({
+        sessionToken,
+      });
+    },
+  });
+  const revokeSessionMutation = useTanstackMutation({
+    mutationFn: async (sessionToken: string) => {
+      await authClient.revokeSession({
+        token: sessionToken,
+      });
+    },
+  });
+  const revokeOtherSessionsMutation = useTanstackMutation({
+    mutationFn: async () => {
+      await authClient.revokeOtherSessions();
+    },
+  });
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -228,7 +352,16 @@ function RouteComponent() {
 
   if (!user) return undefined;
 
+  const refreshSessionState = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['auth', 'sessions'] }),
+      queryClient.invalidateQueries({ queryKey: ['auth', 'device-sessions'] }),
+      sessionState.refetch(),
+    ]);
+  };
+
   const displayName = buildDisplayName(user);
+  const currentSessionId = sessionState.data?.session.id;
   const profileRole =
     user.type === 'business'
       ? 'Business account'
@@ -302,6 +435,8 @@ function RouteComponent() {
       ready: Boolean(user.bankName && user.bankAccountNumber && user.bankBranchCode),
     },
   ];
+  const allSessions = normalizeBetterAuthSessions(sessionsQuery.data);
+  const deviceSessions = normalizeBetterAuthDeviceSessions(deviceSessionsQuery.data);
 
   const submitBankDetails = (values: BankDetailsFormValues) => {
     const parsedValues =
@@ -483,6 +618,9 @@ function RouteComponent() {
             </TabsTrigger>
             <TabsTrigger value="payouts" className="px-0">
               Payouts
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="px-0">
+              Sessions
             </TabsTrigger>
           </TabsList>
 
@@ -1046,6 +1184,269 @@ function RouteComponent() {
                     <p className="text-sm leading-6 text-muted-foreground">
                       Finish your contact, address, and bank details to keep payouts and account setup moving smoothly.
                     </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="sessions" className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+              <Card className="border-border/80 bg-card">
+                <CardHeader className="gap-1 pb-4">
+                  <CardTitle className="text-xl font-semibold">
+                    Active sessions
+                  </CardTitle>
+                  <CardDescription>
+                    Review where you are signed in and revoke sessions you no longer trust.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {sessionsQuery.isPending ? (
+                    <p className="text-sm text-muted-foreground">
+                      Loading your active sessions...
+                    </p>
+                  ) : allSessions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No active sessions were returned.
+                    </p>
+                  ) : (
+                    allSessions.map((session) => {
+                      const isCurrent = session.id === currentSessionId;
+
+                      return (
+                        <div
+                          key={session.id}
+                          className="space-y-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-4"
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-foreground">
+                                  {formatSessionDevice(session)}
+                                </span>
+                                <Badge
+                                  variant={isCurrent ? 'secondary' : 'outline'}
+                                  className={
+                                    isCurrent
+                                      ? 'bg-emerald-500/12 text-emerald-400'
+                                      : ''
+                                  }
+                                >
+                                  {isCurrent ? 'Current session' : 'Active'}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {session.ipAddress
+                                  ? `IP address: ${session.ipAddress}`
+                                  : 'IP address unavailable'}
+                              </div>
+                              {session.userAgent ? (
+                                <p className="break-words text-xs text-muted-foreground">
+                                  {session.userAgent}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            {!isCurrent ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  toast.promise(
+                                    revokeSessionMutation.mutateAsync(session.token).then(
+                                      async () => {
+                                        await refreshSessionState();
+                                      }
+                                    ),
+                                    {
+                                      loading: 'Signing out that session...',
+                                      success: 'Session revoked.',
+                                      error: (error: Error) => ({
+                                        message: 'Unable to revoke session',
+                                        description: error.message,
+                                      }),
+                                    }
+                                  )
+                                }
+                              >
+                                <Trash2Icon className="size-4" />
+                                Revoke
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  toast.promise(authClient.signOut(), {
+                                    loading: 'Signing out...',
+                                    success: 'Signed out.',
+                                    error: (error: Error) => ({
+                                      message: 'Unable to sign out',
+                                      description: error.message,
+                                    }),
+                                  })
+                                }
+                              >
+                                <LogOutIcon className="size-4" />
+                                Sign out
+                              </Button>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-muted-foreground">
+                            Expires {formatSessionExpiry(session.expiresAt)}
+                          </p>
+                        </div>
+                      );
+                    })
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card className="border-border/80 bg-card">
+                  <CardHeader className="gap-1 pb-4">
+                    <CardTitle className="text-xl font-semibold">
+                      Quick actions
+                    </CardTitle>
+                    <CardDescription>
+                      Use Better Auth multi-session controls to secure or switch your session state.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button
+                      type="button"
+                      className="w-full justify-start"
+                      variant="outline"
+                      disabled={revokeOtherSessionsMutation.isPending}
+                      onClick={() =>
+                        toast.promise(
+                          revokeOtherSessionsMutation.mutateAsync().then(async () => {
+                            await refreshSessionState();
+                          }),
+                          {
+                            loading: 'Signing out other sessions...',
+                            success: 'Other sessions revoked.',
+                            error: (error: Error) => ({
+                              message: 'Unable to revoke other sessions',
+                              description: error.message,
+                            }),
+                          }
+                        )
+                      }
+                    >
+                      <ShieldCheckIcon className="size-4" />
+                      Sign out other sessions
+                    </Button>
+                    <Button
+                      type="button"
+                      className="w-full justify-start"
+                      variant="ghost"
+                      disabled={sessionsQuery.isFetching || deviceSessionsQuery.isFetching}
+                      onClick={() =>
+                        toast.promise(refreshSessionState(), {
+                          loading: 'Refreshing sessions...',
+                          success: 'Sessions refreshed.',
+                          error: (error: Error) => ({
+                            message: 'Unable to refresh sessions',
+                            description: error.message,
+                          }),
+                        })
+                      }
+                    >
+                      <RefreshCwIcon className="size-4" />
+                      Refresh sessions
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/80 bg-card">
+                  <CardHeader className="gap-1 pb-4">
+                    <CardTitle className="text-xl font-semibold">
+                      Session switching
+                    </CardTitle>
+                    <CardDescription>
+                      Switch the active session when this browser has more than one Better Auth session available.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {deviceSessionsQuery.isPending ? (
+                      <p className="text-sm text-muted-foreground">
+                        Loading switchable sessions...
+                      </p>
+                    ) : deviceSessions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No extra sessions are available on this browser yet.
+                      </p>
+                    ) : (
+                      deviceSessions.map((entry) => {
+                        const session = entry.session;
+                        const isCurrent = session.id === currentSessionId;
+                        const sessionAccountLabel =
+                          entry.user.name || entry.user.email || 'Saved account';
+
+                        return (
+                          <div
+                            key={session.id}
+                            className="space-y-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <LaptopMinimalIcon className="size-4 text-muted-foreground" />
+                                  <span className="font-medium text-foreground">
+                                    {sessionAccountLabel}
+                                  </span>
+                                  {isCurrent ? (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-emerald-500/12 text-emerald-400"
+                                    >
+                                      Current
+                                    </Badge>
+                                  ) : null}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatSessionDevice(session)} ·{' '}
+                                  Expires {formatSessionExpiry(session.expiresAt)}
+                                </p>
+                              </div>
+
+                              {!isCurrent ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    toast.promise(
+                                      switchSessionMutation.mutateAsync(session.token).then(
+                                        async () => {
+                                          await refreshSessionState();
+                                        }
+                                      ),
+                                      {
+                                        loading: 'Switching session...',
+                                        success: 'Session switched.',
+                                        error: (error: Error) => ({
+                                          message: 'Unable to switch sessions',
+                                          description: error.message,
+                                        }),
+                                      }
+                                    )
+                                  }
+                                >
+                                  <CheckCircle2Icon className="size-4" />
+                                  Switch here
+                                </Button>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </CardContent>
                 </Card>
               </div>

@@ -1,4 +1,5 @@
 import { createAuthClient } from 'better-auth/react';
+import { multiSessionClient } from 'better-auth/client/plugins';
 import {
   convexClient,
   crossDomainClient,
@@ -6,5 +7,5 @@ import {
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_CONVEX_SITE_URL,
-  plugins: [convexClient(), crossDomainClient()],
+  plugins: [multiSessionClient(), convexClient(), crossDomainClient()],
 });
