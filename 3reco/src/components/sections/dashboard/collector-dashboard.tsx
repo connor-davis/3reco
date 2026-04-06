@@ -40,7 +40,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
     return (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="bg-background">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-24" />
             </CardHeader>
@@ -61,7 +61,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
     <div className="flex flex-col gap-6">
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-        <Card>
+        <Card className="bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <CreditCardIcon className="size-4 text-muted-foreground" />
@@ -72,7 +72,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Volume Sold</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
@@ -83,7 +83,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Carbon Savings</CardTitle>
             <LeafIcon className="size-4 text-muted-foreground" />
@@ -96,7 +96,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
       </div>
 
       {/* Daily volume line chart */}
-      <Card>
+      <Card className="bg-background">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUpIcon className="size-4" />
@@ -131,7 +131,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
       </Card>
 
       {/* Latest transactions */}
-      <Card>
+      <Card className="bg-background">
         <CardHeader>
           <CardTitle>Latest Sales</CardTitle>
           <CardDescription>Your 5 most recent transactions</CardDescription>

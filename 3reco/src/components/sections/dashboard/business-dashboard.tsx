@@ -41,7 +41,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
     return (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="bg-background">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-24" />
             </CardHeader>
@@ -62,7 +62,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
     <div className="flex flex-col gap-6">
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-        <Card>
+        <Card className="bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Spend</CardTitle>
             <CreditCardIcon className="size-4 text-muted-foreground" />
@@ -73,7 +73,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
@@ -84,7 +84,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Transactions</CardTitle>
             <TrendingUpIcon className="size-4 text-muted-foreground" />
@@ -95,7 +95,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Carbon Savings</CardTitle>
             <LeafIcon className="size-4 text-muted-foreground" />
@@ -110,7 +110,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
       {/* Charts + stock row */}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
         {/* Daily volume line chart */}
-        <Card>
+        <Card className="bg-background">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUpIcon className="size-4" />
@@ -145,7 +145,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
         </Card>
 
         {/* Stock summary */}
-        <Card>
+        <Card className="bg-background">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PackageIcon className="size-4" />
@@ -188,7 +188,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
       </div>
 
       {/* Latest transactions */}
-      <Card>
+      <Card className="bg-background">
         <CardHeader>
           <CardTitle>Latest Transactions</CardTitle>
           <CardDescription>Your 5 most recent transactions</CardDescription>

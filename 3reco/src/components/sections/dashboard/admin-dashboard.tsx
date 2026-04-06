@@ -50,7 +50,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
     return (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="bg-background">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-24" />
             </CardHeader>
@@ -71,7 +71,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-        <Card className='border-l-chart-1 border-l-4'>
+        <Card className="border-l-chart-1 border-l-4 bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Collector sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
@@ -82,7 +82,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className='border-l-chart-2 border-l-4'>
+        <Card className="border-l-chart-2 border-l-4 bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Business sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
@@ -93,7 +93,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className='border-l-chart-3 border-l-4'>
+        <Card className="border-l-chart-3 border-l-4 bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Collector volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
@@ -104,7 +104,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className='border-l-chart-4 border-l-4'>
+        <Card className="border-l-chart-4 border-l-4 bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Business volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
@@ -119,7 +119,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
         {/* Daily transactions line chart */}
-        <Card>
+        <Card className="bg-background">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUpIcon className="size-4" />
@@ -162,7 +162,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
         </Card>
 
         {/* Material volume bar chart */}
-        <Card>
+        <Card className="bg-background">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PackageIcon className="size-4" />
@@ -194,7 +194,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
       </div>
 
       {/* Charts row */}
-      <Card>
+      <Card className="bg-background">
         <CardHeader>
           <CardTitle>Latest Transactions</CardTitle>
           <CardDescription>The 5 most recent transactions on the platform</CardDescription>
