@@ -15,7 +15,7 @@ export function DocsLayout() {
     <div className="min-h-screen bg-background text-foreground">
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-full items-center justify-between px-4">
+        <div className="mx-auto flex h-full w-full max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Left: hamburger (mobile) + logo */}
           <div className="flex items-center gap-2">
             <Button
@@ -28,7 +28,7 @@ export function DocsLayout() {
               <Menu size={20} />
             </Button>
             <div className="flex items-center gap-2 font-bold text-lg">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
                 <Leaf size={16} className="text-primary-foreground" />
               </div>
               <span className="text-foreground">3rEco</span>
@@ -74,7 +74,7 @@ export function DocsLayout() {
 
         {/* Content */}
         <main className="lg:ml-64 min-h-[calc(100vh-4rem)] flex-1 w-full">
-          <div className="mx-auto max-w-3xl px-4 sm:px-8 py-10">
+          <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
             <MDXProvider components={mdxComponents}>
               <Outlet />
             </MDXProvider>

@@ -113,7 +113,7 @@ function SidebarGroup({ group, onNavClick }: SidebarGroupProps) {
     <div className="mb-1">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+        className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
       >
         {group.icon}
         <span className="flex-1 text-left">{group.label}</span>
@@ -130,10 +130,10 @@ function SidebarGroup({ group, onNavClick }: SidebarGroupProps) {
               key={item.to}
               to={item.to}
               onClick={onNavClick}
-              className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
+              className="block rounded-xl px-3.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
               activeProps={{
                 className:
-                  'block rounded-md px-3 py-1.5 text-sm bg-accent text-accent-foreground font-medium',
+                  'block rounded-xl px-3.5 py-2 text-sm bg-accent text-accent-foreground font-medium',
               }}
             >
               {item.label}
@@ -155,7 +155,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       )}
     >
       <ScrollArea className="h-full">
-        <nav className="px-3 py-4 space-y-1">
+        <nav className="space-y-2 px-3 py-5">
           {navGroups.map(group => (
             <SidebarGroup key={group.label} group={group} onNavClick={onClose} />
           ))}

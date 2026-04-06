@@ -40,7 +40,7 @@ export const mdxComponents = {
     <AnchorHeading
       level={1}
       id={id}
-      className="text-3xl font-bold tracking-tight text-foreground mt-2 mb-4 border-b pb-3"
+      className="mt-2 mb-6 border-b pb-4 text-3xl font-bold tracking-tight text-foreground"
     >
       {children}
     </AnchorHeading>
@@ -50,7 +50,7 @@ export const mdxComponents = {
     <AnchorHeading
       level={2}
       id={id}
-      className="text-2xl font-semibold tracking-tight text-foreground mt-10 mb-4"
+      className="mt-12 mb-5 text-2xl font-semibold tracking-tight text-foreground"
     >
       {children}
     </AnchorHeading>
@@ -60,7 +60,7 @@ export const mdxComponents = {
     <AnchorHeading
       level={3}
       id={id}
-      className="text-xl font-semibold text-foreground mt-8 mb-3"
+      className="mt-8 mb-4 text-xl font-semibold text-foreground"
     >
       {children}
     </AnchorHeading>
@@ -77,7 +77,7 @@ export const mdxComponents = {
   ),
 
   p: ({ children }: { children?: React.ReactNode }) => (
-    <p className="my-4 leading-7 text-foreground/90">{children}</p>
+    <p className="my-5 leading-7 text-foreground/90">{children}</p>
   ),
 
   a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
@@ -92,11 +92,11 @@ export const mdxComponents = {
   ),
 
   ul: ({ children }: { children?: React.ReactNode }) => (
-    <ul className="my-4 ml-6 list-disc space-y-1 [&>li]:leading-7">{children}</ul>
+    <ul className="my-5 ml-6 list-disc space-y-2 [&>li]:leading-7">{children}</ul>
   ),
 
   ol: ({ children }: { children?: React.ReactNode }) => (
-    <ol className="my-4 ml-6 list-decimal space-y-1 [&>li]:leading-7">{children}</ol>
+    <ol className="my-5 ml-6 list-decimal space-y-2 [&>li]:leading-7">{children}</ol>
   ),
 
   li: ({ children }: { children?: React.ReactNode }) => (
@@ -113,7 +113,7 @@ export const mdxComponents = {
     const isInline = !className
     if (isInline) {
       return (
-        <code className="relative rounded bg-muted px-[0.4em] py-[0.2em] font-mono text-sm text-foreground">
+        <code className="relative rounded-md bg-muted/70 px-1.5 py-1 font-mono text-sm text-foreground">
           {children}
         </code>
       )
@@ -122,19 +122,19 @@ export const mdxComponents = {
   },
 
   pre: ({ children }: { children?: React.ReactNode }) => (
-    <pre className="my-6 overflow-x-auto rounded-lg border bg-card p-4 text-sm leading-relaxed [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-[inherit]">
+    <pre className="my-6 overflow-x-auto rounded-2xl border bg-card p-5 text-sm leading-relaxed [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-[inherit]">
       {children}
     </pre>
   ),
 
   table: ({ children }: { children?: React.ReactNode }) => (
-    <div className="my-6 overflow-x-auto rounded-lg border">
+    <div className="my-6 overflow-x-auto rounded-2xl border bg-card/60">
       <table className="w-full text-sm">{children}</table>
     </div>
   ),
 
   thead: ({ children }: { children?: React.ReactNode }) => (
-    <thead className="border-b bg-muted/50">{children}</thead>
+    <thead className="border-b bg-muted/40">{children}</thead>
   ),
 
   tbody: ({ children }: { children?: React.ReactNode }) => (
@@ -142,7 +142,7 @@ export const mdxComponents = {
   ),
 
   tr: ({ children }: { children?: React.ReactNode }) => (
-    <tr className="border-b transition-colors hover:bg-muted/30">{children}</tr>
+    <tr className="border-b transition-colors hover:bg-muted/20">{children}</tr>
   ),
 
   th: ({ children }: { children?: React.ReactNode }) => (

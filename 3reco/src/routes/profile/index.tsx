@@ -69,7 +69,7 @@ import {
   UsersIcon,
 } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 import { authClient } from '@/lib/auth-client';
@@ -174,12 +174,28 @@ function buildDisplayName(user: ReturnType<typeof useConvexQuery<typeof api.user
   return fullName || user.businessName || user.name || user.email || 'Profile';
 }
 
+function getToastErrorDetails(error: Error) {
+  if (error instanceof ConvexError) {
+    return {
+      message: error.data.name,
+      description: error.data.message,
+    };
+  }
+
+  return {
+    message: error.name,
+    description: error.message,
+  };
+}
+
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const user = useConvexQuery(api.users.currentUser);
   const saveProfile = useConvexMutation(api.users.update);
   const queryClient = useQueryClient();
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [avatarSavePending, setAvatarSavePending] = useState(false);
   const sessionState = authClient.useSession();
   const sessionsQuery = useTanstackQuery({
     queryKey: ['auth', 'sessions'],
@@ -417,22 +433,46 @@ function RouteComponent() {
       }),
       {
         loading: 'Saving your bank details...',
-        error: (error: Error) => {
-          if (error instanceof ConvexError) {
-            return {
-              message: error.data.name,
-              description: error.data.message,
-            };
-          }
-
-          return {
-            message: error.name,
-            description: error.message,
-          };
-        },
+        error: getToastErrorDetails,
         success: () => 'Bank details saved successfully!',
       }
     );
+  };
+
+  const saveProfileImage = async (nextImage?: string) => {
+    const previousImage = profileForm.getValues('image');
+
+    profileForm.setValue('image', nextImage, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+    setAvatarSavePending(true);
+
+    try {
+      await toast.promise(
+        saveProfile({
+          _id: user._id,
+          image: nextImage,
+        }),
+        {
+          loading: 'Saving profile photo...',
+          error: getToastErrorDetails,
+          success: () => {
+            profileForm.resetField('image', { defaultValue: nextImage });
+            setAvatarDialogOpen(false);
+            return 'Profile photo updated.';
+          },
+        }
+      );
+    } catch {
+      profileForm.setValue('image', previousImage, {
+        shouldDirty: false,
+        shouldTouch: true,
+      });
+    } finally {
+      setAvatarSavePending(false);
+    }
   };
 
   return (
@@ -458,7 +498,14 @@ function RouteComponent() {
                   name="image"
                   control={profileForm.control}
                   render={({ field, fieldState }) => (
-                    <Dialog>
+                    <Dialog
+                      open={avatarDialogOpen}
+                      onOpenChange={(open) => {
+                        if (!avatarSavePending) {
+                          setAvatarDialogOpen(open);
+                        }
+                      }}
+                    >
                       <Tooltip>
                         <TooltipTrigger
                           render={
@@ -467,6 +514,7 @@ function RouteComponent() {
                                 render={
                                   <button
                                     type="button"
+                                    disabled={avatarSavePending}
                                     className="block w-full cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                   />
                                 }
@@ -491,7 +539,7 @@ function RouteComponent() {
                           <AvatarCropper
                             src={field.value || ''}
                             onComplete={(dataUrl) => {
-                              field.onChange(dataUrl);
+                              void saveProfileImage(dataUrl);
                             }}
                           />
                           <Field data-invalid={fieldState.invalid}>
@@ -499,12 +547,17 @@ function RouteComponent() {
                             <Input
                               type="file"
                               accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                              disabled={avatarSavePending}
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
                                   const reader = new FileReader();
                                   reader.onloadend = () => {
-                                    field.onChange(reader.result as string);
+                                    profileForm.setValue('image', reader.result as string, {
+                                      shouldDirty: true,
+                                      shouldTouch: true,
+                                      shouldValidate: true,
+                                    });
                                   };
                                   reader.readAsDataURL(file);
                                 }
@@ -713,19 +766,7 @@ function RouteComponent() {
                         }),
                         {
                           loading: 'Saving your details...',
-                          error: (error: Error) => {
-                            if (error instanceof ConvexError) {
-                              return {
-                                message: error.data.name,
-                                description: error.data.message,
-                              };
-                            }
-
-                            return {
-                              message: error.name,
-                              description: error.message,
-                            };
-                          },
+                          error: getToastErrorDetails,
                           success: () => 'Your details have been saved.',
                         }
                       )

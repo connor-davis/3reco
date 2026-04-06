@@ -37,8 +37,8 @@ const calloutConfig = {
 export function Callout({ type = 'note', title, children }: CalloutProps) {
   const config = calloutConfig[type]
   return (
-    <div className={cn('my-6 rounded-lg border p-4', config.className)}>
-      <div className="mb-2 flex items-center gap-2">
+    <div className={cn('my-6 rounded-2xl border p-5', config.className)}>
+      <div className="mb-3 flex items-center gap-2">
         <Badge variant={config.badge}>{config.label}</Badge>
         {title && <span className={cn('text-sm font-semibold', config.titleClass)}>{title}</span>}
       </div>

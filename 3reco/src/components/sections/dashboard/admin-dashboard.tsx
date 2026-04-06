@@ -206,7 +206,10 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
             <>
               <div className="space-y-3 md:hidden">
                 {latestTransactions.map((t) => (
-                  <div key={t._id} className="rounded-lg border p-3">
+                  <div
+                    key={t._id}
+                    className="rounded-2xl border border-border/70 bg-background px-4 py-3.5"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <Badge variant={t.type === 'c2b' ? 'default' : 'secondary'}>
                         {t.type.toUpperCase()}
