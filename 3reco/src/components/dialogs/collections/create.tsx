@@ -37,7 +37,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
@@ -335,8 +334,8 @@ export default function CreateCollectionDialog({
           className="flex w-full min-h-0 flex-1 flex-col gap-4 overflow-hidden"
           onSubmit={form.handleSubmit((values) => submitCollection(values))}
         >
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="flex flex-col gap-4 pr-4 pb-2">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+            <div className="flex flex-col gap-4 overflow-y-auto pr-1">
               <Controller
                 name="collectorId"
                 control={form.control}
@@ -664,7 +663,7 @@ export default function CreateCollectionDialog({
                 )}
               </Field>
             </div>
-          </ScrollArea>
+          </div>
 
           <DialogFooter className="shrink-0" showCloseButton>
             <Button type="submit" disabled={isPending}>
