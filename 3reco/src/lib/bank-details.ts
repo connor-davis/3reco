@@ -1,10 +1,7 @@
 import { z } from 'zod/v4';
+import { bankAccountTypes } from './payout-details';
 
-export const bankAccountTypes = [
-  'Cheque',
-  'Savings',
-  'Transmission',
-] as const;
+export { bankAccountTypes };
 
 const bankDetailLabels = {
   bankAccountHolderName: 'account holder name',

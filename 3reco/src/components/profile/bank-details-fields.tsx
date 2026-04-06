@@ -222,11 +222,13 @@ export function BankDetailsFields<T extends FieldValues>({
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Account Types</SelectLabel>
-                    {bankAccountTypes.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
+                    {bankAccountTypes.map(
+                      (option: (typeof bankAccountTypes)[number]) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectGroup>
                 </SelectContent>
               </Select>

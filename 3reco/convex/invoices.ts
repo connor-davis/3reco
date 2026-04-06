@@ -1,5 +1,5 @@
 import { ConvexError, v } from 'convex/values';
-import type { Doc, Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 import {
   internalAction,
   internalMutation,
@@ -12,6 +12,11 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { Resend } from 'resend';
 import { getEffectiveTransactionDate } from './lib/collectionDay';
 import { getCurrentUserOrThrow } from './users';
+import {
+  type BankAccountType,
+  getCollectorPayoutDetails,
+  getCollectorPayoutRows,
+} from '../src/lib/payout-details';
 
 const SOUTH_AFRICA_TIME_ZONE = 'Africa/Johannesburg';
 
@@ -96,26 +101,101 @@ async function getInvoiceSeller(
   transaction: {
     sellerId: Id<'users'> | Id<'collectors'>;
     type: 'c2b' | 'b2b';
+    collectorSnapshot?: {
+      name: string;
+      email?: string;
+      phone: string;
+      streetAddress?: string;
+      city?: string;
+      province?: string;
+      bankAccountHolderName?: string;
+      bankName?: string;
+      bankAccountNumber?: string;
+      bankBranchCode?: string;
+      bankAccountType?: BankAccountType;
+      payoutMethod?: 'bank' | 'ewallet';
+      ewalletPlatformName?: string;
+      ewalletPaymentId?: string;
+    };
   }
 ) {
   if (transaction.type === 'c2b') {
-    return await ctx.db.get(
+    const collector = await ctx.db.get(
       'collectors',
       transaction.sellerId as Id<'collectors'>
     );
+
+    if (!collector && !transaction.collectorSnapshot) {
+      return null;
+    }
+
+    return {
+      name: transaction.collectorSnapshot?.name ?? collector?.name,
+      email: transaction.collectorSnapshot?.email ?? collector?.email,
+      phone: transaction.collectorSnapshot?.phone ?? collector?.phone,
+      streetAddress:
+        transaction.collectorSnapshot?.streetAddress ?? collector?.streetAddress,
+      city: transaction.collectorSnapshot?.city ?? collector?.city,
+      province: transaction.collectorSnapshot?.province ?? collector?.province,
+      bankAccountHolderName:
+        transaction.collectorSnapshot?.bankAccountHolderName ??
+        collector?.bankAccountHolderName,
+      bankName: transaction.collectorSnapshot?.bankName ?? collector?.bankName,
+      bankAccountNumber:
+        transaction.collectorSnapshot?.bankAccountNumber ??
+        collector?.bankAccountNumber,
+      bankBranchCode:
+        transaction.collectorSnapshot?.bankBranchCode ?? collector?.bankBranchCode,
+      bankAccountType:
+        transaction.collectorSnapshot?.bankAccountType ?? collector?.bankAccountType,
+      payoutMethod:
+        transaction.collectorSnapshot?.payoutMethod ?? collector?.payoutMethod,
+      ewalletPlatformName:
+        transaction.collectorSnapshot?.ewalletPlatformName ??
+        collector?.ewalletPlatformName,
+      ewalletPaymentId:
+        transaction.collectorSnapshot?.ewalletPaymentId ?? collector?.ewalletPaymentId,
+    };
   }
 
   const sellerId = transaction.sellerId as Id<'users'>;
 
-  return await ctx.db.get('users', sellerId);
+  const seller = await ctx.db.get('users', sellerId);
+  if (!seller) {
+    return null;
+  }
+
+  return {
+    name: seller.name,
+    businessName: seller.businessName,
+    firstName: seller.firstName,
+    lastName: seller.lastName,
+    email: seller.email,
+    phone: seller.phone,
+    streetAddress: seller.streetAddress,
+    city: seller.city,
+    province: seller.province,
+    bankAccountHolderName: seller.bankAccountHolderName,
+    bankName: seller.bankName,
+    bankAccountNumber: seller.bankAccountNumber,
+    bankBranchCode: seller.bankBranchCode,
+    bankAccountType: seller.bankAccountType,
+  };
 }
 
 function getSellerDisplayName(
-  seller: Doc<'users'> | Doc<'collectors'>
+  seller: {
+    businessName?: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  }
 ): string {
-  if ('businessName' in seller) {
+  if (seller.businessName) {
     const sellerFullName = `${seller.firstName ?? ''} ${seller.lastName ?? ''}`.trim();
-    return seller.businessName ?? (sellerFullName || (seller.name ?? 'Unknown'));
+    return seller.businessName || sellerFullName || seller.name || seller.email || 'Unknown';
   }
 
   return seller.name || seller.email || seller.phone || 'Unknown';
@@ -198,9 +278,11 @@ export const generateForTransaction = internalAction({
     const sellerName = getSellerDisplayName(seller);
     const buyerFullName = `${buyer.firstName ?? ''} ${buyer.lastName ?? ''}`.trim();
     const buyerName = buyer.businessName ?? (buyerFullName || (buyer.name ?? 'Unknown'));
+    const collectorPayoutDetails =
+      transaction.type === 'c2b' ? getCollectorPayoutDetails(seller) : undefined;
     const payeeHasBankDetails = hasCompleteBankDetails(seller);
     const shouldShowPaymentDetails =
-      transaction.type === 'b2b' || payeeHasBankDetails;
+      transaction.type === 'b2b' || Boolean(collectorPayoutDetails);
     const col2 = width / 2 + 20;
 
     page.drawText('FROM', { x: 40, y, size: 9, font: boldFont, color: gray });
@@ -297,7 +379,43 @@ export const generateForTransaction = internalAction({
       });
       y -= 16;
 
-      if (payeeHasBankDetails) {
+      if (transaction.type === 'c2b' && collectorPayoutDetails) {
+        page.drawText(
+          collectorPayoutDetails.payoutMethod === 'bank'
+            ? `Pay ${sellerName} using the account below.`
+            : `Pay ${sellerName} using the ewallet details below.`,
+          {
+            x: 40,
+            y,
+            size: 9,
+            font: regularFont,
+            color: gray,
+          }
+        );
+        y -= 18;
+
+        const paymentRows = getCollectorPayoutRows(collectorPayoutDetails);
+
+        for (const [label, value] of paymentRows) {
+          if (!value) continue;
+
+          page.drawText(`${label}:`, {
+            x: 40,
+            y,
+            size: 9,
+            font: boldFont,
+            color: dark,
+          });
+          page.drawText(value, {
+            x: 145,
+            y,
+            size: 9,
+            font: regularFont,
+            color: dark,
+          });
+          y -= 14;
+        }
+      } else if (payeeHasBankDetails) {
         page.drawText(`Pay ${sellerName} using the account below.`, {
           x: 40,
           y,
@@ -335,13 +453,18 @@ export const generateForTransaction = internalAction({
           y -= 14;
         }
       } else {
-        page.drawText('Bank details are not yet available on file for this business.', {
-          x: 40,
-          y,
-          size: 9,
-          font: regularFont,
-          color: gray,
-        });
+        page.drawText(
+          transaction.type === 'c2b'
+            ? 'Payout details are not yet available on file for this collector.'
+            : 'Bank details are not yet available on file for this business.',
+          {
+            x: 40,
+            y,
+            size: 9,
+            font: regularFont,
+            color: gray,
+          }
+        );
       }
     }
 

@@ -4,9 +4,18 @@ import type { MutationCtx, QueryCtx } from './_generated/server';
 import { mutation, query } from './_generated/server';
 import { normalizeSouthAfricanPhoneNumber } from './lib/phone';
 import {
+  getCollectorPayoutValidationIssues,
+} from '../src/lib/payout-details';
+import {
   getCurrentUserForMutationOrThrow,
   getCurrentUserOrThrow,
 } from './users';
+
+const bankAccountTypeValidator = v.union(
+  v.literal('Cheque'),
+  v.literal('Savings'),
+  v.literal('Transmission')
+);
 
 export default defineTable({
   name: v.string(),
@@ -18,13 +27,10 @@ export default defineTable({
   bankName: v.optional(v.string()),
   bankAccountNumber: v.optional(v.string()),
   bankBranchCode: v.optional(v.string()),
-  bankAccountType: v.optional(
-    v.union(
-      v.literal('Cheque'),
-      v.literal('Savings'),
-      v.literal('Transmission')
-    )
-  ),
+  bankAccountType: v.optional(bankAccountTypeValidator),
+  payoutMethod: v.optional(v.union(v.literal('bank'), v.literal('ewallet'))),
+  ewalletPlatformName: v.optional(v.string()),
+  ewalletPaymentId: v.optional(v.string()),
   streetAddress: v.optional(v.string()),
   city: v.optional(v.string()),
   areaCode: v.optional(v.number()),
@@ -98,16 +104,24 @@ function getCollectorDisplayName(collector: {
     : collector.email?.trim() || collector.phone;
 }
 
-const bankDetailFields = [
-  'bankAccountHolderName',
-  'bankName',
-  'bankAccountNumber',
-  'bankBranchCode',
-  'bankAccountType',
-] as const;
+function validateCollectorPayoutInput(values: {
+  payoutMethod?: 'bank' | 'ewallet';
+  bankAccountHolderName?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankBranchCode?: string;
+  bankAccountType?: 'Cheque' | 'Savings' | 'Transmission';
+  ewalletPlatformName?: string;
+  ewalletPaymentId?: string;
+}) {
+  const issues = getCollectorPayoutValidationIssues(values);
 
-function isBankDetailValueFilled(value: string | undefined) {
-  return typeof value === 'string' && value.trim().length > 0;
+  if (issues.length > 0) {
+    throw new ConvexError({
+      name: 'Invalid Input',
+      message: issues[0].message,
+    });
+  }
 }
 
 export const listManaged = query({
@@ -148,13 +162,10 @@ export const create = mutation({
     bankName: v.optional(v.string()),
     bankAccountNumber: v.optional(v.string()),
     bankBranchCode: v.optional(v.string()),
-    bankAccountType: v.optional(
-      v.union(
-        v.literal('Cheque'),
-        v.literal('Savings'),
-        v.literal('Transmission')
-      )
-    ),
+    bankAccountType: v.optional(bankAccountTypeValidator),
+    payoutMethod: v.optional(v.union(v.literal('bank'), v.literal('ewallet'))),
+    ewalletPlatformName: v.optional(v.string()),
+    ewalletPaymentId: v.optional(v.string()),
     streetAddress: v.optional(v.string()),
     city: v.optional(v.string()),
     areaCode: v.optional(v.number()),
@@ -198,27 +209,16 @@ export const create = mutation({
     }
 
     const email = args.email?.trim() || undefined;
-    const bankDetailState = {
+    validateCollectorPayoutInput({
+      payoutMethod: args.payoutMethod,
       bankAccountHolderName: args.bankAccountHolderName,
       bankName: args.bankName,
       bankAccountNumber: args.bankAccountNumber,
       bankBranchCode: args.bankBranchCode,
       bankAccountType: args.bankAccountType,
-    };
-    const providedBankDetailCount = bankDetailFields.filter((fieldName) =>
-      isBankDetailValueFilled(bankDetailState[fieldName])
-    ).length;
-
-    if (
-      providedBankDetailCount > 0 &&
-      providedBankDetailCount < bankDetailFields.length
-    ) {
-      throw new ConvexError({
-        name: 'Invalid Input',
-        message:
-          'Please complete all bank details or leave every bank detail field blank.',
-      });
-    }
+      ewalletPlatformName: args.ewalletPlatformName,
+      ewalletPaymentId: args.ewalletPaymentId,
+    });
 
     return await ctx.db.insert('collectors', {
       name: args.name.trim(),
@@ -237,6 +237,13 @@ export const create = mutation({
         ? { bankBranchCode: args.bankBranchCode.trim() }
         : {}),
       ...(args.bankAccountType ? { bankAccountType: args.bankAccountType } : {}),
+      ...(args.payoutMethod ? { payoutMethod: args.payoutMethod } : {}),
+      ...(args.ewalletPlatformName
+        ? { ewalletPlatformName: args.ewalletPlatformName.trim() }
+        : {}),
+      ...(args.ewalletPaymentId
+        ? { ewalletPaymentId: args.ewalletPaymentId.trim() }
+        : {}),
       ...(args.streetAddress
         ? { streetAddress: args.streetAddress.trim() }
         : {}),
@@ -262,13 +269,10 @@ export const update = mutation({
     bankName: v.optional(v.string()),
     bankAccountNumber: v.optional(v.string()),
     bankBranchCode: v.optional(v.string()),
-    bankAccountType: v.optional(
-      v.union(
-        v.literal('Cheque'),
-        v.literal('Savings'),
-        v.literal('Transmission')
-      )
-    ),
+    bankAccountType: v.optional(bankAccountTypeValidator),
+    payoutMethod: v.optional(v.union(v.literal('bank'), v.literal('ewallet'))),
+    ewalletPlatformName: v.optional(v.string()),
+    ewalletPaymentId: v.optional(v.string()),
     streetAddress: v.optional(v.string()),
     city: v.optional(v.string()),
     areaCode: v.optional(v.number()),
@@ -320,27 +324,16 @@ export const update = mutation({
     }
 
     const email = args.email?.trim() || undefined;
-    const bankDetailState = {
+    validateCollectorPayoutInput({
+      payoutMethod: args.payoutMethod,
       bankAccountHolderName: args.bankAccountHolderName,
       bankName: args.bankName,
       bankAccountNumber: args.bankAccountNumber,
       bankBranchCode: args.bankBranchCode,
       bankAccountType: args.bankAccountType,
-    };
-    const providedBankDetailCount = bankDetailFields.filter((fieldName) =>
-      isBankDetailValueFilled(bankDetailState[fieldName])
-    ).length;
-
-    if (
-      providedBankDetailCount > 0 &&
-      providedBankDetailCount < bankDetailFields.length
-    ) {
-      throw new ConvexError({
-        name: 'Invalid Input',
-        message:
-          'Please complete all bank details or leave every bank detail field blank.',
-      });
-    }
+      ewalletPlatformName: args.ewalletPlatformName,
+      ewalletPaymentId: args.ewalletPaymentId,
+    });
 
     await ctx.db.patch(args._id, {
       name: args.name.trim(),
@@ -353,6 +346,9 @@ export const update = mutation({
       bankAccountNumber: args.bankAccountNumber?.trim(),
       bankBranchCode: args.bankBranchCode?.trim(),
       bankAccountType: args.bankAccountType,
+      payoutMethod: args.payoutMethod,
+      ewalletPlatformName: args.ewalletPlatformName?.trim(),
+      ewalletPaymentId: args.ewalletPaymentId?.trim(),
       streetAddress: args.streetAddress?.trim(),
       city: args.city?.trim(),
       areaCode: args.areaCode,

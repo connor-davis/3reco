@@ -47,7 +47,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { bankAccountTypes } from '@/lib/bank-details';
+import {
+  bankAccountTypes,
+  collectorBankFieldNames,
+  collectorEwalletFieldNames,
+  collectorPayoutMethods,
+  getCollectorPayoutValidationIssues,
+  inferCollectorPayoutMethod,
+  type CollectorPayoutMethod,
+} from '@/lib/payout-details';
 import {
   useConvexMutation,
   useConvexPaginatedQuery,
@@ -109,6 +117,11 @@ const optionalAreaCode = z.preprocess((value) => {
   return Number.isNaN(parsed) ? value : parsed;
 }, z.number().int().min(1, 'Please provide an area code.').optional());
 
+const payoutMethodLabels: Record<CollectorPayoutMethod, string> = {
+  bank: 'Bank details',
+  ewallet: 'Ewallet',
+};
+
 const collectorSchema = z
   .object({
     name: z.string({ error: 'Please provide a collector name.' }).min(1),
@@ -140,6 +153,17 @@ const collectorSchema = z
         error: 'Please select an account type.',
       })
     ),
+    payoutMethod: optionalTrimmedValue(
+      z.enum(collectorPayoutMethods, {
+        error: 'Please select a payout method.',
+      })
+    ),
+    ewalletPlatformName: optionalTrimmedValue(
+      z.string().min(2, 'Please provide the ewallet platform name.')
+    ),
+    ewalletPaymentId: optionalTrimmedValue(
+      z.string().min(2, 'Please provide the payment ID.')
+    ),
     streetAddress: optionalTrimmedValue(
       z.string().min(2, 'Please provide a street address.')
     ),
@@ -152,54 +176,11 @@ const collectorSchema = z
     ),
   })
   .superRefine((values, context) => {
-    const bankFields: Array<string | undefined> = [
-      values.bankAccountHolderName,
-      values.bankName,
-      values.bankAccountNumber,
-      values.bankBranchCode,
-      values.bankAccountType,
-    ];
-    const providedCount = bankFields.filter(
-      (value) => typeof value === 'string' && value.trim().length > 0
-    ).length;
-
-    if (providedCount === 0 || providedCount === bankFields.length) {
-      return;
-    }
-
-    if (!values.bankAccountHolderName) {
+    for (const issue of getCollectorPayoutValidationIssues(values)) {
       context.addIssue({
         code: 'custom',
-        path: ['bankAccountHolderName'],
-        message: 'Please provide the account holder name.',
-      });
-    }
-    if (!values.bankName) {
-      context.addIssue({
-        code: 'custom',
-        path: ['bankName'],
-        message: 'Please provide the bank name.',
-      });
-    }
-    if (!values.bankAccountNumber) {
-      context.addIssue({
-        code: 'custom',
-        path: ['bankAccountNumber'],
-        message: 'Please provide the account number.',
-      });
-    }
-    if (!values.bankBranchCode) {
-      context.addIssue({
-        code: 'custom',
-        path: ['bankBranchCode'],
-        message: 'Please provide the branch code.',
-      });
-    }
-    if (!values.bankAccountType) {
-      context.addIssue({
-        code: 'custom',
-        path: ['bankAccountType'],
-        message: 'Please provide the account type.',
+        path: [issue.field],
+        message: issue.message,
       });
     }
   });
@@ -313,6 +294,8 @@ function CollectorFormFields({
   form: UseFormReturn<CollectorFormInputValues, undefined, CollectorFormValues>;
   idPrefix: string;
 }) {
+  const payoutMethod = form.watch('payoutMethod');
+
   return (
     <div className="flex flex-col gap-6">
       <FieldGroup className="gap-3">
@@ -379,15 +362,110 @@ function CollectorFormFields({
         />
       </FieldGroup>
 
-      <div className="space-y-2">
-        <Label>Bank details</Label>
-        <p className="text-sm text-muted-foreground">
-          Optional. If you add one bank field, complete them all.
-        </p>
-        <BankDetailsFields
+      <div className="space-y-3">
+        <Controller
+          name="payoutMethod"
           control={form.control}
-          idPrefix={`${idPrefix}-bank`}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <FieldLabel htmlFor={`${idPrefix}-payout-method`}>
+                    Payout details
+                  </FieldLabel>
+                  <FieldDescription>
+                    Optional. Choose one active payout method for invoices and
+                    exports.
+                  </FieldDescription>
+                </div>
+                {payoutMethod ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCollectorPayoutMethod(form)}
+                  >
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+              <Select
+                value={field.value}
+                onValueChange={(value) =>
+                  setCollectorPayoutMethod(form, value as CollectorPayoutMethod)
+                }
+              >
+                <SelectTrigger id={`${idPrefix}-payout-method`}>
+                  <SelectValue placeholder="Select a payout method">
+                    {typeof field.value === 'string'
+                      ? payoutMethodLabels[field.value as CollectorPayoutMethod]
+                      : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Payout Methods</SelectLabel>
+                    {collectorPayoutMethods.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {payoutMethodLabels[option]}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
         />
+
+        {payoutMethod === 'bank' ? (
+          <BankDetailsFields
+            control={form.control}
+            idPrefix={`${idPrefix}-bank`}
+          />
+        ) : null}
+
+        {payoutMethod === 'ewallet' ? (
+          <FieldGroup className="gap-3">
+            <Controller
+              name="ewalletPlatformName"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={`${idPrefix}-ewallet-platform`}>
+                    Platform name
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    value={typeof field.value === 'string' ? field.value : ''}
+                    id={`${idPrefix}-ewallet-platform`}
+                    placeholder="e.g. eWallet, Mukuru, TymePay"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="ewalletPaymentId"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={`${idPrefix}-ewallet-payment-id`}>
+                    Payment ID
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    value={typeof field.value === 'string' ? field.value : ''}
+                    id={`${idPrefix}-ewallet-payment-id`}
+                    placeholder="Reference, phone number, or wallet ID"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+          </FieldGroup>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -402,6 +480,29 @@ function CollectorFormFields({
       </div>
     </div>
   );
+}
+
+function setCollectorPayoutMethod(
+  form: UseFormReturn<CollectorFormInputValues, undefined, CollectorFormValues>,
+  payoutMethod?: CollectorPayoutMethod
+) {
+  form.setValue('payoutMethod', payoutMethod, {
+    shouldDirty: true,
+    shouldTouch: true,
+    shouldValidate: true,
+  });
+
+  if (payoutMethod !== 'bank') {
+    for (const fieldName of collectorBankFieldNames) {
+      form.setValue(fieldName, undefined, { shouldDirty: true });
+    }
+  }
+
+  if (payoutMethod !== 'ewallet') {
+    for (const fieldName of collectorEwalletFieldNames) {
+      form.setValue(fieldName, undefined, { shouldDirty: true });
+    }
+  }
 }
 
 function getErrorDetails(error: unknown) {
@@ -439,11 +540,14 @@ function CreateCollectorDialog() {
       city: undefined,
       areaCode: undefined,
       province: undefined,
+      payoutMethod: undefined,
       bankAccountHolderName: undefined,
       bankName: undefined,
       bankAccountNumber: undefined,
       bankBranchCode: undefined,
       bankAccountType: undefined,
+      ewalletPlatformName: undefined,
+      ewalletPaymentId: undefined,
     },
   });
 
@@ -508,11 +612,14 @@ function EditCollectorDialog({
       city: collector.city,
       areaCode: collector.areaCode,
       province: collector.province,
+      payoutMethod: inferCollectorPayoutMethod(collector),
       bankAccountHolderName: collector.bankAccountHolderName,
       bankName: collector.bankName,
       bankAccountNumber: collector.bankAccountNumber,
       bankBranchCode: collector.bankBranchCode,
       bankAccountType: collector.bankAccountType,
+      ewalletPlatformName: collector.ewalletPlatformName,
+      ewalletPaymentId: collector.ewalletPaymentId,
     },
   });
 
@@ -525,11 +632,14 @@ function EditCollectorDialog({
       city: collector.city,
       areaCode: collector.areaCode,
       province: collector.province,
+      payoutMethod: inferCollectorPayoutMethod(collector),
       bankAccountHolderName: collector.bankAccountHolderName,
       bankName: collector.bankName,
       bankAccountNumber: collector.bankAccountNumber,
       bankBranchCode: collector.bankBranchCode,
       bankAccountType: collector.bankAccountType,
+      ewalletPlatformName: collector.ewalletPlatformName,
+      ewalletPaymentId: collector.ewalletPaymentId,
     });
   }, [collector, form]);
 
@@ -542,7 +652,7 @@ function EditCollectorDialog({
         <DialogHeader className="shrink-0">
           <DialogTitle>Edit collector</DialogTitle>
           <DialogDescription>
-            Update managed collector details, including optional bank and
+            Update managed collector details, including optional payout and
             location information.
           </DialogDescription>
         </DialogHeader>

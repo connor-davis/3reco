@@ -1,11 +1,14 @@
 import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import { txByType } from './aggregates';
 import { assertValidCollectionDay } from './lib/collectionDay';
 import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
+import {
+  getCollectorPayoutDetails,
+} from '../src/lib/payout-details';
 
 export const txItemValidator = v.object({
   materialId: v.id('materials'),
@@ -43,6 +46,42 @@ const RECEIPT_FILE_EXTENSION_BY_TYPE: Record<string, string> = {
   'image/jpg': 'jpg',
 };
 
+const provinceValidator = v.union(
+  v.literal('Eastern Cape'),
+  v.literal('Free State'),
+  v.literal('Gauteng'),
+  v.literal('KwaZulu-Natal'),
+  v.literal('Limpopo'),
+  v.literal('Mpumalanga'),
+  v.literal('Northern Cape'),
+  v.literal('North West'),
+  v.literal('Western Cape')
+);
+
+const bankAccountTypeValidator = v.union(
+  v.literal('Cheque'),
+  v.literal('Savings'),
+  v.literal('Transmission')
+);
+
+const collectorSnapshotValidator = v.object({
+  name: v.string(),
+  email: v.optional(v.string()),
+  phone: v.string(),
+  streetAddress: v.optional(v.string()),
+  city: v.optional(v.string()),
+  areaCode: v.optional(v.number()),
+  province: v.optional(provinceValidator),
+  payoutMethod: v.optional(v.union(v.literal('bank'), v.literal('ewallet'))),
+  bankAccountHolderName: v.optional(v.string()),
+  bankName: v.optional(v.string()),
+  bankAccountNumber: v.optional(v.string()),
+  bankBranchCode: v.optional(v.string()),
+  bankAccountType: v.optional(bankAccountTypeValidator),
+  ewalletPlatformName: v.optional(v.string()),
+  ewalletPaymentId: v.optional(v.string()),
+});
+
 export default defineTable({
   sellerId: v.union(v.id('users'), v.id('collectors')),
   buyerId: v.id('users'),
@@ -54,6 +93,7 @@ export default defineTable({
   invoiceStorageId: v.optional(v.id('_storage')),
   receiptAttachments: v.optional(v.array(receiptAttachmentValidator)),
   receiptUploadBindings: v.optional(v.array(receiptUploadSlotValidator)),
+  collectorSnapshot: v.optional(collectorSnapshotValidator),
 })
   .index('by_sellerId', ['sellerId'])
   .index('by_buyerId', ['buyerId'])
@@ -262,6 +302,38 @@ function createReceiptUploadSlot(issuedBy: Id<'users'>, issuedAt: number) {
     token: crypto.randomUUID(),
     issuedAt,
     issuedBy,
+  };
+}
+
+function buildCollectorSnapshot(collector: Doc<'collectors'>) {
+  const payoutDetails = getCollectorPayoutDetails(collector);
+
+  return {
+    name: collector.name,
+    ...(collector.email ? { email: collector.email } : {}),
+    phone: collector.phone,
+    ...(collector.streetAddress ? { streetAddress: collector.streetAddress } : {}),
+    ...(collector.city ? { city: collector.city } : {}),
+    ...(collector.areaCode === undefined ? {} : { areaCode: collector.areaCode }),
+    ...(collector.province ? { province: collector.province } : {}),
+    ...(payoutDetails?.payoutMethod
+      ? { payoutMethod: payoutDetails.payoutMethod }
+      : {}),
+    ...(payoutDetails?.payoutMethod === 'bank'
+      ? {
+          bankAccountHolderName: payoutDetails.bankAccountHolderName,
+          bankName: payoutDetails.bankName,
+          bankAccountNumber: payoutDetails.bankAccountNumber,
+          bankBranchCode: payoutDetails.bankBranchCode,
+          bankAccountType: payoutDetails.bankAccountType,
+        }
+      : {}),
+    ...(payoutDetails?.payoutMethod === 'ewallet'
+      ? {
+          ewalletPlatformName: payoutDetails.ewalletPlatformName,
+          ewalletPaymentId: payoutDetails.ewalletPaymentId,
+        }
+      : {}),
   };
 }
 
@@ -624,12 +696,13 @@ export const collectorToBusinessSale = mutation({
     }
 
     const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
-      const transactionId = await ctx.db.insert('transactions', {
-        buyerId: businessId,
-        sellerId: collectorId,
-        items,
-        totalPrice,
-        type: 'c2b',
+    const transactionId = await ctx.db.insert('transactions', {
+      buyerId: businessId,
+      sellerId: collectorId,
+      items,
+      totalPrice,
+      type: 'c2b',
+      collectorSnapshot: buildCollectorSnapshot(collector),
       ...(collectionDay === undefined ? {} : { collectionDay }),
       ...(collectionDate === undefined ? {} : { collectionDate }),
     });
