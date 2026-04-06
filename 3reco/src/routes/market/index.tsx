@@ -13,6 +13,7 @@ import {
   Item,
   ItemContent,
   ItemDescription,
+  ItemHeader,
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
@@ -36,6 +37,12 @@ function SellerCard({
     displayName: string;
     itemCount: number;
     materialNames: string[];
+    listings: Array<{
+      stockId: string;
+      materialName: string;
+      weight: number;
+      price: number;
+    }>;
     averageRating: number | null;
     reviewCount: number;
   };
@@ -51,25 +58,27 @@ function SellerCard({
         />
       }
     >
-      <div className="flex items-center gap-3">
-        <ItemMedia className="size-10 rounded-full bg-muted">
-          <BuildingIcon className="size-5 text-muted-foreground" />
-        </ItemMedia>
-        <ItemContent className="min-w-0 gap-0.5">
-          <ItemTitle className="w-full">{seller.displayName}</ItemTitle>
-          <ItemDescription className="line-clamp-1">
-            {seller.itemCount} listing{seller.itemCount !== 1 ? 's' : ''}
-          </ItemDescription>
-        </ItemContent>
-      </div>
-      {seller.averageRating !== null && (
-        <Stars
-          rating={seller.averageRating}
-          count={seller.reviewCount}
-          size="sm"
-          className="ml-0.5"
-        />
-      )}
+      <ItemHeader>
+        <div className="flex min-w-0 items-center gap-3">
+          <ItemMedia className="size-10 rounded-full bg-muted">
+            <BuildingIcon className="size-5 text-muted-foreground" />
+          </ItemMedia>
+          <ItemContent className="min-w-0 gap-0.5">
+            <ItemTitle className="w-full">{seller.displayName}</ItemTitle>
+            <ItemDescription className="line-clamp-1">
+              {seller.itemCount} listing{seller.itemCount !== 1 ? 's' : ''}
+            </ItemDescription>
+          </ItemContent>
+        </div>
+        {seller.averageRating !== null && (
+          <Stars
+            rating={seller.averageRating}
+            count={seller.reviewCount}
+            size="sm"
+            className="ml-0.5"
+          />
+        )}
+      </ItemHeader>
       {seller.materialNames.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {seller.materialNames.slice(0, 4).map((name) => (
@@ -85,6 +94,33 @@ function SellerCard({
               +{seller.materialNames.length - 4} more
             </span>
           )}
+        </div>
+      )}
+      {seller.listings.length > 0 && (
+        <div className="flex basis-full flex-col gap-2 rounded-xl border border-border/60 bg-background/70 p-3">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Store listings
+          </div>
+          <div className="flex flex-col gap-2">
+            {seller.listings.map((listing) => (
+              <div
+                key={listing.stockId}
+                className="flex items-start justify-between gap-3 rounded-lg border border-border/50 bg-background px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-foreground">
+                    {listing.materialName}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {listing.weight} kg
+                  </div>
+                </div>
+                <div className="shrink-0 text-sm font-medium text-foreground">
+                  R{listing.price}/kg
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </Item>
