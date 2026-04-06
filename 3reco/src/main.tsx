@@ -44,7 +44,7 @@ if (!rootElement.innerHTML) {
       <DirectionProvider direction="ltr">
         <ConvexBetterAuthProvider client={convex} authClient={authClient}>
           <QueryClientProvider client={queryClient}>
-            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            <ThemeProvider defaultTheme="system" storageKey="three-theme">
               <RouterProvider router={router} />
             </ThemeProvider>
           </QueryClientProvider>
