@@ -15,7 +15,6 @@ import {
 import { authClient } from '@/lib/auth-client';
 import { buildAuthPath } from '@/lib/auth-flow';
 import {
-  formatSessionDevice,
   getSessionAccountLabel,
   normalizeBetterAuthDeviceSessions,
   revokeBrowserAccounts,
@@ -180,7 +179,7 @@ export default function Header() {
                                       {getSessionAccountLabel(entry)}
                                     </span>
                                     <span className="truncate text-xs text-muted-foreground">
-                                      {formatSessionDevice(session)}
+                                      {entry.user.email ?? 'No email available'}
                                     </span>
                                   </div>
                                 </DropdownMenuRadioItem>
