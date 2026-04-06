@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -36,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
@@ -319,7 +321,7 @@ export default function CreateCollectionDialog({
           )
         }
       />
-      <DialogContent className="flex flex-col max-h-[90vh]">
+      <DialogContent className="w-full max-w-screen-md sm:max-w-screen-md">
         <DialogHeader className="shrink-0">
           <DialogTitle>Create Collection</DialogTitle>
           <DialogDescription>
@@ -330,325 +332,346 @@ export default function CreateCollectionDialog({
 
         <form
           id="form-create-collection"
-          className="flex flex-col w-full min-h-0 gap-4 flex-1"
+          className="flex w-full min-h-0 flex-1 flex-col gap-4 overflow-hidden"
           onSubmit={form.handleSubmit((values) => submitCollection(values))}
         >
-          {/* Collector — fixed, doesn't scroll */}
-          <div className="shrink-0">
-          <Controller
-            name="collectorId"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="form-create-collection-collector">
-                  Collector
-                </FieldLabel>
-                <Select
-                  id="form-create-collection-collector"
-                  value={field.value}
-                  onValueChange={(value) => field.onChange(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a collector">
-                       {(() => {
-                         const c = collectors?.find((collector) => collector._id === field.value);
-                         return c ? (c.name || c.email || c.phone) : undefined;
-                       })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>
-                        {collectors && collectors.length > 0
-                          ? 'Collectors'
-                          : 'There are no collectors'}
-                      </SelectLabel>
-                      {collectors?.map((collector) => (
-                        <SelectItem
-                          key={collector._id}
-                          value={collector._id}
-                          render={
-                            <Item key={collector._id}>
-                              <ItemMedia>
-                                <Avatar>
-                                  <AvatarImage src={collector.image} />
-                                   <AvatarFallback>
-                                      {collector.name?.charAt(0) ??
-                                        collector.email?.charAt(0) ??
-                                        collector.phone?.charAt(0)}
-                                   </AvatarFallback>
-                                </Avatar>
-                              </ItemMedia>
-                              <ItemContent>
-                                 <ItemTitle>
-                                    {collector.name}
-                                 </ItemTitle>
-                                 <ItemDescription>
-                                   {collector.email
-                                     ? `${collector.phone} | ${collector.email}`
-                                     : collector.phone}
-                                 </ItemDescription>
-                              </ItemContent>
-                              <ItemActions>
-                                {field.value === collector._id && <CheckIcon />}
-                              </ItemActions>
-                            </Item>
-                          }
-                        />
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="flex flex-col gap-4 pr-4">
+              <Controller
+                name="collectorId"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="form-create-collection-collector">
+                      Collector
+                    </FieldLabel>
+                    <Select
+                      id="form-create-collection-collector"
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a collector">
+                          {(() => {
+                            const collector = collectors?.find(
+                              (option) => option._id === field.value
+                            );
+                            return collector
+                              ? collector.name || collector.email || collector.phone
+                              : undefined;
+                          })()}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>
+                            {collectors && collectors.length > 0
+                              ? 'Collectors'
+                              : 'There are no collectors'}
+                          </SelectLabel>
+                          {collectors?.map((collector) => (
+                            <SelectItem
+                              key={collector._id}
+                              value={collector._id}
+                              render={
+                                <Item key={collector._id}>
+                                  <ItemMedia>
+                                    <Avatar>
+                                      <AvatarImage src={collector.image} />
+                                      <AvatarFallback>
+                                        {collector.name?.charAt(0) ??
+                                          collector.email?.charAt(0) ??
+                                          collector.phone?.charAt(0)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </ItemMedia>
+                                  <ItemContent>
+                                    <ItemTitle>{collector.name}</ItemTitle>
+                                    <ItemDescription>
+                                      {collector.email
+                                        ? `${collector.phone} | ${collector.email}`
+                                        : collector.phone}
+                                    </ItemDescription>
+                                  </ItemContent>
+                                  <ItemActions>
+                                    {field.value === collector._id && <CheckIcon />}
+                                  </ItemActions>
+                                </Item>
+                              }
+                            />
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
                 )}
-              </Field>
-            )}
-          />
-          </div>
+              />
 
-          <Controller
-            name="collectionDate"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="shrink-0">
-                <FieldLabel>Collection Date</FieldLabel>
-                <div className="flex items-center gap-2">
-                  <Popover>
-                    <PopoverTrigger
-                      render={(props) => (
+              <Controller
+                name="collectionDate"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel>Collection Date</FieldLabel>
+                    <div className="flex items-center gap-2">
+                      <Popover>
+                        <PopoverTrigger
+                          render={(props) => (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                              disabled={isPending}
+                              {...props}
+                            >
+                              <CalendarIcon className="size-4" />
+                              {field.value
+                                ? format(field.value, 'dd/MM/yyyy')
+                                : 'Select collection date'}
+                            </Button>
+                          )}
+                        />
+                        <PopoverContent align="start" className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => field.onChange(date)}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {field.value ? (
                         <Button
                           type="button"
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => field.onChange(undefined)}
                           disabled={isPending}
-                          {...props}
                         >
-                          <CalendarIcon className="size-4" />
-                          {field.value
-                            ? format(field.value, 'dd/MM/yyyy')
-                            : 'Select collection date'}
+                          <XIcon className="size-4" />
                         </Button>
-                      )}
-                    />
-                    <PopoverContent align="start" className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={(date) => field.onChange(date)}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {field.value ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => field.onChange(undefined)}
-                      disabled={isPending}
-                    >
-                      <XIcon className="size-4" />
-                    </Button>
-                  ) : null}
-                </div>
-                <FieldDescription>
-                  Optional. Leave blank to use the current transaction timestamp.
-                </FieldDescription>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
+                      ) : null}
+                    </div>
+                    <FieldDescription>
+                      Optional. Leave blank to use the current transaction
+                      timestamp.
+                    </FieldDescription>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
                 )}
-              </Field>
-            )}
-          />
+              />
 
-          {/* Cart items — scrollable */}
-          <div className="flex flex-col gap-3 min-h-0 flex-1 overflow-hidden">
-            <div className="flex items-center justify-between shrink-0">
-              <Label className="text-sm font-medium">Items</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => append({ materialId: '', weight: 0, price: 0 })}
-              >
-                <PlusIcon className="size-3" />
-                Add Item
-              </Button>
-            </div>
-
-            <div className="flex flex-col gap-3 overflow-y-auto pr-1">
-            {fields.map((field, index) => (
-              <FieldGroup
-                key={field.id}
-                className="gap-2 p-3 border rounded-lg"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <Label className="text-xs text-muted-foreground">
-                    Item {index + 1}
-                  </Label>
-                  {fields.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove(index)}
-                    >
-                      <TrashIcon className="size-3" />
-                    </Button>
-                  )}
-                </div>
-
-                <Controller
-                  name={`items.${index}.materialId`}
-                  control={form.control}
-                  render={({ field: f, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel>Material</FieldLabel>
-                      <Select
-                        value={f.value}
-                        onValueChange={(value) => f.onChange(value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a material">
-                            {materials?.find((m) => m._id === f.value)?.name}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>
-                              {materials && materials.length > 0
-                                ? 'Materials'
-                                : 'No materials'}
-                            </SelectLabel>
-                            {materials?.map((material) => (
-                              <SelectItem
-                                key={material._id}
-                                value={material._id}
-                                render={
-                                  <Item key={material._id}>
-                                    <ItemContent>
-                                      <ItemTitle>{material.name}</ItemTitle>
-                                      <ItemDescription>
-                                        Base price: R{material.price}/kg
-                                      </ItemDescription>
-                                    </ItemContent>
-                                    <ItemActions>
-                                      {f.value === material._id && (
-                                        <CheckIcon />
-                                      )}
-                                    </ItemActions>
-                                  </Item>
-                                }
-                              />
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Controller
-                    name={`items.${index}.weight`}
-                    control={form.control}
-                    render={({ field: f, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel>Weight (kg)</FieldLabel>
-                        <Input
-                          {...f}
-                          type="number"
-                          step={0.01}
-                          placeholder="e.g. 10.5"
-                          onChange={(e) => f.onChange(e.target.valueAsNumber)}
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )}
-                  />
-                  <Controller
-                    name={`items.${index}.price`}
-                    control={form.control}
-                    render={({ field: f, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel>Price / kg (R)</FieldLabel>
-                        <Input
-                          {...f}
-                          type="number"
-                          step={0.01}
-                          placeholder="e.g. 5.00"
-                          onChange={(e) => f.onChange(e.target.valueAsNumber)}
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )}
-                  />
-                </div>
-              </FieldGroup>
-            ))}
-            </div>
-          </div>
-
-          <Field data-invalid={receiptErrors.length > 0} className="shrink-0">
-            <FieldLabel htmlFor="form-create-collection-receipts">
-              Receipt Images
-            </FieldLabel>
-            <Input
-              ref={receiptInputRef}
-              id="form-create-collection-receipts"
-              type="file"
-              accept={RECEIPT_ACCEPT}
-              multiple
-              onChange={handleReceiptChange}
-              disabled={isPending}
-              aria-invalid={receiptErrors.length > 0}
-            />
-            <FieldDescription>
-              Optional. Upload up to {MAX_RECEIPT_FILES} receipt images. Each file must be PNG, JPEG, JPG, WEBP, or GIF and no larger than {formatBytes(MAX_RECEIPT_FILE_SIZE)}.
-            </FieldDescription>
-            {receiptFiles.length > 0 && (
-              <div className="flex flex-col gap-2 rounded-lg border p-3">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Label className="text-sm font-medium">
-                    {receiptFiles.length} receipt{receiptFiles.length === 1 ? '' : 's'} selected
-                  </Label>
+                  <Label className="text-sm font-medium">Items</Label>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    onClick={resetReceiptSelection}
-                    disabled={isPending}
+                    onClick={() => append({ materialId: '', weight: 0, price: 0 })}
                   >
-                    <XIcon className="size-3" />
-                    Clear
+                    <PlusIcon className="size-3" />
+                    Add Item
                   </Button>
                 </div>
-                <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                  {receiptFiles.map((file) => (
-                    <div key={`${file.name}-${file.lastModified}`} className="flex items-center justify-between gap-3">
-                      <span className="truncate">{file.name}</span>
-                      <span>{formatBytes(file.size)}</span>
-                    </div>
+
+                <div className="flex flex-col gap-3">
+                  {fields.map((field, index) => (
+                    <FieldGroup
+                      key={field.id}
+                      className="gap-2 rounded-lg border p-3"
+                    >
+                      <div className="mb-1 flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">
+                          Item {index + 1}
+                        </Label>
+                        {fields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => remove(index)}
+                          >
+                            <TrashIcon className="size-3" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <Controller
+                        name={`items.${index}.materialId`}
+                        control={form.control}
+                        render={({ field: itemField, fieldState }) => (
+                          <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel>Material</FieldLabel>
+                            <Select
+                              value={itemField.value}
+                              onValueChange={(value) => itemField.onChange(value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a material">
+                                  {
+                                    materials?.find(
+                                      (material) => material._id === itemField.value
+                                    )?.name
+                                  }
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>
+                                    {materials && materials.length > 0
+                                      ? 'Materials'
+                                      : 'No materials'}
+                                  </SelectLabel>
+                                  {materials?.map((material) => (
+                                    <SelectItem
+                                      key={material._id}
+                                      value={material._id}
+                                      render={
+                                        <Item key={material._id}>
+                                          <ItemContent>
+                                            <ItemTitle>{material.name}</ItemTitle>
+                                            <ItemDescription>
+                                              Base price: R{material.price}/kg
+                                            </ItemDescription>
+                                          </ItemContent>
+                                          <ItemActions>
+                                            {itemField.value === material._id && (
+                                              <CheckIcon />
+                                            )}
+                                          </ItemActions>
+                                        </Item>
+                                      }
+                                    />
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            {fieldState.invalid && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <Controller
+                          name={`items.${index}.weight`}
+                          control={form.control}
+                          render={({ field: itemField, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel>Weight (kg)</FieldLabel>
+                              <Input
+                                {...itemField}
+                                type="number"
+                                step={0.01}
+                                placeholder="e.g. 10.5"
+                                onChange={(event) =>
+                                  itemField.onChange(event.target.valueAsNumber)
+                                }
+                              />
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
+                        />
+                        <Controller
+                          name={`items.${index}.price`}
+                          control={form.control}
+                          render={({ field: itemField, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                              <FieldLabel>Price / kg (R)</FieldLabel>
+                              <Input
+                                {...itemField}
+                                type="number"
+                                step={0.01}
+                                placeholder="e.g. 5.00"
+                                onChange={(event) =>
+                                  itemField.onChange(event.target.valueAsNumber)
+                                }
+                              />
+                              {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                              )}
+                            </Field>
+                          )}
+                        />
+                      </div>
+                    </FieldGroup>
                   ))}
                 </div>
               </div>
-            )}
-            {receiptErrors.length > 0 && (
-              <FieldError errors={receiptErrors.map((message) => ({ message }))} />
-            )}
-          </Field>
 
-          <Button type="submit" className="shrink-0" disabled={isPending}>
-            {isPending && <Loader2Icon className="size-4 animate-spin" />}
-            {isPending ? 'Creating Collection...' : 'Create Collection'}
-          </Button>
+              <Field data-invalid={receiptErrors.length > 0}>
+                <FieldLabel htmlFor="form-create-collection-receipts">
+                  Receipt Images
+                </FieldLabel>
+                <Input
+                  ref={receiptInputRef}
+                  id="form-create-collection-receipts"
+                  type="file"
+                  accept={RECEIPT_ACCEPT}
+                  multiple
+                  onChange={handleReceiptChange}
+                  disabled={isPending}
+                  aria-invalid={receiptErrors.length > 0}
+                />
+                <FieldDescription>
+                  Optional. Upload up to {MAX_RECEIPT_FILES} receipt images.
+                  Each file must be PNG, JPEG, JPG, WEBP, or GIF and no larger
+                  than {formatBytes(MAX_RECEIPT_FILE_SIZE)}.
+                </FieldDescription>
+                {receiptFiles.length > 0 && (
+                  <div className="flex flex-col gap-2 rounded-lg border p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label className="text-sm font-medium">
+                        {receiptFiles.length} receipt
+                        {receiptFiles.length === 1 ? '' : 's'} selected
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetReceiptSelection}
+                        disabled={isPending}
+                      >
+                        <XIcon className="size-3" />
+                        Clear
+                      </Button>
+                    </div>
+                    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                      {receiptFiles.map((file) => (
+                        <div
+                          key={`${file.name}-${file.lastModified}`}
+                          className="flex items-center justify-between gap-3"
+                        >
+                          <span className="truncate">{file.name}</span>
+                          <span>{formatBytes(file.size)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {receiptErrors.length > 0 && (
+                  <FieldError
+                    errors={receiptErrors.map((message) => ({ message }))}
+                  />
+                )}
+              </Field>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="shrink-0" showCloseButton>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2Icon className="size-4 animate-spin" />}
+              {isPending ? 'Creating Collection...' : 'Create Collection'}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

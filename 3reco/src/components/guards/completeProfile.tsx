@@ -40,6 +40,7 @@ import {
   type BankDetailsFormValues,
   requiredBankDetailsFormSchema,
 } from '@/lib/bank-details';
+import { cn } from '@/lib/utils';
 
 const basicInfoFormSchema = z.object({
   image: z.string().optional(),
@@ -99,6 +100,35 @@ const locationInfoFormSchema = z.object({
   ),
 });
 
+type ProfileTab = 'basicInfo' | 'businessInfo' | 'bankInfo' | 'locationInfo';
+
+const profileSteps: Array<{
+  value: ProfileTab;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: 'basicInfo',
+    title: 'Basic info',
+    description: 'Photo, contact details, and identity info.',
+  },
+  {
+    value: 'businessInfo',
+    title: 'Business',
+    description: 'Business name and registration number.',
+  },
+  {
+    value: 'bankInfo',
+    title: 'Bank details',
+    description: 'Payment details used for invoices and payouts.',
+  },
+  {
+    value: 'locationInfo',
+    title: 'Location',
+    description: 'Address, city, postal code, and province.',
+  },
+];
+
 export default function CompleteProfileGuard() {
   const router = useRouter();
 
@@ -107,12 +137,7 @@ export default function CompleteProfileGuard() {
     retry: false,
   });
 
-  const [tab, setTab] = useState<
-    | 'basicInfo'
-    | 'businessInfo'
-    | 'bankInfo'
-    | 'locationInfo'
-  >('basicInfo');
+  const [tab, setTab] = useState<ProfileTab>('basicInfo');
   const [profileType, setProfileType] = useState<'business'>('business');
 
   const updateUser = useConvexMutation(api.users.update);
@@ -120,6 +145,7 @@ export default function CompleteProfileGuard() {
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const imgRef = useRef<HTMLImageElement>(null);
+  const activeStepIndex = profileSteps.findIndex((step) => step.value === tab);
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -246,7 +272,7 @@ export default function CompleteProfileGuard() {
 
   if (isLoadingUser)
     return (
-      <div className="flex flex-col w-screen h-screen items-center justify-center gap-3 bg-background text-foreground">
+      <div className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 bg-background px-4 text-foreground">
         <div className="flex items-center gap-3">
           <Spinner className="text-primary" />
           <Label className="text-muted-foreground">
@@ -257,9 +283,56 @@ export default function CompleteProfileGuard() {
     );
 
   return (
-    <Tabs value={tab} className="flex flex-col w-screen h-screen bg-background">
+    <Tabs value={tab} className="min-h-dvh w-full bg-background">
+      <div className="flex min-h-dvh w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-primary">
+                Step {activeStepIndex + 1} of {profileSteps.length}
+              </p>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Complete your profile
+              </h1>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                Finish setting up your business details with a scroll-safe flow
+                that keeps every step reachable on smaller screens.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {profileSteps.map((step, index) => {
+                const isActive = step.value === tab;
+                const isComplete = index < activeStepIndex;
+
+                return (
+                  <div
+                    key={step.value}
+                    className={cn(
+                      'rounded-2xl border px-4 py-3 transition-colors',
+                      isActive
+                        ? 'border-primary/40 bg-primary/10'
+                        : isComplete
+                          ? 'border-primary/20 bg-primary/5'
+                          : 'border-border/70 bg-card'
+                    )}
+                  >
+                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                      {String(index + 1).padStart(2, '0')}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {step.title}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {step.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
       <TabsContent value="basicInfo">
-        <div className="flex flex-col w-full h-full items-center justify-center">
+        <div className="flex w-full flex-col">
           <form
             id="form-basic-info"
             onSubmit={basicInfoForm.handleSubmit(
@@ -299,7 +372,7 @@ export default function CompleteProfileGuard() {
                 ),
               console.log
             )}
-            className="flex flex-col w-full max-w-120 h-auto gap-5"
+            className="mx-auto flex w-full max-w-2xl flex-col gap-5 rounded-3xl border border-border/80 bg-card p-5 shadow-[var(--shadow-soft)] sm:p-6"
           >
             <FieldGroup className="gap-3">
               <Controller
@@ -449,7 +522,7 @@ export default function CompleteProfileGuard() {
       </TabsContent>
 
       <TabsContent value="businessInfo">
-        <div className="flex flex-col w-full h-full items-center justify-center gap-10">
+        <div className="flex w-full flex-col">
           <form
             id="form-basic-info"
             onSubmit={businessInfoForm.handleSubmit(
@@ -485,7 +558,7 @@ export default function CompleteProfileGuard() {
                 ),
               console.log
             )}
-            className="flex flex-col w-full max-w-120 h-auto gap-5"
+            className="mx-auto flex w-full max-w-2xl flex-col gap-5 rounded-3xl border border-border/80 bg-card p-5 shadow-[var(--shadow-soft)] sm:p-6"
           >
             <FieldGroup className="gap-3">
               <Controller
@@ -550,11 +623,11 @@ export default function CompleteProfileGuard() {
       </TabsContent>
 
       <TabsContent value="bankInfo">
-        <div className="flex flex-col w-full h-full items-center justify-center gap-10">
+        <div className="flex w-full flex-col">
           <form
             id="form-bank-info"
             onSubmit={bankInfoForm.handleSubmit(submitBankInfo, console.log)}
-            className="flex flex-col w-full max-w-120 h-auto gap-5"
+            className="mx-auto flex w-full max-w-2xl flex-col gap-5 rounded-3xl border border-border/80 bg-card p-5 shadow-[var(--shadow-soft)] sm:p-6"
           >
             <BankDetailsFields
               control={bankInfoForm.control}
@@ -576,7 +649,7 @@ export default function CompleteProfileGuard() {
       </TabsContent>
 
       <TabsContent value="locationInfo">
-        <div className="flex flex-col w-full h-full items-center justify-center gap-10">
+        <div className="flex w-full flex-col">
           <form
             id="form-basic-info"
             onSubmit={locationInfoForm.handleSubmit(
@@ -615,7 +688,7 @@ export default function CompleteProfileGuard() {
                 ),
               console.log
             )}
-            className="flex flex-col w-full max-w-120 h-auto gap-5"
+            className="mx-auto flex w-full max-w-2xl flex-col gap-5 rounded-3xl border border-border/80 bg-card p-5 shadow-[var(--shadow-soft)] sm:p-6"
           >
             <FieldGroup className="gap-3">
               <Controller
@@ -754,6 +827,8 @@ export default function CompleteProfileGuard() {
           </form>
         </div>
       </TabsContent>
+        </div>
+      </div>
     </Tabs>
   );
 }

@@ -246,7 +246,7 @@ export function ReceiptDownloadButton({
         )}
         <span className="hidden sm:inline">Receipt</span>
       </DialogTrigger>
-      <DialogContent className="w-screen max-w-screen-lg p-0 sm:max-w-screen-lg">
+      <DialogContent className="w-full max-w-screen-lg p-0 sm:max-w-screen-lg">
         <div className="flex min-h-0 flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle>Receipt preview</DialogTitle>

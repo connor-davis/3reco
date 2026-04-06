@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
@@ -28,7 +29,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
 import { CheckIcon, SendIcon, UndoIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
@@ -132,6 +133,10 @@ function RouteComponent() {
     control: offerForm.control,
     name: 'items',
   });
+  const watchedOfferItems = useWatch({
+    control: offerForm.control,
+    name: 'items',
+  });
 
   if (!request || !currentUser) {
     return (
@@ -190,7 +195,7 @@ function RouteComponent() {
                   <SendIcon />
                   <span className="hidden sm:inline">Send offer</span>
                 </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-full max-w-screen-md sm:max-w-screen-md">
                   <DialogHeader>
                     <DialogTitle>Send an offer</DialogTitle>
                     <DialogDescription>
@@ -200,7 +205,7 @@ function RouteComponent() {
                   </DialogHeader>
                   <form
                     id="form-make-offer"
-                    className="flex flex-col gap-4"
+                    className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
                     onSubmit={offerForm.handleSubmit((values) =>
                       toast.promise(
                         makeOffer({
@@ -222,61 +227,69 @@ function RouteComponent() {
                       )
                     )}
                   >
-                    {fields.map((field, index) => (
-                      <FieldGroup
-                        key={field.id}
-                        className="gap-2 p-3 border rounded-lg"
-                      >
-                        <Label className="text-xs text-muted-foreground font-medium">
-                          {offerForm.watch(`items.${index}.materialName`) ||
-                            `Item ${index + 1}`}
-                        </Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Controller
-                            name={`items.${index}.offerWeight`}
-                            control={offerForm.control}
-                            render={({ field: f, fieldState }) => (
-                              <Field data-invalid={fieldState.invalid}>
-                                <FieldLabel>Weight (kg)</FieldLabel>
-                                <Input
-                                  {...f}
-                                  type="number"
-                                  step={0.01}
-                                  placeholder="e.g. 100"
-                                  onChange={(e) =>
-                                    f.onChange(e.target.valueAsNumber)
-                                  }
-                                />
-                                {fieldState.invalid && (
-                                  <FieldError errors={[fieldState.error]} />
+                    <ScrollArea className="min-h-0 flex-1">
+                      <div className="flex flex-col gap-4 pr-4">
+                        {fields.map((field, index) => (
+                          <FieldGroup
+                            key={field.id}
+                            className="gap-2 rounded-lg border p-3"
+                          >
+                            <Label className="text-xs font-medium text-muted-foreground">
+                              {watchedOfferItems?.[index]?.materialName ||
+                                `Item ${index + 1}`}
+                            </Label>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              <Controller
+                                name={`items.${index}.offerWeight`}
+                                control={offerForm.control}
+                                render={({ field: offerField, fieldState }) => (
+                                  <Field data-invalid={fieldState.invalid}>
+                                    <FieldLabel>Weight (kg)</FieldLabel>
+                                    <Input
+                                      {...offerField}
+                                      type="number"
+                                      step={0.01}
+                                      placeholder="e.g. 100"
+                                      onChange={(event) =>
+                                        offerField.onChange(
+                                          event.target.valueAsNumber
+                                        )
+                                      }
+                                    />
+                                    {fieldState.invalid && (
+                                      <FieldError errors={[fieldState.error]} />
+                                    )}
+                                  </Field>
                                 )}
-                              </Field>
-                            )}
-                          />
-                          <Controller
-                            name={`items.${index}.offerPrice`}
-                            control={offerForm.control}
-                            render={({ field: f, fieldState }) => (
-                              <Field data-invalid={fieldState.invalid}>
-                                <FieldLabel>Price (R/kg)</FieldLabel>
-                                <Input
-                                  {...f}
-                                  type="number"
-                                  step={0.01}
-                                  placeholder="e.g. 15.50"
-                                  onChange={(e) =>
-                                    f.onChange(e.target.valueAsNumber)
-                                  }
-                                />
-                                {fieldState.invalid && (
-                                  <FieldError errors={[fieldState.error]} />
+                              />
+                              <Controller
+                                name={`items.${index}.offerPrice`}
+                                control={offerForm.control}
+                                render={({ field: offerField, fieldState }) => (
+                                  <Field data-invalid={fieldState.invalid}>
+                                    <FieldLabel>Price (R/kg)</FieldLabel>
+                                    <Input
+                                      {...offerField}
+                                      type="number"
+                                      step={0.01}
+                                      placeholder="e.g. 15.50"
+                                      onChange={(event) =>
+                                        offerField.onChange(
+                                          event.target.valueAsNumber
+                                        )
+                                      }
+                                    />
+                                    {fieldState.invalid && (
+                                      <FieldError errors={[fieldState.error]} />
+                                    )}
+                                  </Field>
                                 )}
-                              </Field>
-                            )}
-                          />
-                        </div>
-                      </FieldGroup>
-                    ))}
+                              />
+                            </div>
+                          </FieldGroup>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </form>
                   <DialogFooter showCloseButton>
                     <Button type="submit" form="form-make-offer">

@@ -453,7 +453,7 @@ function CreateCollectorDialog() {
         <PlusIcon />
         Add Collector
       </DialogTrigger>
-      <DialogContent className="w-screen max-w-screen-md flex max-h-[90vh] flex-col">
+      <DialogContent className="w-full max-w-screen-md flex max-h-[90vh] flex-col sm:max-w-screen-md">
         <DialogHeader className="shrink-0">
           <DialogTitle>Add collector</DialogTitle>
           <DialogDescription>
@@ -538,7 +538,7 @@ function EditCollectorDialog({
       <DialogTrigger render={<Button variant="outline" size="icon-sm" />}>
         <PencilIcon />
       </DialogTrigger>
-      <DialogContent className="w-screen max-w-screen-md flex max-h-[90vh] flex-col">
+      <DialogContent className="w-full max-w-screen-md flex max-h-[90vh] flex-col sm:max-w-screen-md">
         <DialogHeader className="shrink-0">
           <DialogTitle>Edit collector</DialogTitle>
           <DialogDescription>
