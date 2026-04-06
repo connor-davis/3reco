@@ -9,6 +9,13 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
 import { useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
@@ -26,21 +33,26 @@ function SellerCard({ seller }: { seller: { _id: string; displayName: string; it
   const avg = useConvexQuery(api.reviews.averageForSeller, { sellerId: seller._id as Id<'users'> });
 
   return (
-    <Link
-      to="/market/store/$sellerId"
-      params={{ sellerId: seller._id }}
-      className="flex flex-col gap-2 p-4 border rounded-xl hover:bg-accent transition-colors"
+    <Item
+      variant="backgroundOutline"
+      className="h-full hover:bg-accent/50"
+      render={
+        <Link
+          to="/market/store/$sellerId"
+          params={{ sellerId: seller._id }}
+        />
+      }
     >
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center size-10 rounded-full bg-muted">
+        <ItemMedia className="size-10 rounded-full bg-muted">
           <BuildingIcon className="size-5 text-muted-foreground" />
-        </div>
-        <div className="flex flex-col">
-          <span className="font-medium text-sm">{seller.displayName}</span>
-          <span className="text-xs text-muted-foreground">
+        </ItemMedia>
+        <ItemContent className="min-w-0 gap-0.5">
+          <ItemTitle className="w-full">{seller.displayName}</ItemTitle>
+          <ItemDescription className="line-clamp-1">
             {seller.itemCount} listing{seller.itemCount !== 1 ? 's' : ''}
-          </span>
-        </div>
+          </ItemDescription>
+        </ItemContent>
       </div>
       {avg && (
         <Stars rating={avg.average} count={avg.count} size="sm" className="ml-0.5" />
@@ -62,7 +74,7 @@ function SellerCard({ seller }: { seller: { _id: string; displayName: string; it
           )}
         </div>
       )}
-    </Link>
+    </Item>
   );
 }
 
