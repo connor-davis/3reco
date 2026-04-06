@@ -113,22 +113,6 @@ export const listSellersWithStock = query({
             (`${owner?.firstName ?? ''} ${owner?.lastName ?? ''}`.trim() || 'Unknown')),
           itemCount: items.length,
           materialNames: materials.filter(Boolean).map((m) => m!.name),
-          listings: items
-            .map((item) => {
-              const material = materials.find((candidate) => candidate?._id === item.materialId);
-
-              if (!material) {
-                return null;
-              }
-
-              return {
-                stockId: item._id,
-                materialName: material.name,
-                weight: item.weight,
-                price: item.price,
-              };
-            })
-            .filter((listing) => listing !== null),
           averageRating,
           reviewCount,
         };
