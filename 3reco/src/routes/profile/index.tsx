@@ -73,13 +73,27 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 import { authClient } from '@/lib/auth-client';
+import { buildAuthPath } from '@/lib/auth-flow';
+import {
+  formatSessionDevice,
+  formatSessionExpiry,
+  getSessionAccountLabel,
+  normalizeBetterAuthDeviceSessions,
+  normalizeBetterAuthSessions,
+  revokeBrowserAccounts,
+} from '@/lib/auth-multi-session';
 import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 
+const profileTabSchema = z.enum(['overview', 'details', 'payouts', 'sessions']);
+
 export const Route = createFileRoute('/profile/')({
+  validateSearch: (search) => ({
+    tab: profileTabSchema.catch('overview').optional().parse(search.tab),
+  }),
   component: RouteComponent,
 });
 
@@ -160,84 +174,9 @@ function buildDisplayName(user: ReturnType<typeof useConvexQuery<typeof api.user
   return fullName || user.businessName || user.name || user.email || 'Profile';
 }
 
-type BetterAuthSession = {
-  id: string;
-  token: string;
-  userId: string;
-  expiresAt: string | Date;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-};
-
-type BetterAuthSessionResult =
-  | BetterAuthSession[]
-  | { data?: BetterAuthSession[] | null }
-  | null
-  | undefined;
-
-type BetterAuthDeviceSession = {
-  session: BetterAuthSession;
-  user: {
-    id: string;
-    email?: string | null;
-    name?: string | null;
-  };
-};
-
-type BetterAuthDeviceSessionResult =
-  | BetterAuthDeviceSession[]
-  | { data?: BetterAuthDeviceSession[] | null }
-  | null
-  | undefined;
-
-function normalizeBetterAuthSessions(result: BetterAuthSessionResult) {
-  if (Array.isArray(result)) {
-    return result;
-  }
-
-  return result?.data ?? [];
-}
-
-function normalizeBetterAuthDeviceSessions(result: BetterAuthDeviceSessionResult) {
-  if (Array.isArray(result)) {
-    return result;
-  }
-
-  return result?.data ?? [];
-}
-
-function formatSessionExpiry(expiresAt: BetterAuthSession['expiresAt']) {
-  const date = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Unknown expiry';
-  }
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
-}
-
-function formatSessionDevice(session: BetterAuthSession) {
-  const agent = session.userAgent?.trim();
-
-  if (!agent) {
-    return 'Browser session';
-  }
-
-  if (/iphone|ipad|android|mobile/i.test(agent)) {
-    return 'Mobile browser';
-  }
-
-  if (/windows|macintosh|linux|x11/i.test(agent)) {
-    return 'Desktop browser';
-  }
-
-  return 'Browser session';
-}
-
 function RouteComponent() {
+  const navigate = Route.useNavigate();
+  const search = Route.useSearch();
   const user = useConvexQuery(api.users.currentUser);
   const saveProfile = useConvexMutation(api.users.update);
   const queryClient = useQueryClient();
@@ -267,6 +206,18 @@ function RouteComponent() {
   const revokeOtherSessionsMutation = useTanstackMutation({
     mutationFn: async () => {
       await authClient.revokeOtherSessions();
+    },
+  });
+  const signOutAllAccountsMutation = useTanstackMutation({
+    mutationFn: async () => {
+      await revokeBrowserAccounts(
+        normalizeBetterAuthDeviceSessions(deviceSessionsQuery.data),
+        sessionState.data?.session.id,
+        (sessionToken) =>
+          authClient.revokeSession({
+            token: sessionToken,
+          })
+      );
     },
   });
 
@@ -437,6 +388,7 @@ function RouteComponent() {
   ];
   const allSessions = normalizeBetterAuthSessions(sessionsQuery.data);
   const deviceSessions = normalizeBetterAuthDeviceSessions(deviceSessionsQuery.data);
+  const activeTab = search.tab ?? 'overview';
 
   const submitBankDetails = (values: BankDetailsFormValues) => {
     const parsedValues =
@@ -608,7 +560,19 @@ function RouteComponent() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="overview" className="gap-5">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) =>
+            void navigate({
+              to: '/profile',
+              search: {
+                tab: profileTabSchema.parse(value),
+              },
+              replace: true,
+            })
+          }
+          className="gap-5"
+        >
           <TabsList variant="line" className="w-fit gap-6 p-0 text-sm">
             <TabsTrigger value="overview" className="px-0">
               Overview
@@ -1321,6 +1285,22 @@ function RouteComponent() {
                       type="button"
                       className="w-full justify-start"
                       variant="outline"
+                      onClick={() =>
+                        window.location.assign(
+                          buildAuthPath('/auth/sign-in', {
+                            mode: 'add-account',
+                            returnTo: '/profile?tab=sessions',
+                          })
+                        )
+                      }
+                    >
+                      <CheckCircle2Icon className="size-4" />
+                      Add another account
+                    </Button>
+                    <Button
+                      type="button"
+                      className="w-full justify-start"
+                      variant="outline"
                       disabled={revokeOtherSessionsMutation.isPending}
                       onClick={() =>
                         toast.promise(
@@ -1340,6 +1320,30 @@ function RouteComponent() {
                     >
                       <ShieldCheckIcon className="size-4" />
                       Sign out other sessions
+                    </Button>
+                    <Button
+                      type="button"
+                      className="w-full justify-start"
+                      variant="outline"
+                      disabled={
+                        signOutAllAccountsMutation.isPending || deviceSessions.length === 0
+                      }
+                      onClick={() =>
+                        toast.promise(
+                          signOutAllAccountsMutation.mutateAsync(),
+                          {
+                            loading: 'Signing out all accounts...',
+                            success: 'All browser accounts signed out.',
+                            error: (error: Error) => ({
+                              message: 'Unable to sign out all accounts',
+                              description: error.message,
+                            }),
+                          }
+                        )
+                      }
+                    >
+                      <LogOutIcon className="size-4" />
+                      Sign out all accounts
                     </Button>
                     <Button
                       type="button"
@@ -1385,8 +1389,7 @@ function RouteComponent() {
                       deviceSessions.map((entry) => {
                         const session = entry.session;
                         const isCurrent = session.id === currentSessionId;
-                        const sessionAccountLabel =
-                          entry.user.name || entry.user.email || 'Saved account';
+                        const sessionAccountLabel = getSessionAccountLabel(entry);
 
                         return (
                           <div

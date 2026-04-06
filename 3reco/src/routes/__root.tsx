@@ -88,40 +88,48 @@ const RootLayout = () => {
       </AuthLoading>
 
       <Authenticated>
-        <Activity
-          mode={
-            !isLoadingUser && user && !user.profileComplete
-              ? 'visible'
-              : 'hidden'
-          }
-        >
-          <div className="flex min-h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
-            <CompleteProfileGuard />
+        {location.pathname.startsWith('/auth/') ? (
+          <div className="flex min-h-dvh w-full flex-col bg-background text-foreground">
+            <Outlet />
           </div>
-        </Activity>
-        <Activity
-          mode={
-            !isLoadingUser && user && user.profileComplete
-              ? 'visible'
-              : 'hidden'
-          }
-        >
-          <div className="flex min-h-dvh w-full flex-col bg-background text-foreground animate-in fade-in-1">
-            <SidebarProvider>
-              <AppSidebar />
-
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <Header />
-
-                <SidebarInset className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-transparent">
-                  <div className="flex h-full w-full min-w-0 flex-col overflow-hidden py-3 pr-3">
-                    <Outlet />
-                  </div>
-                </SidebarInset>
+        ) : (
+          <>
+            <Activity
+              mode={
+                !isLoadingUser && user && !user.profileComplete
+                  ? 'visible'
+                  : 'hidden'
+              }
+            >
+              <div className="flex min-h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
+                <CompleteProfileGuard />
               </div>
-            </SidebarProvider>
-          </div>
-        </Activity>
+            </Activity>
+            <Activity
+              mode={
+                !isLoadingUser && user && user.profileComplete
+                  ? 'visible'
+                  : 'hidden'
+              }
+            >
+              <div className="flex min-h-dvh w-full flex-col bg-background text-foreground animate-in fade-in-1">
+                <SidebarProvider>
+                  <AppSidebar />
+
+                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <Header />
+
+                    <SidebarInset className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-transparent">
+                      <div className="flex h-full w-full min-w-0 flex-col overflow-hidden py-3 pr-3">
+                        <Outlet />
+                      </div>
+                    </SidebarInset>
+                  </div>
+                </SidebarProvider>
+              </div>
+            </Activity>
+          </>
+        )}
       </Authenticated>
 
       <Unauthenticated>

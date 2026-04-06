@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/react-query';
 import {
   Link,
   Navigate,
-  useNavigate,
   useSearch,
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useConvexAuth } from 'convex/react';
 import { authClient } from '@/lib/auth-client';
+import { buildAuthPath, sanitizeReturnTo } from '@/lib/auth-flow';
 import { getEffectiveTransactionDate } from '@/lib/transactions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -194,6 +194,19 @@ function absoluteUrl(pathname: string) {
   return new URL(pathname, window.location.origin).toString();
 }
 
+function useAuthFlowContext() {
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const isAddAccountMode = search.mode === 'add-account';
+
+  return {
+    isAddAccountMode,
+    returnTo: sanitizeReturnTo(
+      search.returnTo,
+      '/profile?tab=sessions'
+    ),
+  };
+}
+
 function AuthShell({
   title,
   description,
@@ -286,10 +299,15 @@ function AuthStatus({
   );
 }
 
-function useAuthRouteRedirect() {
+function useAuthRouteRedirect({
+  allowWhenAuthenticated = false,
+}: {
+  allowWhenAuthenticated?: boolean;
+} = {}) {
   const { isAuthenticated } = useConvexAuth();
+  const { isAddAccountMode } = useAuthFlowContext();
 
-  if (isAuthenticated) {
+  if (isAuthenticated && !allowWhenAuthenticated && !isAddAccountMode) {
     return <Navigate to="/" replace />;
   }
 
@@ -357,6 +375,7 @@ export default function AuthenticationGuard() {
 
 export function SignInPage() {
   const redirect = useAuthRouteRedirect();
+  const { isAddAccountMode, returnTo } = useAuthFlowContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -366,7 +385,7 @@ export function SignInPage() {
       await authClient.signIn.email({
         email,
         password,
-        callbackURL: '/',
+        callbackURL: isAddAccountMode ? returnTo : '/',
       });
     },
     onSuccess: () => {
@@ -385,8 +404,12 @@ export function SignInPage() {
 
   return (
     <AuthShell
-      title="Welcome to 3rEco"
-      description="Please sign in to continue."
+      title={isAddAccountMode ? 'Add another account' : 'Welcome to 3rEco'}
+      description={
+        isAddAccountMode
+          ? 'Sign in with another account without signing out of the current one.'
+          : 'Please sign in to continue.'
+      }
     >
       <AuthStatus errorMessage={errorMessage} />
 
@@ -423,24 +446,50 @@ export function SignInPage() {
           ) : (
             <ArrowRightIcon />
           )}
-          <span>Sign in</span>
+          <span>{isAddAccountMode ? 'Continue with this account' : 'Sign in'}</span>
         </Button>
       </div>
 
-      <AuthLinks
-        primaryPrompt="Don't have an account?"
-        primaryHref="/auth/sign-up"
-        primaryLabel="Create one"
-        secondaryHref="/auth/forgot-password"
-        secondaryLabel="Forgot your password?"
-      />
+      {isAddAccountMode ? (
+        <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm text-muted-foreground">
+          <p>
+            Need a different account?{' '}
+            <a
+              href={buildAuthPath('/auth/sign-up', {
+                mode: 'add-account',
+                returnTo,
+              })}
+              className="text-foreground underline underline-offset-4"
+            >
+              Create one
+            </a>
+          </p>
+          <a
+            href={buildAuthPath('/auth/forgot-password', {
+              mode: 'add-account',
+              returnTo,
+            })}
+            className="text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+          >
+            Forgot your password?
+          </a>
+        </div>
+      ) : (
+        <AuthLinks
+          primaryPrompt="Don't have an account?"
+          primaryHref="/auth/sign-up"
+          primaryLabel="Create one"
+          secondaryHref="/auth/forgot-password"
+          secondaryLabel="Forgot your password?"
+        />
+      )}
     </AuthShell>
   );
 }
 
 export function SignUpPage() {
   const redirect = useAuthRouteRedirect();
-  const navigate = useNavigate();
+  const { isAddAccountMode, returnTo } = useAuthFlowContext();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -453,16 +502,23 @@ export function SignUpPage() {
         name,
         email,
         password,
-        callbackURL: '/',
+        callbackURL: isAddAccountMode ? returnTo : '/',
       });
     },
     onSuccess: () => {
       setErrorMessage(null);
       setSuccessMessage(null);
-      void navigate({
-        to: '/auth/verify-email',
-        search: { email },
-      });
+      window.location.assign(
+        buildAuthPath('/auth/verify-email', {
+          email,
+          ...(isAddAccountMode
+            ? {
+                mode: 'add-account',
+                returnTo,
+              }
+            : {}),
+        })
+      );
     },
     onError: (error) => {
       setErrorMessage(error instanceof Error ? error.message : 'Sign up failed.');
@@ -477,8 +533,12 @@ export function SignUpPage() {
 
   return (
     <AuthShell
-      title="Welcome to 3rEco"
-      description="Create your account."
+      title={isAddAccountMode ? 'Create another account' : 'Welcome to 3rEco'}
+      description={
+        isAddAccountMode
+          ? 'Create another account and keep your current account signed in.'
+          : 'Create your account.'
+      }
     >
       <AuthStatus errorMessage={errorMessage} successMessage={successMessage} />
 
@@ -530,28 +590,51 @@ export function SignUpPage() {
           ) : (
             <MailIcon />
           )}
-          <span>Create account</span>
+          <span>{isAddAccountMode ? 'Create and add account' : 'Create account'}</span>
         </Button>
       </div>
 
-      <AuthLinks
-        primaryPrompt="Already have an account?"
-        primaryHref="/auth/sign-in"
-        primaryLabel="Sign in"
-        secondaryHref="/"
-        secondaryLabel="Back to welcome"
-      />
+      {isAddAccountMode ? (
+        <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm text-muted-foreground">
+          <p>
+            Already have another account?{' '}
+            <a
+              href={buildAuthPath('/auth/sign-in', {
+                mode: 'add-account',
+                returnTo,
+              })}
+              className="text-foreground underline underline-offset-4"
+            >
+              Sign in
+            </a>
+          </p>
+          <a
+            href={returnTo}
+            className="text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+          >
+            Back to the app
+          </a>
+        </div>
+      ) : (
+        <AuthLinks
+          primaryPrompt="Already have an account?"
+          primaryHref="/auth/sign-in"
+          primaryLabel="Sign in"
+          secondaryHref="/"
+          secondaryLabel="Back to welcome"
+        />
+      )}
     </AuthShell>
   );
 }
 
 export function VerifyEmailPage() {
-  const redirect = useAuthRouteRedirect();
-  const search = useSearch({ strict: false });
-  const searchParams = search as Record<string, unknown>;
+  const redirect = useAuthRouteRedirect({ allowWhenAuthenticated: true });
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const { isAddAccountMode, returnTo } = useAuthFlowContext();
   const email =
-    typeof searchParams.email === 'string' && searchParams.email.length > 0
-      ? searchParams.email
+    typeof search.email === 'string' && search.email.length > 0
+      ? search.email
       : null;
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -616,19 +699,43 @@ export function VerifyEmailPage() {
         </Button>
       </div>
 
-      <AuthLinks
-        primaryPrompt="Already verified?"
-        primaryHref="/auth/sign-in"
-        primaryLabel="Back to sign in"
-        secondaryHref="/"
-        secondaryLabel="Back to welcome"
-      />
+      {isAddAccountMode ? (
+        <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm text-muted-foreground">
+          <p>
+            Ready to continue?{' '}
+            <a
+              href={buildAuthPath('/auth/sign-in', {
+                mode: 'add-account',
+                returnTo,
+              })}
+              className="text-foreground underline underline-offset-4"
+            >
+              Back to sign in
+            </a>
+          </p>
+          <a
+            href={returnTo}
+            className="text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+          >
+            Back to the app
+          </a>
+        </div>
+      ) : (
+        <AuthLinks
+          primaryPrompt="Already verified?"
+          primaryHref="/auth/sign-in"
+          primaryLabel="Back to sign in"
+          secondaryHref="/"
+          secondaryLabel="Back to welcome"
+        />
+      )}
     </AuthShell>
   );
 }
 
 export function ForgotPasswordPage() {
-  const redirect = useAuthRouteRedirect();
+  const redirect = useAuthRouteRedirect({ allowWhenAuthenticated: true });
+  const { isAddAccountMode, returnTo } = useAuthFlowContext();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -690,19 +797,45 @@ export function ForgotPasswordPage() {
         </Button>
       </div>
 
-      <AuthLinks
-        primaryPrompt="Remembered your password?"
-        primaryHref="/auth/sign-in"
-        primaryLabel="Back to sign in"
-        secondaryHref="/auth/sign-up"
-        secondaryLabel="Need an account instead?"
-      />
+      {isAddAccountMode ? (
+        <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm text-muted-foreground">
+          <p>
+            Remembered your password?{' '}
+            <a
+              href={buildAuthPath('/auth/sign-in', {
+                mode: 'add-account',
+                returnTo,
+              })}
+              className="text-foreground underline underline-offset-4"
+            >
+              Back to sign in
+            </a>
+          </p>
+          <a
+            href={buildAuthPath('/auth/sign-up', {
+              mode: 'add-account',
+              returnTo,
+            })}
+            className="text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+          >
+            Need an account instead?
+          </a>
+        </div>
+      ) : (
+        <AuthLinks
+          primaryPrompt="Remembered your password?"
+          primaryHref="/auth/sign-in"
+          primaryLabel="Back to sign in"
+          secondaryHref="/auth/sign-up"
+          secondaryLabel="Need an account instead?"
+        />
+      )}
     </AuthShell>
   );
 }
 
 export function ResetPasswordPage() {
-  const redirect = useAuthRouteRedirect();
+  const redirect = useAuthRouteRedirect({ allowWhenAuthenticated: true });
   const search = useSearch({ strict: false });
   const searchParams = search as Record<string, unknown>;
   const [password, setPassword] = useState('');
@@ -800,12 +933,12 @@ export function ResetPasswordPage() {
           </Button>
         </div>
       ) : (
-        <Link to="/auth/sign-in">
+        <a href="/auth/sign-in">
           <Button className="w-full">
             <ArrowRightIcon />
             <span>Go to sign in</span>
           </Button>
-        </Link>
+        </a>
       )}
 
       <AuthLinks
