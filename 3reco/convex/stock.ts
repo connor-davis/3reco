@@ -14,6 +14,7 @@ export default defineTable({
   .index('by_ownerId', ['ownerId'])
   .index('by_materialId', ['materialId'])
   .index('by_ownerId_by_materialId', ['ownerId', 'materialId'])
+  .index('by_ownerId_and_isListed', ['ownerId', 'isListed'])
   .index('by_isListed', ['isListed']);
 
 export const listListed = query({
@@ -66,8 +67,9 @@ export const listListedBySeller = query({
 
     return await ctx.db
       .query('stock')
-      .withIndex('by_ownerId', (q) => q.eq('ownerId', sellerId))
-      .filter((q) => q.eq(q.field('isListed'), true))
+      .withIndex('by_ownerId_and_isListed', (q) =>
+        q.eq('ownerId', sellerId).eq('isListed', true)
+      )
       .collect();
   },
 });
@@ -94,12 +96,25 @@ export const listSellersWithStock = query({
         const owner = await ctx.db.get('users', ownerId);
         const materialIds = [...new Set(items.map((i) => i.materialId))];
         const materials = await Promise.all(materialIds.map((id) => ctx.db.get('materials', id)));
+        const reviews = await ctx.db
+          .query('storeReviews')
+          .withIndex('by_seller', (q) => q.eq('sellerId', ownerId))
+          .collect();
+        const reviewCount = reviews.length;
+        const averageRating =
+          reviewCount === 0
+            ? null
+            : Math.round((reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount) * 10) /
+              10;
+
         return {
           _id: ownerId,
           displayName: (owner?.businessName ??
             (`${owner?.firstName ?? ''} ${owner?.lastName ?? ''}`.trim() || 'Unknown')),
           itemCount: items.length,
           materialNames: materials.filter(Boolean).map((m) => m!.name),
+          averageRating,
+          reviewCount,
         };
       })
     );

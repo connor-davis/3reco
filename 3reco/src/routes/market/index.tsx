@@ -19,7 +19,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { BuildingIcon, SearchIcon, StoreIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -29,9 +28,18 @@ export const Route = createFileRoute('/market/')({
   component: RouteComponent,
 });
 
-function SellerCard({ seller }: { seller: { _id: string; displayName: string; itemCount: number; materialNames: string[] } }) {
-  const avg = useConvexQuery(api.reviews.averageForSeller, { sellerId: seller._id as Id<'users'> });
-
+function SellerCard({
+  seller,
+}: {
+  seller: {
+    _id: string;
+    displayName: string;
+    itemCount: number;
+    materialNames: string[];
+    averageRating: number | null;
+    reviewCount: number;
+  };
+}) {
   return (
     <Item
       variant="backgroundOutline"
@@ -54,8 +62,13 @@ function SellerCard({ seller }: { seller: { _id: string; displayName: string; it
           </ItemDescription>
         </ItemContent>
       </div>
-      {avg && (
-        <Stars rating={avg.average} count={avg.count} size="sm" className="ml-0.5" />
+      {seller.averageRating !== null && (
+        <Stars
+          rating={seller.averageRating}
+          count={seller.reviewCount}
+          size="sm"
+          className="ml-0.5"
+        />
       )}
       {seller.materialNames.length > 0 && (
         <div className="flex flex-wrap gap-1">
