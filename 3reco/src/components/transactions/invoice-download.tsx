@@ -15,7 +15,7 @@ import {
 import { formatTransactionDateForFileName } from '@/lib/transactions';
 import { useConvex } from 'convex/react';
 import { DownloadIcon, FileImageIcon, Loader2Icon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const GENERATION_GRACE_MS = 5 * 60 * 1000; // 5 minutes
@@ -62,6 +62,7 @@ export function InvoiceDownloadButton({
   creationTime: number;
   transactionDate?: number;
 }) {
+  const [renderedAt] = useState(() => Date.now());
   const { data: url, isLoading } = useQuery(
     convexQuery(api.invoices.getInvoiceUrl, { transactionId })
   );
@@ -76,7 +77,7 @@ export function InvoiceDownloadButton({
   }
 
   if (!url) {
-    const isRecent = Date.now() - creationTime < GENERATION_GRACE_MS;
+    const isRecent = renderedAt - creationTime < GENERATION_GRACE_MS;
     if (!isRecent) return null;
     return (
       <Button variant="outline" size="sm" disabled>
@@ -110,31 +111,50 @@ export function ReceiptDownloadButton({
   const convex = useConvex();
   const [open, setOpen] = useState(false);
   const [loadingStorageId, setLoadingStorageId] = useState<Id<'_storage'> | null>(null);
-  const [selectedStorageId, setSelectedStorageId] = useState<Id<'_storage'>>(attachments[0].storageId);
   const [previewUrls, setPreviewUrls] = useState<Partial<Record<Id<'_storage'>, string>>>({});
-
-  if (attachments.length === 0) {
-    return null;
-  }
-
-  const selectedAttachment = useMemo(
+  const normalizedAttachments = useMemo(
     () =>
-      attachments.find((attachment) => attachment.storageId === selectedStorageId) ?? attachments[0],
-    [attachments, selectedStorageId]
+      attachments.filter(
+        (attachment): attachment is ReceiptAttachment =>
+          typeof attachment?.storageId === 'string'
+      ),
+    [attachments]
+  );
+  const firstAttachment = normalizedAttachments[0] ?? null;
+  const [selectedStorageId, setSelectedStorageId] = useState<Id<'_storage'> | null>(
+    firstAttachment?.storageId ?? null
   );
 
-  const getReceiptUrl = async (attachment: ReceiptAttachment) => {
-    setLoadingStorageId(attachment.storageId);
+  const selectedAttachment = useMemo(
+    () => {
+      if (!firstAttachment) {
+        return null;
+      }
 
-    try {
-      return await convex.query(api.transactions.getReceiptDownloadUrl, {
-        transactionId,
-        storageId: attachment.storageId,
-      });
-    } finally {
-      setLoadingStorageId(null);
-    }
-  };
+      return (
+        normalizedAttachments.find(
+          (attachment) => attachment.storageId === selectedStorageId
+        ) ?? firstAttachment
+      );
+    },
+    [firstAttachment, normalizedAttachments, selectedStorageId]
+  );
+
+  const getReceiptUrl = useCallback(
+    async (attachment: ReceiptAttachment) => {
+      setLoadingStorageId(attachment.storageId);
+
+      try {
+        return await convex.query(api.transactions.getReceiptDownloadUrl, {
+          transactionId,
+          storageId: attachment.storageId,
+        });
+      } finally {
+        setLoadingStorageId(null);
+      }
+    },
+    [convex, transactionId]
+  );
 
   const downloadReceipt = async (attachment: ReceiptAttachment) => {
     try {
@@ -153,17 +173,25 @@ export function ReceiptDownloadButton({
   };
 
   useEffect(() => {
+    if (!firstAttachment) {
+      setSelectedStorageId(null);
+      return;
+    }
+
     setSelectedStorageId((current) => {
-      if (attachments.some((attachment) => attachment.storageId === current)) {
+      if (
+        current &&
+        normalizedAttachments.some((attachment) => attachment.storageId === current)
+      ) {
         return current;
       }
 
-      return attachments[0].storageId;
+      return firstAttachment.storageId;
     });
-  }, [attachments]);
+  }, [firstAttachment, normalizedAttachments]);
 
   useEffect(() => {
-    if (!open || previewUrls[selectedAttachment.storageId]) {
+    if (!open || !selectedAttachment || previewUrls[selectedAttachment.storageId]) {
       return;
     }
 
@@ -199,6 +227,10 @@ export function ReceiptDownloadButton({
     };
   }, [getReceiptUrl, open, previewUrls, selectedAttachment]);
 
+  if (!selectedAttachment) {
+    return null;
+  }
+
   const isLoading = loadingStorageId === selectedAttachment.storageId;
   const selectedPreviewUrl = previewUrls[selectedAttachment.storageId];
 
@@ -224,9 +256,9 @@ export function ReceiptDownloadButton({
           </DialogHeader>
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 px-6 pb-6">
-            {attachments.length > 1 ? (
+            {normalizedAttachments.length > 1 ? (
               <div className="flex flex-wrap gap-2">
-                {attachments.map((attachment, index) => (
+                {normalizedAttachments.map((attachment, index) => (
                   <Button
                     key={attachment.storageId}
                     type="button"
