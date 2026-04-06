@@ -321,7 +321,7 @@ export default function CreateCollectionDialog({
           )
         }
       />
-      <DialogContent className="w-full max-w-screen-md sm:max-w-screen-md">
+      <DialogContent className="flex max-h-[90vh] w-full max-w-screen-md flex-col sm:max-w-screen-md">
         <DialogHeader className="shrink-0">
           <DialogTitle>Create Collection</DialogTitle>
           <DialogDescription>
@@ -336,7 +336,7 @@ export default function CreateCollectionDialog({
           onSubmit={form.handleSubmit((values) => submitCollection(values))}
         >
           <ScrollArea className="min-h-0 flex-1">
-            <div className="flex flex-col gap-4 pr-4">
+            <div className="flex flex-col gap-4 pr-4 pb-2">
               <Controller
                 name="collectorId"
                 control={form.control}

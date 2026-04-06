@@ -160,7 +160,7 @@ function RouteComponent() {
           </div>
         )}
         {filtered && filtered.length > 0 && (
-          <div className="grid grid-cols-1 gap-3 overflow-y-auto pb-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid w-full content-start grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-3 overflow-y-auto pb-2">
             {filtered.map((seller) => (
               <SellerCard key={seller._id} seller={seller} />
             ))}
