@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -126,6 +127,9 @@ export default function EditMaterialByIdDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
+                  <FieldDescription>
+                    Use a clear name people will recognise.
+                  </FieldDescription>
                 </Field>
               )}
             />
@@ -147,6 +151,9 @@ export default function EditMaterialByIdDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
+                  <FieldDescription>
+                    Enter the carbon value per kilogram, for example 10.5.
+                  </FieldDescription>
                 </Field>
               )}
             />
@@ -168,6 +175,10 @@ export default function EditMaterialByIdDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
+                  <FieldDescription>
+                    Use any waste code that ends in at least 3 numbers, like GW
+                    100 or ABC-123.
+                  </FieldDescription>
                 </Field>
               )}
             />
@@ -194,6 +205,9 @@ export default function EditMaterialByIdDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
+                  <FieldDescription>
+                    Enter the price per kilogram, for example 12.50.
+                  </FieldDescription>
                 </Field>
               )}
             />

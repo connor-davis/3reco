@@ -738,7 +738,7 @@ function RouteComponent() {
                 <EmptyDescription>
                   {search
                     ? 'Try adjusting your search.'
-                    : 'Add a collector to get started.'}
+                    : 'Add a collector and they will appear here.'}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

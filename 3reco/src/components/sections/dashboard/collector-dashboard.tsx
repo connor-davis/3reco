@@ -68,7 +68,9 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">R {totals.totalRevenue.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">All sales</p>
+            <p className="text-xs text-muted-foreground">
+              Money earned from sales
+            </p>
           </CardContent>
         </Card>
 
@@ -79,7 +81,9 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.totalVolume.toFixed(1)} kg</p>
-            <p className="text-xs text-muted-foreground">Sold</p>
+            <p className="text-xs text-muted-foreground">
+              Total weight sold
+            </p>
           </CardContent>
         </Card>
 
@@ -102,7 +106,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
               <TrendingUpIcon className="size-4" />
               Daily Sales Volume (30 days)
             </CardTitle>
-            <CardDescription>Volume by day</CardDescription>
+            <CardDescription>See how much material you sold each day.</CardDescription>
           </CardHeader>
         <CardContent>
           <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">
@@ -134,7 +138,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
       <Card className="bg-background">
           <CardHeader>
             <CardTitle>Latest Sales</CardTitle>
-            <CardDescription>Your most recent sales</CardDescription>
+            <CardDescription>Your latest sales.</CardDescription>
           </CardHeader>
         <CardContent>
           {latestTransactions.length === 0 ? (

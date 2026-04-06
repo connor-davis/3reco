@@ -110,7 +110,7 @@ function RouteComponent() {
                     <CreditCardIcon />
                   </EmptyMedia>
                   <EmptyTitle>No purchases yet</EmptyTitle>
-                  <EmptyDescription>Purchases show here.</EmptyDescription>
+                  <EmptyDescription>Your purchases will appear here.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
               </Empty>

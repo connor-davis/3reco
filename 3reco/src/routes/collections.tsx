@@ -151,7 +151,9 @@ function RouteComponent() {
                     <VanIcon />
                   </EmptyMedia>
                   <EmptyTitle>No collections yet</EmptyTitle>
-                  <EmptyDescription>Create a collection to get started.</EmptyDescription>
+                  <EmptyDescription>
+                    Add a collection and it will appear here.
+                  </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2">
                   <CreateCollectionDialog>

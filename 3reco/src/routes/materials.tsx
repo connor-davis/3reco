@@ -81,7 +81,7 @@ function RouteComponent() {
                 <EmptyDescription>
                   {search
                     ? `No materials match "${search}".`
-                    : 'Add a material to get started.'}
+                    : 'Add a material and it will appear here.'}
                 </EmptyDescription>
               </EmptyHeader>
               {!search && (

@@ -147,7 +147,9 @@ function RouteComponent() {
                     <CreditCardIcon />
                   </EmptyMedia>
                   <EmptyTitle>No transactions yet</EmptyTitle>
-                  <EmptyDescription>Transactions show here.</EmptyDescription>
+                  <EmptyDescription>
+                    Your sales and purchases will appear here.
+                  </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
               </Empty>

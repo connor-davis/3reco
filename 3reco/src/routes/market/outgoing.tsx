@@ -57,7 +57,7 @@ function RouteComponent() {
                   <SendIcon />
                 </EmptyMedia>
                 <EmptyTitle>No outgoing requests</EmptyTitle>
-                <EmptyDescription>Sent requests show here.</EmptyDescription>
+                <EmptyDescription>Your sent requests will appear here.</EmptyDescription>
               </EmptyHeader>
             </Empty>
           </div>

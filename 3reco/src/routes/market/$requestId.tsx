@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -258,6 +259,9 @@ function RouteComponent() {
                                     {fieldState.invalid && (
                                       <FieldError errors={[fieldState.error]} />
                                     )}
+                                    <FieldDescription>
+                                      Enter the offered weight in kilograms.
+                                    </FieldDescription>
                                   </Field>
                                 )}
                               />
@@ -281,6 +285,9 @@ function RouteComponent() {
                                     {fieldState.invalid && (
                                       <FieldError errors={[fieldState.error]} />
                                     )}
+                                    <FieldDescription>
+                                      Enter the offered price per kilogram.
+                                    </FieldDescription>
                                   </Field>
                                 )}
                               />

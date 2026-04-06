@@ -1202,7 +1202,10 @@ function RouteComponent() {
                   <CardTitle className="text-xl font-semibold">
                     Active sessions
                   </CardTitle>
-                  <CardDescription>Review and revoke active sessions.</CardDescription>
+                  <CardDescription>
+                    See where you are signed in and remove sessions you do not
+                    recognise.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {sessionsQuery.isPending ? (
@@ -1315,7 +1318,9 @@ function RouteComponent() {
                     <CardTitle className="text-xl font-semibold">
                       Quick actions
                     </CardTitle>
-                    <CardDescription>Manage sessions on this browser.</CardDescription>
+                    <CardDescription>
+                      Use these actions to manage sessions on this browser.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Button
@@ -1409,7 +1414,10 @@ function RouteComponent() {
                     <CardTitle className="text-xl font-semibold">
                       Session switching
                     </CardTitle>
-                    <CardDescription>Switch between accounts on this browser.</CardDescription>
+                    <CardDescription>
+                      If you have more than one account signed in here, you can
+                      switch between them.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {deviceSessionsQuery.isPending ? (

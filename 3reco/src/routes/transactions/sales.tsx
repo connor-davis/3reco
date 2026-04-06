@@ -110,7 +110,7 @@ function RouteComponent() {
                     <PackageIcon />
                   </EmptyMedia>
                   <EmptyTitle>No sales yet</EmptyTitle>
-                  <EmptyDescription>Sales show here.</EmptyDescription>
+                  <EmptyDescription>Your sales will appear here.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
               </Empty>

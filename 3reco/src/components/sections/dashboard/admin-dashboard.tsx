@@ -78,7 +78,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{totals.c2bCount}</p>
-              <p className="text-xs text-muted-foreground">Collector to business</p>
+              <p className="text-xs text-muted-foreground">
+                Sales from collectors to businesses
+              </p>
             </CardContent>
           </Card>
 
@@ -89,7 +91,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{totals.b2bCount}</p>
-              <p className="text-xs text-muted-foreground">Business to business</p>
+              <p className="text-xs text-muted-foreground">
+                Sales between businesses
+              </p>
             </CardContent>
           </Card>
 
@@ -100,7 +104,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{totals.c2bVolume.toFixed(1)} kg</p>
-              <p className="text-xs text-muted-foreground">Collected</p>
+              <p className="text-xs text-muted-foreground">
+                Total weight collected
+              </p>
             </CardContent>
           </Card>
 
@@ -111,7 +117,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
           </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{totals.b2bVolume.toFixed(1)} kg</p>
-              <p className="text-xs text-muted-foreground">Traded</p>
+              <p className="text-xs text-muted-foreground">
+                Total weight traded
+              </p>
             </CardContent>
           </Card>
       </div>
@@ -125,7 +133,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
               <TrendingUpIcon className="size-4" />
               Daily Transactions (30 days)
             </CardTitle>
-            <CardDescription>Collector vs business sales by day</CardDescription>
+            <CardDescription>
+              Compare collector and business sales by day.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">
@@ -168,7 +178,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
               <PackageIcon className="size-4" />
               Stock by Material
             </CardTitle>
-            <CardDescription>Current stock by material</CardDescription>
+            <CardDescription>
+              See how much stock there is for each material.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={barChartConfig} className="h-48 w-full sm:h-56">
@@ -197,7 +209,9 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
       <Card className="bg-background">
           <CardHeader>
             <CardTitle>Latest Transactions</CardTitle>
-            <CardDescription>Most recent platform transactions</CardDescription>
+            <CardDescription>
+              The most recent transactions on the platform.
+            </CardDescription>
           </CardHeader>
         <CardContent>
           {latestTransactions.length === 0 ? (

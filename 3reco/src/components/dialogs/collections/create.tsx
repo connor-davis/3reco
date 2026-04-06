@@ -402,6 +402,9 @@ export default function CreateCollectionDialog({
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                    <FieldDescription>
+                      Choose the collector for this collection.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -549,6 +552,9 @@ export default function CreateCollectionDialog({
                             {fieldState.invalid && (
                               <FieldError errors={[fieldState.error]} />
                             )}
+                            <FieldDescription>
+                              Choose the material that was collected.
+                            </FieldDescription>
                           </Field>
                         )}
                       />
@@ -572,6 +578,9 @@ export default function CreateCollectionDialog({
                               {fieldState.invalid && (
                                 <FieldError errors={[fieldState.error]} />
                               )}
+                              <FieldDescription>
+                                Enter the collected weight in kilograms.
+                              </FieldDescription>
                             </Field>
                           )}
                         />
@@ -593,6 +602,9 @@ export default function CreateCollectionDialog({
                               {fieldState.invalid && (
                                 <FieldError errors={[fieldState.error]} />
                               )}
+                              <FieldDescription>
+                                Enter the price paid per kilogram.
+                              </FieldDescription>
                             </Field>
                           )}
                         />

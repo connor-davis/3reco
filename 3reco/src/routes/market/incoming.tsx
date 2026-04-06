@@ -57,7 +57,9 @@ function RouteComponent() {
                   <InboxIcon />
                 </EmptyMedia>
                 <EmptyTitle>No incoming requests</EmptyTitle>
-                <EmptyDescription>Buyer requests show here.</EmptyDescription>
+                <EmptyDescription>
+                  Requests from buyers will appear here.
+                </EmptyDescription>
               </EmptyHeader>
             </Empty>
           </div>

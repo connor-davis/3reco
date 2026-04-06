@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { useConvexMutation } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
@@ -68,7 +69,9 @@ export default function ReviewDialog({ transactionId, sellerName, children }: Re
 
         <div className="flex flex-col gap-4 py-2">
           {/* Star picker */}
-          <div className="flex items-center gap-1">
+          <div className="space-y-2">
+            <FieldLabel>Rating</FieldLabel>
+            <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
@@ -91,18 +94,27 @@ export default function ReviewDialog({ transactionId, sellerName, children }: Re
             {rating > 0 && (
               <span className="ml-2 text-sm text-muted-foreground">
                 {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
-              </span>
-            )}
+                </span>
+              )}
+            </div>
+            <FieldDescription>Select 1 to 5 stars.</FieldDescription>
           </div>
 
           {/* Comment */}
-          <Textarea
-            placeholder="Optional comment…"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={3}
-            maxLength={500}
-          />
+          <div className="space-y-2">
+            <FieldLabel htmlFor="review-comment">Comment</FieldLabel>
+            <Textarea
+              id="review-comment"
+              placeholder="Optional comment..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              maxLength={500}
+            />
+            <FieldDescription>
+              Optional. Add a short note about your experience.
+            </FieldDescription>
+          </div>
         </div>
 
         <DialogFooter showCloseButton>
