@@ -1,5 +1,17 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+  useComboboxAnchor,
+} from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +29,6 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Item,
   ItemActions,
@@ -27,16 +38,12 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { parseCollectionDayInput } from '@/lib/transactions';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
@@ -52,11 +59,16 @@ import {
   TrashIcon,
   XIcon,
 } from 'lucide-react';
-import { type ChangeEvent, type ReactElement, useRef, useState } from 'react';
+import {
+  type ChangeEvent,
+  type ReactElement,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
-import { parseCollectionDayInput } from '@/lib/transactions';
 
 const MAX_RECEIPT_FILES = 5;
 const MAX_RECEIPT_FILE_SIZE = 5 * 1024 * 1024;
@@ -99,7 +111,9 @@ function validateReceiptFiles(files: File[]) {
   const errors: string[] = [];
 
   if (files.length > MAX_RECEIPT_FILES) {
-    errors.push(`You can upload up to ${MAX_RECEIPT_FILES} receipt images at a time.`);
+    errors.push(
+      `You can upload up to ${MAX_RECEIPT_FILES} receipt images at a time.`
+    );
   }
 
   const invalidTypeNames = files
@@ -123,6 +137,19 @@ function validateReceiptFiles(files: File[]) {
   }
 
   return errors;
+}
+
+function matchesSearch(
+  values: Array<string | undefined>,
+  search: string | undefined
+) {
+  const query = search?.trim().toLowerCase();
+
+  if (!query) {
+    return true;
+  }
+
+  return values.some((value) => value?.toLowerCase().includes(query));
 }
 
 async function uploadReceiptFile(uploadUrl: string, file: File) {
@@ -159,9 +186,119 @@ const itemSchema = z.object({
 
 const collectionSchema = z.object({
   collectorId: z.string({ error: 'Please select a collector.' }),
+  businessId: z.string().optional(),
   collectionDate: z.date().optional(),
-  items: z.array(itemSchema).min(1, { error: 'At least one item is required.' }),
+  items: z
+    .array(itemSchema)
+    .min(1, { error: 'At least one item is required.' }),
 });
+
+const searchableComboboxTriggerClassName =
+  "flex h-9 w-full items-center justify-between gap-1.5 rounded-4xl border border-input bg-input/30 px-3 py-2 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+
+type SearchableComboboxProps<T extends { _id: string }> = {
+  triggerId: string;
+  value: string | undefined;
+  items: T[] | undefined;
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  onValueChange: (value: string | undefined) => void;
+  placeholder: string;
+  searchPlaceholder: string;
+  groupLabel: string;
+  emptyItemsLabel: string;
+  emptySearchLabel: string;
+  getItemLabel: (item: T) => string;
+  getSearchValues: (item: T) => Array<string | undefined>;
+  renderItem: (item: T, selected: boolean) => ReactElement;
+  invalid?: boolean;
+  disabled?: boolean;
+};
+
+function SearchableCombobox<T extends { _id: string }>({
+  triggerId,
+  value,
+  items,
+  searchValue,
+  onSearchValueChange,
+  onValueChange,
+  placeholder,
+  searchPlaceholder,
+  emptyItemsLabel,
+  emptySearchLabel,
+  getItemLabel,
+  getSearchValues,
+  renderItem,
+  invalid = false,
+  disabled = false,
+}: SearchableComboboxProps<T>) {
+  const anchorRef = useComboboxAnchor();
+  const options = items ?? [];
+  const selectedItem = options.find((item) => item._id === value) ?? null;
+  const hasItems = options.length > 0;
+
+  return (
+    <Combobox
+      items={options}
+      value={selectedItem}
+      inputValue={searchValue}
+      disabled={disabled}
+      onInputValueChange={(nextValue) => onSearchValueChange(nextValue)}
+      onOpenChange={(open) => {
+        if (!open && searchValue) {
+          onSearchValueChange('');
+        }
+      }}
+      onValueChange={(nextValue) => {
+        onValueChange(nextValue?._id);
+        if (searchValue) {
+          onSearchValueChange('');
+        }
+      }}
+      itemToStringLabel={getItemLabel}
+      itemToStringValue={(item) => item._id}
+      isItemEqualToValue={(item, currentValue) => item._id === currentValue._id}
+      filter={(item, query) => matchesSearch(getSearchValues(item), query)}
+    >
+      <div ref={anchorRef} className="w-full">
+        <ComboboxTrigger
+          id={triggerId}
+          aria-invalid={invalid || undefined}
+          className={searchableComboboxTriggerClassName}
+        >
+          <ComboboxValue placeholder={placeholder} />
+        </ComboboxTrigger>
+      </div>
+      <ComboboxContent
+        align="start"
+        anchor={anchorRef}
+        initialFocus={false}
+        className="flex flex-col p-3 gap-3"
+      >
+        {!hasItems && <ComboboxEmpty>{emptyItemsLabel}</ComboboxEmpty>}
+        {hasItems ? (
+          <ComboboxInput
+            aria-label={searchPlaceholder}
+            placeholder={searchPlaceholder}
+            className="w-full"
+          />
+        ) : null}
+        {hasItems ? <ComboboxEmpty>{emptySearchLabel}</ComboboxEmpty> : null}
+        {hasItems ? (
+          <ComboboxList>
+            {(item: T) => (
+              <ComboboxItem
+                key={item._id}
+                value={item}
+                render={renderItem(item, value === item._id)}
+              />
+            )}
+          </ComboboxList>
+        ) : null}
+      </ComboboxContent>
+    </Combobox>
+  );
+}
 
 export default function CreateCollectionDialog({
   children,
@@ -171,9 +308,18 @@ export default function CreateCollectionDialog({
   const [open, setOpen] = useState(false);
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
   const [receiptErrors, setReceiptErrors] = useState<string[]>([]);
+  const [businessSearch, setBusinessSearch] = useState('');
+  const [collectorSearch, setCollectorSearch] = useState('');
+  const [materialSearches, setMaterialSearches] = useState<
+    Record<number, string>
+  >({});
 
   const materials = useConvexQuery(api.materials.list, {});
   const collectors = useConvexQuery(api.collectors.listForSelection, {});
+  const currentUser = useConvexQuery(api.users.currentUser);
+  const businesses = useConvexQuery(api.users.listBusinesses, {});
+  const canSelectBusiness =
+    currentUser?.type === 'admin' || currentUser?.type === 'staff';
 
   const createCollection = useConvexMutation(
     api.transactions.collectorToBusinessSale
@@ -189,12 +335,32 @@ export default function CreateCollectionDialog({
 
   const form = useForm<CollectionFormValues>({
     resolver: zodResolver(collectionSchema),
-      defaultValues: {
-        collectorId: '',
-        collectionDate: undefined,
-        items: [{ materialId: '', weight: 0, price: 0 }],
-      },
+    defaultValues: {
+      collectorId: '',
+      businessId: undefined,
+      collectionDate: undefined,
+      items: [{ materialId: '', weight: 0, price: 0 }],
+    },
   });
+
+  useEffect(() => {
+    if (currentUser?.type === 'business') {
+      form.setValue('businessId', currentUser._id, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+      return;
+    }
+
+    if (currentUser?.type === 'admin' || currentUser?.type === 'staff') {
+      return;
+    }
+
+    form.setValue('businessId', undefined, {
+      shouldDirty: false,
+      shouldTouch: false,
+    });
+  }, [currentUser, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -218,8 +384,16 @@ export default function CreateCollectionDialog({
         throw new Error(validationErrors[0]);
       }
 
+      if (canSelectBusiness && !values.businessId) {
+        form.setError('businessId', {
+          message: 'Please select the business for this collection.',
+        });
+        throw new Error('Please select the business for this collection.');
+      }
+
       const { transactionId } = await createCollection({
         collectorId: values.collectorId as Id<'collectors'>,
+        businessId: values.businessId as Id<'users'> | undefined,
         collectionDay: values.collectionDate
           ? parseCollectionDayInput(values.collectionDate.toISOString())
           : undefined,
@@ -262,6 +436,8 @@ export default function CreateCollectionDialog({
     onSuccess: ({ attemptedReceiptCount, uploadFailures }) => {
       form.reset({
         collectorId: '',
+        businessId:
+          currentUser?.type === 'business' ? currentUser._id : undefined,
         collectionDate: undefined,
         items: [{ materialId: '', weight: 0, price: 0 }],
       });
@@ -282,7 +458,9 @@ export default function CreateCollectionDialog({
       toast.error('Collection created with receipt upload issues.', {
         description:
           `${uploadedCount} of ${attemptedReceiptCount} receipts attached. ` +
-          uploadFailures.map((failure) => `${failure.fileName}: ${failure.reason}`).join(' '),
+          uploadFailures
+            .map((failure) => `${failure.fileName}: ${failure.reason}`)
+            .join(' '),
       });
     },
     onError: (error) => {
@@ -323,7 +501,9 @@ export default function CreateCollectionDialog({
       <DialogContent className="flex max-h-[90vh] w-full max-w-screen-md flex-col sm:max-w-screen-md">
         <DialogHeader className="shrink-0">
           <DialogTitle>Create Collection</DialogTitle>
-          <DialogDescription>Select a collector and add items.</DialogDescription>
+          <DialogDescription>
+            Select a collector and add items.
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -333,6 +513,83 @@ export default function CreateCollectionDialog({
         >
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+              {canSelectBusiness ? (
+                <Controller
+                  name="businessId"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="form-create-collection-business">
+                        Business
+                      </FieldLabel>
+                      <SearchableCombobox
+                        triggerId="form-create-collection-business"
+                        value={field.value}
+                        items={businesses}
+                        searchValue={businessSearch}
+                        onSearchValueChange={setBusinessSearch}
+                        onValueChange={(nextValue) => field.onChange(nextValue)}
+                        placeholder="Select a business"
+                        searchPlaceholder="Search businesses..."
+                        groupLabel="Businesses"
+                        emptyItemsLabel="There are no businesses"
+                        emptySearchLabel="No businesses match your search."
+                        getItemLabel={(business) =>
+                          business.businessName ||
+                          business.name ||
+                          business.email ||
+                          business.phone ||
+                          ''
+                        }
+                        getSearchValues={(business) => [
+                          business.businessName,
+                          business.name,
+                          business.email,
+                          business.phone,
+                        ]}
+                        renderItem={(business, selected) => (
+                          <Item key={business._id}>
+                            <ItemMedia>
+                              <Avatar>
+                                <AvatarImage src={business.image} />
+                                <AvatarFallback>
+                                  {business.businessName?.charAt(0) ??
+                                    business.email?.charAt(0) ??
+                                    business.phone?.charAt(0) ??
+                                    business.name?.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                            </ItemMedia>
+                            <ItemContent>
+                              <ItemTitle>
+                                {business.businessName ||
+                                  business.name ||
+                                  business.email}
+                              </ItemTitle>
+                              <ItemDescription>
+                                {business.email
+                                  ? `${business.phone ?? ''}${business.phone ? ' | ' : ''}${business.email}`
+                                  : business.phone}
+                              </ItemDescription>
+                            </ItemContent>
+                            <ItemActions>
+                              {selected ? <CheckIcon /> : null}
+                            </ItemActions>
+                          </Item>
+                        )}
+                        invalid={fieldState.invalid}
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                      <FieldDescription>
+                        Choose which business should receive this collection.
+                      </FieldDescription>
+                    </Field>
+                  )}
+                />
+              ) : null}
+
               <Controller
                 name="collectorId"
                 control={form.control}
@@ -341,64 +598,58 @@ export default function CreateCollectionDialog({
                     <FieldLabel htmlFor="form-create-collection-collector">
                       Collector
                     </FieldLabel>
-                    <Select
-                      id="form-create-collection-collector"
+                    <SearchableCombobox
+                      triggerId="form-create-collection-collector"
                       value={field.value}
-                      onValueChange={(value) => field.onChange(value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a collector">
-                          {(() => {
-                            const collector = collectors?.find(
-                              (option) => option._id === field.value
-                            );
-                            return collector
-                              ? collector.name || collector.email || collector.phone
-                              : undefined;
-                          })()}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>
-                            {collectors && collectors.length > 0
-                              ? 'Collectors'
-                              : 'There are no collectors'}
-                          </SelectLabel>
-                          {collectors?.map((collector) => (
-                            <SelectItem
-                              key={collector._id}
-                              value={collector._id}
-                              render={
-                                <Item key={collector._id}>
-                                  <ItemMedia>
-                                    <Avatar>
-                                      <AvatarImage src={collector.image} />
-                                      <AvatarFallback>
-                                        {collector.name?.charAt(0) ??
-                                          collector.email?.charAt(0) ??
-                                          collector.phone?.charAt(0)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  </ItemMedia>
-                                  <ItemContent>
-                                    <ItemTitle>{collector.name}</ItemTitle>
-                                    <ItemDescription>
-                                      {collector.email
-                                        ? `${collector.phone} | ${collector.email}`
-                                        : collector.phone}
-                                    </ItemDescription>
-                                  </ItemContent>
-                                  <ItemActions>
-                                    {field.value === collector._id && <CheckIcon />}
-                                  </ItemActions>
-                                </Item>
-                              }
-                            />
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                      items={collectors}
+                      searchValue={collectorSearch}
+                      onSearchValueChange={setCollectorSearch}
+                      onValueChange={(nextValue) =>
+                        field.onChange(nextValue ?? '')
+                      }
+                      placeholder="Select a collector"
+                      searchPlaceholder="Search collectors..."
+                      groupLabel="Collectors"
+                      emptyItemsLabel="There are no collectors"
+                      emptySearchLabel="No collectors match your search."
+                      getItemLabel={(collector) =>
+                        collector.name ||
+                        collector.email ||
+                        collector.phone ||
+                        ''
+                      }
+                      getSearchValues={(collector) => [
+                        collector.name,
+                        collector.email,
+                        collector.phone,
+                      ]}
+                      renderItem={(collector, selected) => (
+                        <Item key={collector._id}>
+                          <ItemMedia>
+                            <Avatar>
+                              <AvatarImage src={collector.image} />
+                              <AvatarFallback>
+                                {collector.name?.charAt(0) ??
+                                  collector.email?.charAt(0) ??
+                                  collector.phone?.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle>{collector.name}</ItemTitle>
+                            <ItemDescription>
+                              {collector.email
+                                ? `${collector.phone} | ${collector.email}`
+                                : collector.phone}
+                            </ItemDescription>
+                          </ItemContent>
+                          <ItemActions>
+                            {selected ? <CheckIcon /> : null}
+                          </ItemActions>
+                        </Item>
+                      )}
+                      invalid={fieldState.invalid}
+                    />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
@@ -415,21 +666,23 @@ export default function CreateCollectionDialog({
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel>Collection Date</FieldLabel>
-                    <div className="flex items-center gap-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                       <Popover>
                         <PopoverTrigger
                           render={(props) => (
                             <Button
                               type="button"
                               variant="outline"
-                              className="w-full justify-start text-left font-normal"
+                              className="min-w-0 w-full justify-start gap-2 text-left font-normal"
                               disabled={isPending}
                               {...props}
                             >
-                              <CalendarIcon className="size-4" />
-                              {field.value
-                                ? format(field.value, 'dd/MM/yyyy')
-                                : 'Select collection date'}
+                              <CalendarIcon className="size-4 shrink-0" />
+                              <span className="truncate">
+                                {field.value
+                                  ? format(field.value, 'dd/MM/yyyy')
+                                  : 'Select collection date'}
+                              </span>
                             </Button>
                           )}
                         />
@@ -470,7 +723,9 @@ export default function CreateCollectionDialog({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => append({ materialId: '', weight: 0, price: 0 })}
+                    onClick={() =>
+                      append({ materialId: '', weight: 0, price: 0 })
+                    }
                   >
                     <PlusIcon className="size-3" />
                     Add Item
@@ -505,50 +760,42 @@ export default function CreateCollectionDialog({
                         render={({ field: itemField, fieldState }) => (
                           <Field data-invalid={fieldState.invalid}>
                             <FieldLabel>Material</FieldLabel>
-                            <Select
+                            <SearchableCombobox
+                              triggerId={`form-create-collection-material-${index}`}
                               value={itemField.value}
-                              onValueChange={(value) => itemField.onChange(value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a material">
-                                  {
-                                    materials?.find(
-                                      (material) => material._id === itemField.value
-                                    )?.name
-                                  }
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>
-                                    {materials && materials.length > 0
-                                      ? 'Materials'
-                                      : 'No materials'}
-                                  </SelectLabel>
-                                  {materials?.map((material) => (
-                                    <SelectItem
-                                      key={material._id}
-                                      value={material._id}
-                                      render={
-                                        <Item key={material._id}>
-                                          <ItemContent>
-                                            <ItemTitle>{material.name}</ItemTitle>
-                                            <ItemDescription>
-                                              Base price: R{material.price}/kg
-                                            </ItemDescription>
-                                          </ItemContent>
-                                          <ItemActions>
-                                            {itemField.value === material._id && (
-                                              <CheckIcon />
-                                            )}
-                                          </ItemActions>
-                                        </Item>
-                                      }
-                                    />
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
+                              items={materials}
+                              searchValue={materialSearches[index] ?? ''}
+                              onSearchValueChange={(nextValue) =>
+                                setMaterialSearches((current) => ({
+                                  ...current,
+                                  [index]: nextValue,
+                                }))
+                              }
+                              onValueChange={(nextValue) =>
+                                itemField.onChange(nextValue ?? '')
+                              }
+                              placeholder="Select a material"
+                              searchPlaceholder="Search materials..."
+                              groupLabel="Materials"
+                              emptyItemsLabel="No materials"
+                              emptySearchLabel="No materials match your search."
+                              getItemLabel={(material) => material.name}
+                              getSearchValues={(material) => [material.name]}
+                              renderItem={(material, selected) => (
+                                <Item key={material._id}>
+                                  <ItemContent>
+                                    <ItemTitle>{material.name}</ItemTitle>
+                                    <ItemDescription>
+                                      Base price: R{material.price}/kg
+                                    </ItemDescription>
+                                  </ItemContent>
+                                  <ItemActions>
+                                    {selected ? <CheckIcon /> : null}
+                                  </ItemActions>
+                                </Item>
+                              )}
+                              invalid={fieldState.invalid}
+                            />
                             {fieldState.invalid && (
                               <FieldError errors={[fieldState.error]} />
                             )}

@@ -664,18 +664,48 @@ export const getReceiptDownloadUrl = query({
 export const collectorToBusinessSale = mutation({
   args: {
     collectorId: v.id('collectors'),
+    businessId: v.optional(v.id('users')),
     items: v.array(txItemValidator),
     collectionDay: v.optional(v.string()),
     collectionDate: v.optional(v.number()),
   },
-  handler: async (ctx, { collectorId, items, collectionDay, collectionDate }) => {
-    const businessId = await getCurrentUserIdOrThrow(ctx);
+  handler: async (ctx, { collectorId, businessId, items, collectionDay, collectionDate }) => {
+    const currentUser = await getCurrentUserOrThrow(ctx);
     const collector = await ctx.db.get(collectorId);
 
     if (!collector) {
       throw new ConvexError({
         name: 'Not Found',
         message: 'The collector was not found.',
+      });
+    }
+
+    let buyerBusinessId: Id<'users'>;
+
+    if (currentUser.type === 'business') {
+      buyerBusinessId = currentUser._id;
+    } else if (currentUser.type === 'admin' || currentUser.type === 'staff') {
+      if (!businessId) {
+        throw new ConvexError({
+          name: 'Invalid Input',
+          message: 'Please select the business for this collection.',
+        });
+      }
+
+      const business = await ctx.db.get(businessId);
+
+      if (!business || business.type !== 'business' || business.isRemoved === true) {
+        throw new ConvexError({
+          name: 'Invalid Input',
+          message: 'The selected business is not available for collections.',
+        });
+      }
+
+      buyerBusinessId = business._id;
+    } else {
+      throw new ConvexError({
+        name: 'Unauthorized',
+        message: 'You are not authorized to create collections.',
       });
     }
 
@@ -697,7 +727,7 @@ export const collectorToBusinessSale = mutation({
 
     const totalPrice = items.reduce((s, i) => s + i.price * i.weight, 0);
     const transactionId = await ctx.db.insert('transactions', {
-      buyerId: businessId,
+      buyerId: buyerBusinessId,
       sellerId: collectorId,
       items,
       totalPrice,
@@ -717,13 +747,13 @@ export const collectorToBusinessSale = mutation({
       const existingStock = await ctx.db
         .query('stock')
         .withIndex('by_ownerId_by_materialId', (q) =>
-          q.eq('ownerId', businessId).eq('materialId', item.materialId)
+          q.eq('ownerId', buyerBusinessId).eq('materialId', item.materialId)
         )
         .first();
 
       if (!existingStock) {
         await ctx.db.insert('stock', {
-          ownerId: businessId,
+          ownerId: buyerBusinessId,
           materialId: item.materialId,
           weight: item.weight,
           price: item.price,
