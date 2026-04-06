@@ -11,7 +11,7 @@ import { internal } from './_generated/api';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { Resend } from 'resend';
 import { getEffectiveTransactionDate } from './lib/collectionDay';
-import { getCurrentUserIdOrThrow } from './users';
+import { getCurrentUserOrThrow } from './users';
 
 const SOUTH_AFRICA_TIME_ZONE = 'Africa/Johannesburg';
 
@@ -51,11 +51,26 @@ function getFromEmail() {
   return fromEmail;
 }
 
-async function getParticipantTransaction(
+function canReadAllTransactions(userType: string | undefined) {
+  return userType === 'admin' || userType === 'staff';
+}
+
+function getTransactionSellerUserId(transaction: {
+  sellerId: Id<'users'> | Id<'collectors'>;
+  type: 'c2b' | 'b2b';
+}): Id<'users'> | undefined {
+  if (transaction.type === 'c2b') {
+    return undefined;
+  }
+
+  return transaction.sellerId as Id<'users'>;
+}
+
+async function getReadableTransaction(
   ctx: QueryCtx,
   transactionId: Id<'transactions'>
 ) {
-  const userId = await getCurrentUserIdOrThrow(ctx);
+  const user = await getCurrentUserOrThrow(ctx);
   const transaction = await ctx.db.get('transactions', transactionId);
 
   if (!transaction) {
@@ -65,7 +80,11 @@ async function getParticipantTransaction(
     });
   }
 
-  if (transaction.sellerId !== userId && transaction.buyerId !== userId) {
+  if (
+    !canReadAllTransactions(user.type) &&
+    getTransactionSellerUserId(transaction) !== user._id &&
+    transaction.buyerId !== user._id
+  ) {
     throw unauthorizedError();
   }
 
@@ -374,7 +393,10 @@ export const generateForTransaction = internalAction({
 export const getInvoiceUrl = query({
   args: { transactionId: v.id('transactions') },
   handler: async (ctx, { transactionId }) => {
-    const transaction = await getParticipantTransaction(ctx, transactionId as Id<'transactions'>);
+    const transaction = await getReadableTransaction(
+      ctx,
+      transactionId as Id<'transactions'>
+    );
     if (!transaction?.invoiceStorageId) return null;
     return await ctx.storage.getUrl(transaction.invoiceStorageId);
   },
