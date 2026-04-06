@@ -64,14 +64,12 @@ function SellerCard({
             </ItemDescription>
           </ItemContent>
         </div>
-        {seller.averageRating !== null && (
-          <Stars
-            rating={seller.averageRating}
-            count={seller.reviewCount}
-            size="sm"
-            className="ml-0.5"
-          />
-        )}
+        <Stars
+          rating={seller.averageRating}
+          count={seller.reviewCount}
+          size="sm"
+          className="ml-0.5"
+        />
       </ItemHeader>
       {seller.materialNames.length > 0 && (
         <div className="flex flex-wrap gap-1">
