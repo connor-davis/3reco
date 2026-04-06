@@ -95,9 +95,6 @@ function RouteComponent() {
                 <VanIcon />
               </EmptyMedia>
               <EmptyTitle>Loading purchases...</EmptyTitle>
-              <EmptyDescription>
-                Getting your purchases ready...
-              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         </div>
@@ -113,9 +110,7 @@ function RouteComponent() {
                     <CreditCardIcon />
                   </EmptyMedia>
                   <EmptyTitle>No purchases yet</EmptyTitle>
-                  <EmptyDescription>
-                    Purchases you make will appear here.
-                  </EmptyDescription>
+                  <EmptyDescription>Purchases show here.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
               </Empty>

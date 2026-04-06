@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/card';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -70,15 +69,15 @@ export function BankDetailsFields<T extends FieldValues>({
         <Card className="relative w-full max-w-[640px] border border-primary/20 bg-linear-to-br from-card via-card to-primary/5 shadow-[var(--shadow-soft)]">
 
           <CardHeader className="relative pb-3">
-            <CardTitle className="text-sm uppercase tracking-[0.35em] text-muted-foreground">
-              3rEco payout
-            </CardTitle>
-            <CardDescription>
-              {required
-                ? 'Add bank details to finish setting up your business profile.'
-                : 'Add bank details if you want them to show on invoices.'}
-            </CardDescription>
-          </CardHeader>
+             <CardTitle className="text-sm uppercase tracking-[0.35em] text-muted-foreground">
+               3rEco payout
+             </CardTitle>
+             <CardDescription>
+               {required
+                ? 'Add bank details to complete your profile.'
+                : 'Add bank details to show them on invoices.'}
+             </CardDescription>
+           </CardHeader>
 
           <CardContent className="relative flex min-h-48 flex-col justify-between space-y-0 pb-6 sm:min-h-52">
             <div className="flex flex-col gap-1 text-xs uppercase tracking-[0.3em] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
@@ -132,9 +131,6 @@ export function BankDetailsFields<T extends FieldValues>({
                 autoComplete="name"
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              <FieldDescription>
-                Enter the name on the account.
-              </FieldDescription>
             </Field>
           )}
         />
@@ -156,9 +152,6 @@ export function BankDetailsFields<T extends FieldValues>({
                 autoComplete="organization"
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              <FieldDescription>
-                Enter the bank name.
-              </FieldDescription>
             </Field>
           )}
         />
@@ -183,9 +176,6 @@ export function BankDetailsFields<T extends FieldValues>({
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
                 )}
-                <FieldDescription>
-                  Numbers only.
-                </FieldDescription>
               </Field>
             )}
           />
@@ -209,9 +199,6 @@ export function BankDetailsFields<T extends FieldValues>({
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
                 )}
-                <FieldDescription>
-                  Your bank's 6-digit branch code.
-                </FieldDescription>
               </Field>
             )}
           />
@@ -244,9 +231,6 @@ export function BankDetailsFields<T extends FieldValues>({
                 </SelectContent>
               </Select>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              <FieldDescription>
-                Choose the account type for payments.
-              </FieldDescription>
             </Field>
           )}
         />

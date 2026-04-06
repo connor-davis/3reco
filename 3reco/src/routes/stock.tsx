@@ -47,7 +47,7 @@ function RouteComponent() {
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
             title="Stock"
-            description="Find stock by material."
+            description="Search stock."
           >
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -74,7 +74,7 @@ function RouteComponent() {
                 <EmptyDescription>
                   {search
                     ? `No stock matches "${search}".`
-                    : 'Add stock from a collection, or buy from the marketplace.'}
+                    : 'Stock from collections and purchases shows here.'}
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>

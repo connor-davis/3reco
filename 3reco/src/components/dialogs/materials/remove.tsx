@@ -61,8 +61,7 @@ export default function RemoveMaterialByIdDialog({
         <DialogHeader>
           <DialogTitle>Delete this material?</DialogTitle>
           <DialogDescription>
-            This will permanently remove <strong>{materialName}</strong> from your
-            list.
+            This permanently removes <strong>{materialName}</strong>.
           </DialogDescription>
         </DialogHeader>
         <TypedConfirmationField

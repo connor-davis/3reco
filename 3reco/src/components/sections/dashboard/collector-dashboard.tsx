@@ -68,7 +68,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">R {totals.totalRevenue.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Across all sales</p>
+            <p className="text-xs text-muted-foreground">All sales</p>
           </CardContent>
         </Card>
 
@@ -79,7 +79,7 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.totalVolume.toFixed(1)} kg</p>
-            <p className="text-xs text-muted-foreground">Materials collected &amp; sold</p>
+            <p className="text-xs text-muted-foreground">Sold</p>
           </CardContent>
         </Card>
 
@@ -97,13 +97,13 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
 
       {/* Daily volume line chart */}
       <Card className="bg-background">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUpIcon className="size-4" />
-            Daily Sales Volume (30 days)
-          </CardTitle>
-          <CardDescription>Material weight sold per day (kg)</CardDescription>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUpIcon className="size-4" />
+              Daily Sales Volume (30 days)
+            </CardTitle>
+            <CardDescription>Volume by day</CardDescription>
+          </CardHeader>
         <CardContent>
           <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">
             <LineChart data={dailyTransactions}>
@@ -132,10 +132,10 @@ export default function CollectorDashboard({ dateRange }: CollectorDashboardProp
 
       {/* Latest transactions */}
       <Card className="bg-background">
-        <CardHeader>
-          <CardTitle>Latest Sales</CardTitle>
-          <CardDescription>Your 5 most recent transactions</CardDescription>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle>Latest Sales</CardTitle>
+            <CardDescription>Your most recent sales</CardDescription>
+          </CardHeader>
         <CardContent>
           {latestTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No sales yet.</p>

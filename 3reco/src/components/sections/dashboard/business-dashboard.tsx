@@ -69,7 +69,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">R {totals.totalSpend.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Across all purchases</p>
+            <p className="text-xs text-muted-foreground">All purchases</p>
           </CardContent>
         </Card>
 
@@ -80,7 +80,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.totalVolume.toFixed(1)} kg</p>
-            <p className="text-xs text-muted-foreground">Materials transacted</p>
+            <p className="text-xs text-muted-foreground">Transacted</p>
           </CardContent>
         </Card>
 
@@ -91,7 +91,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.transactionCount}</p>
-            <p className="text-xs text-muted-foreground">Total count</p>
+            <p className="text-xs text-muted-foreground">Total</p>
           </CardContent>
         </Card>
 
@@ -116,7 +116,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
               <TrendingUpIcon className="size-4" />
               Daily Volume (30 days)
             </CardTitle>
-            <CardDescription>Material weight transacted per day (kg)</CardDescription>
+            <CardDescription>Volume by day</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">
@@ -151,7 +151,7 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
               <PackageIcon className="size-4" />
               Stock On Hand
             </CardTitle>
-            <CardDescription>Current material inventory</CardDescription>
+            <CardDescription>Current stock</CardDescription>
           </CardHeader>
           <CardContent>
             {stockSummary.length === 0 ? (
@@ -189,10 +189,10 @@ export default function BusinessDashboard({ dateRange }: BusinessDashboardProps)
 
       {/* Latest transactions */}
       <Card className="bg-background">
-        <CardHeader>
-          <CardTitle>Latest Transactions</CardTitle>
-          <CardDescription>Your 5 most recent transactions</CardDescription>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle>Latest Transactions</CardTitle>
+            <CardDescription>Your most recent transactions</CardDescription>
+          </CardHeader>
         <CardContent>
           {latestTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No transactions yet.</p>

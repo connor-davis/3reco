@@ -214,8 +214,7 @@ export default function AvatarCropper({ src, onComplete }: AvatarCropperProps) {
         </ReactCrop>
       </FieldContent>
       <FieldDescription>
-        Choose a profile image from your device. Supported formats: PNG, JPEG,
-        JPG, WEBP, GIF.
+        Use a square image. PNG, JPEG, JPG, WEBP, or GIF.
       </FieldDescription>
     </Field>
   );

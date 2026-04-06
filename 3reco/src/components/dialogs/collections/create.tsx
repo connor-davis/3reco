@@ -323,10 +323,7 @@ export default function CreateCollectionDialog({
       <DialogContent className="flex max-h-[90vh] w-full max-w-screen-md flex-col sm:max-w-screen-md">
         <DialogHeader className="shrink-0">
           <DialogTitle>Create Collection</DialogTitle>
-          <DialogDescription>
-            Select a collector and add one or more materials to record this
-            collection.
-          </DialogDescription>
+          <DialogDescription>Select a collector and add items.</DialogDescription>
         </DialogHeader>
 
         <form
@@ -454,8 +451,7 @@ export default function CreateCollectionDialog({
                       ) : null}
                     </div>
                     <FieldDescription>
-                      Optional. Leave blank to use the current transaction
-                      timestamp.
+                      Optional. Uses the current time if left blank.
                     </FieldDescription>
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />

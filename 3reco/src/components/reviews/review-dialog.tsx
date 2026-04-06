@@ -63,7 +63,7 @@ export default function ReviewDialog({ transactionId, sellerName, children }: Re
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Review {sellerName}</DialogTitle>
-          <DialogDescription>Share your experience with this seller.</DialogDescription>
+          <DialogDescription>Rate this seller.</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">

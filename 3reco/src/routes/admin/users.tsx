@@ -241,7 +241,7 @@ function RouteComponent() {
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
             title="Manage users"
-            description="Search users, filter by role, or export the current list."
+            description="Search, filter, or export users."
           >
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -300,9 +300,9 @@ function RouteComponent() {
                 <EmptyMedia variant="icon">
                   <UsersIcon />
                 </EmptyMedia>
-                <EmptyTitle>{search || roleFilter !== 'all' ? 'No results found' : 'No Users Found'}</EmptyTitle>
+                <EmptyTitle>{search || roleFilter !== 'all' ? 'No results found' : 'No users yet'}</EmptyTitle>
                 <EmptyDescription>
-                  {search || roleFilter !== 'all' ? 'Try adjusting your search or filter.' : 'No registered users yet.'}
+                  {search || roleFilter !== 'all' ? 'Try a different search or filter.' : 'No users yet.'}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

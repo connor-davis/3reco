@@ -151,9 +151,7 @@ function RouteComponent() {
                     <StoreIcon />
                   </EmptyMedia>
                   <EmptyTitle>Nothing for sale yet</EmptyTitle>
-                  <EmptyDescription>
-                    This seller has not listed any stock yet.
-                  </EmptyDescription>
+                  <EmptyDescription>This seller has no listed stock.</EmptyDescription>
                 </EmptyHeader>
               </Empty>
             </div>

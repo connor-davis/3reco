@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -21,31 +20,11 @@ import { api } from '@convex/_generated/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConvexError } from 'convex/values';
 import { PlusIcon } from 'lucide-react';
+import { createMaterialSchema } from '@/lib/material-form-schema';
 import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
-
-const materialSchema = z.object({
-  name: z.string({ error: 'Please provide a material name.' }),
-  carbonFactor: z
-    .string({ error: 'Please provide a Carbon Factor.' })
-    .regex(
-      /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
-      'Please provide a valid Carbon Factor that is a number or decimal, e.g. 10.5'
-    ),
-  gwCode: z
-    .string({ error: 'Please provide a GW Code.' })
-    .regex(
-      /^GW\s*[+-]?(\d+(\.\d*)?|\.\d+)/,
-      'Please provide a valid GW Code, e.g. GW 100'
-    ),
-  price: z
-    .number({
-      error: 'Please provide a price that is a number or decimal, e.g. 10.5',
-    })
-    .nonnegative({ error: 'Price cannot be negative.' }),
-});
 
 export default function CreateMaterialDialog({
   children,
@@ -55,8 +34,8 @@ export default function CreateMaterialDialog({
   const createMaterial = useConvexMutation(api.materials.create);
   const [open, setOpen] = useState<boolean>(false);
 
-  const materialForm = useForm<z.infer<typeof materialSchema>>({
-    resolver: zodResolver(materialSchema),
+  const materialForm = useForm<z.infer<typeof createMaterialSchema>>({
+    resolver: zodResolver(createMaterialSchema),
   });
 
   return (
@@ -76,9 +55,7 @@ export default function CreateMaterialDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add material</DialogTitle>
-          <DialogDescription>
-            Add the main details for this material.
-          </DialogDescription>
+          <DialogDescription>Add a material.</DialogDescription>
         </DialogHeader>
 
         <form
@@ -135,9 +112,6 @@ export default function CreateMaterialDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
-                  <FieldDescription>
-                    Give this material a clear name.
-                  </FieldDescription>
                 </Field>
               )}
             />
@@ -159,9 +133,6 @@ export default function CreateMaterialDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
-                  <FieldDescription>
-                     Enter the carbon value, for example 10.5.
-                   </FieldDescription>
                 </Field>
               )}
             />
@@ -183,9 +154,6 @@ export default function CreateMaterialDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
-                  <FieldDescription>
-                     Use the waste code, for example GW 100.
-                   </FieldDescription>
                 </Field>
               )}
             />
@@ -212,9 +180,6 @@ export default function CreateMaterialDialog({
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
-                  <FieldDescription>
-                    Enter the price per kg, for example 10.5.
-                  </FieldDescription>
                 </Field>
               )}
             />

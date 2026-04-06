@@ -45,8 +45,7 @@ export default function RequestDialog({
         <DialogHeader>
           <DialogTitle>Request {material?.name ?? 'Stock'}</DialogTitle>
           <DialogDescription>
-            This will send a request to the seller. You can negotiate the terms
-            through messages before anything is finalised.
+            Send a request to the seller. You can agree on terms in chat.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter showCloseButton>

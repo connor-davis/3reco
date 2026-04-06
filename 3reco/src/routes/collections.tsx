@@ -98,7 +98,7 @@ function RouteComponent() {
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
             title="Collections"
-            description="Filter, download, or add a collection."
+            description="Filter, export, or add a collection."
           >
             <DateRangePicker
               value={dateRange}
@@ -136,9 +136,6 @@ function RouteComponent() {
                 <VanIcon />
               </EmptyMedia>
               <EmptyTitle>Loading collections...</EmptyTitle>
-              <EmptyDescription>
-                Getting your collections ready...
-              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         </div>
@@ -154,9 +151,7 @@ function RouteComponent() {
                     <VanIcon />
                   </EmptyMedia>
                   <EmptyTitle>No collections yet</EmptyTitle>
-                  <EmptyDescription>
-                    Add a collection to start tracking what has been received.
-                  </EmptyDescription>
+                  <EmptyDescription>Create a collection to get started.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2">
                   <CreateCollectionDialog>

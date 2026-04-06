@@ -295,8 +295,7 @@ export default function CompleteProfileGuard() {
                 Complete your profile
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Finish setting up your business details with a scroll-safe flow
-                that keeps every step reachable on smaller screens.
+                Add the details we need to finish your profile.
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -407,9 +406,7 @@ export default function CompleteProfileGuard() {
                         <FieldError errors={[fieldState.error]} />
                       )}
 
-                      <FieldDescription>
-                        Please choose a profile image or leave it blank.
-                      </FieldDescription>
+                      <FieldDescription>Add a profile image, or leave it blank.</FieldDescription>
                     </Field>
                   );
                 }}
@@ -434,9 +431,6 @@ export default function CompleteProfileGuard() {
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
-                      <FieldDescription>
-                        Please enter your first name.
-                      </FieldDescription>
                     </Field>
                   )}
                 />
@@ -459,9 +453,6 @@ export default function CompleteProfileGuard() {
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
-                      <FieldDescription>
-                        Please enter your last name.
-                      </FieldDescription>
                     </Field>
                   )}
                 />
@@ -484,9 +475,7 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please enter your South African ID number.
-                    </FieldDescription>
+                    <FieldDescription>South African ID number.</FieldDescription>
                   </Field>
                 )}
               />
@@ -508,9 +497,6 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please enter your phone number.
-                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -579,9 +565,6 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please enter your business's name.
-                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -604,9 +587,6 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please enter your business's registration number.
-                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -709,9 +689,6 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please enter your street address.
-                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -734,9 +711,6 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please enter the name of your city.
-                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -763,9 +737,6 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please enter your postal code.
-                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -810,9 +781,6 @@ export default function CompleteProfileGuard() {
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
-                    <FieldDescription>
-                      Please select your province.
-                    </FieldDescription>
                   </Field>
                 )}
               />

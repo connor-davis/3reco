@@ -46,7 +46,7 @@ function Index() {
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
             title="Filter dashboard"
-            description="Choose the date range used across the dashboard."
+            description="Choose a date range."
           >
             <DateRangePicker
               value={dateRange}

@@ -153,7 +153,7 @@ function RouteComponent() {
                 <EmptyDescription>
                   {search
                     ? `No sellers match "${search}".`
-                    : 'No one is selling stock right now.'}
+                    : 'No stock is listed right now.'}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

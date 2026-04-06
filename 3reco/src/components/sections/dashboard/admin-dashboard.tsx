@@ -76,44 +76,44 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
             <CardTitle className="text-sm font-medium">Collector sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totals.c2bCount}</p>
-            <p className="text-xs text-muted-foreground">From collectors to businesses</p>
-          </CardContent>
-        </Card>
+            <CardContent>
+              <p className="text-2xl font-bold">{totals.c2bCount}</p>
+              <p className="text-xs text-muted-foreground">Collector to business</p>
+            </CardContent>
+          </Card>
 
         <Card className="border-l-chart-2 border-l-4 bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Business sales</CardTitle>
             <ArrowRightLeftIcon className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totals.b2bCount}</p>
-            <p className="text-xs text-muted-foreground">From one business to another</p>
-          </CardContent>
-        </Card>
+            <CardContent>
+              <p className="text-2xl font-bold">{totals.b2bCount}</p>
+              <p className="text-xs text-muted-foreground">Business to business</p>
+            </CardContent>
+          </Card>
 
         <Card className="border-l-chart-3 border-l-4 bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Collector volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totals.c2bVolume.toFixed(1)} kg</p>
-            <p className="text-xs text-muted-foreground">Total materials collected</p>
-          </CardContent>
-        </Card>
+            <CardContent>
+              <p className="text-2xl font-bold">{totals.c2bVolume.toFixed(1)} kg</p>
+              <p className="text-xs text-muted-foreground">Collected</p>
+            </CardContent>
+          </Card>
 
         <Card className="border-l-chart-4 border-l-4 bg-background">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Business volume</CardTitle>
             <WeightIcon className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totals.b2bVolume.toFixed(1)} kg</p>
-            <p className="text-xs text-muted-foreground">Total materials traded</p>
-          </CardContent>
-        </Card>
+            <CardContent>
+              <p className="text-2xl font-bold">{totals.b2bVolume.toFixed(1)} kg</p>
+              <p className="text-xs text-muted-foreground">Traded</p>
+            </CardContent>
+          </Card>
       </div>
 
       {/* Stat cards */}
@@ -125,7 +125,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
               <TrendingUpIcon className="size-4" />
               Daily Transactions (30 days)
             </CardTitle>
-            <CardDescription>Collector sales compared with business-to-business sales each day</CardDescription>
+            <CardDescription>Collector vs business sales by day</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={lineChartConfig} className="h-48 w-full sm:h-56">
@@ -168,7 +168,7 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
               <PackageIcon className="size-4" />
               Stock by Material
             </CardTitle>
-            <CardDescription>Current volume held in the system per material (kg)</CardDescription>
+            <CardDescription>Current stock by material</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={barChartConfig} className="h-48 w-full sm:h-56">
@@ -195,10 +195,10 @@ export default function AdminDashboard({ dateRange }: AdminDashboardProps) {
 
       {/* Charts row */}
       <Card className="bg-background">
-        <CardHeader>
-          <CardTitle>Latest Transactions</CardTitle>
-          <CardDescription>The 5 most recent transactions on the platform</CardDescription>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle>Latest Transactions</CardTitle>
+            <CardDescription>Most recent platform transactions</CardDescription>
+          </CardHeader>
         <CardContent>
           {latestTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No transactions yet.</p>

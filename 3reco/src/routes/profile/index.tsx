@@ -1187,7 +1187,7 @@ function RouteComponent() {
                       </div>
                     </Progress>
                     <p className="text-sm leading-6 text-muted-foreground">
-                      Finish your contact, address, and bank details to keep payouts and account setup moving smoothly.
+                      Complete your contact, address, and bank details to finish setup.
                     </p>
                   </CardContent>
                 </Card>
@@ -1202,9 +1202,7 @@ function RouteComponent() {
                   <CardTitle className="text-xl font-semibold">
                     Active sessions
                   </CardTitle>
-                  <CardDescription>
-                    Review where you are signed in and revoke sessions you no longer trust.
-                  </CardDescription>
+                  <CardDescription>Review and revoke active sessions.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {sessionsQuery.isPending ? (
@@ -1317,9 +1315,7 @@ function RouteComponent() {
                     <CardTitle className="text-xl font-semibold">
                       Quick actions
                     </CardTitle>
-                    <CardDescription>
-                      Use Better Auth multi-session controls to secure or switch your session state.
-                    </CardDescription>
+                    <CardDescription>Manage sessions on this browser.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Button
@@ -1413,9 +1409,7 @@ function RouteComponent() {
                     <CardTitle className="text-xl font-semibold">
                       Session switching
                     </CardTitle>
-                    <CardDescription>
-                      Switch the active session when this browser has more than one Better Auth session available.
-                    </CardDescription>
+                    <CardDescription>Switch between accounts on this browser.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {deviceSessionsQuery.isPending ? (

@@ -199,8 +199,7 @@ function RouteComponent() {
                   <DialogHeader>
                     <DialogTitle>Send an offer</DialogTitle>
                     <DialogDescription>
-                      Add the weight and price for each item. The buyer can
-                      review and accept the offer before anything is confirmed.
+                      Set the weight and price for each item.
                     </DialogDescription>
                   </DialogHeader>
                   <form

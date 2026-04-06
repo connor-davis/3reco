@@ -93,7 +93,7 @@ function RouteComponent() {
         <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <PageHeaderActions
             title="Transactions"
-            description="Filter by sale type or date, or download the list."
+            description="Filter or export transactions."
           >
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
               <SelectTrigger className="w-full">
@@ -132,9 +132,6 @@ function RouteComponent() {
                 <VanIcon />
               </EmptyMedia>
               <EmptyTitle>Loading transactions...</EmptyTitle>
-              <EmptyDescription>
-                Getting your transactions ready...
-              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         </div>
@@ -150,9 +147,7 @@ function RouteComponent() {
                     <CreditCardIcon />
                   </EmptyMedia>
                   <EmptyTitle>No transactions yet</EmptyTitle>
-                  <EmptyDescription>
-                    Your sales and purchases will appear here.
-                  </EmptyDescription>
+                  <EmptyDescription>Transactions show here.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
               </Empty>

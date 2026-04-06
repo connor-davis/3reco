@@ -56,10 +56,8 @@ function RouteComponent() {
                 <EmptyMedia variant="icon">
                   <SendIcon />
                 </EmptyMedia>
-                <EmptyTitle>No Outgoing Requests</EmptyTitle>
-                <EmptyDescription>
-                  The offers you send will appear here.
-                </EmptyDescription>
+                <EmptyTitle>No outgoing requests</EmptyTitle>
+                <EmptyDescription>Sent requests show here.</EmptyDescription>
               </EmptyHeader>
             </Empty>
           </div>

@@ -95,9 +95,6 @@ function RouteComponent() {
                 <TruckIcon />
               </EmptyMedia>
               <EmptyTitle>Loading sales...</EmptyTitle>
-              <EmptyDescription>
-                Getting your sales ready...
-              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         </div>
@@ -113,9 +110,7 @@ function RouteComponent() {
                     <PackageIcon />
                   </EmptyMedia>
                   <EmptyTitle>No sales yet</EmptyTitle>
-                  <EmptyDescription>
-                    Sales you make will appear here.
-                  </EmptyDescription>
+                  <EmptyDescription>Sales show here.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
               </Empty>
