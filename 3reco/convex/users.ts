@@ -1,8 +1,9 @@
 import { defineTable, paginationOptsValidator } from 'convex/server';
 import { ConvexError, v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
+import { components, internal } from './_generated/api';
 import { normalizeSouthAfricanPhoneNumber } from './lib/phone';
 
 export default defineTable({
@@ -59,6 +60,9 @@ export default defineTable({
       v.literal('Western Cape')
     )
   ),
+  isRemoved: v.optional(v.boolean()),
+  removedAt: v.optional(v.number()),
+  removedBy: v.optional(v.id('users')),
 })
   .index('by_authId', ['authId'])
   .index('by_tokenIdentifier', ['tokenIdentifier'])
@@ -73,6 +77,23 @@ function unauthorizedError() {
     message: 'You are not authorized to access this resource.',
   });
 }
+
+function removedAccountError() {
+  return new ConvexError({
+    name: 'Account Removed',
+    message: 'This account has been removed.',
+  });
+}
+
+function isRemovedUser(user: Pick<Doc<'users'>, 'isRemoved'> | null | undefined) {
+  return user?.isRemoved === true;
+}
+
+const REMOVED_ACCOUNT_LABEL = 'Removed account';
+const AUTH_DELETE_PAGINATION_OPTS = {
+  cursor: null,
+  numItems: 1024,
+} as const;
 
 async function requireIdentity(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -120,6 +141,10 @@ async function syncIdentityFields(
   user: Doc<'users'>,
   identity: Awaited<ReturnType<typeof requireIdentity>>
 ) {
+  if (isRemovedUser(user)) {
+    throw removedAccountError();
+  }
+
   const patch: Partial<Doc<'users'>> = {};
 
   if (user.authId !== identity.subject) {
@@ -173,6 +198,10 @@ export async function getCurrentUserOrThrow(ctx: QueryCtx | MutationCtx) {
     });
   }
 
+  if (isRemovedUser(user)) {
+    throw removedAccountError();
+  }
+
   return user;
 }
 
@@ -189,6 +218,10 @@ export async function getCurrentUserForMutationOrThrow(ctx: MutationCtx) {
       name: 'Not Found',
       message: 'The user was not found.',
     });
+  }
+
+  if (isRemovedUser(user)) {
+    throw removedAccountError();
   }
 
   return await syncIdentityFields(ctx, user, identity);
@@ -215,11 +248,13 @@ export const currentUserOrNull = query({
       return null;
     }
 
-    return await findUserByIdentity(
+    const user = await findUserByIdentity(
       ctx,
       identity.tokenIdentifier,
       identity.subject
     );
+
+    return isRemovedUser(user) ? null : user;
   },
 });
 
@@ -244,7 +279,7 @@ export const syncCurrentUserFromAuth = mutation({
           .unique()
       : null;
 
-    if (existingByEmail) {
+    if (existingByEmail && !isRemovedUser(existingByEmail)) {
       return await syncIdentityFields(ctx, existingByEmail, identity);
     }
 
@@ -388,20 +423,24 @@ export const update = mutation({
 export const listCollectors = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const users = await ctx.db
       .query('users')
       .withIndex('type', (q) => q.eq('type', 'collector'))
       .collect();
+
+    return users.filter((user) => !isRemovedUser(user));
   },
 });
 
 export const listBusinesses = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const users = await ctx.db
       .query('users')
       .withIndex('type', (q) => q.eq('type', 'business'))
       .collect();
+
+    return users.filter((user) => !isRemovedUser(user));
   },
 });
 
@@ -421,9 +460,175 @@ export const listAll = query({
     if (!caller || caller.type !== 'admin')
       throw new ConvexError({ name: 'Unauthorized', message: 'Only admins can list all users.' });
 
-    return await ctx.db.query('users').order('desc').paginate(paginationOpts);
+    return await ctx.db
+      .query('users')
+      .filter((q) => q.neq(q.field('isRemoved'), true))
+      .order('desc')
+      .paginate(paginationOpts);
   },
 });
+
+function dedupeById<T extends { _id: string }>(docs: T[]) {
+  return [...new Map(docs.map((doc) => [doc._id, doc])).values()];
+}
+
+function buildRemovedUserPatch(removedBy: Id<'users'>): Partial<Doc<'users'>> {
+  return {
+    authId: undefined,
+    tokenIdentifier: undefined,
+    authSubject: undefined,
+    name: REMOVED_ACCOUNT_LABEL,
+    image: undefined,
+    email: undefined,
+    emailVerificationTime: undefined,
+    phone: undefined,
+    normalizedPhone: undefined,
+    phoneVerificationTime: undefined,
+    type: undefined,
+    profileComplete: false,
+    agreedToTerms: false,
+    firstName: undefined,
+    lastName: undefined,
+    idNumber: undefined,
+    businessName: REMOVED_ACCOUNT_LABEL,
+    businessRegistrationNumber: undefined,
+    bankAccountHolderName: undefined,
+    bankName: undefined,
+    bankAccountNumber: undefined,
+    bankBranchCode: undefined,
+    bankAccountType: undefined,
+    streetAddress: undefined,
+    city: undefined,
+    areaCode: undefined,
+    province: undefined,
+    isRemoved: true,
+    removedAt: Date.now(),
+    removedBy,
+  };
+}
+
+async function deleteBetterAuthData(ctx: MutationCtx, user: Doc<'users'>) {
+  const authUserId = user.authId ?? user.authSubject;
+
+  if (authUserId) {
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: { model: 'session', where: [{ field: 'userId', value: authUserId }] },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: { model: 'account', where: [{ field: 'userId', value: authUserId }] },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: { model: 'twoFactor', where: [{ field: 'userId', value: authUserId }] },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: {
+        model: 'oauthApplication',
+        where: [{ field: 'userId', value: authUserId }],
+      },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: {
+        model: 'oauthAccessToken',
+        where: [{ field: 'userId', value: authUserId }],
+      },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: { model: 'oauthConsent', where: [{ field: 'userId', value: authUserId }] },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: { model: 'user', where: [{ field: '_id', value: authUserId }] },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+  }
+
+  if (user.email) {
+    await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: {
+        model: 'verification',
+        where: [{ field: 'identifier', value: user.email }],
+      },
+      paginationOpts: AUTH_DELETE_PAGINATION_OPTS,
+    });
+  }
+}
+
+async function deleteDisposableUserData(ctx: MutationCtx, userId: Id<'users'>) {
+  const [notifications, stock, requestsAsSeller, requestsAsBuyer, allCarts] =
+    await Promise.all([
+      ctx.db
+        .query('notifications')
+        .withIndex('by_userId', (q) => q.eq('userId', userId))
+        .collect(),
+      ctx.db
+        .query('stock')
+        .withIndex('by_ownerId', (q) => q.eq('ownerId', userId))
+        .collect(),
+      ctx.db
+        .query('transactionRequests')
+        .withIndex('by_sellerId', (q) => q.eq('sellerId', userId))
+        .collect(),
+      ctx.db
+        .query('transactionRequests')
+        .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
+        .collect(),
+      ctx.db.query('carts').collect(),
+    ]);
+
+  await Promise.all(notifications.map((notification) => ctx.db.delete(notification._id)));
+  await Promise.all(stock.map((item) => ctx.db.delete(item._id)));
+
+  const carts = allCarts.filter(
+    (cart) => cart.buyerId === userId || cart.sellerId === userId
+  );
+  await Promise.all(carts.map((cart) => ctx.db.delete(cart._id)));
+
+  const requests = dedupeById([...requestsAsSeller, ...requestsAsBuyer]);
+  const requestMessages = await Promise.all(
+    requests.map((request) =>
+      ctx.db
+        .query('transactionRequestMessages')
+        .withIndex('by_transactionId', (q) => q.eq('transactionId', request._id))
+        .collect()
+    )
+  );
+
+  await Promise.all(
+    requestMessages.flat().map((message) => ctx.db.delete(message._id))
+  );
+  await Promise.all(requests.map((request) => ctx.db.delete(request._id)));
+}
+
+async function scheduleInvoiceRegenerationForUser(
+  ctx: MutationCtx,
+  userId: Id<'users'>
+) {
+  const [transactionsAsBuyer, transactionsAsSeller] = await Promise.all([
+    ctx.db
+      .query('transactions')
+      .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
+      .collect(),
+    ctx.db
+      .query('transactions')
+      .withIndex('by_sellerId', (q) => q.eq('sellerId', userId))
+      .collect(),
+  ]);
+
+  await Promise.all(
+    dedupeById([...transactionsAsBuyer, ...transactionsAsSeller]).map(
+      (transaction) =>
+        ctx.scheduler.runAfter(0, internal.invoices.generateForTransaction, {
+          transactionId: transaction._id,
+          notifyBuyer: false,
+        })
+    )
+  );
+}
 
 export const setType = mutation({
   args: {
@@ -457,7 +662,26 @@ export const removeUser = mutation({
     if (_id === caller._id)
       throw new ConvexError({ name: 'Invalid Input', message: 'You cannot remove your own account.' });
 
-    await ctx.db.delete('users', _id);
+    const user = await ctx.db.get(_id);
+
+    if (!user) {
+      throw new ConvexError({
+        name: 'Not Found',
+        message: 'The user was not found.',
+      });
+    }
+
+    if (isRemovedUser(user)) {
+      throw new ConvexError({
+        name: 'Invalid Input',
+        message: 'This user has already been removed.',
+      });
+    }
+
+    await deleteBetterAuthData(ctx, user);
+    await deleteDisposableUserData(ctx, user._id);
+    await ctx.db.patch('users', _id, buildRemovedUserPatch(caller._id));
+    await scheduleInvoiceRegenerationForUser(ctx, user._id);
   },
 });
 

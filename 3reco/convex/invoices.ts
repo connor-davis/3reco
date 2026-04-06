@@ -151,14 +151,19 @@ export const patchInvoiceStorageId = internalMutation({
 });
 
 export const generateForTransaction = internalAction({
-  args: { transactionId: v.id('transactions') },
-  handler: async (ctx, { transactionId }) => {
+  args: {
+    transactionId: v.id('transactions'),
+    notifyBuyer: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { transactionId, notifyBuyer }) => {
     const data = await ctx.runQuery(internal.invoices.getTransactionData, {
       transactionId,
     });
     if (!data) return;
     const { transaction, seller, buyer, items } = data;
     if (!seller || !buyer || items.length === 0) return;
+    const shouldNotifyBuyer = notifyBuyer !== false;
+    const previousInvoiceStorageId = transaction.invoiceStorageId;
 
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -359,7 +364,14 @@ export const generateForTransaction = internalAction({
       storageId,
     });
 
-    if (buyer.email) {
+    if (
+      previousInvoiceStorageId !== undefined &&
+      previousInvoiceStorageId !== storageId
+    ) {
+      await ctx.storage.delete(previousInvoiceStorageId);
+    }
+
+    if (shouldNotifyBuyer && buyer.email) {
       const invoiceDate = formatTransactionDateLabel(
         getEffectiveTransactionDate(transaction)
       );

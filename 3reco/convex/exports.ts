@@ -253,7 +253,10 @@ export const exportUsers = query({
     if (!user || user.type !== 'admin')
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
 
-    const users = await ctx.db.query('users').collect();
+    const users = await ctx.db
+      .query('users')
+      .filter((q) => q.neq(q.field('isRemoved'), true))
+      .collect();
     return users.map((u) => ({
       'Email': u.email ?? '',
       'Account Type': u.type ?? '',
