@@ -225,7 +225,7 @@ async function getAuthorizedTransaction(
   }
 
   if (
-    !canReadAllTransactions(user.type) &&
+    !canReadAllTransactions(user.role) &&
     getTransactionSellerUserId(transaction) !== userId &&
     transaction.buyerId !== userId
   ) {
@@ -361,7 +361,7 @@ export const listExpensesWithPagination = query({
     const user = await getCurrentUserOrThrow(ctx);
     const userId = user._id;
 
-    if (user.type === 'business') {
+    if (user.role === 'business') {
       const results = await ctx.db
         .query('transactions')
         .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
@@ -374,7 +374,7 @@ export const listExpensesWithPagination = query({
       };
     }
 
-    if (user.type === 'collector') {
+    if (user.role === 'collector') {
       throw new ConvexError({
         name: 'Unauthorized',
         message: 'Collectors are not authorized to access this resource.',
@@ -398,7 +398,7 @@ export const listExpenses = query({
     const user = await getCurrentUserOrThrow(ctx);
     const userId = user._id;
 
-    if (user.type === 'business') {
+    if (user.role === 'business') {
       const transactions = await ctx.db
         .query('transactions')
         .withIndex('by_buyerId', (q) => q.eq('buyerId', userId))
@@ -407,7 +407,7 @@ export const listExpenses = query({
       return transactions.map((transaction) => sanitizeTransaction(transaction));
     }
 
-    if (user.type === 'collector') {
+    if (user.role === 'collector') {
       throw new ConvexError({
         name: 'Unauthorized',
         message: 'Collectors are not authorized to access this resource.',
@@ -428,11 +428,11 @@ export const listSalesWithPagination = query({
     const user = await getCurrentUserOrThrow(ctx);
     const userId = user._id;
 
-    if (user.type === 'collector' || user.type === 'business') {
+    if (user.role === 'collector' || user.role === 'business') {
       const transactions = await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
+          q.eq('sellerId', userId).eq('type', user.role === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .collect();
@@ -462,11 +462,11 @@ export const listSales = query({
     const user = await getCurrentUserOrThrow(ctx);
     const userId = user._id;
 
-    if (user.type === 'collector' || user.type === 'business') {
+    if (user.role === 'collector' || user.role === 'business') {
       const transactions = await ctx.db
         .query('transactions')
         .withIndex('by_sellerId_and_type', (q) =>
-          q.eq('sellerId', userId).eq('type', user.type === 'business' ? 'b2b' : 'c2b')
+          q.eq('sellerId', userId).eq('type', user.role === 'business' ? 'b2b' : 'c2b')
         )
         .order('desc')
         .collect();
@@ -486,7 +486,7 @@ export const listWithPagination = query({
   },
   handler: async (ctx, { paginationOpts }) => {
     const { userId, user } = await getAuthenticatedUser(ctx);
-    const transactions = await listVisibleTransactions(ctx, userId, user.type);
+    const transactions = await listVisibleTransactions(ctx, userId, user.role);
     const results = paginateResults(transactions, paginationOpts);
 
     return {
@@ -499,7 +499,7 @@ export const listWithPagination = query({
 export const list = query({
   handler: async (ctx) => {
     const { userId, user } = await getAuthenticatedUser(ctx);
-    const transactions = await listVisibleTransactions(ctx, userId, user.type);
+    const transactions = await listVisibleTransactions(ctx, userId, user.role);
     return transactions.map((transaction) => sanitizeTransaction(transaction));
   },
 });
@@ -682,9 +682,9 @@ export const collectorToBusinessSale = mutation({
 
     let buyerBusinessId: Id<'users'>;
 
-    if (currentUser.type === 'business') {
+    if (currentUser.role === 'business') {
       buyerBusinessId = currentUser._id;
-    } else if (currentUser.type === 'admin' || currentUser.type === 'staff') {
+    } else if (currentUser.role === 'admin' || currentUser.role === 'staff') {
       if (!businessId) {
         throw new ConvexError({
           name: 'Invalid Input',
@@ -694,7 +694,7 @@ export const collectorToBusinessSale = mutation({
 
       const business = await ctx.db.get(businessId);
 
-      if (!business || business.type !== 'business' || business.isRemoved === true) {
+      if (!business || business.role !== 'business' || business.isRemoved === true) {
         throw new ConvexError({
           name: 'Invalid Input',
           message: 'The selected business is not available for collections.',

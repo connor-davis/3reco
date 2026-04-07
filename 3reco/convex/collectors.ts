@@ -9,6 +9,7 @@ import {
 import {
   getCurrentUserForMutationOrThrow,
   getCurrentUserOrThrow,
+  requireRole,
 } from './users';
 
 const bankAccountTypeValidator = v.union(
@@ -53,14 +54,6 @@ export default defineTable({
   .index('by_normalizedPhone', ['normalizedPhone'])
   .index('by_createdByUserId', ['createdByUserId']);
 
-function requireCollectorManager(type: string | undefined) {
-  if (type !== 'admin' && type !== 'staff' && type !== 'business') {
-    throw new ConvexError({
-      name: 'Unauthorized',
-      message: 'You are not authorized to manage collectors.',
-    });
-  }
-}
 
 async function findBusinessUserByPhone(
   ctx: QueryCtx | MutationCtx,
@@ -71,14 +64,14 @@ async function findBusinessUserByPhone(
     .withIndex('by_normalizedPhone', (q) => q.eq('normalizedPhone', normalizedPhone))
     .take(10);
 
-  const indexedBusiness = directMatch.find((user) => user.type === 'business');
+  const indexedBusiness = directMatch.find((user) => user.role === 'business');
   if (indexedBusiness) {
     return indexedBusiness;
   }
 
   const businesses = await ctx.db
     .query('users')
-    .withIndex('type', (q) => q.eq('type', 'business'))
+    .withIndex('by_role', (q) => q.eq('role', 'business'))
     .collect();
 
   return businesses.find((user) => {
@@ -127,8 +120,7 @@ function validateCollectorPayoutInput(values: {
 export const listManaged = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, { paginationOpts }) => {
-    const user = await getCurrentUserOrThrow(ctx);
-    requireCollectorManager(user.type);
+    await requireRole(ctx, ['admin', 'staff', 'business']);
 
     return await ctx.db.query('collectors').order('desc').paginate(paginationOpts);
   },
@@ -137,8 +129,7 @@ export const listManaged = query({
 export const listForSelection = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getCurrentUserOrThrow(ctx);
-    requireCollectorManager(user.type);
+    await requireRole(ctx, ['admin', 'staff', 'business']);
 
     return await ctx.db.query('collectors').order('desc').take(200);
   },
@@ -185,7 +176,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const currentUser = await getCurrentUserForMutationOrThrow(ctx);
-    requireCollectorManager(currentUser.type);
+    await requireRole(ctx, ['admin', 'staff', 'business']);
 
     const normalizedPhone = normalizeSouthAfricanPhoneNumber(args.phone);
     const existingCollector = await ctx.db
@@ -251,7 +242,7 @@ export const create = mutation({
       ...(args.areaCode === undefined ? {} : { areaCode: args.areaCode }),
       ...(args.province ? { province: args.province } : {}),
       createdByUserId: currentUser._id,
-      ...(currentUser.type === 'business'
+      ...(currentUser.role === 'business'
         ? { createdByBusinessId: currentUser._id }
         : {}),
     });
@@ -291,8 +282,7 @@ export const update = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const currentUser = await getCurrentUserForMutationOrThrow(ctx);
-    requireCollectorManager(currentUser.type);
+    await requireRole(ctx, ['admin', 'staff', 'business']);
 
     const existingCollector = await ctx.db.get(args._id);
     if (!existingCollector) {
@@ -363,13 +353,7 @@ export const remove = mutation({
     confirmationValue: v.string(),
   },
   handler: async (ctx, { _id, confirmationValue }) => {
-    const currentUser = await getCurrentUserForMutationOrThrow(ctx);
-    if (currentUser.type !== 'admin' && currentUser.type !== 'staff') {
-      throw new ConvexError({
-        name: 'Unauthorized',
-        message: 'Only admins and staff can remove collectors.',
-      });
-    }
+    await requireRole(ctx, ['admin', 'staff']);
 
     const collector = await ctx.db.get(_id);
     if (!collector) {

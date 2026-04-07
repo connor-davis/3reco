@@ -780,7 +780,7 @@ function RouteComponent() {
   const currentUser = useQuery(api.users.currentUser);
   const [search, setSearch] = useState('');
   const canRemove =
-    currentUser?.type === 'admin' || currentUser?.type === 'staff';
+    currentUser?.role === 'admin' || currentUser?.role === 'staff';
 
   const filtered = collectors?.filter((collector) => {
     const query = search.trim().toLowerCase();

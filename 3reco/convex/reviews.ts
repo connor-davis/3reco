@@ -127,7 +127,7 @@ export const removeReview = mutation({
   args: { reviewId: v.id('storeReviews') },
   handler: async (ctx, { reviewId }) => {
     const user = await getCurrentUserOrThrow(ctx);
-    if (user?.type !== 'admin')
+    if (user?.role !== 'admin')
       throw new ConvexError({ name: 'Forbidden', message: 'Only admins can remove reviews.' });
 
     await ctx.db.delete(reviewId);

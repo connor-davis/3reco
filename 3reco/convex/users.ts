@@ -18,14 +18,7 @@ export default defineTable({
   normalizedPhone: v.optional(v.string()),
   phoneVerificationTime: v.optional(v.number()),
   isAnonymous: v.optional(v.boolean()),
-  type: v.optional(
-    v.union(
-      v.literal('admin'),
-      v.literal('staff'),
-      v.literal('business'),
-      v.literal('collector')
-    )
-  ),
+  role: v.optional(v.string()),
   profileComplete: v.optional(v.boolean()),
   agreedToTerms: v.optional(v.boolean()),
   firstName: v.optional(v.string()),
@@ -69,7 +62,7 @@ export default defineTable({
   .index('by_authSubject', ['authSubject'])
   .index('by_normalizedPhone', ['normalizedPhone'])
   .index('email', ['email'])
-  .index('type', ['type']);
+  .index('by_role', ['role']);
 
 function unauthorizedError() {
   return new ConvexError({
@@ -103,6 +96,21 @@ async function requireIdentity(ctx: QueryCtx | MutationCtx) {
   }
 
   return identity;
+}
+
+/**
+ * Checks that the authenticated user has one of the given roles.
+ * Reads the role from the Convex `users` table (single source of truth).
+ */
+export async function requireRole(
+  ctx: QueryCtx | MutationCtx,
+  role: string | string[]
+) {
+  await requireIdentity(ctx);
+  const allowed = Array.isArray(role) ? role : [role];
+  const user = await getCurrentUserOrThrow(ctx);
+  if (!user.role || !allowed.includes(user.role)) throw unauthorizedError();
+  return user;
 }
 
 async function findUserByIdentity(
@@ -317,14 +325,6 @@ export const update = mutation({
     image: v.optional(v.string()),
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
-    type: v.optional(
-      v.union(
-        v.literal('admin'),
-        v.literal('staff'),
-        v.literal('business'),
-        v.literal('collector')
-      )
-    ),
     profileComplete: v.optional(v.boolean()),
     agreedToTerms: v.optional(v.boolean()),
     firstName: v.optional(v.string()),
@@ -396,7 +396,7 @@ export const update = mutation({
     }
 
     if (
-      nextUser.type === 'business' &&
+      nextUser.role === 'business' &&
       nextUser.profileComplete &&
       providedBankDetailCount < bankDetailFields.length
     ) {
@@ -425,7 +425,7 @@ export const listCollectors = query({
   handler: async (ctx) => {
     const users = await ctx.db
       .query('users')
-      .withIndex('type', (q) => q.eq('type', 'collector'))
+      .withIndex('by_role', (q) => q.eq('role', 'collector'))
       .collect();
 
     return users.filter((user) => !isRemovedUser(user));
@@ -437,7 +437,7 @@ export const listBusinesses = query({
   handler: async (ctx) => {
     const users = await ctx.db
       .query('users')
-      .withIndex('type', (q) => q.eq('type', 'business'))
+      .withIndex('by_role', (q) => q.eq('role', 'business'))
       .collect();
 
     return users.filter((user) => !isRemovedUser(user));
@@ -456,9 +456,7 @@ export const findById = query({
 export const listAll = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, { paginationOpts }) => {
-    const caller = await getCurrentUserOrThrow(ctx);
-    if (!caller || caller.type !== 'admin')
-      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins can list all users.' });
+    await requireRole(ctx, 'admin');
 
     return await ctx.db
       .query('users')
@@ -484,7 +482,7 @@ function buildRemovedUserPatch(removedBy: Id<'users'>): Partial<Doc<'users'>> {
     phone: undefined,
     normalizedPhone: undefined,
     phoneVerificationTime: undefined,
-    type: undefined,
+    role: undefined,
     profileComplete: false,
     agreedToTerms: false,
     firstName: undefined,
@@ -630,34 +628,11 @@ async function scheduleInvoiceRegenerationForUser(
   );
 }
 
-export const setType = mutation({
-  args: {
-    _id: v.id('users'),
-    type: v.union(
-      v.literal('admin'),
-      v.literal('staff'),
-      v.literal('business'),
-      v.literal('collector')
-    ),
-  },
-  handler: async (ctx, { _id, type }) => {
-    const caller = await getCurrentUserForMutationOrThrow(ctx);
-    if (!caller || caller.type !== 'admin')
-      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins can change user types.' });
-
-    if (_id === caller._id)
-      throw new ConvexError({ name: 'Invalid Input', message: 'You cannot change your own type.' });
-
-    await ctx.db.patch('users', _id, { type });
-  },
-});
-
 export const removeUser = mutation({
   args: { _id: v.id('users') },
   handler: async (ctx, { _id }) => {
+    await requireRole(ctx, 'admin');
     const caller = await getCurrentUserForMutationOrThrow(ctx);
-    if (!caller || caller.type !== 'admin')
-      throw new ConvexError({ name: 'Unauthorized', message: 'Only admins can remove users.' });
 
     if (_id === caller._id)
       throw new ConvexError({ name: 'Invalid Input', message: 'You cannot remove your own account.' });
@@ -685,6 +660,26 @@ export const removeUser = mutation({
   },
 });
 
+export const setUserRole = mutation({
+  args: {
+    userId: v.id('users'),
+    role: v.union(
+      v.literal('admin'),
+      v.literal('staff'),
+      v.literal('business'),
+      v.literal('collector')
+    ),
+  },
+  handler: async (ctx, { userId, role }) => {
+    await requireRole(ctx, 'admin');
+    const user = await ctx.db.get(userId);
+    if (!user || user.isRemoved === true) {
+      throw new ConvexError({ name: 'Not Found', message: 'User not found.' });
+    }
+    await ctx.db.patch(userId, { role });
+  },
+});
+
 const bankDetailFields = [
   'bankAccountHolderName',
   'bankName',
@@ -696,3 +691,4 @@ const bankDetailFields = [
 function isBankDetailValueFilled(value: string | undefined) {
   return typeof value === 'string' && value.trim().length > 0;
 }
+

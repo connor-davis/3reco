@@ -1,6 +1,6 @@
-import { useConvexQuery } from '@convex-dev/react-query';
-import { api } from '@convex/_generated/api';
 import type { ReactNode } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@convex/_generated/api';
 
 export default function TypeGuard({
   type,
@@ -9,14 +9,17 @@ export default function TypeGuard({
   type: string | string[];
   children: ReactNode;
 }) {
-  const user = useConvexQuery(api.users.currentUser);
+  const currentUser = useQuery(api.users.currentUser);
 
-  if (!user) return undefined;
-  if (!user.type) return undefined;
+  // undefined = loading, null = not logged in
+  if (currentUser === undefined || currentUser === null) return undefined;
+
+  const role = currentUser.role;
+  if (!role) return undefined;
 
   if (typeof type === 'string') {
-    return user.type === type ? children : undefined;
+    return role === type ? children : undefined;
   } else {
-    return type.includes(user.type) ? children : undefined;
+    return type.includes(role) ? children : undefined;
   }
 }

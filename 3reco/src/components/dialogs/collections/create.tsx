@@ -319,7 +319,7 @@ export default function CreateCollectionDialog({
   const currentUser = useConvexQuery(api.users.currentUser);
   const businesses = useConvexQuery(api.users.listBusinesses, {});
   const canSelectBusiness =
-    currentUser?.type === 'admin' || currentUser?.type === 'staff';
+    currentUser?.role === 'admin' || currentUser?.role === 'staff';
 
   const createCollection = useConvexMutation(
     api.transactions.collectorToBusinessSale
@@ -344,7 +344,7 @@ export default function CreateCollectionDialog({
   });
 
   useEffect(() => {
-    if (currentUser?.type === 'business') {
+    if (currentUser?.role === 'business') {
       form.setValue('businessId', currentUser._id, {
         shouldDirty: false,
         shouldTouch: false,
@@ -352,7 +352,7 @@ export default function CreateCollectionDialog({
       return;
     }
 
-    if (currentUser?.type === 'admin' || currentUser?.type === 'staff') {
+    if (currentUser?.role === 'admin' || currentUser?.role === 'staff') {
       return;
     }
 
@@ -437,7 +437,7 @@ export default function CreateCollectionDialog({
       form.reset({
         collectorId: '',
         businessId:
-          currentUser?.type === 'business' ? currentUser._id : undefined,
+          currentUser?.role === 'business' ? currentUser._id : undefined,
         collectionDate: undefined,
         items: [{ materialId: '', weight: 0, price: 0 }],
       });

@@ -340,10 +340,6 @@ export default function CompleteProfileGuard() {
                   updateUser({
                     _id: user._id,
                     name: [values.firstName, values.lastName].join(' '),
-                    type:
-                      user.type === 'admin' || user.type === 'staff'
-                        ? user.type
-                        : 'business',
                     ...values,
                   }),
                   {
@@ -516,7 +512,6 @@ export default function CompleteProfileGuard() {
                 toast.promise(
                   updateUser({
                     _id: user._id,
-                    type: 'business',
                     ...values,
                   }),
                   {

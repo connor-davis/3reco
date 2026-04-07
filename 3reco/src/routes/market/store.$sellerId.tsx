@@ -42,8 +42,8 @@ function RouteComponent() {
   const createRequest = useConvexMutation(api.transactionRequests.create);
   const removeReview = useMutation(api.reviews.removeReview);
   const currentUser = useQuery(api.users.currentUser, {});
-  const isAdmin = currentUser?.type === 'admin';
-  const canRequest = currentUser?.type === 'business' || currentUser?.type === 'collector';
+  const isAdmin = currentUser?.role === 'admin';
+  const canRequest = currentUser?.role === 'business' || currentUser?.role === 'collector';
   const [submitted, setSubmitted] = useState(false);
 
   const averageRating = useConvexQuery(api.reviews.averageForSeller, {

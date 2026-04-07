@@ -86,7 +86,7 @@ async function getReadableTransaction(
   }
 
   if (
-    !canReadAllTransactions(user.type) &&
+    !canReadAllTransactions(user.role) &&
     getTransactionSellerUserId(transaction) !== user._id &&
     transaction.buyerId !== user._id
   ) {

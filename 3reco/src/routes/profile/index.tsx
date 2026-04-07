@@ -330,13 +330,13 @@ function RouteComponent() {
   const displayName = buildDisplayName(user);
   const currentSessionId = sessionState.data?.session.id;
   const profileRole =
-    user.type === 'business'
+    user.role === 'business'
       ? 'Business account'
-      : user.type === 'collector'
+      : user.role === 'collector'
         ? 'Collector'
-        : user.type === 'staff'
+        : user.role === 'staff'
           ? 'Staff'
-          : user.type === 'admin'
+          : user.role === 'admin'
             ? 'Admin'
             : 'Member';
   const location = [user.city, user.province].filter(Boolean).join(', ') || 'South Africa';
@@ -408,7 +408,7 @@ function RouteComponent() {
 
   const submitBankDetails = (values: BankDetailsFormValues) => {
     const parsedValues =
-      user.type === 'business'
+      user.role === 'business'
         ? requiredBankDetailsFormSchema.safeParse(values)
         : bankDetailsFormSchema.safeParse(values);
 
@@ -1065,7 +1065,7 @@ function RouteComponent() {
                     <BankDetailsFields
                       control={bankDetailsForm.control}
                       idPrefix="profile-bank-details"
-                      required={user.type === 'business'}
+                      required={user.role === 'business'}
                     />
 
                     <Button type="submit" className="w-full sm:w-auto">
@@ -1076,7 +1076,7 @@ function RouteComponent() {
               </Card>
 
               <div className="space-y-6">
-                {user.type === 'business' ? (
+                {user.role === 'business' ? (
                   <Card className="border-border/80 bg-card">
                     <CardHeader>
                       <CardTitle className="text-xl font-semibold">

@@ -31,7 +31,7 @@ export default function RequestDialog({
   const createRequest = useConvexMutation(api.transactionRequests.create);
 
   // Admin and staff cannot make market requests
-  if (currentUser && (currentUser.type === 'admin' || currentUser.type === 'staff')) {
+  if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff')) {
     return null;
   }
 

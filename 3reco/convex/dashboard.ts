@@ -1,8 +1,8 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { query, type QueryCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { txByType } from './aggregates';
-import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
+import { getCurrentUserIdOrThrow, requireRole } from './users';
 
 function toDateString(ts: number): string {
   return new Date(ts).toISOString().split('T')[0];
@@ -80,9 +80,7 @@ export const adminStats = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const user = await getCurrentUserOrThrow(ctx);
-    if (!user || (user.type !== 'admin' && user.type !== 'staff'))
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
+    await requireRole(ctx, ['admin', 'staff']);
 
     const hasRange = from !== undefined && to !== undefined;
     const defaultChartFrom = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -167,10 +165,8 @@ export const businessStats = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
+    await requireRole(ctx, 'business');
     const userId = await getCurrentUserIdOrThrow(ctx);
-    const user = await getCurrentUserOrThrow(ctx);
-    if (!user || user.type !== 'business')
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
     const hasRange = from !== undefined && to !== undefined;
     const defaultChartFrom = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -278,10 +274,8 @@ export const collectorStats = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
+    await requireRole(ctx, 'collector');
     const userId = await getCurrentUserIdOrThrow(ctx);
-    const user = await getCurrentUserOrThrow(ctx);
-    if (!user || user.type !== 'collector')
-      throw new ConvexError({ name: 'Unauthorized', message: 'You are not authorized to access this resource.' });
 
     const hasRange = from !== undefined && to !== undefined;
     const defaultChartFrom = Date.now() - 30 * 24 * 60 * 60 * 1000;

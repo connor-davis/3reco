@@ -36,7 +36,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { ConvexError } from 'convex/values';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { DownloadIcon, SearchIcon, Trash2Icon, UsersIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Activity } from 'react';
@@ -136,14 +136,18 @@ function DeleteUserDialog({
   );
 }
 
-function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; type?: UserType; profileComplete?: boolean }; isAdmin: boolean }) {
-  const setType = useConvexMutation(api.users.setType);
+function UserRow({ user, isAdmin, onRoleChange }: { user: { _id: Id<'users'>; name?: string; email?: string; firstName?: string; lastName?: string; businessName?: string; role?: string; profileComplete?: boolean }; isAdmin: boolean; onRoleChange: (userId: Id<'users'>, role: UserType) => void }) {
   const displayName =
     user.businessName ||
     user.name ||
     [user.firstName, user.lastName].filter(Boolean).join(' ') ||
     user.email ||
     'Unknown';
+
+  function handleRoleChange(value: string | null) {
+    if (!value) return;
+    onRoleChange(user._id, value as UserType);
+  }
 
   return (
       <Item variant="backgroundOutline">
@@ -153,29 +157,12 @@ function UserRow({ user, isAdmin }: { user: { _id: Id<'users'>; name?: string; e
       </ItemContent>
       <ItemActions className="flex-wrap justify-end">
         <Select
-          value={user.type}
-          onValueChange={(value) =>
-            toast.promise(
-              setType({ _id: user._id, type: value as UserType }),
-              {
-                loading: 'Updating role...',
-                success: 'Role updated.',
-                error: (error: Error) => {
-                  if (error instanceof ConvexError) {
-                    return {
-                      message: error.data.name,
-                      description: error.data.message,
-                    };
-                  }
-                  return { message: error.name, description: error.message };
-                },
-              }
-            )
-          }
+          value={user.role as UserType | undefined}
+          onValueChange={handleRoleChange}
         >
           <SelectTrigger size="sm" className="w-full sm:w-36">
             <SelectValue placeholder="Set role">
-              {user.type ? USER_TYPE_LABELS[user.type] : undefined}
+              {user.role ? USER_TYPE_LABELS[user.role as UserType] : undefined}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -210,9 +197,25 @@ function RouteComponent() {
   const [roleFilter, setRoleFilter] = useState<'all' | UserType>('all');
 
   const currentUser = useQuery(api.users.currentUser);
-  const isAdmin = currentUser?.type === 'admin';
+  const isAdmin = currentUser?.role === 'admin';
+
+  const setUserRole = useMutation(api.users.setUserRole);
 
   const exportData = useQuery(api.exports.exportUsers, {});
+
+  function handleRoleChange(userId: Id<'users'>, role: UserType) {
+    const promise = setUserRole({ userId, role });
+    toast.promise(promise, {
+      loading: 'Updating role...',
+      success: 'Role updated.',
+      error: (error: Error) => {
+        if (error instanceof ConvexError) {
+          return { message: error.data.name, description: error.data.message };
+        }
+        return { message: error.name, description: error.message };
+      },
+    });
+  }
 
   const filtered = users?.filter((u) => {
     const displayName =
@@ -227,7 +230,7 @@ function RouteComponent() {
       const matchEmail = ((u as { email?: string }).email ?? '').toLowerCase().includes(q);
       if (!matchName && !matchEmail) return false;
     }
-    if (roleFilter !== 'all' && (u as { type?: string }).type !== roleFilter) return false;
+    if (roleFilter !== 'all' && (u as { role?: string }).role !== roleFilter) return false;
     return true;
   });
 
@@ -312,7 +315,7 @@ function RouteComponent() {
         {filtered && filtered.length > 0 && (
           <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
             {filtered.map((user) => (
-              <UserRow key={user._id} user={user} isAdmin={isAdmin} />
+              <UserRow key={user._id} user={user} isAdmin={isAdmin} onRoleChange={handleRoleChange} />
             ))}
 
             <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>

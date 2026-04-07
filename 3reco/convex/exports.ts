@@ -5,7 +5,7 @@ import {
   getEffectiveTransactionDate,
   getTransactionCollectionDay,
 } from './lib/collectionDay';
-import { getCurrentUserIdOrThrow, getCurrentUserOrThrow } from './users';
+import { getCurrentUserIdOrThrow, getCurrentUserOrThrow, requireRole } from './users';
 import {
   formatCollectorPayoutSummary,
   getCollectorPayoutDetails,
@@ -208,10 +208,7 @@ export const exportTransactions = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, { from, to }) => {
-    const user = await getCurrentUserOrThrow(ctx);
-    if (!user || (user.type !== 'admin' && user.type !== 'staff')) {
-      throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
-    }
+    await requireRole(ctx, ['admin', 'staff']);
 
     let rows = await ctx.db.query('transactions').order('desc').collect();
     if (from !== undefined) {
@@ -239,13 +236,13 @@ export const exportCollections = query({
     }
 
     let rows;
-    if (user.type === 'admin' || user.type === 'staff') {
+    if (user.role === 'admin' || user.role === 'staff') {
       rows = await ctx.db
         .query('transactions')
         .withIndex('by_type', (q) => q.eq('type', 'c2b'))
         .order('desc')
         .collect();
-    } else if (user.type === 'business') {
+    } else if (user.role === 'business') {
       rows = await ctx.db
         .query('transactions')
         .withIndex('by_buyerId_and_type', (q) =>
@@ -277,7 +274,7 @@ export const exportMyPurchases = query({
   handler: async (ctx, { from, to }) => {
     const userId = await getCurrentUserIdOrThrow(ctx);
     const user = await getCurrentUserOrThrow(ctx);
-    if (!user || user.type !== 'business') {
+    if (!user || user.role !== 'business') {
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
     }
 
@@ -307,7 +304,7 @@ export const exportMySales = query({
   handler: async (ctx, { from, to }) => {
     const userId = await getCurrentUserIdOrThrow(ctx);
     const user = await getCurrentUserOrThrow(ctx);
-    if (!user || user.type !== 'business') {
+    if (!user || user.role !== 'business') {
       throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
     }
 
@@ -334,9 +331,7 @@ export const exportMySales = query({
 export const exportUsers = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getCurrentUserOrThrow(ctx);
-    if (!user || user.type !== 'admin')
-      throw new ConvexError({ name: 'Unauthorized', message: 'Not authorised.' });
+    await requireRole(ctx, 'admin');
 
     const users = await ctx.db
       .query('users')
@@ -344,7 +339,7 @@ export const exportUsers = query({
       .collect();
     return users.map((u) => ({
       'Email': u.email ?? '',
-      'Account Type': u.type ?? '',
+      'Account Type': u.role ?? '',
       'First Name': u.firstName ?? '',
       'Last Name': u.lastName ?? '',
       'Business Name': u.businessName ?? '',

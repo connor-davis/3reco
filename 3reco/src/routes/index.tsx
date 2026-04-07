@@ -59,9 +59,9 @@ function Index() {
       </div>
 
       <div className="flex flex-col w-full h-full overflow-y-auto gap-6 p-1">
-        {(user?.type === 'admin' || user?.type === 'staff') && <AdminDashboard dateRange={dateRange} />}
-        {user?.type === 'business' && <BusinessDashboard dateRange={dateRange} />}
-        {user?.type === 'collector' && <CollectorDashboard dateRange={dateRange} />}
+        {(user?.role === 'admin' || user?.role === 'staff') && <AdminDashboard dateRange={dateRange} />}
+        {user?.role === 'business' && <BusinessDashboard dateRange={dateRange} />}
+        {user?.role === 'collector' && <CollectorDashboard dateRange={dateRange} />}
       </div>
     </div>
   );

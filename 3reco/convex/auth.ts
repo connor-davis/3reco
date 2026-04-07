@@ -91,8 +91,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
     plugins: [
       multiSession(),
       crossDomain({ siteUrl }),
-      convex({
-        authConfig,
-      }),
+      convex({ authConfig }),
     ],
   });

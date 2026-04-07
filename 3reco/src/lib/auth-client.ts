@@ -7,5 +7,9 @@ import {
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_CONVEX_SITE_URL,
-  plugins: [multiSessionClient(), convexClient(), crossDomainClient()],
+  plugins: [
+    multiSessionClient(),
+    convexClient(),
+    crossDomainClient(),
+  ],
 });
