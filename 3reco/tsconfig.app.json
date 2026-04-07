@@ -23,7 +23,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "rootDir": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@convex/*": ["./convex/*"]
