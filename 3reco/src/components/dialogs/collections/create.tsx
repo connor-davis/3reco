@@ -12,6 +12,7 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from '@/components/ui/combobox';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { decimalInputSchema } from '@/lib/decimal';
 import { parseCollectionDayInput } from '@/lib/transactions';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
@@ -80,8 +82,6 @@ const ALLOWED_RECEIPT_TYPES = new Set([
   'image/webp',
   'image/gif',
 ]);
-
-type CollectionFormValues = z.infer<typeof collectionSchema>;
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -176,12 +176,18 @@ async function uploadReceiptFile(uploadUrl: string, file: File) {
 
 const itemSchema = z.object({
   materialId: z.string({ error: 'Please select a material.' }),
-  weight: z
-    .number({ error: 'Please provide a weight.' })
-    .positive({ error: 'Weight must be greater than zero.' }),
-  price: z
-    .number({ error: 'Please provide a price.' })
-    .positive({ error: 'Price must be greater than zero.' }),
+  weight: decimalInputSchema(
+    'Please provide a weight.',
+    z
+      .number({ error: 'Please provide a weight.' })
+      .positive({ error: 'Weight must be greater than zero.' })
+  ),
+  price: decimalInputSchema(
+    'Please provide a price.',
+    z
+      .number({ error: 'Please provide a price.' })
+      .positive({ error: 'Price must be greater than zero.' })
+  ),
 });
 
 const collectionSchema = z.object({
@@ -192,6 +198,18 @@ const collectionSchema = z.object({
     .array(itemSchema)
     .min(1, { error: 'At least one item is required.' }),
 });
+
+type CollectionFormInput = {
+  collectorId: string;
+  businessId?: string;
+  collectionDate?: Date;
+  items: Array<{
+    materialId: string;
+    weight: string;
+    price: string;
+  }>;
+};
+type CollectionFormValues = z.output<typeof collectionSchema>;
 
 const searchableComboboxTriggerClassName =
   "flex h-9 w-full items-center justify-between gap-1.5 rounded-4xl border border-input bg-input/30 px-3 py-2 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
@@ -333,13 +351,17 @@ export default function CreateCollectionDialog({
 
   const receiptInputRef = useRef<HTMLInputElement | null>(null);
 
-  const form = useForm<CollectionFormValues>({
-    resolver: zodResolver(collectionSchema),
+  const form = useForm<CollectionFormInput, unknown, CollectionFormValues>({
+    resolver: zodResolver<
+      CollectionFormInput,
+      unknown,
+      CollectionFormValues
+    >(collectionSchema),
     defaultValues: {
       collectorId: '',
       businessId: undefined,
       collectionDate: undefined,
-      items: [{ materialId: '', weight: 0, price: 0 }],
+      items: [{ materialId: '', weight: '', price: '' }],
     },
   });
 
@@ -439,7 +461,7 @@ export default function CreateCollectionDialog({
         businessId:
           currentUser?.role === 'business' ? currentUser._id : undefined,
         collectionDate: undefined,
-        items: [{ materialId: '', weight: 0, price: 0 }],
+        items: [{ materialId: '', weight: '', price: '' }],
       });
       resetReceiptSelection();
       setOpen(false);
@@ -719,14 +741,14 @@ export default function CreateCollectionDialog({
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
                   <Label className="text-sm font-medium">Items</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      append({ materialId: '', weight: 0, price: 0 })
-                    }
-                  >
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        append({ materialId: '', weight: '', price: '' })
+                      }
+                    >
                     <PlusIcon className="size-3" />
                     Add Item
                   </Button>
@@ -813,20 +835,21 @@ export default function CreateCollectionDialog({
                           render={({ field: itemField, fieldState }) => (
                             <Field data-invalid={fieldState.invalid}>
                               <FieldLabel>Weight (kg)</FieldLabel>
-                              <Input
+                              <DecimalInput
                                 {...itemField}
-                                type="number"
-                                step={0.01}
+                                value={itemField.value ?? ''}
+                                aria-invalid={fieldState.invalid}
                                 placeholder="e.g. 10.5"
                                 onChange={(event) =>
-                                  itemField.onChange(event.target.valueAsNumber)
+                                  itemField.onChange(event.target.value)
                                 }
                               />
                               {fieldState.invalid && (
                                 <FieldError errors={[fieldState.error]} />
                               )}
                               <FieldDescription>
-                                Enter the collected weight in kilograms.
+                                Enter the collected weight in kilograms. Use
+                                10.5 or 10,5 for decimals.
                               </FieldDescription>
                             </Field>
                           )}
@@ -837,20 +860,21 @@ export default function CreateCollectionDialog({
                           render={({ field: itemField, fieldState }) => (
                             <Field data-invalid={fieldState.invalid}>
                               <FieldLabel>Price / kg (R)</FieldLabel>
-                              <Input
+                              <DecimalInput
                                 {...itemField}
-                                type="number"
-                                step={0.01}
+                                value={itemField.value ?? ''}
+                                aria-invalid={fieldState.invalid}
                                 placeholder="e.g. 5.00"
                                 onChange={(event) =>
-                                  itemField.onChange(event.target.valueAsNumber)
+                                  itemField.onChange(event.target.value)
                                 }
                               />
                               {fieldState.invalid && (
                                 <FieldError errors={[fieldState.error]} />
                               )}
                               <FieldDescription>
-                                Enter the price paid per kilogram.
+                                Enter the price paid per kilogram. Use 5.00 or
+                                5,00 for decimals.
                               </FieldDescription>
                             </Field>
                           )}

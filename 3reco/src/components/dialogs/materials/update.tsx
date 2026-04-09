@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import {
   Dialog,
   DialogContent,
@@ -22,11 +23,20 @@ import type { Id } from '@convex/_generated/dataModel';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConvexError } from 'convex/values';
 import { PencilIcon } from 'lucide-react';
+import { formatDecimalInputValue } from '@/lib/decimal';
 import { updateMaterialSchema } from '@/lib/material-form-schema';
 import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
+
+type UpdateMaterialFormInput = {
+  name?: string;
+  carbonFactor?: string;
+  gwCode?: string;
+  price?: string;
+};
+type UpdateMaterialFormValues = z.output<typeof updateMaterialSchema>;
 
 export default function EditMaterialByIdDialog({
   _id,
@@ -42,13 +52,21 @@ export default function EditMaterialByIdDialog({
   const updateMaterial = useConvexMutation(api.materials.update);
   const [open, setOpen] = useState<boolean>(false);
 
-  const materialForm = useForm<z.infer<typeof updateMaterialSchema>>({
-    resolver: zodResolver(updateMaterialSchema),
+  const materialForm = useForm<
+    UpdateMaterialFormInput,
+    unknown,
+    UpdateMaterialFormValues
+  >({
+    resolver: zodResolver<
+      UpdateMaterialFormInput,
+      unknown,
+      UpdateMaterialFormValues
+    >(updateMaterialSchema),
     values: {
       name: existingMaterial?.name,
       carbonFactor: existingMaterial?.carbonFactor,
       gwCode: existingMaterial?.gwCode,
-      price: existingMaterial?.price,
+      price: formatDecimalInputValue(existingMaterial?.price),
     },
   });
 
@@ -142,17 +160,19 @@ export default function EditMaterialByIdDialog({
                   <FieldLabel htmlFor="form-create-material-carbon-factor">
                      Carbon footprint
                   </FieldLabel>
-                  <Input
+                  <DecimalInput
                     {...field}
+                    value={field.value ?? ''}
                     id="form-create-material-carbon-factor"
                     aria-invalid={fieldState.invalid}
                      placeholder="Carbon footprint"
+                    onChange={(event) => field.onChange(event.target.value)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Enter the carbon value per kilogram, for example 10.5.
+                    Enter the carbon value per kilogram, for example 10.5 or 10,5.
                   </FieldDescription>
                 </Field>
               )}
@@ -191,22 +211,19 @@ export default function EditMaterialByIdDialog({
                   <FieldLabel htmlFor="form-create-material-price">
                     Price per kg
                   </FieldLabel>
-                  <Input
+                  <DecimalInput
                     {...field}
+                    value={field.value ?? ''}
                     id="form-create-material-price"
                     aria-invalid={fieldState.invalid}
                     placeholder="Price per kg"
-                    type="number"
-                    step={0.01}
-                    onChange={(event) =>
-                      field.onChange(event.target.valueAsNumber)
-                    }
+                    onChange={(event) => field.onChange(event.target.value)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Enter the price per kilogram, for example 12.50.
+                    Enter the price per kilogram, for example 12.50 or 12,50.
                   </FieldDescription>
                 </Field>
               )}

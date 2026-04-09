@@ -8,6 +8,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  DecimalInput,
+} from '@/components/ui/decimal-input';
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -27,6 +30,14 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
+type CreateMaterialFormInput = {
+  name: string;
+  carbonFactor: string;
+  gwCode: string;
+  price: string;
+};
+type CreateMaterialFormValues = z.output<typeof createMaterialSchema>;
+
 export default function CreateMaterialDialog({
   children,
 }: {
@@ -35,8 +46,22 @@ export default function CreateMaterialDialog({
   const createMaterial = useConvexMutation(api.materials.create);
   const [open, setOpen] = useState<boolean>(false);
 
-  const materialForm = useForm<z.infer<typeof createMaterialSchema>>({
-    resolver: zodResolver(createMaterialSchema),
+  const materialForm = useForm<
+    CreateMaterialFormInput,
+    unknown,
+    CreateMaterialFormValues
+  >({
+    resolver: zodResolver<
+      CreateMaterialFormInput,
+      unknown,
+      CreateMaterialFormValues
+    >(createMaterialSchema),
+    defaultValues: {
+      name: '',
+      carbonFactor: '',
+      gwCode: '',
+      price: '',
+    },
   });
 
   return (
@@ -128,17 +153,19 @@ export default function CreateMaterialDialog({
                   <FieldLabel htmlFor="form-create-material-carbon-factor">
                      Carbon footprint
                   </FieldLabel>
-                  <Input
+                  <DecimalInput
                     {...field}
+                    value={field.value ?? ''}
                     id="form-create-material-carbon-factor"
                     aria-invalid={fieldState.invalid}
                      placeholder="Carbon footprint"
+                    onChange={(event) => field.onChange(event.target.value)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Enter the carbon value per kilogram, for example 10.5.
+                    Enter the carbon value per kilogram, for example 10.5 or 10,5.
                   </FieldDescription>
                 </Field>
               )}
@@ -177,22 +204,19 @@ export default function CreateMaterialDialog({
                   <FieldLabel htmlFor="form-create-material-price">
                     Price per kg
                   </FieldLabel>
-                  <Input
+                  <DecimalInput
                     {...field}
+                    value={field.value ?? ''}
                     id="form-create-material-price"
                     aria-invalid={fieldState.invalid}
                     placeholder="Price per kg"
-                    type="number"
-                    step={0.01}
-                    onChange={(event) =>
-                      field.onChange(event.target.valueAsNumber)
-                    }
+                    onChange={(event) => field.onChange(event.target.value)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Enter the price per kilogram, for example 12.50.
+                    Enter the price per kilogram, for example 12.50 or 12,50.
                   </FieldDescription>
                 </Field>
               )}
