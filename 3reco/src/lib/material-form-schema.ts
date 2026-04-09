@@ -1,16 +1,13 @@
-import { decimalInputSchema, optionalDecimalInputSchema } from '@/lib/decimal';
+import { decimalInputSchema, optionalDecimalInputSchema, optionalStringDecimalInputSchema, stringDecimalInputSchema } from '@/lib/decimal';
 import { z } from 'zod/v4';
 
 const materialNameSchema = z.string({
   error: 'Please provide a material name.',
 });
 
-const carbonFactorSchema = z
-  .string({ error: 'Please provide a Carbon Factor.' })
-  .regex(
-    /^[+-]?(\d+(\.\d*)?|\.\d+)$/,
-    'Please provide a valid Carbon Factor that is a number or decimal, e.g. 10.5'
-  );
+const carbonFactorSchema = stringDecimalInputSchema(
+  'Please provide a valid Carbon Factor that is a number or decimal, e.g. 10.5 or 10,5'
+);
 
 const wasteCodeSchema = z
   .string({ error: 'Please provide a waste code.' })
@@ -22,12 +19,12 @@ const wasteCodeSchema = z
 
 const priceNumberSchema = z
   .number({
-    error: 'Please provide a price that is a number or decimal, e.g. 10.5',
+    error: 'Please provide a price that is a number or decimal, e.g. 10.5 or 10,5',
   })
   .nonnegative({ error: 'Price cannot be negative.' });
 
 const priceSchema = decimalInputSchema(
-  'Please provide a price that is a number or decimal, e.g. 10.5',
+  'Please provide a price that is a number or decimal, e.g. 10.5 or 10,5',
   priceNumberSchema
 );
 
@@ -40,10 +37,12 @@ export const createMaterialSchema = z.object({
 
 export const updateMaterialSchema = z.object({
   name: materialNameSchema.optional(),
-  carbonFactor: carbonFactorSchema.optional(),
+  carbonFactor: optionalStringDecimalInputSchema(
+    'Please provide a valid Carbon Factor that is a number or decimal, e.g. 10.5 or 10,5'
+  ),
   gwCode: wasteCodeSchema.optional(),
   price: optionalDecimalInputSchema(
-    'Please provide a price that is a number or decimal, e.g. 10.5',
+    'Please provide a price that is a number or decimal, e.g. 10.5 or 10,5',
     priceNumberSchema
   ),
 });

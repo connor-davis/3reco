@@ -153,17 +153,19 @@ export default function CreateMaterialDialog({
                   <FieldLabel htmlFor="form-create-material-carbon-factor">
                      Carbon footprint
                   </FieldLabel>
-                  <Input
+                  <DecimalInput
                     {...field}
+                    value={field.value ?? ''}
                     id="form-create-material-carbon-factor"
                     aria-invalid={fieldState.invalid}
                      placeholder="Carbon footprint"
+                    onChange={(event) => field.onChange(event.target.value)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                   <FieldDescription>
-                    Enter the carbon value per kilogram, for example 10.5.
+                    Enter the carbon value per kilogram, for example 10.5 or 10,5.
                   </FieldDescription>
                 </Field>
               )}
