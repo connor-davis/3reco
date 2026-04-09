@@ -7,7 +7,6 @@ import {
   getCollectorPayoutValidationIssues,
 } from '../src/lib/payout-details';
 import {
-  getUserRole,
   getCurrentUserForMutationOrThrow,
   getCurrentUserOrThrow,
   requireRole,
@@ -55,10 +54,6 @@ export default defineTable({
   .index('by_normalizedPhone', ['normalizedPhone'])
   .index('by_createdByUserId', ['createdByUserId']);
 
-function dedupeById<T extends { _id: string }>(docs: T[]) {
-  return [...new Map(docs.map((doc) => [doc._id, doc])).values()];
-}
-
 async function findBusinessUserByPhone(
   ctx: QueryCtx | MutationCtx,
   normalizedPhone: string
@@ -68,23 +63,15 @@ async function findBusinessUserByPhone(
     .withIndex('by_normalizedPhone', (q) => q.eq('normalizedPhone', normalizedPhone))
     .take(10);
 
-  const indexedBusiness = directMatch.find((user) => getUserRole(user) === 'business');
+  const indexedBusiness = directMatch.find((user) => user.role === 'business');
   if (indexedBusiness) {
     return indexedBusiness;
   }
 
-  const [businessesByRole, legacyBusinessesByType] = await Promise.all([
-    ctx.db
-      .query('users')
-      .withIndex('by_role', (q) => q.eq('role', 'business'))
-      .collect(),
-    ctx.db
-      .query('users')
-      .withIndex('by_type', (q) => q.eq('type', 'business'))
-      .collect(),
-  ]);
-
-  const businesses = dedupeById([...businessesByRole, ...legacyBusinessesByType]);
+  const businesses = await ctx.db
+    .query('users')
+    .withIndex('by_role', (q) => q.eq('role', 'business'))
+    .collect();
 
   return businesses.find((user) => {
     if (!user.phone) {

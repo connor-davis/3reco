@@ -6,15 +6,12 @@ import type { MutationCtx, QueryCtx } from './_generated/server';
 import { components, internal } from './_generated/api';
 import { normalizeSouthAfricanPhoneNumber } from './lib/phone';
 
-const userRoleValues = ['admin', 'staff', 'business', 'collector'] as const;
-type UserRole = (typeof userRoleValues)[number];
 const userRoleValidator = v.union(
   v.literal('admin'),
   v.literal('staff'),
   v.literal('business'),
   v.literal('collector')
 );
-const userRoleSet = new Set<UserRole>(userRoleValues);
 
 export default defineTable({
   authId: v.optional(v.string()),
@@ -29,8 +26,6 @@ export default defineTable({
   phoneVerificationTime: v.optional(v.number()),
   isAnonymous: v.optional(v.boolean()),
   role: v.optional(userRoleValidator),
-  // Deprecated during the role migration window. Remove after the backfill is complete.
-  type: v.optional(userRoleValidator),
   profileComplete: v.optional(v.boolean()),
   agreedToTerms: v.optional(v.boolean()),
   firstName: v.optional(v.string()),
@@ -74,8 +69,7 @@ export default defineTable({
   .index('by_authSubject', ['authSubject'])
   .index('by_normalizedPhone', ['normalizedPhone'])
   .index('email', ['email'])
-  .index('by_role', ['role'])
-  .index('by_type', ['type']);
+  .index('by_role', ['role']);
 
 function unauthorizedError() {
   return new ConvexError({
@@ -93,37 +87,6 @@ function removedAccountError() {
 
 function isRemovedUser(user: Pick<Doc<'users'>, 'isRemoved'> | null | undefined) {
   return user?.isRemoved === true;
-}
-
-type UserRoleCarrier = Pick<Doc<'users'>, 'role'> & { type?: unknown };
-
-export function getUserRole(user: UserRoleCarrier | null | undefined): UserRole | undefined {
-  if (!user) {
-    return undefined;
-  }
-
-  if (typeof user.role === 'string' && userRoleSet.has(user.role as UserRole)) {
-    return user.role as UserRole;
-  }
-
-  if (typeof user.type === 'string' && userRoleSet.has(user.type as UserRole)) {
-    return user.type as UserRole;
-  }
-
-  return undefined;
-}
-
-function normalizeUserRole<T extends Doc<'users'> | null | undefined>(user: T): T {
-  if (!user) {
-    return user;
-  }
-
-  const role = getUserRole(user);
-  if (!role || user.role === role) {
-    return user;
-  }
-
-  return { ...user, role } as T;
 }
 
 const REMOVED_ACCOUNT_LABEL = 'Removed account';
@@ -153,8 +116,7 @@ export async function requireRole(
   await requireIdentity(ctx);
   const allowed = Array.isArray(role) ? role : [role];
   const user = await getCurrentUserOrThrow(ctx);
-  const resolvedRole = getUserRole(user);
-  if (!resolvedRole || !allowed.includes(resolvedRole)) throw unauthorizedError();
+  if (!user.role || !allowed.includes(user.role)) throw unauthorizedError();
   return user;
 }
 
@@ -230,10 +192,10 @@ async function syncIdentityFields(
 
   if (Object.keys(patch).length > 0) {
     await ctx.db.patch('users', user._id, patch);
-    return normalizeUserRole({ ...user, ...patch } as Doc<'users'>);
+    return { ...user, ...patch };
   }
 
-  return normalizeUserRole(user);
+  return user;
 }
 
 export async function getCurrentUserOrThrow(ctx: QueryCtx | MutationCtx) {
@@ -255,7 +217,7 @@ export async function getCurrentUserOrThrow(ctx: QueryCtx | MutationCtx) {
     throw removedAccountError();
   }
 
-  return normalizeUserRole(user);
+  return user;
 }
 
 export async function getCurrentUserForMutationOrThrow(ctx: MutationCtx) {
@@ -307,7 +269,7 @@ export const currentUserOrNull = query({
       identity.subject
     );
 
-    return isRemovedUser(user) ? null : normalizeUserRole(user);
+    return isRemovedUser(user) ? null : user;
   },
 });
 
@@ -359,7 +321,7 @@ export const syncCurrentUserFromAuth = mutation({
       });
     }
 
-    return normalizeUserRole(createdUser);
+    return createdUser;
   },
 });
 
@@ -441,7 +403,7 @@ export const update = mutation({
     }
 
     if (
-      getUserRole(nextUser) === 'business' &&
+      nextUser.role === 'business' &&
       nextUser.profileComplete &&
       providedBankDetailCount < bankDetailFields.length
     ) {
@@ -468,14 +430,24 @@ export const update = mutation({
 export const listCollectors = query({
   args: {},
   handler: async (ctx) => {
-    return await listUsersByRole(ctx, 'collector');
+    const users = await ctx.db
+      .query('users')
+      .withIndex('by_role', (q) => q.eq('role', 'collector'))
+      .collect();
+
+    return users.filter((user) => !isRemovedUser(user));
   },
 });
 
 export const listBusinesses = query({
   args: {},
   handler: async (ctx) => {
-    return await listUsersByRole(ctx, 'business');
+    const users = await ctx.db
+      .query('users')
+      .withIndex('by_role', (q) => q.eq('role', 'business'))
+      .collect();
+
+    return users.filter((user) => !isRemovedUser(user));
   },
 });
 
@@ -484,7 +456,7 @@ export const findById = query({
     _id: v.id('users'),
   },
   handler: async (ctx, { _id }) => {
-    return normalizeUserRole(await ctx.db.get('users', _id));
+    return await ctx.db.get('users', _id);
   },
 });
 
@@ -493,38 +465,16 @@ export const listAll = query({
   handler: async (ctx, { paginationOpts }) => {
     await requireRole(ctx, 'admin');
 
-    const results = await ctx.db
+    return await ctx.db
       .query('users')
       .filter((q) => q.neq(q.field('isRemoved'), true))
       .order('desc')
       .paginate(paginationOpts);
-
-    return {
-      ...results,
-      page: results.page.map((user) => normalizeUserRole(user)),
-    };
   },
 });
 
 function dedupeById<T extends { _id: string }>(docs: T[]) {
   return [...new Map(docs.map((doc) => [doc._id, doc])).values()];
-}
-
-async function listUsersByRole(ctx: QueryCtx, role: UserRole) {
-  const [usersByRole, legacyUsersByType] = await Promise.all([
-    ctx.db
-      .query('users')
-      .withIndex('by_role', (q) => q.eq('role', role))
-      .collect(),
-    ctx.db
-      .query('users')
-      .withIndex('by_type', (q) => q.eq('type', role))
-      .collect(),
-  ]);
-
-  return dedupeById(
-    [...usersByRole, ...legacyUsersByType].map((user) => normalizeUserRole(user))
-  ).filter((user) => !isRemovedUser(user) && getUserRole(user) === role);
 }
 
 function buildRemovedUserPatch(removedBy: Id<'users'>): Partial<Doc<'users'>> {
@@ -540,7 +490,6 @@ function buildRemovedUserPatch(removedBy: Id<'users'>): Partial<Doc<'users'>> {
     normalizedPhone: undefined,
     phoneVerificationTime: undefined,
     role: undefined,
-    type: undefined,
     profileComplete: false,
     agreedToTerms: false,
     firstName: undefined,
@@ -729,7 +678,7 @@ export const setUserRole = mutation({
     if (!user || user.isRemoved === true) {
       throw new ConvexError({ name: 'Not Found', message: 'User not found.' });
     }
-    await ctx.db.patch(userId, { role, type: role });
+    await ctx.db.patch(userId, { role });
   },
 });
 
