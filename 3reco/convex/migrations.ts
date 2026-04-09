@@ -3,6 +3,7 @@ import { internalMutation } from './_generated/server';
 import type { DataModel } from './_generated/dataModel';
 import { components, internal } from './_generated/api';
 import { txByType } from './aggregates';
+import { getUserRole } from './users';
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 export const run = migrations.runner();
@@ -14,11 +15,13 @@ export const run = migrations.runner();
 export const copyTypeToRole = migrations.define({
   table: 'users',
   migrateOne: async (ctx, user) => {
-    const legacyType = (user as unknown as Record<string, unknown>).type as
-      | string
-      | undefined;
-    if (legacyType && !user.role) {
-      await ctx.db.patch(user._id, { role: legacyType });
+    const legacyRole = getUserRole({
+      role: user.role,
+      type: (user as Record<string, unknown>).type,
+    });
+
+    if (legacyRole && !user.role) {
+      await ctx.db.patch(user._id, { role: legacyRole });
     }
   },
 });
@@ -30,7 +33,7 @@ export const copyTypeToRole = migrations.define({
 export const clearLegacyType = migrations.define({
   table: 'users',
   parallelize: true,
-  migrateOne: () => ({ type: undefined } as Record<string, undefined>),
+  migrateOne: () => ({ type: undefined }),
 });
 
 /** Run both migrations in order: copy role, then clear type. */
