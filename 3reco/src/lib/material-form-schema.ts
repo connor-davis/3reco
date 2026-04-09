@@ -1,3 +1,4 @@
+import { decimalInputSchema, optionalDecimalInputSchema } from '@/lib/decimal';
 import { z } from 'zod/v4';
 
 const materialNameSchema = z.string({
@@ -19,11 +20,16 @@ const wasteCodeSchema = z
     'Please provide a valid waste code ending in at least 3 digits, e.g. GW 100 or ABC-123'
   );
 
-const priceSchema = z
+const priceNumberSchema = z
   .number({
     error: 'Please provide a price that is a number or decimal, e.g. 10.5',
   })
   .nonnegative({ error: 'Price cannot be negative.' });
+
+const priceSchema = decimalInputSchema(
+  'Please provide a price that is a number or decimal, e.g. 10.5',
+  priceNumberSchema
+);
 
 export const createMaterialSchema = z.object({
   name: materialNameSchema,
@@ -36,5 +42,8 @@ export const updateMaterialSchema = z.object({
   name: materialNameSchema.optional(),
   carbonFactor: carbonFactorSchema.optional(),
   gwCode: wasteCodeSchema.optional(),
-  price: priceSchema.optional(),
+  price: optionalDecimalInputSchema(
+    'Please provide a price that is a number or decimal, e.g. 10.5',
+    priceNumberSchema
+  ),
 });

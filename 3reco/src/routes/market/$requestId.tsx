@@ -2,6 +2,7 @@ import BackButton from '@/components/back-button';
 import MessageThread from '@/components/market/message-thread';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import {
   Dialog,
   DialogContent,
@@ -18,10 +19,10 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { decimalInputSchema, formatDecimalInputValue } from '@/lib/decimal';
 import { useConvexMutation, useConvexQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
@@ -41,17 +42,33 @@ export const Route = createFileRoute('/market/$requestId')({
 const offerItemSchema = z.object({
   materialId: z.string(),
   materialName: z.string(),
-  offerWeight: z
-    .number({ error: 'Please provide a weight.' })
-    .positive({ error: 'Weight must be greater than zero.' }),
-  offerPrice: z
-    .number({ error: 'Please provide a price.' })
-    .positive({ error: 'Price must be greater than zero.' }),
+  offerWeight: decimalInputSchema(
+    'Please provide a weight.',
+    z
+      .number({ error: 'Please provide a weight.' })
+      .positive({ error: 'Weight must be greater than zero.' })
+  ),
+  offerPrice: decimalInputSchema(
+    'Please provide a price.',
+    z
+      .number({ error: 'Please provide a price.' })
+      .positive({ error: 'Price must be greater than zero.' })
+  ),
 });
 
 const offerSchema = z.object({
   items: z.array(offerItemSchema).min(1),
 });
+
+type OfferFormInput = {
+  items: Array<{
+    materialId: string;
+    materialName: string;
+    offerWeight: string;
+    offerPrice: string;
+  }>;
+};
+type OfferFormValues = z.output<typeof offerSchema>;
 
 const statusVariant: Record<
   string,
@@ -116,16 +133,22 @@ function RouteComponent() {
         ]
       : []);
 
-  const offerForm = useForm<z.infer<typeof offerSchema>>({
-    resolver: zodResolver(offerSchema),
+  const offerForm = useForm<OfferFormInput, unknown, OfferFormValues>({
+    resolver: zodResolver<OfferFormInput, unknown, OfferFormValues>(
+      offerSchema
+    ),
     values: {
       items: requestItems.map((item) => ({
         materialId: item.materialId ?? '',
         materialName: item.materialId
           ? (materialMap.get(item.materialId as Id<'materials'>)?.name ?? '')
           : '',
-        offerWeight: (item as { offerWeight?: number }).offerWeight ?? 0,
-        offerPrice: (item as { offerPrice?: number }).offerPrice ?? 0,
+        offerWeight: formatDecimalInputValue(
+          (item as { offerWeight?: number }).offerWeight
+        ),
+        offerPrice: formatDecimalInputValue(
+          (item as { offerPrice?: number }).offerPrice
+        ),
       })),
     },
   });
@@ -245,22 +268,21 @@ function RouteComponent() {
                                 render={({ field: offerField, fieldState }) => (
                                   <Field data-invalid={fieldState.invalid}>
                                     <FieldLabel>Weight (kg)</FieldLabel>
-                                    <Input
+                                    <DecimalInput
                                       {...offerField}
-                                      type="number"
-                                      step={0.01}
+                                      value={offerField.value ?? ''}
+                                      aria-invalid={fieldState.invalid}
                                       placeholder="e.g. 100"
                                       onChange={(event) =>
-                                        offerField.onChange(
-                                          event.target.valueAsNumber
-                                        )
+                                        offerField.onChange(event.target.value)
                                       }
                                     />
                                     {fieldState.invalid && (
                                       <FieldError errors={[fieldState.error]} />
                                     )}
                                     <FieldDescription>
-                                      Enter the offered weight in kilograms.
+                                      Enter the offered weight in kilograms. Use
+                                      100.5 or 100,5 for decimals.
                                     </FieldDescription>
                                   </Field>
                                 )}
@@ -271,22 +293,21 @@ function RouteComponent() {
                                 render={({ field: offerField, fieldState }) => (
                                   <Field data-invalid={fieldState.invalid}>
                                     <FieldLabel>Price (R/kg)</FieldLabel>
-                                    <Input
+                                    <DecimalInput
                                       {...offerField}
-                                      type="number"
-                                      step={0.01}
+                                      value={offerField.value ?? ''}
+                                      aria-invalid={fieldState.invalid}
                                       placeholder="e.g. 15.50"
                                       onChange={(event) =>
-                                        offerField.onChange(
-                                          event.target.valueAsNumber
-                                        )
+                                        offerField.onChange(event.target.value)
                                       }
                                     />
                                     {fieldState.invalid && (
                                       <FieldError errors={[fieldState.error]} />
                                     )}
                                     <FieldDescription>
-                                      Enter the offered price per kilogram.
+                                      Enter the offered price per kilogram. Use
+                                      15.50 or 15,50 for decimals.
                                     </FieldDescription>
                                   </Field>
                                 )}
