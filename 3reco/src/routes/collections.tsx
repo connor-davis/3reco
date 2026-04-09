@@ -23,7 +23,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { DownloadIcon, VanIcon } from 'lucide-react';
+import { ChevronRightIcon, DownloadIcon, VanIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Activity } from 'react';
@@ -37,6 +37,7 @@ export const Route = createFileRoute('/collections')({
 });
 
 function RouteComponent() {
+  const currentUser = useQuery(api.users.currentUser);
   const {
     results: collections,
     isLoading: isLoadingCollections,
@@ -49,6 +50,8 @@ function RouteComponent() {
   );
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const showCounterpartyDetails =
+    currentUser?.role === 'admin' || currentUser?.role === 'staff';
 
   const exportData = useQuery(api.exports.exportCollections, {
     from: dateRange?.from?.getTime(),
@@ -189,6 +192,12 @@ function RouteComponent() {
                     <TransactionPartyDetails
                       collectorId={collection.sellerId as Id<'collectors'>}
                     />
+                    {showCounterpartyDetails ? (
+                      <>
+                        <ChevronRightIcon className="size-4" />
+                        <TransactionPartyDetails userId={collection.buyerId} />
+                      </>
+                    ) : null}
                   </ItemActions>
 
                   <ItemFooter>
