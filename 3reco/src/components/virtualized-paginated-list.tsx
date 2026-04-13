@@ -15,7 +15,7 @@ type VirtualizedPaginatedListProps<T> = {
   estimateSize?: (index: number) => number;
   overscan?: number;
   gap?: number;
-  loadMoreThreshold?: number;
+  loadMoreCount?: number;
   paddingEnd?: number;
   loadingLabel?: string;
   readyLabel?: string;
@@ -33,13 +33,12 @@ export function VirtualizedPaginatedList<T>({
   estimateSize = () => 120,
   overscan = 5,
   gap = 12,
-  loadMoreThreshold = 240,
+  loadMoreCount = 2,
   paddingEnd = 12,
   loadingLabel = 'Loading more...',
   readyLabel = 'Scroll to load more',
 }: VirtualizedPaginatedListProps<T>) {
   const parentRef = useRef<HTMLDivElement | null>(null);
-  const loaderRef = useRef<HTMLDivElement | null>(null);
   const loadRequestRef = useRef<string | null>(null);
   const totalCount = hasMore ? items.length + 1 : items.length;
 
@@ -58,6 +57,8 @@ export function VirtualizedPaginatedList<T>({
 
   const virtualItems = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
+  const visibleEndIndex = virtualizer.range?.endIndex ?? -1;
+  const loadTriggerIndex = Math.max(items.length - loadMoreCount, 0);
 
   useEffect(() => {
     if (!hasMore) {
@@ -65,40 +66,29 @@ export function VirtualizedPaginatedList<T>({
       return;
     }
 
-    const scrollElement = parentRef.current;
-    const loaderElement = loaderRef.current;
-    if (!scrollElement || !loaderElement || items.length === 0 || isLoadingMore) {
+    if (
+      items.length === 0 ||
+      isLoadingMore ||
+      visibleEndIndex < loadTriggerIndex
+    ) {
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) {
-          return;
-        }
+    const requestKey = String(items.length);
+    if (loadRequestRef.current === requestKey) {
+      return;
+    }
 
-        const requestKey = String(items.length);
-        if (loadRequestRef.current === requestKey) {
-          return;
-        }
-
-        loadRequestRef.current = requestKey;
-        loadMore();
-      },
-      {
-        root: scrollElement,
-        rootMargin: `0px 0px ${loadMoreThreshold}px 0px`,
-        threshold: 0.25,
-      }
-    );
-
-    observer.observe(loaderElement);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasMore, isLoadingMore, items.length, loadMore, loadMoreThreshold]);
+    loadRequestRef.current = requestKey;
+    loadMore();
+  }, [
+    hasMore,
+    isLoadingMore,
+    items.length,
+    loadMore,
+    loadTriggerIndex,
+    visibleEndIndex,
+  ]);
 
   useEffect(() => {
     loadRequestRef.current = null;
@@ -127,11 +117,7 @@ export function VirtualizedPaginatedList<T>({
             <div
               key={virtualItem.key}
               data-index={virtualItem.index}
-              ref={
-                isLoaderRow
-                  ? loaderRef
-                  : virtualizer.measureElement
-              }
+              ref={isLoaderRow ? undefined : virtualizer.measureElement}
               className={cn('w-full will-change-transform', itemClassName)}
               style={{
                 left: 0,
