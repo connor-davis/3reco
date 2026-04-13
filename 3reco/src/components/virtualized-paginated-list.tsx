@@ -39,6 +39,7 @@ export function VirtualizedPaginatedList<T>({
   readyLabel = 'Scroll to load more',
 }: VirtualizedPaginatedListProps<T>) {
   const parentRef = useRef<HTMLDivElement | null>(null);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
   const loadRequestRef = useRef<string | null>(null);
   const totalCount = hasMore ? items.length + 1 : items.length;
 
@@ -57,10 +58,6 @@ export function VirtualizedPaginatedList<T>({
 
   const virtualItems = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
-  const viewportHeight =
-    virtualizer.scrollRect?.height ?? parentRef.current?.clientHeight ?? 0;
-  const remainingDistance =
-    totalSize - (virtualizer.scrollOffset ?? 0) - viewportHeight;
 
   useEffect(() => {
     if (!hasMore) {
@@ -68,31 +65,40 @@ export function VirtualizedPaginatedList<T>({
       return;
     }
 
-    if (
-      items.length === 0 ||
-      isLoadingMore ||
-      viewportHeight === 0 ||
-      remainingDistance > loadMoreThreshold
-    ) {
+    const scrollElement = parentRef.current;
+    const loaderElement = loaderRef.current;
+    if (!scrollElement || !loaderElement || items.length === 0 || isLoadingMore) {
       return;
     }
 
-    const requestKey = String(items.length);
-    if (loadRequestRef.current === requestKey) {
-      return;
-    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) {
+          return;
+        }
 
-    loadRequestRef.current = requestKey;
-    loadMore();
-  }, [
-    hasMore,
-    isLoadingMore,
-    items.length,
-    loadMore,
-    loadMoreThreshold,
-    remainingDistance,
-    viewportHeight,
-  ]);
+        const requestKey = String(items.length);
+        if (loadRequestRef.current === requestKey) {
+          return;
+        }
+
+        loadRequestRef.current = requestKey;
+        loadMore();
+      },
+      {
+        root: scrollElement,
+        rootMargin: `0px 0px ${loadMoreThreshold}px 0px`,
+        threshold: 0.25,
+      }
+    );
+
+    observer.observe(loaderElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, isLoadingMore, items.length, loadMore, loadMoreThreshold]);
 
   useEffect(() => {
     loadRequestRef.current = null;
@@ -121,7 +127,11 @@ export function VirtualizedPaginatedList<T>({
             <div
               key={virtualItem.key}
               data-index={virtualItem.index}
-              ref={isLoaderRow ? undefined : virtualizer.measureElement}
+              ref={
+                isLoaderRow
+                  ? loaderRef
+                  : virtualizer.measureElement
+              }
               className={cn('w-full will-change-transform', itemClassName)}
               style={{
                 left: 0,
