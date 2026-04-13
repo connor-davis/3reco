@@ -4,6 +4,7 @@ import {
   matchesTypedConfirmation,
 } from '@/components/dialogs/typed-confirmation';
 import PageHeaderActions from '@/components/page-header-actions';
+import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -192,6 +193,7 @@ function RouteComponent() {
   } = useConvexPaginatedQuery(api.users.listAll, {}, { initialNumItems: 50 });
   const isInitialLoading = status === 'LoadingFirstPage';
   const isLoadingMore = status === 'LoadingMore';
+  const canLoadMore = status === 'CanLoadMore' || isLoadingMore;
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserType>('all');
@@ -312,21 +314,17 @@ function RouteComponent() {
         )}
 
         {filtered && filtered.length > 0 && (
-          <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {filtered.map((user) => (
+          <VirtualizedPaginatedList
+            className="h-full"
+            items={filtered}
+            hasMore={canLoadMore}
+            isLoadingMore={isLoadingMore}
+            loadMore={() => loadMore(50)}
+            getItemKey={(user) => user._id}
+            renderItem={(user) => (
               <UserRow key={user._id} user={user} isAdmin={isAdmin} onRoleChange={handleRoleChange} />
-            ))}
-
-            {(status === 'CanLoadMore' || isLoadingMore) && (
-              <Button
-                variant="outline"
-                disabled={isLoadingMore}
-                onClick={() => loadMore(50)}
-              >
-                {isLoadingMore ? 'Loading more...' : 'Load More'}
-              </Button>
             )}
-          </div>
+          />
         )}
         </>
       )}

@@ -1,6 +1,7 @@
 import BackButton from '@/components/back-button';
 import TransactionPartyDetails from '@/components/transactions/party-details';
 import TransactionItemContent from '@/components/transactions/item-content';
+import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
 import {
   InvoiceDownloadButton,
   ReceiptDownloadButton,
@@ -45,6 +46,7 @@ function RouteComponent() {
   );
   const isInitialLoading = status === 'LoadingFirstPage';
   const isLoadingMore = status === 'LoadingMore';
+  const canLoadMore = status === 'CanLoadMore' || isLoadingMore;
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
@@ -117,8 +119,14 @@ function RouteComponent() {
           ))}
 
         {filtered && filtered.length > 0 && (
-          <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {filtered.map((transaction) => {
+          <VirtualizedPaginatedList
+            className="h-full"
+            items={filtered}
+            hasMore={canLoadMore}
+            isLoadingMore={isLoadingMore}
+            loadMore={() => loadMore(50)}
+            getItemKey={(transaction) => transaction._id}
+            renderItem={(transaction) => {
               const effectiveDate = getEffectiveTransactionDate(transaction);
 
               return (
@@ -151,18 +159,8 @@ function RouteComponent() {
                   </ItemFooter>
                 </Item>
               );
-            })}
-
-            {(status === 'CanLoadMore' || isLoadingMore) && (
-              <Button
-                variant="outline"
-                disabled={isLoadingMore}
-                onClick={() => loadMore(50)}
-              >
-                {isLoadingMore ? 'Loading more...' : 'Show more'}
-              </Button>
-            )}
-          </div>
+            }}
+          />
         )}
         </>
       )}

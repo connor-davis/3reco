@@ -8,6 +8,7 @@ import {
 import PageHeaderActions from '@/components/page-header-actions';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
 import {
   Empty,
   EmptyContent,
@@ -48,6 +49,8 @@ function RouteComponent() {
   );
   const isInitialLoading = collectionsStatus === 'LoadingFirstPage';
   const isLoadingMore = collectionsStatus === 'LoadingMore';
+  const canLoadMoreCollections =
+    collectionsStatus === 'CanLoadMore' || isLoadingMore;
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const showCounterpartyDetails =
@@ -167,8 +170,14 @@ function RouteComponent() {
             ))}
 
           {filtered && filtered.length > 0 && (
-            <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-              {filtered.map((collection) => {
+            <VirtualizedPaginatedList
+              className="h-full"
+              items={filtered}
+              hasMore={canLoadMoreCollections}
+              isLoadingMore={isLoadingMore}
+              loadMore={() => loadMoreCollections(50)}
+              getItemKey={(collection) => collection._id}
+              renderItem={(collection) => {
                 const effectiveDate = getEffectiveTransactionDate(collection);
 
                 return (
@@ -204,18 +213,8 @@ function RouteComponent() {
                     </ItemFooter>
                   </Item>
                 );
-              })}
-
-              {(collectionsStatus === 'CanLoadMore' || isLoadingMore) && (
-                <Button
-                  variant="outline"
-                  disabled={isLoadingMore}
-                  onClick={() => loadMoreCollections(50)}
-                >
-                  {isLoadingMore ? 'Loading more...' : 'Load More'}
-                </Button>
-              )}
-            </div>
+              }}
+            />
           )}
         </>
       )}

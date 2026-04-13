@@ -7,6 +7,7 @@ import { api } from '@convex/_generated/api';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BellIcon, CheckCheckIcon, XIcon } from 'lucide-react';
+import { VirtualizedPaginatedList } from '../virtualized-paginated-list';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -50,6 +51,7 @@ export default function NotificationTray() {
 
   const unread = notifications?.filter((n) => !n.read) ?? [];
   const all = notifications ?? [];
+  const canLoadMore = status === 'CanLoadMore' || isLoading;
 
   function renderList(items: typeof all) {
     if (isLoading)
@@ -65,8 +67,17 @@ export default function NotificationTray() {
         </p>
       );
     return (
-      <>
-        {items.map((n) => (
+      <VirtualizedPaginatedList
+        className="max-h-[380px]"
+        gap={0}
+        estimateSize={() => 88}
+        overscan={6}
+        items={items}
+        hasMore={canLoadMore}
+        isLoadingMore={isLoading}
+        loadMore={() => loadMore(20)}
+        getItemKey={(notification) => notification._id}
+        renderItem={(n) => (
           <NotificationItem
             key={n._id}
             type={n.type}
@@ -77,15 +88,8 @@ export default function NotificationTray() {
             onRead={() => markRead({ _id: n._id })}
             onDismiss={() => dismiss({ _id: n._id })}
           />
-        ))}
-        {status === 'CanLoadMore' && (
-          <div className="flex justify-center py-2">
-            <Button variant="ghost" size="sm" onClick={() => loadMore(20)}>
-              Load more
-            </Button>
-          </div>
         )}
-      </>
+      />
     );
   }
 
@@ -162,13 +166,13 @@ export default function NotificationTray() {
           </TabsList>
           <TabsContent
             value="all"
-            className="mt-0 max-h-[380px] overflow-y-auto"
+            className="mt-0"
           >
             {renderList(all)}
           </TabsContent>
           <TabsContent
             value="unread"
-            className="mt-0 max-h-[380px] overflow-y-auto"
+            className="mt-0"
           >
             {renderList(unread)}
           </TabsContent>

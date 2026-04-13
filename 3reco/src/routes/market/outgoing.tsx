@@ -1,6 +1,6 @@
 import BackButton from '@/components/back-button';
 import RequestItem from '@/components/market/request-item';
-import { Button } from '@/components/ui/button';
+import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
 import {
   Empty,
   EmptyDescription,
@@ -26,6 +26,7 @@ function RouteComponent() {
   );
   const isInitialLoading = status === 'LoadingFirstPage';
   const isLoadingMore = status === 'LoadingMore';
+  const canLoadMore = status === 'CanLoadMore' || isLoadingMore;
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
@@ -63,24 +64,21 @@ function RouteComponent() {
           </div>
         )}
         {results && results.length > 0 && (
-          <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {results.map((request) => (
+          <VirtualizedPaginatedList
+            className="h-full"
+            items={results}
+            hasMore={canLoadMore}
+            isLoadingMore={isLoadingMore}
+            loadMore={() => loadMore(20)}
+            getItemKey={(request) => request._id}
+            renderItem={(request) => (
               <RequestItem
                 key={request._id}
                 request={request}
                 perspective="buyer"
               />
-            ))}
-            {(status === 'CanLoadMore' || isLoadingMore) && (
-              <Button
-                variant="outline"
-                disabled={isLoadingMore}
-                onClick={() => loadMore(20)}
-              >
-                {isLoadingMore ? 'Loading more...' : 'Load More'}
-              </Button>
             )}
-          </div>
+          />
         )}
         </>
       )}

@@ -5,6 +5,7 @@ import {
 } from '@/components/dialogs/typed-confirmation';
 import { BankDetailsFields } from '@/components/profile/bank-details-fields';
 import PageHeaderActions from '@/components/page-header-actions';
+import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -778,6 +779,7 @@ function RouteComponent() {
   );
   const isInitialLoading = status === 'LoadingFirstPage';
   const isLoadingMore = status === 'LoadingMore';
+  const canLoadMore = status === 'CanLoadMore' || isLoadingMore;
   const currentUser = useQuery(api.users.currentUser);
   const [search, setSearch] = useState('');
   const canRemove =
@@ -856,8 +858,14 @@ function RouteComponent() {
         )}
 
         {filtered && filtered.length > 0 && (
-          <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {filtered.map((collector) => (
+          <VirtualizedPaginatedList
+            className="h-full"
+            items={filtered}
+            hasMore={canLoadMore}
+            isLoadingMore={isLoadingMore}
+            loadMore={() => loadMore(50)}
+            getItemKey={(collector) => collector._id}
+            renderItem={(collector) => (
               <Item key={collector._id} variant="backgroundOutline">
                 <ItemContent>
                   <ItemTitle>{collector.name}</ItemTitle>
@@ -880,20 +888,10 @@ function RouteComponent() {
                     />
                   )}
                 </ItemActions>
-                </Item>
-              ))}
-
-              {(status === 'CanLoadMore' || isLoadingMore) && (
-                <Button
-                  variant="outline"
-                  disabled={isLoadingMore}
-                  onClick={() => loadMore(50)}
-                >
-                  {isLoadingMore ? 'Loading more...' : 'Load More'}
-                </Button>
-              )}
-            </div>
-          )}
+              </Item>
+            )}
+          />
+        )}
         </>
       )}
     </div>
