@@ -56,6 +56,11 @@ export function VirtualizedPaginatedList<T>({
   });
 
   const virtualItems = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
+  const viewportHeight =
+    virtualizer.scrollRect?.height ?? parentRef.current?.clientHeight ?? 0;
+  const remainingDistance =
+    totalSize - (virtualizer.scrollOffset ?? 0) - viewportHeight;
 
   useEffect(() => {
     if (!hasMore) {
@@ -63,40 +68,31 @@ export function VirtualizedPaginatedList<T>({
       return;
     }
 
-    const scrollElement = parentRef.current;
-    if (!scrollElement) {
+    if (
+      items.length === 0 ||
+      isLoadingMore ||
+      viewportHeight === 0 ||
+      remainingDistance > loadMoreThreshold
+    ) {
       return;
     }
 
-    const maybeLoadMore = () => {
-      if (items.length === 0 || isLoadingMore) {
-        return;
-      }
+    const requestKey = String(items.length);
+    if (loadRequestRef.current === requestKey) {
+      return;
+    }
 
-      const remainingDistance =
-        scrollElement.scrollHeight -
-        scrollElement.scrollTop -
-        scrollElement.clientHeight;
-
-      if (remainingDistance > loadMoreThreshold) {
-        return;
-      }
-
-      const requestKey = String(items.length);
-      if (loadRequestRef.current === requestKey) {
-        return;
-      }
-
-      loadRequestRef.current = requestKey;
-      loadMore();
-    };
-
-    scrollElement.addEventListener('scroll', maybeLoadMore, { passive: true });
-
-    return () => {
-      scrollElement.removeEventListener('scroll', maybeLoadMore);
-    };
-  }, [hasMore, isLoadingMore, items.length, loadMore, loadMoreThreshold]);
+    loadRequestRef.current = requestKey;
+    loadMore();
+  }, [
+    hasMore,
+    isLoadingMore,
+    items.length,
+    loadMore,
+    loadMoreThreshold,
+    remainingDistance,
+    viewportHeight,
+  ]);
 
   useEffect(() => {
     loadRequestRef.current = null;
@@ -116,7 +112,7 @@ export function VirtualizedPaginatedList<T>({
     >
       <div
         className="relative w-full"
-        style={{ height: `${virtualizer.getTotalSize()}px` }}
+        style={{ height: `${totalSize}px` }}
       >
         {virtualItems.map((virtualItem) => {
           const isLoaderRow = virtualItem.index >= items.length;
