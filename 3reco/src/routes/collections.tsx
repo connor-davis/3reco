@@ -26,7 +26,6 @@ import { format } from 'date-fns';
 import { ChevronRightIcon, DownloadIcon, VanIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { Activity } from 'react';
 import TransactionPartyDetails from '@/components/transactions/party-details';
 import { useQuery } from 'convex/react';
 import { downloadCsv } from '@/lib/export-csv';
@@ -40,7 +39,6 @@ function RouteComponent() {
   const currentUser = useQuery(api.users.currentUser);
   const {
     results: collections,
-    isLoading: isLoadingCollections,
     status: collectionsStatus,
     loadMore: loadMoreCollections,
   } = useConvexPaginatedQuery(
@@ -48,6 +46,8 @@ function RouteComponent() {
     {},
     { initialNumItems: 50 }
   );
+  const isInitialLoading = collectionsStatus === 'LoadingFirstPage';
+  const isLoadingMore = collectionsStatus === 'LoadingMore';
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const showCounterpartyDetails =
@@ -131,7 +131,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <Activity mode={isLoadingCollections ? 'visible' : 'hidden'}>
+      {isInitialLoading ? (
         <div className="flex flex-col w-full h-full items-center justify-center gap-3">
           <Empty>
             <EmptyHeader>
@@ -142,81 +142,83 @@ function RouteComponent() {
             </EmptyHeader>
           </Empty>
         </div>
-      </Activity>
+      ) : (
+        <>
+          {!filtered ||
+            (filtered.length === 0 && (
+              <div className="flex flex-col w-full h-full items-center justify-center gap-3">
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <VanIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>No collections yet</EmptyTitle>
+                    <EmptyDescription>
+                      Add a collection and it will appear here.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent className="flex-row justify-center gap-2">
+                    <CreateCollectionDialog>
+                      <Button>Add Collection</Button>
+                    </CreateCollectionDialog>
+                  </EmptyContent>
+                </Empty>
+              </div>
+            ))}
 
-      <Activity mode={isLoadingCollections ? 'hidden' : 'visible'}>
-        {!filtered ||
-          (filtered.length === 0 && (
-            <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <VanIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>No collections yet</EmptyTitle>
-                  <EmptyDescription>
-                    Add a collection and it will appear here.
-                  </EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent className="flex-row justify-center gap-2">
-                  <CreateCollectionDialog>
-                    <Button>Add Collection</Button>
-                  </CreateCollectionDialog>
-                </EmptyContent>
-              </Empty>
+          {filtered && filtered.length > 0 && (
+            <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
+              {filtered.map((collection) => {
+                const effectiveDate = getEffectiveTransactionDate(collection);
+
+                return (
+                  <Item variant="backgroundOutline" key={collection._id}>
+                    <CollectionItemContent
+                      _id={collection._id}
+                      receiptCount={collection.receiptAttachments?.length ?? 0}
+                    />
+
+                    <ItemActions>
+                      <ReceiptDownloadButton
+                        transactionId={collection._id}
+                        attachments={collection.receiptAttachments ?? []}
+                      />
+                      <InvoiceDownloadButton
+                        transactionId={collection._id}
+                        creationTime={collection._creationTime}
+                        transactionDate={effectiveDate}
+                      />
+                      <TransactionPartyDetails
+                        collectorId={collection.sellerId as Id<'collectors'>}
+                      />
+                      {showCounterpartyDetails ? (
+                        <>
+                          <ChevronRightIcon className="size-4" />
+                          <TransactionPartyDetails userId={collection.buyerId} />
+                        </>
+                      ) : null}
+                    </ItemActions>
+
+                    <ItemFooter>
+                      {format(new Date(effectiveDate), 'dd/MM/yyyy')}
+                    </ItemFooter>
+                  </Item>
+                );
+              })}
+
+              {(collectionsStatus === 'CanLoadMore' || isLoadingMore) && (
+                <Button
+                  variant="outline"
+                  disabled={isLoadingMore}
+                  onClick={() => loadMoreCollections(50)}
+                >
+                  {isLoadingMore ? 'Loading more...' : 'Load More'}
+                </Button>
+              )}
             </div>
-          ))}
-
-        {filtered && filtered.length > 0 && (
-          <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-            {filtered?.map((collection) => {
-              const effectiveDate = getEffectiveTransactionDate(collection);
-
-              return (
-                <Item variant="backgroundOutline" key={collection._id}>
-                  <CollectionItemContent
-                    _id={collection._id}
-                    receiptCount={collection.receiptAttachments?.length ?? 0}
-                  />
-
-                  <ItemActions>
-                    <ReceiptDownloadButton
-                      transactionId={collection._id}
-                      attachments={collection.receiptAttachments ?? []}
-                    />
-                    <InvoiceDownloadButton
-                      transactionId={collection._id}
-                      creationTime={collection._creationTime}
-                      transactionDate={effectiveDate}
-                    />
-                    <TransactionPartyDetails
-                      collectorId={collection.sellerId as Id<'collectors'>}
-                    />
-                    {showCounterpartyDetails ? (
-                      <>
-                        <ChevronRightIcon className="size-4" />
-                        <TransactionPartyDetails userId={collection.buyerId} />
-                      </>
-                    ) : null}
-                  </ItemActions>
-
-                  <ItemFooter>
-                    {format(new Date(effectiveDate), 'dd/MM/yyyy')}
-                  </ItemFooter>
-                </Item>
-              );
-            })}
-
-            <Activity
-              mode={collectionsStatus === 'CanLoadMore' ? 'visible' : 'hidden'}
-            >
-              <Button variant="outline" onClick={() => loadMoreCollections(50)}>
-                Load More
-              </Button>
-            </Activity>
-          </div>
-        )}
-      </Activity>
+          )}
+        </>
+      )}
     </div>
   );
 }

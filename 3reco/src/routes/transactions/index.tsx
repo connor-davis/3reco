@@ -33,7 +33,6 @@ import { format } from 'date-fns';
 import { ChevronRightIcon, CreditCardIcon, DownloadIcon, VanIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { Activity } from 'react';
 import { useQuery } from 'convex/react';
 import { downloadCsv } from '@/lib/export-csv';
 import { getEffectiveTransactionDate } from '@/lib/transactions';
@@ -51,7 +50,6 @@ const TRANSACTION_TYPE_LABELS = {
 function RouteComponent() {
   const {
     results: transactions,
-    isLoading: isLoadingTransactions,
     status: transactionsStatus,
     loadMore: loadMoreTransactions,
   } = useConvexPaginatedQuery(
@@ -59,6 +57,8 @@ function RouteComponent() {
     {},
     { initialNumItems: 50 }
   );
+  const isInitialLoading = transactionsStatus === 'LoadingFirstPage';
+  const isLoadingMore = transactionsStatus === 'LoadingMore';
 
   const [typeFilter, setTypeFilter] = useState<'all' | 'c2b' | 'b2b'>('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -124,7 +124,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <Activity mode={isLoadingTransactions ? 'visible' : 'hidden'}>
+      {isInitialLoading ? (
         <div className="flex flex-col w-full h-full items-center justify-center gap-3">
           <Empty>
             <EmptyHeader>
@@ -135,9 +135,8 @@ function RouteComponent() {
             </EmptyHeader>
           </Empty>
         </div>
-      </Activity>
-
-      <Activity mode={isLoadingTransactions ? 'hidden' : 'visible'}>
+      ) : (
+        <>
         {!filtered ||
           (filtered.length === 0 && (
             <div className="flex flex-col w-full h-full items-center justify-center gap-3">
@@ -193,19 +192,19 @@ function RouteComponent() {
               );
             })}
 
-            <Activity
-              mode={transactionsStatus === 'CanLoadMore' ? 'visible' : 'hidden'}
-            >
+            {(transactionsStatus === 'CanLoadMore' || isLoadingMore) && (
               <Button
                 variant="outline"
+                disabled={isLoadingMore}
                 onClick={() => loadMoreTransactions(50)}
               >
-                  Show more
-                </Button>
-            </Activity>
+                {isLoadingMore ? 'Loading more...' : 'Show more'}
+              </Button>
+            )}
           </div>
         )}
-      </Activity>
+        </>
+      )}
     </div>
   );
 }

@@ -13,18 +13,19 @@ import { useConvexPaginatedQuery } from '@convex-dev/react-query';
 import { api } from '@convex/_generated/api';
 import { createFileRoute } from '@tanstack/react-router';
 import { SendIcon } from 'lucide-react';
-import { Activity } from 'react';
 
 export const Route = createFileRoute('/market/outgoing')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { results, isLoading, status, loadMore } = useConvexPaginatedQuery(
+  const { results, status, loadMore } = useConvexPaginatedQuery(
     api.transactionRequests.listByBuyer,
     {},
     { initialNumItems: 20 }
   );
+  const isInitialLoading = status === 'LoadingFirstPage';
+  const isLoadingMore = status === 'LoadingMore';
 
   return (
     <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
@@ -35,7 +36,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <Activity mode={isLoading ? 'visible' : 'hidden'}>
+      {isInitialLoading ? (
         <div className="flex flex-col w-full h-full items-center justify-center">
           <Empty>
             <EmptyHeader>
@@ -46,9 +47,8 @@ function RouteComponent() {
             </EmptyHeader>
           </Empty>
         </div>
-      </Activity>
-
-      <Activity mode={isLoading ? 'hidden' : 'visible'}>
+      ) : (
+        <>
         {results && results.length === 0 && (
           <div className="flex flex-col w-full h-full items-center justify-center">
             <Empty>
@@ -71,14 +71,19 @@ function RouteComponent() {
                 perspective="buyer"
               />
             ))}
-            <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>
-              <Button variant="outline" onClick={() => loadMore(20)}>
-                Load More
+            {(status === 'CanLoadMore' || isLoadingMore) && (
+              <Button
+                variant="outline"
+                disabled={isLoadingMore}
+                onClick={() => loadMore(20)}
+              >
+                {isLoadingMore ? 'Loading more...' : 'Load More'}
               </Button>
-            </Activity>
+            )}
           </div>
         )}
-      </Activity>
+        </>
+      )}
     </div>
   );
 }

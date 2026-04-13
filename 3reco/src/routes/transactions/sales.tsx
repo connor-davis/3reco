@@ -24,7 +24,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { ChevronRightIcon, DownloadIcon, PackageIcon, TruckIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Activity } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { useQuery } from 'convex/react';
 import { downloadCsv } from '@/lib/export-csv';
@@ -37,7 +36,6 @@ export const Route = createFileRoute('/transactions/sales')({
 function RouteComponent() {
   const {
     results: transactions,
-    isLoading,
     status,
     loadMore,
   } = useConvexPaginatedQuery(
@@ -45,6 +43,8 @@ function RouteComponent() {
     {},
     { initialNumItems: 50 }
   );
+  const isInitialLoading = status === 'LoadingFirstPage';
+  const isLoadingMore = status === 'LoadingMore';
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
@@ -87,7 +87,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <Activity mode={isLoading ? 'visible' : 'hidden'}>
+      {isInitialLoading ? (
         <div className="flex flex-col w-full h-full items-center justify-center gap-3">
           <Empty>
             <EmptyHeader>
@@ -98,9 +98,8 @@ function RouteComponent() {
             </EmptyHeader>
           </Empty>
         </div>
-      </Activity>
-
-      <Activity mode={isLoading ? 'hidden' : 'visible'}>
+      ) : (
+        <>
         {!filtered ||
           (filtered.length === 0 && (
             <div className="flex flex-col w-full h-full items-center justify-center gap-3">
@@ -154,14 +153,19 @@ function RouteComponent() {
               );
             })}
 
-            <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>
-              <Button variant="outline" onClick={() => loadMore(50)}>
-                  Show more
-                </Button>
-            </Activity>
+            {(status === 'CanLoadMore' || isLoadingMore) && (
+              <Button
+                variant="outline"
+                disabled={isLoadingMore}
+                onClick={() => loadMore(50)}
+              >
+                {isLoadingMore ? 'Loading more...' : 'Show more'}
+              </Button>
+            )}
           </div>
         )}
-      </Activity>
+        </>
+      )}
     </div>
   );
 }

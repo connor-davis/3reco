@@ -39,7 +39,6 @@ import { ConvexError } from 'convex/values';
 import { useMutation, useQuery } from 'convex/react';
 import { DownloadIcon, SearchIcon, Trash2Icon, UsersIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Activity } from 'react';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/export-csv';
 
@@ -188,10 +187,11 @@ function UserRow({ user, isAdmin, onRoleChange }: { user: { _id: Id<'users'>; na
 function RouteComponent() {
   const {
     results: users,
-    isLoading,
     status,
     loadMore,
   } = useConvexPaginatedQuery(api.users.listAll, {}, { initialNumItems: 50 });
+  const isInitialLoading = status === 'LoadingFirstPage';
+  const isLoadingMore = status === 'LoadingMore';
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserType>('all');
@@ -282,7 +282,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <Activity mode={isLoading ? 'visible' : 'hidden'}>
+      {isInitialLoading ? (
         <div className="flex flex-col w-full h-full items-center justify-center">
           <Empty>
             <EmptyHeader>
@@ -293,9 +293,8 @@ function RouteComponent() {
             </EmptyHeader>
           </Empty>
         </div>
-      </Activity>
-
-      <Activity mode={isLoading ? 'hidden' : 'visible'}>
+      ) : (
+        <>
         {filtered && filtered.length === 0 && (
           <div className="flex flex-col w-full h-full items-center justify-center">
             <Empty>
@@ -318,14 +317,19 @@ function RouteComponent() {
               <UserRow key={user._id} user={user} isAdmin={isAdmin} onRoleChange={handleRoleChange} />
             ))}
 
-            <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>
-              <Button variant="outline" onClick={() => loadMore(50)}>
-                Load More
+            {(status === 'CanLoadMore' || isLoadingMore) && (
+              <Button
+                variant="outline"
+                disabled={isLoadingMore}
+                onClick={() => loadMore(50)}
+              >
+                {isLoadingMore ? 'Loading more...' : 'Load More'}
               </Button>
-            </Activity>
+            )}
           </div>
         )}
-      </Activity>
+        </>
+      )}
     </div>
   );
 }

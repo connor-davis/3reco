@@ -73,7 +73,7 @@ import {
   Trash2Icon,
   UsersIcon,
 } from 'lucide-react';
-import { Activity, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Controller,
   type Control,
@@ -767,7 +767,6 @@ function RemoveCollectorDialog({
 function RouteComponent() {
   const {
     results: collectors,
-    isLoading,
     status,
     loadMore,
   } = useConvexPaginatedQuery(
@@ -777,6 +776,8 @@ function RouteComponent() {
       initialNumItems: 50,
     }
   );
+  const isInitialLoading = status === 'LoadingFirstPage';
+  const isLoadingMore = status === 'LoadingMore';
   const currentUser = useQuery(api.users.currentUser);
   const [search, setSearch] = useState('');
   const canRemove =
@@ -821,7 +822,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <Activity mode={isLoading ? 'visible' : 'hidden'}>
+      {isInitialLoading ? (
         <div className="flex flex-col w-full h-full items-center justify-center">
           <Empty>
             <EmptyHeader>
@@ -832,9 +833,8 @@ function RouteComponent() {
             </EmptyHeader>
           </Empty>
         </div>
-      </Activity>
-
-      <Activity mode={isLoading ? 'hidden' : 'visible'}>
+      ) : (
+        <>
         {filtered && filtered.length === 0 && (
           <div className="flex flex-col w-full h-full items-center justify-center">
             <Empty>
@@ -880,17 +880,22 @@ function RouteComponent() {
                     />
                   )}
                 </ItemActions>
-              </Item>
-            ))}
+                </Item>
+              ))}
 
-            <Activity mode={status === 'CanLoadMore' ? 'visible' : 'hidden'}>
-              <Button variant="outline" onClick={() => loadMore(50)}>
-                Load More
-              </Button>
-            </Activity>
-          </div>
-        )}
-      </Activity>
+              {(status === 'CanLoadMore' || isLoadingMore) && (
+                <Button
+                  variant="outline"
+                  disabled={isLoadingMore}
+                  onClick={() => loadMore(50)}
+                >
+                  {isLoadingMore ? 'Loading more...' : 'Load More'}
+                </Button>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
