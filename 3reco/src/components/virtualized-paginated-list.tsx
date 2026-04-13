@@ -15,7 +15,7 @@ type VirtualizedPaginatedListProps<T> = {
   estimateSize?: (index: number) => number;
   overscan?: number;
   gap?: number;
-  endReachedOffset?: number;
+  loadMoreThreshold?: number;
   paddingEnd?: number;
   loadingLabel?: string;
   readyLabel?: string;
@@ -30,10 +30,10 @@ export function VirtualizedPaginatedList<T>({
   renderItem,
   className,
   itemClassName,
-  estimateSize = () => 136,
+  estimateSize = () => 120,
   overscan = 5,
   gap = 12,
-  endReachedOffset = 2,
+  loadMoreThreshold = 240,
   paddingEnd = 12,
   loadingLabel = 'Loading more...',
   readyLabel = 'Scroll to load more',
@@ -50,15 +50,12 @@ export function VirtualizedPaginatedList<T>({
     getScrollElement: () => parentRef.current,
     estimateSize,
     overscan,
-    gap,
     paddingEnd,
     getItemKey: (index) =>
       index < items.length ? getItemKey(items[index], index) : '__virtual-loader__',
   });
 
   const virtualItems = virtualizer.getVirtualItems();
-  const lastItemIndex = virtualItems[virtualItems.length - 1]?.index ?? -1;
-  const loadTriggerIndex = Math.max(items.length - 1 - endReachedOffset, 0);
 
   useEffect(() => {
     if (!hasMore) {
@@ -66,29 +63,50 @@ export function VirtualizedPaginatedList<T>({
       return;
     }
 
-    if (items.length === 0 || isLoadingMore || lastItemIndex < loadTriggerIndex) {
+    const scrollElement = parentRef.current;
+    if (!scrollElement) {
       return;
     }
 
-    const requestKey = `${items.length}:${loadTriggerIndex}`;
-    if (loadRequestRef.current === requestKey) {
-      return;
-    }
+    const maybeLoadMore = () => {
+      if (items.length === 0 || isLoadingMore) {
+        return;
+      }
 
-    loadRequestRef.current = requestKey;
-    loadMore();
-  }, [
-    hasMore,
-    isLoadingMore,
-    items.length,
-    lastItemIndex,
-    loadMore,
-    loadTriggerIndex,
-  ]);
+      const remainingDistance =
+        scrollElement.scrollHeight -
+        scrollElement.scrollTop -
+        scrollElement.clientHeight;
+
+      if (remainingDistance > loadMoreThreshold) {
+        return;
+      }
+
+      const requestKey = String(items.length);
+      if (loadRequestRef.current === requestKey) {
+        return;
+      }
+
+      loadRequestRef.current = requestKey;
+      loadMore();
+    };
+
+    scrollElement.addEventListener('scroll', maybeLoadMore, { passive: true });
+
+    return () => {
+      scrollElement.removeEventListener('scroll', maybeLoadMore);
+    };
+  }, [hasMore, isLoadingMore, items.length, loadMore, loadMoreThreshold]);
 
   useEffect(() => {
     loadRequestRef.current = null;
-    virtualizer.measure();
+    const frame = requestAnimationFrame(() => {
+      virtualizer.measure();
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [items.length, virtualizer]);
 
   return (
@@ -111,6 +129,10 @@ export function VirtualizedPaginatedList<T>({
               className={cn('w-full will-change-transform', itemClassName)}
               style={{
                 left: 0,
+                paddingBottom:
+                  !isLoaderRow && virtualItem.index < items.length - 1
+                    ? `${gap}px`
+                    : undefined,
                 position: 'absolute',
                 top: 0,
                 transform: `translateY(${virtualItem.start}px)`,

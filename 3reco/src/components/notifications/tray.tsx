@@ -35,6 +35,7 @@ export default function NotificationTray() {
     {},
     { initialNumItems: 20 }
   );
+  const isLoadingMore = status === 'LoadingMore';
 
   const { mutate: markRead } = useMutation({
     mutationFn: useConvexMutation(api.notifications.markRead),
@@ -51,7 +52,7 @@ export default function NotificationTray() {
 
   const unread = notifications?.filter((n) => !n.read) ?? [];
   const all = notifications ?? [];
-  const canLoadMore = status === 'CanLoadMore' || isLoading;
+  const canLoadMore = status === 'CanLoadMore' || isLoadingMore;
 
   function renderList(items: typeof all) {
     if (isLoading)
@@ -74,7 +75,7 @@ export default function NotificationTray() {
         overscan={6}
         items={items}
         hasMore={canLoadMore}
-        isLoadingMore={isLoading}
+        isLoadingMore={isLoadingMore}
         loadMore={() => loadMore(20)}
         getItemKey={(notification) => notification._id}
         renderItem={(n) => (
