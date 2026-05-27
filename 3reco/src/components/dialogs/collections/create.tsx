@@ -808,7 +808,7 @@ export default function CreateCollectionDialog({
                                   <ItemContent>
                                     <ItemTitle>{material.name}</ItemTitle>
                                     <ItemDescription>
-                                      Base price: R{material.price}/kg
+                                      Material price (info): R{material.price}/kg
                                     </ItemDescription>
                                   </ItemContent>
                                   <ItemActions>

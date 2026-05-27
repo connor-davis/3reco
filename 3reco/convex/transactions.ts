@@ -714,11 +714,6 @@ export const collectorToBusinessSale = mutation({
       const existingMaterial = await ctx.db.get('materials', item.materialId);
       if (!existingMaterial)
         throw new ConvexError({ name: 'Not Found', message: `Material not found.` });
-      if (item.price < existingMaterial.price)
-        throw new ConvexError({
-          name: 'Invalid Input',
-          message: `Price must be at or above the base material price.`,
-        });
     }
 
     if (collectionDay !== undefined) {
