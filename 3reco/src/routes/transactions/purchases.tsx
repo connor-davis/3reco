@@ -6,7 +6,9 @@ import {
   InvoiceDownloadButton,
   ReceiptDownloadButton,
 } from '@/components/transactions/invoice-download';
-import { Button } from '@/components/ui/button';
+import ExportCsvControls, {
+  type ExportRowFormat,
+} from '@/components/transactions/export-csv-controls';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
   Empty,
@@ -23,11 +25,10 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { ChevronRightIcon, CreditCardIcon, DownloadIcon, VanIcon } from 'lucide-react';
+import { ChevronRightIcon, CreditCardIcon, VanIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { useQuery } from 'convex/react';
-import { downloadCsv } from '@/lib/export-csv';
 import { getEffectiveTransactionDate } from '@/lib/transactions';
 
 export const Route = createFileRoute('/transactions/purchases')({
@@ -49,8 +50,10 @@ function RouteComponent() {
   const canLoadMore = status === 'CanLoadMore' || isLoadingMore;
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [exportFormat, setExportFormat] = useState<ExportRowFormat>('transaction');
 
   const exportData = useQuery(api.exports.exportMyPurchases, {
+    itemised: exportFormat === 'material',
     from: dateRange?.from?.getTime(),
     to: dateRange?.to
       ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999).getTime()
@@ -77,15 +80,13 @@ function RouteComponent() {
         </div>
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <DateRangePicker value={dateRange} onChange={setDateRange} align="end" />
-          <Button
-            variant="outline"
+          <ExportCsvControls
+            rows={exportData}
+            format={exportFormat}
+            onFormatChange={setExportFormat}
+            filenameBase="purchases"
             size="sm"
-            disabled={!exportData || exportData.length === 0}
-            onClick={() => exportData && downloadCsv(exportData as Record<string, unknown>[], 'purchases.csv')}
-          >
-            <DownloadIcon className="size-4" />
-              Download CSV
-            </Button>
+          />
         </div>
       </div>
 

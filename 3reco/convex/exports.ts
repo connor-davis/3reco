@@ -137,16 +137,33 @@ async function getExportSeller(
   };
 }
 
+type MaterialNameCache = Map<Id<'materials'>, string>;
+
+async function getMaterialName(
+  ctx: QueryCtx,
+  materialId: Id<'materials'>,
+  cache: MaterialNameCache
+) {
+  const cached = cache.get(materialId);
+  if (cached !== undefined) return cached;
+
+  const material = await ctx.db.get('materials', materialId);
+  const name = material?.name ?? 'Unknown';
+  cache.set(materialId, name);
+  return name;
+}
+
 async function getMaterialsSummary(
   ctx: QueryCtx,
-  transaction: Doc<'transactions'>
+  transaction: Doc<'transactions'>,
+  cache: MaterialNameCache
 ) {
   const lines = await Promise.all(
     transaction.items.map(async (item, index) => {
-      const material = await ctx.db.get('materials', item.materialId);
+      const materialName = await getMaterialName(ctx, item.materialId, cache);
       const lineTotal = item.weight * item.price;
 
-      return `${index + 1}. ${material?.name ?? 'Unknown'} - ${item.weight.toFixed(2)} kg x R ${item.price.toFixed(2)} = R ${lineTotal.toFixed(2)}`;
+      return `${index + 1}. ${materialName} - ${item.weight.toFixed(2)} kg x R ${item.price.toFixed(2)} = R ${lineTotal.toFixed(2)}`;
     })
   );
 
@@ -158,46 +175,131 @@ async function getMaterialsSummary(
   };
 }
 
-async function buildTransactionExportRow(ctx: QueryCtx, transaction: Doc<'transactions'>) {
+/**
+ * Transaction-level columns shared by both export modes. Split into "leading"
+ * (everything up to and including Items Count) and "trailing" (everything after
+ * the Materials column) so the per-material line columns can be inserted at the
+ * exact position the Materials blob occupies in the default mode.
+ */
+async function buildTransactionBaseFields(
+  ctx: QueryCtx,
+  transaction: Doc<'transactions'>
+) {
   const buyer = await ctx.db.get('users', transaction.buyerId);
   const seller = await getExportSeller(ctx, transaction);
-  const { materials, totalWeight } = await getMaterialsSummary(ctx, transaction);
+  const totalWeight = transaction.items.reduce((sum, item) => sum + item.weight, 0);
 
   return {
-    'Transaction ID': transaction._id,
-    'Transaction Type':
-      transaction.type === 'c2b' ? 'Collector to business' : 'Business to business',
-    'Transaction Date': formatTransactionDateForExport(transaction),
-    'Recorded At': formatRecordedAt(transaction._creationTime),
-    'Collection Day': getTransactionCollectionDay(transaction) ?? '',
-    'Items Count': transaction.items.length,
-    'Materials': materials,
-    'Total Weight (kg)': totalWeight,
-    'Total Price (R)': +transaction.totalPrice.toFixed(2),
-    'Seller Name': seller.name,
-    'Seller Email': seller.email ?? '',
-    'Seller Phone': seller.phone ?? '',
-    'Seller Address': seller.address ?? '',
-    'Buyer Name': getUserDisplayName(buyer),
-    'Buyer Email': buyer?.email ?? '',
-    'Buyer Phone': buyer?.phone ?? '',
-    'Buyer Address': formatAddress([
-      buyer?.streetAddress,
-      buyer?.city,
-      buyer?.areaCode,
-      buyer?.province,
-    ]),
-    'Collector Payout Method': seller.payoutMethod ?? '',
-    'Collector Payout Details': seller.payoutDetails ?? '',
+    leading: {
+      'Transaction ID': transaction._id,
+      'Transaction Type':
+        transaction.type === 'c2b' ? 'Collector to business' : 'Business to business',
+      'Transaction Date': formatTransactionDateForExport(transaction),
+      'Recorded At': formatRecordedAt(transaction._creationTime),
+      'Collection Day': getTransactionCollectionDay(transaction) ?? '',
+      'Items Count': transaction.items.length,
+    },
+    trailing: {
+      'Total Weight (kg)': +totalWeight.toFixed(2),
+      'Total Price (R)': +transaction.totalPrice.toFixed(2),
+      'Seller Name': seller.name,
+      'Seller Email': seller.email ?? '',
+      'Seller Phone': seller.phone ?? '',
+      'Seller Address': seller.address ?? '',
+      'Buyer Name': getUserDisplayName(buyer),
+      'Buyer Email': buyer?.email ?? '',
+      'Buyer Phone': buyer?.phone ?? '',
+      'Buyer Address': formatAddress([
+        buyer?.streetAddress,
+        buyer?.city,
+        buyer?.areaCode,
+        buyer?.province,
+      ]),
+      'Collector Payout Method': seller.payoutMethod ?? '',
+      'Collector Payout Details': seller.payoutDetails ?? '',
+    },
   };
+}
+
+/** One row per transaction, with all material lines joined into a single cell. */
+async function buildTransactionExportRow(
+  ctx: QueryCtx,
+  transaction: Doc<'transactions'>,
+  cache: MaterialNameCache
+) {
+  const { leading, trailing } = await buildTransactionBaseFields(ctx, transaction);
+  const { materials } = await getMaterialsSummary(ctx, transaction, cache);
+
+  return {
+    ...leading,
+    'Materials': materials,
+    ...trailing,
+  };
+}
+
+/**
+ * One row per material line, with every transaction-level column repeated so each
+ * row is self-contained (sortable/pivotable in Excel). Transactions with no items
+ * still emit a single row with the line columns blank.
+ */
+async function buildTransactionItemRows(
+  ctx: QueryCtx,
+  transaction: Doc<'transactions'>,
+  cache: MaterialNameCache
+) {
+  const { leading, trailing } = await buildTransactionBaseFields(ctx, transaction);
+
+  if (transaction.items.length === 0) {
+    return [
+      {
+        ...leading,
+        'Line No': '',
+        'Material': '',
+        'Line Weight (kg)': '',
+        'Unit Price (R)': '',
+        'Line Total (R)': '',
+        ...trailing,
+      },
+    ];
+  }
+
+  return await Promise.all(
+    transaction.items.map(async (item, index) => {
+      const materialName = await getMaterialName(ctx, item.materialId, cache);
+
+      return {
+        ...leading,
+        'Line No': index + 1,
+        'Material': materialName,
+        'Line Weight (kg)': +item.weight.toFixed(2),
+        'Unit Price (R)': +item.price.toFixed(2),
+        'Line Total (R)': +(item.weight * item.price).toFixed(2),
+        ...trailing,
+      };
+    })
+  );
 }
 
 async function buildTransactionExportRows(
   ctx: QueryCtx,
-  transactions: Doc<'transactions'>[]
+  transactions: Doc<'transactions'>[],
+  itemised?: boolean
 ) {
+  const cache: MaterialNameCache = new Map();
+
+  if (itemised) {
+    const grouped = await Promise.all(
+      transactions.map((transaction) =>
+        buildTransactionItemRows(ctx, transaction, cache)
+      )
+    );
+    return grouped.flat();
+  }
+
   return await Promise.all(
-    transactions.map((transaction) => buildTransactionExportRow(ctx, transaction))
+    transactions.map((transaction) =>
+      buildTransactionExportRow(ctx, transaction, cache)
+    )
   );
 }
 
@@ -206,8 +308,9 @@ export const exportTransactions = query({
   args: {
     from: v.optional(v.number()),
     to: v.optional(v.number()),
+    itemised: v.optional(v.boolean()),
   },
-  handler: async (ctx, { from, to }) => {
+  handler: async (ctx, { from, to, itemised }) => {
     await requireRole(ctx, ['admin', 'staff']);
 
     let rows = await ctx.db.query('transactions').order('desc').collect();
@@ -218,7 +321,7 @@ export const exportTransactions = query({
       rows = rows.filter((row) => getEffectiveTransactionDate(row) <= to);
     }
 
-    return await buildTransactionExportRows(ctx, rows);
+    return await buildTransactionExportRows(ctx, rows, itemised);
   },
 });
 
@@ -227,8 +330,9 @@ export const exportCollections = query({
   args: {
     from: v.optional(v.number()),
     to: v.optional(v.number()),
+    itemised: v.optional(v.boolean()),
   },
-  handler: async (ctx, { from, to }) => {
+  handler: async (ctx, { from, to, itemised }) => {
     const userId = await getCurrentUserIdOrThrow(ctx);
     const user = await getCurrentUserOrThrow(ctx);
     if (!user) {
@@ -261,7 +365,7 @@ export const exportCollections = query({
       rows = rows.filter((row) => getEffectiveTransactionDate(row) <= to);
     }
 
-    return await buildTransactionExportRows(ctx, rows);
+    return await buildTransactionExportRows(ctx, rows, itemised);
   },
 });
 
@@ -270,8 +374,9 @@ export const exportMyPurchases = query({
   args: {
     from: v.optional(v.number()),
     to: v.optional(v.number()),
+    itemised: v.optional(v.boolean()),
   },
-  handler: async (ctx, { from, to }) => {
+  handler: async (ctx, { from, to, itemised }) => {
     const userId = await getCurrentUserIdOrThrow(ctx);
     const user = await getCurrentUserOrThrow(ctx);
     if (!user || user.role !== 'business') {
@@ -291,7 +396,7 @@ export const exportMyPurchases = query({
       rows = rows.filter((row) => getEffectiveTransactionDate(row) <= to);
     }
 
-    return await buildTransactionExportRows(ctx, rows);
+    return await buildTransactionExportRows(ctx, rows, itemised);
   },
 });
 
@@ -300,8 +405,9 @@ export const exportMySales = query({
   args: {
     from: v.optional(v.number()),
     to: v.optional(v.number()),
+    itemised: v.optional(v.boolean()),
   },
-  handler: async (ctx, { from, to }) => {
+  handler: async (ctx, { from, to, itemised }) => {
     const userId = await getCurrentUserIdOrThrow(ctx);
     const user = await getCurrentUserOrThrow(ctx);
     if (!user || user.role !== 'business') {
@@ -323,7 +429,7 @@ export const exportMySales = query({
       rows = rows.filter((row) => getEffectiveTransactionDate(row) <= to);
     }
 
-    return await buildTransactionExportRows(ctx, rows);
+    return await buildTransactionExportRows(ctx, rows, itemised);
   },
 });
 

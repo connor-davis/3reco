@@ -6,6 +6,9 @@ import {
   ReceiptDownloadButton,
 } from '@/components/transactions/invoice-download';
 import PageHeaderActions from '@/components/page-header-actions';
+import ExportCsvControls, {
+  type ExportRowFormat,
+} from '@/components/transactions/export-csv-controls';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
@@ -24,12 +27,11 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { ChevronRightIcon, DownloadIcon, VanIcon } from 'lucide-react';
+import { ChevronRightIcon, VanIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import TransactionPartyDetails from '@/components/transactions/party-details';
 import { useQuery } from 'convex/react';
-import { downloadCsv } from '@/lib/export-csv';
 import { getEffectiveTransactionDate } from '@/lib/transactions';
 
 export const Route = createFileRoute('/collections')({
@@ -53,10 +55,12 @@ function RouteComponent() {
     collectionsStatus === 'CanLoadMore' || isLoadingMore;
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [exportFormat, setExportFormat] = useState<ExportRowFormat>('transaction');
   const showCounterpartyDetails =
     currentUser?.role === 'admin' || currentUser?.role === 'staff';
 
   const exportData = useQuery(api.exports.exportCollections, {
+    itemised: exportFormat === 'material',
     from: dateRange?.from?.getTime(),
     to: dateRange?.to
       ? new Date(
@@ -112,21 +116,13 @@ function RouteComponent() {
               align="start"
               fullWidth
             />
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled={!exportData || exportData.length === 0}
-              onClick={() =>
-                exportData &&
-                downloadCsv(
-                  exportData as Record<string, unknown>[],
-                  'collections.csv'
-                )
-              }
-            >
-              <DownloadIcon className="size-4" />
-              Download CSV
-            </Button>
+            <ExportCsvControls
+              rows={exportData}
+              format={exportFormat}
+              onFormatChange={setExportFormat}
+              filenameBase="collections"
+              fullWidth
+            />
             <CreateCollectionDialog>
               <Button className="w-full">Add Collection</Button>
             </CreateCollectionDialog>
