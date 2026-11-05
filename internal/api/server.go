@@ -17,15 +17,33 @@ import (
 	"go.uber.org/fx"
 
 	authapi "github.com/connor-davis/3reco/internal/api/auth"
+	collectorsapi "github.com/connor-davis/3reco/internal/api/collectors"
+	marketapi "github.com/connor-davis/3reco/internal/api/market"
+	materialsapi "github.com/connor-davis/3reco/internal/api/materials"
 	"github.com/connor-davis/3reco/internal/api/middleware"
+	profileapi "github.com/connor-davis/3reco/internal/api/profile"
 	"github.com/connor-davis/3reco/internal/api/sockets"
+	stockapi "github.com/connor-davis/3reco/internal/api/stock"
+	storesapi "github.com/connor-davis/3reco/internal/api/stores"
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
+	marketsvc "github.com/connor-davis/3reco/internal/services/market"
+	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
+	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
 	"github.com/connor-davis/3reco/internal/services/realtime"
+	stocksvc "github.com/connor-davis/3reco/internal/services/stock"
+	storessvc "github.com/connor-davis/3reco/internal/services/stores"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
+	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
+	marketstore "github.com/connor-davis/3reco/internal/stores/market"
+	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
+	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
+	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
+	storesstore "github.com/connor-davis/3reco/internal/stores/stores"
 )
 
 // Module wires everything the server needs. The caller supplies config.Config
@@ -37,10 +55,29 @@ var Module = fx.Module("api",
 		auth.New,
 		realtime.New,
 		authapi.New,
+		collectorsstore.New,
+		collectorssvc.New,
+		collectorsapi.New,
+		marketstore.New,
+		marketsvc.New,
+		marketapi.New,
+		materialsstore.New,
+		materialssvc.New,
+		materialsapi.New,
+		profilestore.New,
+		profilesvc.New,
+		profileapi.New,
+		stockstore.New,
+		stocksvc.New,
+		stockapi.New,
+		storesstore.New,
+		storessvc.New,
+		storesapi.New,
 		sockets.New,
 		New,
 		Listen,
 	),
+	tradeProviders,
 	fx.Invoke(background),
 	fx.Invoke(func(*Listener) {}),
 )
@@ -49,11 +86,18 @@ var Module = fx.Module("api",
 type routes struct {
 	fx.In
 
-	Config config.Config
-	DB     *database.DB
-	Auth   *auth.Service
-	AuthH  *authapi.Handler
-	Socket *sockets.Handler
+	Config     config.Config
+	DB         *database.DB
+	Auth       *auth.Service
+	AuthH      *authapi.Handler
+	Socket     *sockets.Handler
+	Collectors *collectorsapi.Handler
+	Market     *marketapi.Handler
+	Materials  *materialsapi.Handler
+	Profile    *profileapi.Handler
+	Stock      *stockapi.Handler
+	Stores     *storesapi.Handler
+	Trade      tradeRoutes
 }
 
 // New builds the Fiber app with every route.
@@ -103,6 +147,13 @@ func New(r routes) *fiber.App {
 
 	r.AuthH.Register(api.Group("/auth"))
 	r.Socket.Register(api)
+	r.Trade.register(api)
+	r.Collectors.Register(api)
+	r.Market.Register(api)
+	r.Materials.Register(api)
+	r.Profile.Register(api)
+	r.Stock.Register(api)
+	r.Stores.Register(api)
 
 	// Unknown /api paths get a JSON 404.
 	api.Use(func(c fiber.Ctx) error { return apperr.NotFound("No such API endpoint.") })
