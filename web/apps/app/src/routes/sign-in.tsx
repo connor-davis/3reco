@@ -64,7 +64,7 @@ function SignInPage() {
             New to 3REco?{' '}
             <Link
               to="/sign-up"
-              className="font-medium text-foreground underline"
+              className="inline-flex min-h-11 items-center font-medium text-foreground underline"
             >
               Create an account
             </Link>
@@ -74,7 +74,7 @@ function SignInPage() {
               <Link
                 to="/verify-email"
                 search={{ email: unverified }}
-                className="font-medium text-foreground underline"
+                className="inline-flex min-h-11 items-center font-medium text-foreground underline"
               >
                 Send the verification email again
               </Link>
@@ -100,7 +100,10 @@ function SignInPage() {
           autoComplete="current-password"
         />
         <div className="text-right">
-          <Link to="/forgot-password" className="text-sm underline">
+          <Link
+            to="/forgot-password"
+            className="inline-flex min-h-11 items-center text-sm underline"
+          >
             Forgot password?
           </Link>
         </div>

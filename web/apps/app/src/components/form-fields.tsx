@@ -288,7 +288,7 @@ export function CheckboxField<T extends FieldValues>({
   control,
   name,
   label,
-}: FieldProps<T>) {
+}: Omit<FieldProps<T>, 'label'> & { label: ReactNode }) {
   const { id, errorId } = useFieldIds();
 
   return (
