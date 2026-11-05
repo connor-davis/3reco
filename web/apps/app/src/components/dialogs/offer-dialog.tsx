@@ -1,151 +1,134 @@
-import { useMemo } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
-import { DecimalField, TextField } from '@/components/form-fields';
+import { DecimalField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
-import { FieldGroup, FieldSet } from '@/components/ui/field';
-import { materialById } from '@/lib/data/materials';
-import { formatRand, lineCents, toCents } from '@/lib/format';
-import { useMock, useMockList } from '@/lib/mock/hooks';
+import { useOffer } from '@/lib/api/requests';
+import type { TradeRequest } from '@/lib/api/types';
+import { formatRand, lineCents } from '@/lib/format';
 import { quantityError } from '@/lib/quantity';
-import type { MarketRequest } from '@/lib/types';
 
-const lineSchema = z.object({
-  materialId: z.string(),
-  pricePerKg: z
-    .string()
-    .refine((value) => toCents(value) > 0, 'Enter a price above R 0.00.'),
-  kg: z.string(),
+const schema = z.object({
+  items: z
+    .array(
+      z.object({
+        material_id: z.string(),
+        weight: z.string().superRefine((value, ctx) => {
+          const message = quantityError(value);
+          if (message) ctx.addIssue({ code: 'custom', message });
+        }),
+        price: z
+          .string()
+          .regex(
+            /^\d+(\.\d{1,2})?$/,
+            'Enter a price in R, with up to 2 decimals.'
+          ),
+      })
+    )
+    .min(1),
 });
 
-type Values = {
-  lines: z.infer<typeof lineSchema>[];
-  window: string;
-};
-
-type Props = {
+export function OfferDialog({
+  open,
+  onOpenChange,
+  request,
+}: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  request: MarketRequest;
-};
-
-/** The seller's offer. It always carries every material line of the request. */
-export function OfferDialog({ open, onOpenChange, request }: Props) {
-  const { data } = useMock();
-  const requests = useMockList('requests');
-  const messages = useMockList('messages');
-
-  // The seller can only offer what their own stock allows.
-  const schema = useMemo(
-    () =>
-      z.object({
-        lines: z.array(lineSchema).superRefine((lines, ctx) => {
-          lines.forEach((line, index) => {
-            const stock = data.stock.find(
-              (item) => item.materialId === line.materialId
-            );
-            const message = quantityError(line.kg, stock?.availableKg);
-
-            if (message) {
-              ctx.addIssue({
-                code: 'custom',
-                message,
-                path: [index, 'kg'],
-              });
-            }
-          });
-        }),
-        window: z
-          .string()
-          .min(3, 'Say when you can collect, for example "Friday 09:00".'),
-      }),
-    [data.stock]
-  );
-
-  const { control, handleSubmit } = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      lines: request.items,
-      window: request.collection.window,
-    },
-  });
-  const { fields } = useFieldArray({ control, name: 'lines' });
-  const lines = useWatch({ control, name: 'lines' });
-  const totalCents = lines.reduce(
-    (sum, line) => sum + lineCents(line.pricePerKg, line.kg),
-    0
-  );
-
-  function onSubmit(values: Values) {
-    const total = values.lines.reduce(
-      (sum, line) => sum + lineCents(line.pricePerKg, line.kg),
-      0
-    );
-    const text = `Offer: ${formatRand(total)} for ${values.lines.length} ${
-      values.lines.length === 1 ? 'material' : 'materials'
-    }. Collection: ${values.window}.`;
-
-    requests.update(request.id, {
-      status: 'Offer sent',
-      offerPending: true,
-      items: values.lines,
-      collection: { ...request.collection, window: values.window },
-      preview: text,
-      lastAt: 'Now',
-    });
-    messages.append({
-      id: `${request.id}-m${messages.items.length}`,
-      requestId: request.id,
-      from: 'me',
-      text,
-      sentAt: new Date().toISOString(),
-    });
-    toast.success('Offer sent.');
-    onOpenChange(false);
-  }
-
+  request: TradeRequest;
+}) {
   return (
     <ResponsiveOverlay
       open={open}
       onOpenChange={onOpenChange}
       title="Make an offer"
-      description="Set a weight and price for each material. The buyer can accept or decline."
-      footer={
-        <>
-          <p className="mr-auto text-sm font-medium tabular-nums">
-            Total {formatRand(totalCents)}
-          </p>
-          <Button onClick={handleSubmit(onSubmit)}>Send offer</Button>
-        </>
-      }
+      description="Set each weight and price per kg. Sending an offer reserves the stock for 48 hours."
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <FieldGroup>
-          {fields.map((field, index) => (
-            <FieldSet key={field.id}>
-              <p className="text-sm font-medium">
-                {materialById(field.materialId).name}
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <DecimalField
-                  control={control}
-                  name={`lines.${index}.kg`}
-                  label="Weight (kg)"
-                />
-                <DecimalField
-                  control={control}
-                  name={`lines.${index}.pricePerKg`}
-                  label="Price per kg (R)"
-                />
-              </div>
-            </FieldSet>
-          ))}
-        </FieldGroup>
-        <TextField control={control} name="window" label="Collection window" />
-      </form>
+      {open && (
+        <OfferForm request={request} onDone={() => onOpenChange(false)} />
+      )}
     </ResponsiveOverlay>
+  );
+}
+
+function OfferForm({
+  request,
+  onDone,
+}: {
+  request: TradeRequest;
+  onDone: () => void;
+}) {
+  const offer = useOffer(request.id);
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      items: request.items.map((item) => ({
+        material_id: item.material_id,
+        weight: item.offer_weight ?? item.available_weight ?? '',
+        price: item.offer_price ?? '',
+      })),
+    },
+  });
+  const { fields } = useFieldArray({ control: form.control, name: 'items' });
+  const lines = form.watch('items');
+  const total = lines.reduce(
+    (sum, line) => sum + lineCents(line.price, line.weight),
+    0
+  );
+
+  return (
+    <form
+      className="space-y-5"
+      noValidate
+      onSubmit={form.handleSubmit(async (values) => {
+        try {
+          await offer.mutateAsync({
+            items: values.items.map((item) => ({
+              ...item,
+              weight: item.weight.trim().replace(',', '.'),
+              price: item.price.trim().replace(',', '.'),
+            })),
+          });
+          onDone();
+        } catch (cause) {
+          form.setError('root', {
+            message:
+              cause instanceof Error
+                ? cause.message
+                : 'Could not send this offer.',
+          });
+        }
+      })}
+    >
+      {fields.map((field, index) => (
+        <fieldset key={field.id} className="space-y-3">
+          <legend className="mb-2 font-medium">
+            {request.items[index].material_name}
+          </legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DecimalField
+              control={form.control}
+              name={`items.${index}.weight`}
+              label="Weight (kg)"
+            />
+            <DecimalField
+              control={form.control}
+              name={`items.${index}.price`}
+              label="Price per kg (R)"
+            />
+          </div>
+        </fieldset>
+      ))}
+      <p className="font-medium tabular-nums">Total {formatRand(total)}</p>
+      {form.formState.errors.root?.message && (
+        <p role="alert" className="text-destructive">
+          {form.formState.errors.root.message}
+        </p>
+      )}
+      <Button type="submit" disabled={offer.isPending}>
+        Send offer
+      </Button>
+    </form>
   );
 }

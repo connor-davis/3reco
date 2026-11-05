@@ -1,5 +1,3 @@
-import { Download, FileText } from 'lucide-react';
-import { toast } from 'sonner';
 import { LinkButton } from '@/components/link-button';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,64 +7,69 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { materialById } from '@/lib/data/materials';
+import { useAuth } from '@/lib/auth/use-auth';
+import { useDownloadInvoice } from '@/lib/api/transactions';
+import type { TradeRequest } from '@/lib/api/types';
 import { formatKg, formatRand, formatRate, lineCents } from '@/lib/format';
-import type { MarketRequest } from '@/lib/types';
 import { requestTotal } from './helpers';
 
-type OfferCardProps = {
-  request: MarketRequest;
-  // Only the buyer can accept or decline the seller's offer.
-  canRespond: boolean;
-  onAccept: () => void;
-  onDecline: () => void;
-};
-
-/** The open offer: every line, the total, and the buyer's two answers. */
 export function OfferCard({
   request,
   canRespond,
   onAccept,
   onDecline,
-}: OfferCardProps) {
+  disabled,
+}: {
+  request: TradeRequest;
+  canRespond: boolean;
+  onAccept: () => void;
+  onDecline: () => void;
+  disabled: boolean;
+}) {
   return (
-    <Card size="sm" className="max-w-sm gap-0 py-0">
+    <Card size="sm" className="max-w-sm">
       <CardHeader className="bg-accent py-3">
-        <CardTitle>
-          Offer ·{' '}
-          {request.items.length === 1
-            ? '1 line'
-            : `${request.items.length} lines`}
-        </CardTitle>
+        <CardTitle>Offer · {request.items.length} materials</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 py-4 text-sm">
-        <ul className="space-y-2">
-          {request.items.map((line) => (
-            <li key={line.materialId} className="flex justify-between gap-4">
+      <CardContent className="space-y-3 text-sm">
+        <ul className="space-y-3">
+          {request.items.map((item, index) => (
+            <li
+              key={`${item.material_id}-${index}`}
+              className="flex justify-between gap-4"
+            >
               <span>
-                {materialById(line.materialId).name}
-                <span className="block text-xs text-muted-foreground tabular-nums">
-                  {formatKg(line.kg)} at {formatRate(line.pricePerKg)}
+                {item.material_name}
+                <span className="block text-xs text-muted-foreground">
+                  {formatKg(item.offer_weight ?? '0')} at{' '}
+                  {formatRate(item.offer_price ?? '0')}
                 </span>
               </span>
-              <span className="font-medium tabular-nums">
-                {formatRand(lineCents(line.pricePerKg, line.kg))}
+              <span className="tabular-nums">
+                {formatRand(
+                  lineCents(item.offer_price ?? '0', item.offer_weight ?? '0')
+                )}
               </span>
             </li>
           ))}
         </ul>
-        <p className="flex justify-between border-t pt-2 font-semibold tabular-nums">
+        <p className="flex justify-between border-t pt-3 font-semibold">
           <span>Total</span>
-          <span>{formatRand(requestTotal(request))}</span>
+          <span className="tabular-nums">
+            {formatRand(requestTotal(request))}
+          </span>
         </p>
-        <p className="text-muted-foreground">{request.collection.window}</p>
+        <p className="text-muted-foreground">
+          Stock is reserved for 48 hours from the offer. An expired offer needs
+          to be renewed by the seller.
+        </p>
       </CardContent>
       {canRespond && (
-        <CardFooter className="flex-wrap gap-2 pb-4">
-          <Button size="sm" onClick={onAccept}>
+        <CardFooter className="gap-3">
+          <Button disabled={disabled} onClick={onAccept}>
             Accept
           </Button>
-          <Button size="sm" variant="outline" onClick={onDecline}>
+          <Button variant="outline" disabled={disabled} onClick={onDecline}>
             Decline
           </Button>
         </CardFooter>
@@ -75,31 +78,49 @@ export function OfferCard({
   );
 }
 
-/** Shown once a deal is accepted. */
-export function InvoiceCard({ request }: { request: MarketRequest }) {
+export function InvoiceCard({
+  request,
+  transactionId,
+}: {
+  request: TradeRequest;
+  transactionId?: string;
+}) {
+  const { user } = useAuth();
+  const download = useDownloadInvoice();
   return (
     <Card size="sm" className="max-w-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="size-4" aria-hidden="true" />
-          Invoice for {request.id}
-        </CardTitle>
+        <CardTitle>Offer accepted</CardTitle>
       </CardHeader>
-      <CardContent className="py-4 text-sm text-muted-foreground">
-        Total {formatRand(requestTotal(request))}
+      <CardContent className="space-y-3 text-sm">
+        <p>Total {formatRand(requestTotal(request))}</p>
+        <p>The transaction and invoice are in your records.</p>
+        {download.error && (
+          <p role="alert" className="text-destructive">
+            {download.error.message}
+          </p>
+        )}
       </CardContent>
-      <CardFooter className="gap-2 pb-4">
-        <LinkButton to="/transactions/purchases" size="sm" variant="outline">
-          View
-        </LinkButton>
-        <Button
-          size="sm"
+      <CardFooter className="flex-wrap gap-3">
+        <LinkButton
+          to={
+            user?.id === request.seller.id
+              ? '/transactions/sales'
+              : '/transactions/purchases'
+          }
           variant="outline"
-          onClick={() => toast('Invoice download is coming soon.')}
         >
-          <Download data-icon="inline-start" />
-          Download
-        </Button>
+          View transaction
+        </LinkButton>
+        {transactionId && (
+          <Button
+            variant="outline"
+            disabled={download.isPending}
+            onClick={() => download.mutate(transactionId)}
+          >
+            Download invoice
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

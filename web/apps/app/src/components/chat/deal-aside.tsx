@@ -1,76 +1,53 @@
 import { StatusBadge } from '@/components/badges';
 import { LinkButton } from '@/components/link-button';
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from '@/components/ui/item';
-import { materialById } from '@/lib/data/materials';
-import { storeById } from '@/lib/data/stores';
-import { formatDate, formatKg, formatRand, lineCents } from '@/lib/format';
-import type { MarketRequest } from '@/lib/types';
+import { formatDate, formatKg, formatRand, formatRate } from '@/lib/format';
+import type { TradeRequest } from '@/lib/api/types';
 import { requestTotal } from './helpers';
 
-/** Right-hand column of the deal room. On phones it opens in a Drawer. */
-export function DealAside({ request }: { request: MarketRequest }) {
-  const buyer = storeById(request.buyerId);
-  const seller = storeById(request.sellerId);
-  const hasInvoice = ['Accepted', 'Invoiced', 'Completed'].includes(
-    request.status
-  );
-
+export function DealAside({ request }: { request: TradeRequest }) {
+  const hasOffer = request.items.some((item) => item.offer_price !== null);
   return (
     <div className="space-y-6 text-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap justify-between gap-2">
         <StatusBadge status={request.status} />
-        <span className="text-muted-foreground">{request.id}</span>
+        <span className="break-all text-muted-foreground">{request.id}</span>
       </div>
-      <ItemGroup className="rounded-xl border">
-        {request.items.map((line) => (
-          <Item key={line.materialId} size="sm">
-            <ItemContent>
-              <ItemTitle>{materialById(line.materialId).name}</ItemTitle>
-              <ItemDescription>{formatKg(line.kg)}</ItemDescription>
-            </ItemContent>
-            <ItemActions className="font-medium tabular-nums">
-              {formatRand(lineCents(line.pricePerKg, line.kg))}
-            </ItemActions>
-          </Item>
+      <ul className="space-y-3 rounded-xl border p-4">
+        {request.items.map((item, index) => (
+          <li key={`${item.material_id}-${index}`} className="space-y-1">
+            <p className="font-medium">{item.material_name}</p>
+            {item.offer_weight !== null && (
+              <p>
+                {formatKg(item.offer_weight)} at{' '}
+                {formatRate(item.offer_price ?? '0')}
+              </p>
+            )}
+            {item.available_weight !== null && (
+              <p className="text-muted-foreground">
+                {formatKg(item.available_weight)} available
+              </p>
+            )}
+          </li>
         ))}
-      </ItemGroup>
-      <dl className="grid gap-2">
-        <Row
-          label="Created"
-          value={formatDate(request.createdAt.slice(0, 10))}
-        />
-        <Row label="Buyer" value={buyer.name} />
-        <Row label="Seller" value={seller.name} />
-        <Row label="Total" value={formatRand(requestTotal(request))} />
-        <Row label="Collection area" value={request.collection.area} />
-        <Row label="Window" value={request.collection.window} />
-      </dl>
-      <div className="flex flex-wrap gap-2">
-        <LinkButton
-          to="/market/store/$sellerId"
-          params={{ sellerId: seller.id }}
-          variant="outline"
-          size="sm"
-        >
-          Visit store
-        </LinkButton>
-        {hasInvoice && (
-          <LinkButton to="/transactions/purchases" variant="outline" size="sm">
-            Invoice
-          </LinkButton>
+      </ul>
+      <dl className="space-y-3">
+        <Row label="Created" value={formatDate(request.created_at)} />
+        <Row label="Buyer" value={request.buyer.name} />
+        <Row label="Seller" value={request.seller.name} />
+        {hasOffer && (
+          <Row label="Offer total" value={formatRand(requestTotal(request))} />
         )}
-      </div>
+      </dl>
+      <LinkButton
+        to="/market/store/$sellerId"
+        params={{ sellerId: request.seller.id }}
+        variant="outline"
+      >
+        Visit store
+      </LinkButton>
     </div>
   );
 }
-
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">

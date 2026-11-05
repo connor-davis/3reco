@@ -1,47 +1,36 @@
-import { myStoreId, storeById } from '@/lib/data/stores';
 import { lineCents } from '@/lib/format';
-import type { MarketRequest } from '@/lib/types';
+import type { TradeRequest, Message } from '@/lib/api/types';
 
-/** The other side of a request, from the signed-in business's point of view. */
-export function counterpartyOf(request: MarketRequest) {
-  const otherId =
-    request.buyerId === myStoreId ? request.sellerId : request.buyerId;
-
-  return storeById(otherId);
+export function counterpartyOf(request: TradeRequest, userId?: string) {
+  return request.buyer.id === userId ? request.seller : request.buyer;
 }
 
-/** Sum of all lines, in cents. */
-export function requestTotal(request: MarketRequest): number {
+export function requestTotal(request: TradeRequest): number {
   return request.items.reduce(
-    (sum, line) => sum + lineCents(line.pricePerKg, line.kg),
+    (sum, item) =>
+      sum + lineCents(item.offer_price ?? '0', item.offer_weight ?? '0'),
     0
   );
 }
 
-const closed = ['Completed', 'Rejected', 'Cancelled'];
-
-export function isClosed(request: MarketRequest): boolean {
-  return closed.includes(request.status);
+export function isClosed(request: TradeRequest): boolean {
+  return ['accepted', 'rejected', 'cancelled'].includes(request.status);
 }
 
-/** True when the signed-in business is the seller on this request. */
-export function iAmSeller(request: MarketRequest): boolean {
-  return request.sellerId === myStoreId;
+export function canMakeOffer(request: TradeRequest, userId?: string): boolean {
+  return request.seller.id === userId && !isClosed(request);
 }
 
-/** True when the signed-in business is the buyer on this request. */
-export function iAmBuyer(request: MarketRequest): boolean {
-  return request.buyerId === myStoreId;
+export function canRespond(request: TradeRequest, userId?: string): boolean {
+  return request.buyer.id === userId && request.status === 'offered';
 }
 
-const offerable = ['Requested', 'Offer sent', 'Counter'];
-
-/** The seller makes the offer, so only the seller sees "Make offer". */
-export function canMakeOffer(request: MarketRequest): boolean {
-  return iAmSeller(request) && offerable.includes(request.status);
-}
-
-/** Only the buyer can accept or decline. An offer is never answered by its author. */
-export function canRespond(request: MarketRequest): boolean {
-  return iAmBuyer(request) && request.offerPending;
+export function orderedMessages(messages: Message[]): Message[] {
+  return [
+    ...new Map(messages.map((message) => [message.id, message])).values(),
+  ].sort(
+    (a, b) =>
+      Date.parse(a.created_at) - Date.parse(b.created_at) ||
+      a.id.localeCompare(b.id)
+  );
 }

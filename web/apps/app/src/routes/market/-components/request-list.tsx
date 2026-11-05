@@ -6,63 +6,41 @@ import { DataState, RowsSkeleton } from '@/components/data-state';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
 import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from '@/components/ui/item';
+import { Button } from '@/components/ui/button';
 import { PersonAvatar } from '@/components/visuals';
-import { materialById } from '@/lib/data/materials';
-import { myStoreId } from '@/lib/data/stores';
+import { useRequests } from '@/lib/api/requests';
+import { useLiveTopics } from '@/lib/live/use-live';
+import { useAuth } from '@/lib/auth/use-auth';
 import { formatDate, formatRand } from '@/lib/format';
-import { useMock } from '@/lib/mock/hooks';
 
-type Props = {
-  direction: 'incoming' | 'outgoing';
-  title: string;
-  description: string;
-  emptyTitle: string;
-};
-
-const statusOptions = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'Requested', label: 'Requested' },
-  { value: 'Offer sent', label: 'Offer received' },
-  { value: 'Counter', label: 'In discussion' },
-  { value: 'Accepted', label: 'Accepted' },
-  { value: 'Completed', label: 'Completed' },
-];
-
-/** Incoming and outgoing requests share this list. Only the filter differs. */
 export function RequestList({
   direction,
   title,
   description,
   emptyTitle,
-}: Props) {
-  const { data } = useMock();
-  const [query, setQuery] = useState('');
+}: {
+  direction: 'incoming' | 'outgoing';
+  title: string;
+  description: string;
+  emptyTitle: string;
+}) {
+  const { user } = useAuth();
+  const [cursor, setCursor] = useState<string>();
+  const query = useRequests(direction, { cursor });
+  const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
-
-  const mine = data.requests.filter((request) =>
-    direction === 'incoming'
-      ? request.sellerId === myStoreId
-      : request.buyerId === myStoreId
+  const requests = query.data?.items ?? [];
+  useLiveTopics(
+    requests.map((request) => `request:${request.id}`),
+    [['requests', direction]]
   );
-  const shown = mine.filter((request) => {
-    if (status !== 'all' && request.status !== status) return false;
-
-    const name = counterpartyOf(request).name;
-    const material = materialById(request.items[0].materialId).name;
-
-    return `${name} ${material} ${request.id}`
-      .toLowerCase()
-      .includes(query.toLowerCase());
-  });
+  const shown = requests.filter(
+    (request) =>
+      (status === 'all' || request.status === status) &&
+      `${counterpartyOf(request, user?.id).name} ${request.items.map((item) => item.material_name).join(' ')} ${request.id}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
+  );
 
   return (
     <>
@@ -72,62 +50,85 @@ export function RequestList({
         actions={<LinkButton to="/messages">Open messages</LinkButton>}
       />
       <div className="mb-6 flex flex-wrap gap-3">
-        <SearchBox label="Search requests" value={query} onChange={setQuery} />
+        <SearchBox
+          label="Search this page"
+          value={search}
+          onChange={setSearch}
+        />
         <ChoiceSelect
-          label="Status"
+          label="Status on this page"
           value={status}
-          options={statusOptions}
           onChange={setStatus}
+          options={[
+            'all',
+            'pending',
+            'offered',
+            'accepted',
+            'rejected',
+            'cancelled',
+          ].map((value) => ({
+            value,
+            label: value === 'all' ? 'All statuses' : value,
+          }))}
         />
       </div>
       <DataState
-        isEmpty={shown.length === 0}
+        query={query}
+        isEmpty={!shown.length}
         icon={Inbox}
-        emptyTitle={mine.length === 0 ? emptyTitle : 'No matching requests'}
-        emptyText={
-          mine.length === 0
-            ? 'They show up here as soon as they arrive.'
-            : 'Try another search or status.'
-        }
+        emptyTitle={requests.length ? 'No matching requests' : emptyTitle}
+        emptyText="Requests appear here when you start trading."
         skeleton={<RowsSkeleton />}
       >
-        <ItemGroup className="rounded-2xl border">
+        <ul className="divide-y rounded-2xl border">
           {shown.map((request) => {
-            const other = counterpartyOf(request);
-
+            const other = counterpartyOf(request, user?.id);
             return (
-              <Item key={request.id}>
-                <ItemMedia>
-                  <PersonAvatar name={other.name} online={other.online} />
-                </ItemMedia>
-                <ItemContent className="min-w-40">
-                  <ItemTitle>{other.name}</ItemTitle>
-                  <ItemDescription>
-                    {materialById(request.items[0].materialId).name}
-                    {request.items.length > 1 &&
-                      ` +${request.items.length - 1} more`}{' '}
-                    · {formatDate(request.createdAt.slice(0, 10))} ·{' '}
-                    {request.id}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <StatusBadge status={request.status} />
-                  <span className="w-28 text-right font-medium tabular-nums">
-                    {formatRand(requestTotal(request))}
-                  </span>
-                  <LinkButton
-                    to="/market/$requestId"
-                    params={{ requestId: request.id }}
-                    variant="outline"
-                  >
-                    Open chat
-                  </LinkButton>
-                </ItemActions>
-              </Item>
+              <li
+                key={request.id}
+                className="flex flex-wrap items-center gap-4 p-4"
+              >
+                <PersonAvatar name={other.name} />
+                <div className="min-w-40 flex-1">
+                  <p className="font-medium">{other.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {request.items.map((item) => item.material_name).join(', ')}{' '}
+                    · {formatDate(request.created_at)}
+                  </p>
+                </div>
+                <StatusBadge status={request.status} />
+                <p className="tabular-nums">
+                  {request.items.some((item) => item.offer_price !== null)
+                    ? formatRand(requestTotal(request))
+                    : 'Awaiting offer'}
+                </p>
+                <LinkButton
+                  to="/market/$requestId"
+                  params={{ requestId: request.id }}
+                  variant="outline"
+                >
+                  Open chat
+                </LinkButton>
+              </li>
             );
           })}
-        </ItemGroup>
+        </ul>
       </DataState>
+      <div className="my-6 flex gap-3">
+        {cursor && (
+          <Button variant="outline" onClick={() => setCursor(undefined)}>
+            First page
+          </Button>
+        )}
+        {query.data?.has_more && (
+          <Button
+            variant="outline"
+            onClick={() => setCursor(query.data?.next_cursor ?? undefined)}
+          >
+            Next page
+          </Button>
+        )}
+      </div>
     </>
   );
 }
