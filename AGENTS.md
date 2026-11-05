@@ -147,6 +147,9 @@ How they work together:
 4. The Orchestrator reviews the Developer's diff and test output, then
    commits or sends it back, and moves to the next task.
 
+If a running sub-agent goes the wrong way, steer it with a message
+(`t3_thread_send` to its thread). Don't cancel it and start over.
+
 ## Learnings
 
 Add short notes here when something surprises you, under the closest group.
