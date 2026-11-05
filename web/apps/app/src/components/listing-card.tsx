@@ -14,7 +14,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <div className="relative flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-muted-foreground">
         <Package className="size-16" strokeWidth={1.25} aria-hidden="true" />
         <Button
-          className="absolute top-3 right-3 min-h-11"
+          className="absolute top-3 right-3 z-10 min-h-11"
           variant="secondary"
           disabled={chat.isPending}
           onClick={() => void chat.startChat(listing)}
@@ -26,7 +26,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <CardContent className="mt-3.5 space-y-1.5 px-0">
         <h3 className="font-semibold tracking-tight">
           <Link
-            className="rounded hover:underline focus-visible:ring-3 focus-visible:ring-ring"
+            className="rounded outline-none after:absolute after:inset-0 hover:underline focus-visible:after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring"
             to="/market/listing/$listingId"
             params={{ listingId: listing.id }}
           >
@@ -40,7 +40,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
           {formatRate(listing.price)}
         </p>
         <Link
-          className="inline-flex min-h-11 items-center text-sm hover:underline"
+          className="relative z-10 inline-flex min-h-11 items-center text-sm hover:underline"
           to="/market/store/$sellerId"
           params={{ sellerId: listing.seller_id }}
         >

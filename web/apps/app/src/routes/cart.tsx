@@ -348,6 +348,7 @@ function CartLine({
 }) {
   const listing = useListing(stockId);
   const weight = form.watch(`items.${index}.weight`);
+  const fieldError = form.formState.errors.items?.[index]?.weight?.message;
   const problem = listing.data
     ? quantityError(weight, listing.data.weight)
     : null;
@@ -387,7 +388,7 @@ function CartLine({
         name={`items.${index}.weight`}
         label="Weight (kg)"
       />
-      {problem && (
+      {problem && problem !== fieldError && (
         <p role="alert" className="text-sm text-destructive">
           {problem}
         </p>

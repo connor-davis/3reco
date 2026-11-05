@@ -27,7 +27,7 @@ var guardedTables = []string{
 // for the import so a running server hears nothing about data it cannot see.
 var realtimeTables = []string{
 	"notifications", "stock", "carts", "cart_items", "transaction_requests",
-	"transaction_request_messages", "request_message_reads", "transactions",
+	"transaction_request_messages", "transactions",
 	"users", "materials",
 }
 

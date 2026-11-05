@@ -293,3 +293,37 @@ func TestLiveRecheckDropsRemovedUserAndLostRequestAccess(t *testing.T) {
 		t.Fatalf("removed user's socket still open: %v %v", ev, err)
 	}
 }
+
+func TestReadReceiptSendsNoChangedFrame(t *testing.T) {
+	w := newTradeWorld(t)
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	topic := "request:" + id
+
+	sock, _, err := dial(t, w.app, w.seller.c, testutil.WebOrigin)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+
+	sock.send(map[string]string{"type": "subscribe", "topic": topic})
+	sock.send(map[string]string{"type": "ping"})
+
+	if ev := sock.next(); ev["type"] != "pong" {
+		t.Fatalf("ping: %v", ev)
+	}
+
+	// A new message must be heard, so a silent socket below means something.
+	tradeWant(t, "send", tradeSay(t, w.buyer, id, "Hello"), 200)
+
+	if ev := sock.next(); ev["type"] != "changed" || ev["topic"] != topic {
+		t.Fatalf("message event: %v, want changed on %s", ev, topic)
+	}
+
+	tradeWant(t, "mark read", w.seller.c.Do("POST", "/api/requests/"+id+"/messages/read", nil), 200)
+
+	time.Sleep(300 * time.Millisecond)
+	sock.send(map[string]string{"type": "ping"})
+
+	if ev := sock.next(); ev["type"] != "pong" {
+		t.Fatalf("heard %v after the read receipt, want only the pong", ev)
+	}
+}
