@@ -70,7 +70,7 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T10 | (done a447d22) Files (MinIO) + PDFs/CSV exports + emails (Resend/Mailpit) | dev | T8 |
 | T11 | (done fdce044, 9d983e8; dry run on the real export loaded every row) Data move: Convex export → Postgres + MinIO, count check | dev | T6, T10 |
 | T11b | Stock holds (Viper-style): hold stock while an offer is open, release on decline/withdraw/cancel/expiry; map `mystuff/maps/holds-privacy-map.md` | done (4fa380e): 48h hold at offer, expiry loop, direct sale and stock edits respect holds | T8 |
-| T11c | POPIA + GDPR: every technical control (consent, notices, access/export, correction, erasure as anonymise where tax law needs the record, retention, audit log, security, breach support); owner paperwork listed separately | mapper, then dev | T8, T10 |
+| T11c | POPIA + GDPR: every technical control (consent, notices, access/export, correction, erasure as anonymise where tax law needs the record, retention, audit log, security, breach support); owner paperwork listed separately | done (a517b8b, d708414, 6759e86): field encryption, export, self-delete, retention, notice version, audit log. Open: re-key command; web sign-up must send accepted_terms_version (T13). Owner paperwork still open | T8, T10 |
 | T12 | Frontend client: fetch client + `useLive` + auth context; swap all Convex calls | dev | T8, T9 |
 | T13 | Frontend rebuild in picked design, every page, light + dark | dev(s) | T5, T12 |
 | T14 | Remove `convex/`, Convex + Better Auth packages; update compose/Dockerfile/README | dev | T13 |
