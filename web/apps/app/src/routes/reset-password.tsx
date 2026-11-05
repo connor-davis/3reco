@@ -19,13 +19,13 @@ export const Route = createFileRoute('/reset-password')({
   component: ResetPasswordPage,
 });
 
-const schema = z.object({
-  password: z.string().min(8, 'Use at least 8 characters.'),
-});
-
-type Values = z.infer<typeof schema>;
-
 function ResetPasswordPage() {
+  const schema = z.object({
+    password: z.string().min(8, 'Use at least 8 characters.'),
+  });
+
+  type Values = z.infer<typeof schema>;
+
   const { token } = Route.useSearch();
   const navigate = useNavigate();
   const reset = useResetPassword();

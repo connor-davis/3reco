@@ -16,14 +16,14 @@ export const Route = createFileRoute('/sign-in')({
   component: SignInPage,
 });
 
-const schema = z.object({
-  email: z.string().email('Enter an email like you@company.co.za.'),
-  password: z.string().min(1, 'Enter your password.'),
-});
-
-type Values = z.infer<typeof schema>;
-
 function SignInPage() {
+  const schema = z.object({
+    email: z.string().email('Enter an email like you@company.co.za.'),
+    password: z.string().min(1, 'Enter your password.'),
+  });
+
+  type Values = z.infer<typeof schema>;
+
   const navigate = useNavigate();
   const signIn = useSignIn();
   const [failure, setFailure] = useState<string | null>(null);

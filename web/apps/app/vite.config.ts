@@ -24,4 +24,22 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Cache shared vendors separately and keep each chunk below 500 kB.
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return;
+          if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id))
+            return 'react';
+          if (
+            /\/node_modules\/@tanstack\/(react-query|query-core|react-router|router-core|history|react-store|store)\//.test(
+              id
+            )
+          )
+            return 'tanstack';
+        },
+      },
+    },
+  },
 });
