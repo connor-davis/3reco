@@ -1,9 +1,17 @@
 # syntax=docker/dockerfile:1
 #
-# The 3REco API as one small static binary on distroless, run as non-root.
+# 3REco as one small image: the Go binary plus the built web app, on
+# distroless, run as non-root. The binary serves the web app next to /api.
 # Build from the repo root:
 #
 #   podman build -f deployments/Dockerfile -t 3reco --build-arg VERSION=v0.1.0 .
+
+FROM node:22-alpine AS web
+WORKDIR /src/web/apps/app
+COPY web/apps/app/package.json web/apps/app/package-lock.json ./
+RUN npm ci
+COPY web/apps/app ./
+RUN npm run build
 
 FROM golang:1.27-alpine AS build
 ARG VERSION=dev

@@ -1,86 +1,33 @@
 # Invoices
 
-3rEco automatically generates a PDF invoice for every completed transaction. Invoices are stored in Convex file storage and available for download by both buyer and seller.
+3rEco makes a PDF invoice for every completed transaction. Both the buyer and the seller can download it.
 
-## Invoice Generation Flow
-
-```
-Transaction accepted
-        ↓
-Convex mutation inserts transaction record
-        ↓
-Convex action: generateInvoice(transactionId)
-        ↓
-Fetch transaction + user + material details
-        ↓
-Render PDF (server-side)
-        ↓
-ctx.storage.store(pdfBlob) → storageId
-        ↓
-ctx.db.patch(transactionId, { invoiceStorageId: storageId })
-        ↓
-Invoice available for download
-```
-
-## Accessing Invoices
-
-### From Transaction History
-
-Each transaction row in the history table includes a **Download Invoice** button. Clicking it fetches a temporary signed URL:
-
-```typescript
-const invoiceUrl = useQuery(api.transactions.getInvoiceUrl, {
-  transactionId: transaction._id,
-})
-
-// invoiceUrl is a signed URL valid for ~1 hour
-// Opens the PDF in a new tab or triggers download
-```
-
-### Direct URL Generation
-
-```typescript
-// Server-side (Convex query)
-export const getInvoiceUrl = query({
-  args: { transactionId: v.id('transactions') },
-  handler: async (ctx, { transactionId }) => {
-    const tx = await ctx.db.get(transactionId)
-    if (!tx?.invoiceStorageId) return null
-    return await ctx.storage.getUrl(tx.invoiceStorageId)
-  },
-})
-```
-
-## Invoice Contents
-
-| Section | Details |
-|---|---|
-| **Header** | 3rEco logo, invoice number, date |
-| **Seller details** | Name / business name, registration number, address |
-| **Buyer details** | Name / business name, registration number, address |
-| **Line item** | Material name, GW code, weight (kg), price per kg |
-| **Totals** | Subtotal, VAT (if applicable), total |
-| **Footer** | Transaction ID, platform reference |
-
-## Invoice Numbering
-
-Invoice numbers are derived from the transaction ID with a formatted prefix:
+## Flow
 
 ```
-INV-2024-001234
+A request is accepted, or a collection or sale is recorded
+        │
+        ▼
+The transaction and its items are written in one database transaction
+        │
+        ▼
+The server builds an A4 invoice (exact decimals, wrapped lines, pages)
+and stores it in S3-compatible storage (MinIO locally)
+        │
+        ▼
+GET /api/transactions/:id/invoice streams the PDF to a participant
 ```
 
-The sequence is based on the transaction's creation timestamp to ensure uniqueness and rough chronological ordering.
+## Download
+
+`GET /api/transactions/:id/invoice` returns `application/pdf` as a download named `3rEco-Invoice-<NUMBER>.pdf`. The number is the last 8 characters of the transaction id, upper case, and is also in the transaction as `invoice_number`.
+
+Only the buyer and the seller can read it; anyone else gets `404 not_found`. If the stored file is missing, the server builds it again on request.
 
 ## Storage
 
-Invoices are stored in **Convex file storage** (not in the database). The `_storage` system table manages the actual files, and the `invoiceStorageId` field on the `transactions` table is a reference (`Id<"_storage">`).
+The PDFs live in the S3 bucket (`THREERECO_S3_BUCKET`), not in the database. Back the bucket up with the database: a database backup alone loses the files. The PDF is built with an MIT-licensed Go library, so there is no external service.
 
-Convex storage handles:
-- Redundant, durable storage
-- Access control (only authenticated users can retrieve signed URLs)
-- Automatic garbage collection (not enabled for invoices — they are retained indefinitely)
+## Privacy
 
-<Callout type="note" title="Regeneration">
-  If an invoice file is missing (e.g. during a migration), admins can trigger regeneration via a dedicated admin action that re-runs the PDF generation for a given transaction ID.
-</Callout>
+When an account is erased, the person's name becomes "Removed account" on finished trades and their invoices are rebuilt. Trades older than five years are anonymised, and their invoice is then gone (`404`).

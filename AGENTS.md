@@ -35,10 +35,11 @@ app.
   (MinIO / S3), `pdf`, `apperr`.
 - `web/apps/app` - the React app (React 19, Vite, TanStack Router,
   Tailwind 4, shadcn). It talks to the API through `src/lib/api` and gets live
-  data from the `useLive` hook.
+  data from the `useLive` hook. The Go binary serves its `dist/` folder.
 - `web/apps/docs` - the documentation site.
-- `deployments` - `Dockerfile` and `docker-compose.yml` (Go, Postgres,
-  MinIO, Mailpit).
+- `deployments` - `Dockerfile` (Go binary plus the built web app, one
+  container) and `docker-compose.yml` (local Postgres, MinIO, Mailpit). The
+  root `docker-compose.yml` and `deploy.sh` are the production stack.
 - `tests` - Go API tests against a real Postgres (`tests/testutil` has the
   helpers).
 - `docs` - [start here](docs/start-here.md), [code map](docs/code-map.md),
@@ -71,8 +72,9 @@ All commands run through [Task](https://taskfile.dev); `task` lists them.
   `postgres://threereco:threereco@localhost:5441/threereco?sslmode=disable`.
 - `task check` - gofmt, vet, staticcheck, Go tests, web typecheck, lint and
   build. Run it before every PR.
-- `task import-convex -- <export.zip>` - load a `npx convex export` file into
-  Postgres and MinIO, then print record counts per table.
+- `task import-convex -- <export.zip>` - the one-time move off Convex: load a
+  `npx convex export` file into Postgres and MinIO, then print record counts per
+  table.
 - Other tasks: `install`, `fmt`, `build`, `serve`, `dev:api`, `dev:web`,
   `down`, `nuke` (delete all local data).
 

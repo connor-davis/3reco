@@ -1,127 +1,61 @@
 # Transactions API
 
-The `transactions` module provides read access to completed transaction records and write mutations for direct (admin-facilitated) sales. All functions are in `convex/transactions.ts`.
+A transaction is a completed trade. Accepting a request makes one, and a business can also record a collection from a collector or a direct sale. All routes are under `/api` and need a signed-in user. You only see trades where you are the buyer or the seller.
 
-<Callout type="note">
-  Most transactions are created automatically via `api.transactionRequests.accept`. The direct sale mutations below are primarily for admin data entry.
-</Callout>
+A transaction is:
 
-## Queries
-
-### `list()`
-
-Returns all transactions. **Admin / Staff only.**
-
-```typescript
-const allTransactions = useQuery(api.transactions.list)
+```json
+{
+  "id": "...", "type": "c2b", "seller": { "id": "...", "name": "..." },
+  "buyer": { "id": "...", "name": "..." }, "total_price": "812.50",
+  "collection_day": "2026-11-05", "collection_date": null, "effective_at": "...", "created_at": "...",
+  "invoice_number": "A1B2C3D4",
+  "items": [{ "material_id": "...", "material_name": "PET Plastic", "weight": "125", "price": "6.50" }],
+  "receipts": [{ "id": "...", "file_name": "...", "content_type": "image/png", "size": 1234, "uploaded_at": "..." }]
+}
 ```
 
-**Returns:** `Doc<"transactions">[]`
+`type` is `c2b` (collector to business) or `b2b` (business to business). All money and weights are decimal strings.
 
----
+## Read
 
-### `listSales(opts?)`
-
-Returns transactions where the current user is the **seller**.
-
-```typescript
-const sales = useQuery(api.transactions.listSales, {
-  startDate: '2024-01-01T00:00:00.000Z',
-  endDate: '2024-12-31T23:59:59.999Z',
-})
-```
-
-**Args:**
-
-| Field | Type | Required |
+| Method | Path | Returns |
 |---|---|---|
-| `startDate` | `string` (ISO 8601) | No |
-| `endDate` | `string` (ISO 8601) | No |
+| GET | `/api/transactions/` | Your trades (page: `cursor`, `limit`; `all=true` returns up to 1000 as a plain array) |
+| GET | `/api/transactions/purchases` | Trades where you are the buyer |
+| GET | `/api/transactions/sales` | Business-to-business trades where you are the seller |
+| GET | `/api/transactions/:id` | One trade (participants only) |
 
-**Returns:** `Doc<"transactions">[]` filtered by `sellerId = currentUser`
+## Record
 
-**Access:** Collector, Business, Admin
+### `POST /api/transactions/collections`
 
----
+A business records a purchase from one of its collectors.
 
-### `listExpenses(opts?)`
-
-Returns transactions where the current user is the **buyer**.
-
-```typescript
-const expenses = useQuery(api.transactions.listExpenses, {
-  startDate: '2024-01-01T00:00:00.000Z',
-  endDate: '2024-12-31T23:59:59.999Z',
-})
+```json
+{
+  "collector_id": "...", "business_id": "...",
+  "items": [{ "material_id": "...", "weight": "125", "price": "6.50" }],
+  "collection_day": "2026-11-05"
+}
 ```
 
-**Args:** Same as `listSales`.
+**Returns:** `{ "transaction_id": "..." }`
 
-**Returns:** `Doc<"transactions">[]` filtered by `buyerId = currentUser`
+### `POST /api/transactions/sales`
 
-**Access:** Business, Admin
+A direct business-to-business sale: `{ "business_id": "...", "items": [...] }`. **Returns:** `{ "transaction_id": "..." }`
 
----
+Weights and prices match `^\d{1,12}(\.\d{1,6})?$`. A trade has at most 100 lines and no repeated material.
 
-### `getInvoiceUrl(transactionId)`
+## Invoice and receipts
 
-Returns a temporary signed URL for downloading the transaction's PDF invoice.
-
-```typescript
-const url = useQuery(api.transactions.getInvoiceUrl, {
-  transactionId: transaction._id,
-})
-// url is valid for ~1 hour
-```
-
-**Returns:** `string | null` — `null` if invoice hasn't been generated yet
-
----
-
-## Mutations
-
-### `collectorToBusinessSale(fields)`
-
-Creates a C2B transaction directly. **Admin only.**
-
-```typescript
-await convex.mutation(api.transactions.collectorToBusinessSale, {
-  sellerId: collectorId,
-  buyerId: businessId,
-  materialId,
-  weight: 500,
-  price: 8.50,
-})
-```
-
-**Args:**
-
-| Field | Type | Description |
+| Method | Path | What |
 |---|---|---|
-| `sellerId` | `Id<"users">` | Collector's user ID |
-| `buyerId` | `Id<"users">` | Business's user ID |
-| `materialId` | `Id<"materials">` | Material sold |
-| `weight` | `number` | Weight in kg |
-| `price` | `number` | Price per kg (Rand) |
+| GET | `/api/transactions/:id/invoice` | The PDF invoice, as a download |
+| POST | `/api/transactions/:id/receipts` | Upload a receipt: multipart field `file`, PNG or JPEG, up to 5 MiB, at most five per trade |
+| GET | `/api/transactions/:id/receipts/:receipt_id` | Download a receipt |
 
-Sets `type: "c2b"` automatically.
+A receipt that is already attached to the trade gets `409 conflict`.
 
----
-
-### `businessToBusinessSale(fields)`
-
-Creates a B2B transaction directly. **Admin only.**
-
-```typescript
-await convex.mutation(api.transactions.businessToBusinessSale, {
-  sellerId: businessAId,
-  buyerId: businessBId,
-  materialId,
-  weight: 1000,
-  price: 7.20,
-})
-```
-
-**Args:** Same as `collectorToBusinessSale`. Sets `type: "b2b"` automatically.
-
-Both mutations trigger invoice generation as a scheduled action after insertion.
+Live updates: `transactions:<your user id>`.

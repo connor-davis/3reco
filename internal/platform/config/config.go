@@ -18,6 +18,7 @@ type Config struct {
 	Addr            string
 	DatabaseURL     string
 	WebOrigin       string
+	WebDist         string
 	Dev             bool
 	CookieSecure    bool
 	TrustedProxies  []string
@@ -55,6 +56,7 @@ var EnvVars = []EnvVar{
 	{"THREERECO_ADDR", ":8180", "Address the API listens on."},
 	{"THREERECO_DATABASE_URL", "postgres://threereco:threereco@localhost:5441/threereco?sslmode=disable", "Postgres connection string."},
 	{"THREERECO_WEB_ORIGIN", "http://localhost:5173", "Origin of the web app. Used for CORS, CSRF, WebSockets and email links."},
+	{"THREERECO_WEB_DIST", "web/apps/app/dist", "Folder with the built web app. The server serves it next to /api; if it is missing, only the API runs."},
 	{"THREERECO_DEV", "false", "Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set."},
 	{"THREERECO_COOKIE_SECURE", "false", "Set true in production so session cookies are HTTPS only."},
 	{"THREERECO_TRUSTED_PROXIES", "", "Comma-separated proxy addresses whose X-Forwarded-For is believed."},
@@ -82,6 +84,7 @@ func Load() (Config, error) {
 		Addr:           Env("THREERECO_ADDR", ":8180"),
 		DatabaseURL:    Env("THREERECO_DATABASE_URL", EnvVars[1].Default),
 		WebOrigin:      strings.TrimRight(Env("THREERECO_WEB_ORIGIN", "http://localhost:5173"), "/"),
+		WebDist:        Env("THREERECO_WEB_DIST", "web/apps/app/dist"),
 		Dev:            envBool("THREERECO_DEV"),
 		CookieSecure:   envBool("THREERECO_COOKIE_SECURE"),
 		TrustedProxies: envList("THREERECO_TRUSTED_PROXIES"),

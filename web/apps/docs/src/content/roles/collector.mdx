@@ -49,8 +49,8 @@ Collectors do not initiate trades in the UI. Their sales are recorded by busines
 
 After a c2b sale is recorded:
 
-- A `transaction` document is created with `type: "c2b"` and the collector's `_id` as `sellerId`
-- A PDF invoice is generated and stored in Convex file storage
+- A transaction is created with `type: "c2b"` and the collector as the seller
+- A PDF invoice is generated and stored in file storage
 - The collector's dashboard stats update in real time
 
 <Callout type="tip" title="How do I know when I have a sale?">

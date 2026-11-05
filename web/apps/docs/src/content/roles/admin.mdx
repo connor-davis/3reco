@@ -32,20 +32,24 @@ The admin dashboard provides a system-wide view:
 Admins can:
 
 1. **View all registered users** with their profile status and type
-2. **Edit any user's profile fields** (name, address, contact details)
-3. **Assign or change the `type`** field — promoting a user from untyped to `business`, `collector`, `staff`, or `admin`
-4. **Remove users** — deletes the user document (does not cascade-delete transactions for audit purposes)
+2. **Assign or change the role** — promoting a user from no role to `business`, `collector`, `staff`, or `admin`
+3. **Remove users** — erases the account; finished trades stay for the records, with the name shown as "Removed account"
 
 ```typescript
 // Promote a user to collector
-await convex.mutation(api.users.setType, { id: userId, type: 'collector' })
+await fetch(`/api/admin/users/${userId}/role`, {
+  method: 'PATCH',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ role: 'collector' }),
+})
 
 // Remove a user
-await convex.mutation(api.users.removeUser, { id: userId })
+await fetch(`/api/admin/users/${userId}`, { method: 'DELETE', credentials: 'include' })
 ```
 
 <Callout type="warning" title="Admin self-protection">
-  An admin cannot demote or remove their own account. The `setType` and `removeUser` mutations check `userId !== currentUserId`.
+  An admin cannot change their own role or remove their own account. The server refuses both with `403 forbidden`.
 </Callout>
 
 ## Material Management

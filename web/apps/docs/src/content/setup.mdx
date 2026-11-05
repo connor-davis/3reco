@@ -1,96 +1,51 @@
 # Setup & Installation
 
-This guide walks you through getting 3rEco running locally.
-
 ## Prerequisites
 
-| Requirement | Version | Notes |
+| Tool | Version | Notes |
 |---|---|---|
-| [Bun](https://bun.sh) | ≥ 1.0 | Primary package manager & runtime |
-| [Convex account](https://convex.dev) | — | Free tier available |
-| Node.js | ≥ 18 | Needed for some tooling |
-| Git | any | For cloning |
+| Go | 1.27 | builds the server |
+| Node.js | 22 | builds the web app |
+| [Task](https://taskfile.dev) | any | runs every command |
+| Podman or Docker | any | runs Postgres, Mailpit and MinIO |
 
-## Clone the Repository
+On Windows and Mac, run `podman machine start` first if the machine is not running.
 
-```bash
-git clone https://github.com/yourusername/3reco.git
-cd 3reco/3reco
-```
-
-## Install Dependencies
+## Run it locally
 
 ```bash
-bun install
+task up        # start Postgres (localhost:5441), Mailpit (http://localhost:8026), MinIO (localhost:9010)
+task install   # install the web app packages
+task dev       # API on :8180 plus the Vite dev server on :5173
 ```
 
-## Configure Environment Variables
+Open http://localhost:5173. Vite sends every `/api` request (and the WebSocket) to the API, so the web app needs no environment variables. The API runs the SQL migrations by itself when it starts.
 
-Create a `.env.local` file in the `3reco/` directory:
+Email goes to Mailpit in development: open http://localhost:8026 to read verification and password reset mail.
+
+## Make an admin
+
+Sign-up creates people with no role. Create (or promote) the first admin from the command line:
 
 ```bash
-# 3reco/.env.local
-VITE_CONVEX_URL=https://<your-deployment>.convex.cloud
+go run ./cmd/3reco admin create --email you@example.com --password '<a strong password>' --name 'Your Name'
 ```
 
-You obtain the `VITE_CONVEX_URL` from your Convex project dashboard (see below).
+An admin can then set roles for other users.
 
-<Callout type="warning" title="Never commit .env.local">
-  The `.env.local` file contains your Convex deployment URL. It is already in `.gitignore` — keep it that way.
-</Callout>
+## Useful commands
 
-## Set Up Convex
-
-### 1. Create a Convex project
-
-1. Sign in at [dashboard.convex.dev](https://dashboard.convex.dev)
-2. Click **New project** and give it a name (e.g. `3reco-dev`)
-3. Copy the **Deployment URL** — it looks like `https://abcd1234.convex.cloud`
-
-### 2. Deploy schema & functions
-
-```bash
-bunx convex dev
-```
-
-This command:
-- Authenticates with your Convex account
-- Pushes all functions from `convex/` to your deployment
-- Watches for changes and hot-reloads
-
-### 3. Configure authentication
-
-3rEco uses `@convex-dev/auth` for authentication. After running `convex dev`, navigate to your Convex dashboard, then **Settings → Authentication** and configure your sign-in methods (e.g. email/password, Google OAuth).
-
-## Start the Dev Server
-
-Open a **second terminal** alongside `convex dev` and run:
-
-```bash
-bun run dev
-```
-
-The app will be available at `http://localhost:5173`.
-
-<Callout type="tip" title="Two terminals">
-  You need both `bunx convex dev` (backend) and `bun run dev` (frontend) running simultaneously during development.
-</Callout>
-
-## Build for Production
-
-```bash
-bun run build
-```
-
-Output is placed in `dist/`. Deploy the `dist/` folder to any static hosting provider (Vercel, Netlify, Cloudflare Pages, etc.).
-
-## Available Scripts
-
-| Command | Description |
+| Command | What it does |
 |---|---|
-| `bun run dev` | Start Vite development server |
-| `bun run build` | Type-check and build for production |
-| `bun run lint` | Run ESLint |
-| `bun run preview` | Preview production build locally |
-| `bunx convex dev` | Start Convex backend in watch mode |
-| `bunx convex deploy` | Deploy Convex functions to production |
+| `task` | list every command |
+| `task test` | Go tests against the real services (needs `task up`) |
+| `task check` | gofmt, vet, staticcheck, Go tests, web typecheck, lint and build |
+| `task migrate` | run the SQL migrations and stop |
+| `task down` | stop the services, keep the data |
+| `task nuke` | stop the services and delete all local data |
+
+## Next steps
+
+- [Environment Variables](/docs/environment)
+- [Architecture Overview](/docs/architecture)
+- [Deployment](/docs/dev/deployment)

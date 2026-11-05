@@ -1,64 +1,53 @@
 # Environment Variables
 
-3rEco uses Vite's environment variable system. Variables prefixed with `VITE_` are exposed to the browser bundle; all others remain server-side only.
+The server reads every setting from environment variables. Locally the defaults work with `task up`. The full list is `EnvVars` in `internal/platform/config/config.go`, and [docs/operate.md](https://github.com/connor-davis/3reco/blob/master/docs/operate.md) keeps the same table.
 
-## `.env.local` (required)
+## Server
 
-Create this file at `3reco/.env.local` (never commit it):
+| Variable | Default | What it does |
+|---|---|---|
+| `THREERECO_ADDR` | `:8180` | Address the API listens on |
+| `THREERECO_DATABASE_URL` | local Postgres on `localhost:5441` | Postgres connection string |
+| `THREERECO_WEB_ORIGIN` | `http://localhost:5173` | Origin of the web app. Used for CORS, CSRF, WebSockets and email links |
+| `THREERECO_WEB_DIST` | `web/apps/app/dist` | Folder with the built web app. If it is missing, only the API runs |
+| `THREERECO_DEV` | `false` | Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set |
+| `THREERECO_COOKIE_SECURE` | `false` | Set `true` in production so session cookies are HTTPS only |
+| `THREERECO_TRUSTED_PROXIES` | empty | Proxy addresses whose `X-Forwarded-For` is believed |
+| `THREERECO_AUTH_RATE_LIMIT` | `20` | Requests per minute, per address, on each auth route |
+| `THREERECO_DB_MAX_CONNS` | `25` | Largest Postgres pool |
+| `THREERECO_SHUTDOWN_TIMEOUT` | `15s` | How long to wait for requests to finish on stop |
+| `THREERECO_BODY_LIMIT` | `10485760` | Largest request body in bytes |
 
-```bash
-VITE_CONVEX_URL=https://<your-deployment>.convex.cloud
-```
+## Encryption key
 
-<Callout type="note">
-  Vite automatically loads `.env.local` during `bun run dev` and `bun run build`. It takes precedence over `.env`.
+| Variable | Default | What it does |
+|---|---|---|
+| `THREERECO_FIELD_KEY` | none, **required** | Base64 of 32 random bytes. Encrypts ID numbers, bank account numbers and e-wallet ids |
+
+<Callout type="warning">
+  Make the key once with `openssl rand -base64 32` and keep a copy apart from the database backups. If it is lost, those fields cannot be read again.
 </Callout>
 
-## Variable Reference
+## Email
 
-### `VITE_CONVEX_URL`
+| Variable | Default | What it does |
+|---|---|---|
+| `RESEND_API_KEY` | empty | When set, mail goes through Resend |
+| `AUTH_FROM_EMAIL` | `3rEco <no-reply@localhost>` | The From address on every email. Must be a sender verified in Resend |
+| `THREERECO_SMTP_HOST` | empty | SMTP host (Mailpit locally) |
+| `THREERECO_SMTP_PORT` | `1026` | SMTP port |
 
-| Property | Value |
-|---|---|
-| **Required** | Yes |
-| **Exposed to browser** | Yes (VITE_ prefix) |
-| **Example** | `https://abcd1234.convex.cloud` |
+## File storage
 
-The URL of your Convex deployment. You can find this in the [Convex dashboard](https://dashboard.convex.dev) under your project's **Settings → URL & Deploy Key**.
+| Variable | Default | What it does |
+|---|---|---|
+| `THREERECO_S3_ENDPOINT` | `localhost:9010` | MinIO or S3 host and port, with no scheme |
+| `THREERECO_S3_BUCKET` | `threereco` | Bucket for uploaded files |
+| `THREERECO_S3_ACCESS_KEY` | `threereco` | S3 access key |
+| `THREERECO_S3_SECRET_KEY` | `threereco-secret` | S3 secret key |
+| `THREERECO_S3_REGION` | `us-east-1` | S3 region |
+| `THREERECO_S3_TLS` | `false` | Use HTTPS to reach S3 |
 
-The Convex React client is initialized with this URL in `src/main.tsx`:
+## Production
 
-```typescript
-import { ConvexProvider, ConvexReactClient } from 'convex/react'
-
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
-```
-
-## Environment Files Loading Order
-
-Vite loads environment files in this order (later files override earlier ones):
-
-```
-.env                  ← always loaded
-.env.local            ← always loaded, git-ignored
-.env.[mode]           ← loaded in specific mode (e.g. .env.production)
-.env.[mode].local     ← loaded in specific mode, git-ignored
-```
-
-For most development setups, only `.env.local` is needed.
-
-## TypeScript Typing
-
-The `VITE_CONVEX_URL` variable is available as `import.meta.env.VITE_CONVEX_URL` (type `string`). Vite's `vite/client` types provide `ImportMetaEnv` — you can extend it in `src/vite-env.d.ts`:
-
-```typescript
-/// <reference types="vite/client" />
-
-interface ImportMetaEnv {
-  readonly VITE_CONVEX_URL: string
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv
-}
-```
+`deploy.sh` writes a `.env` with the production values and makes the database, file store and encryption secrets. See [Deployment](/docs/dev/deployment).

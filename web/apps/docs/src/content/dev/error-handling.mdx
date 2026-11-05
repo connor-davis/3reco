@@ -1,72 +1,40 @@
 # Error Handling
 
-3rEco uses `ConvexError` for all server-side errors and a consistent pattern for surfacing them in the UI.
+The Go API turns every error into JSON, so the web app has one way to read them.
 
-## Throwing Errors in Convex Functions
+## Error body
 
-Use `ConvexError` from `convex/values` for all expected business-rule violations. Always pass an object with `name` and `message`:
-
-```typescript
-import { ConvexError } from 'convex/values'
-
-throw new ConvexError({
-  name: 'Unauthorized',
-  message: 'Only admins can perform this action.',
-})
+```json
+{ "code": "invalid", "message": "Please fix the highlighted field.", "fields": { "weight": "Weight must be more than zero." } }
 ```
 
-### Standard error names used in this codebase
+`fields` is `null` unless the error is about specific inputs.
 
-| `name` | Meaning |
-|---|---|
-| `Unauthorized` | The caller is not authenticated or lacks the required role |
-| `Not Found` | A referenced document does not exist |
-| `Invalid Input` | A business rule validation failed (e.g. price below minimum) |
+| HTTP | `code` | Meaning |
+|---|---|---|
+| 400 | `invalid` | A rule failed; `fields` says which input |
+| 401 | `unauthorized` | Not signed in, or wrong email or password |
+| 403 | `forbidden` | Signed in, but not allowed (wrong role, someone else's data, or a request from another origin) |
+| 403 | `email_not_verified` | Sign-in with an email that is not verified yet |
+| 404 | `not_found` | Missing, or a row you may not see |
+| 409 | `conflict` | The data changed under you (for example an offer ran out of stock) |
+| 429 | `rate_limited` | Too many requests; `Retry-After: 60` |
+| 500 | `internal` | A bug on our side. The message is always the same plain text; details go to the server log |
 
-Stick to these three for consistency. Do not use HTTP status codes as error names.
+An unknown `/api/...` path is a JSON `404`, never the web app's `index.html`.
 
-<Callout type="warning">
-  Plain `throw new Error('...')` errors are also caught by Convex but arrive on the client as a generic error without the structured `name` field — avoid these for user-facing errors.
-</Callout>
+## In the server
 
-## Catching Errors on the Frontend
+Expected errors are made with the helpers in `internal/platform/apperr` (`BadRequest`, `Field`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `TooMany`). A handler returns one and the error handler in `internal/api/server.go` writes the JSON. Anything else is logged with the request id and shown as a plain `500`, so no internals leak.
 
-Errors thrown inside `useMutation` calls surface as rejected promises. Wrap calls in `try/catch` and use Sonner toasts to display them:
+## In the web app
 
-```typescript
-import { toast } from 'sonner'
-import { ConvexError } from 'convex/values'
+Every call goes through the API client in `web/apps/app/src/lib/api`. It throws a typed error carrying `status`, `code`, `message` and `fields`, so a screen can:
 
-const createStock = useMutation(api.stock.create)
+- show `message` in a toast,
+- map `fields` onto form inputs,
+- branch on `code` (`email_not_verified` offers to resend the email, `unauthorized` goes to sign-in, `conflict` refetches).
 
-async function handleSubmit() {
-  try {
-    await createStock({ materialId, weight, price })
-    toast.success('Stock added')
-  } catch (err) {
-    if (err instanceof ConvexError) {
-      toast.error(err.data.message)   // err.data is the object you passed
-    } else {
-      toast.error('Something went wrong')
-    }
-  }
-}
-```
+## Streams
 
-<Callout type="tip" title="err.data vs err.message">
-  `ConvexError` wraps your payload under `.data`. So `err.data.name` is your `name` string and `err.data.message` is the human-readable message to show to users.
-</Callout>
-
-## Query Errors
-
-If a query throws (e.g. the user is not authorised), the `useQuery` hook will throw inside the render tree. Wrap query consumers in an error boundary, or use `usePaginatedQuery` / `@tanstack/react-query` patterns which expose `isError` + `error` instead of throwing.
-
-## Validation Errors
-
-Convex validates all function arguments against their declared validators **before** the handler runs. If the frontend passes the wrong type, Convex returns a validation error automatically — you do not need to manually validate types inside the handler.
-
-This is why all mutations have explicit `args` declarations with `v.*` validators.
-
-## Internal Error Logging
-
-`ConvexError` messages are visible in the **Convex dashboard → Logs** section. Use descriptive messages to make debugging easier — they are only visible to the development team, not end users (unless you surface them).
+An error before the first byte of a CSV, PDF or file download is JSON. A failure in the middle cuts the stream, so the browser sees a broken download.

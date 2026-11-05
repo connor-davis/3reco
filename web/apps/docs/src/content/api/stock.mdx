@@ -1,123 +1,51 @@
 # Stock API
 
-The `stock` module manages individual stock items — physical quantities of material owned by collectors or businesses. All functions are in `convex/stock.ts`.
+Stock is the physical material a user holds: a material, a weight and a price per kg. Listed stock shows on the market. All routes are under `/api`.
 
-## Queries
+A stock item is:
 
-### `list()`
-
-Returns all stock items owned by the current user.
-
-```typescript
-const myStock = useQuery(api.stock.list)
+```json
+{
+  "id": "...", "owner_id": "...", "material_id": "...", "material_name": "PET Plastic",
+  "weight": "120.5", "available_weight": "100", "price": "6.50", "base_price": "6.00",
+  "is_listed": true, "created_at": "..."
+}
 ```
 
-**Returns:** `Doc<"stock">[]`
+Weights and prices are decimal strings. `available_weight` is `weight` minus what open offers have reserved, never below zero.
 
-**Access:** Collector, Business (own stock only). Admin/Staff receive all stock.
+## Read
 
----
+### `GET /api/stock`
 
-### `listListed()`
+Your own stock, a page with `cursor` and `limit`. `all=true` returns a plain array.
 
-Returns all stock items where `isListed = true` — the public marketplace feed.
+**Access:** signed in
 
-```typescript
-const listedStock = useQuery(api.stock.listListed)
+### `GET /api/stock/:id`
+
+One item. The owner can always read it; anyone else only while it is listed. Otherwise `404 not_found`.
+
+## Change
+
+### `POST /api/stock`
+
+```json
+{ "material_id": "...", "weight": "120.5", "price": "6.50", "is_listed": true }
 ```
 
-**Returns:** `Doc<"stock">[]` joined with owner and material details
+**Returns:** `{ "id": "..." }`
 
-**Access:** All authenticated users
+### `PATCH /api/stock/:id`
 
----
+Any of `weight`, `price`, `is_listed`. Left out means unchanged. **Returns:** `{ "ok": true }`
 
-### `findByStockId(id)`
+Listing or unlisting sends the owner a `stock_listed` or `stock_unlisted` notification.
 
-Returns a single stock item with expanded material and owner details.
+### `DELETE /api/stock/:id`
 
-```typescript
-const item = useQuery(api.stock.findByStockId, { id: stockId })
-```
+**Returns:** `{ "ok": true }`
 
-**Args:**
+You can only change or delete your own stock. Someone else's id gets `404 not_found`.
 
-| Field | Type | Required |
-|---|---|---|
-| `id` | `Id<"stock">` | Yes |
-
-**Returns:** `Doc<"stock"> & { material: Doc<"materials">, owner: Doc<"users"> } | null`
-
----
-
-## Mutations
-
-### `create(fields)`
-
-Creates a new stock item for the current user.
-
-```typescript
-await convex.mutation(api.stock.create, {
-  materialId: 'k1234...',
-  weight: 250,
-  price: 8.50,
-})
-```
-
-**Args:**
-
-| Field | Type | Description |
-|---|---|---|
-| `materialId` | `Id<"materials">` | Material type |
-| `weight` | `number` | Weight in kg |
-| `price` | `number` | Asking price per kg |
-
-`ownerId` is automatically set from the authenticated session. `isListed` defaults to `false`.
-
-**Returns:** `Id<"stock">`
-
----
-
-### `update(id, fields)`
-
-Updates a stock item. Only the owner (or admin) may update.
-
-```typescript
-await convex.mutation(api.stock.update, {
-  id: stockId,
-  weight: 300,
-  price: 9.00,
-  isListed: true,
-})
-```
-
-**Args:**
-
-| Field | Type | Required |
-|---|---|---|
-| `id` | `Id<"stock">` | Yes |
-| `weight` | `number` | No |
-| `price` | `number` | No |
-| `isListed` | `boolean` | No |
-
----
-
-### `remove(id)`
-
-Deletes a stock item. Only the owner (or admin) may delete.
-
-```typescript
-await convex.mutation(api.stock.remove, { id: stockId })
-```
-
-**Args:**
-
-| Field | Type | Required |
-|---|---|---|
-| `id` | `Id<"stock">` | Yes |
-
-**Throws:** If there is an open (non-cancelled/rejected) transaction request referencing this stock item.
-
-<Callout type="tip" title="Listing stock">
-  To make stock visible in the marketplace, call `update` with `isListed: true`. To delist without deleting, set `isListed: false`.
-</Callout>
+Live updates: `stock:<your user id>` fires when your stock or its holds change.

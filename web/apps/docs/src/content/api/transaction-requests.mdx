@@ -1,175 +1,49 @@
-# Transaction Requests API
+# Requests API
 
-The `transactionRequests` module powers the negotiation flow between buyers and sellers. All functions are in `convex/transactionRequests.ts`.
+A request is how a buyer asks a seller for stock. The seller offers a weight and price, the buyer accepts, and a transaction is recorded. All routes are under `/api` and need a signed-in user. You only see requests where you are the buyer or the seller.
 
-## Status State Machine
+## Status
 
 ```
-             create()
-                │
-                ▼
-           ┌─────────┐
-           │ pending  │ ──── cancel() ────▶ cancelled
-           └────┬────┘
-                │ makeOffer()
-                ▼
-           ┌─────────┐
-           │ offered  │ ──── cancel() ────▶ cancelled
-           └────┬────┘
-         accept │     │ reject
-                ▼     ▼
-           accepted  rejected
+pending → offered → accepted
+   ▲         │
+   └─────────┘ (buyer declines, or seller withdraws)
+pending or offered → rejected (seller) | cancelled (buyer)
 ```
 
-## Queries
+Statuses are `pending`, `offered`, `accepted`, `rejected` and `cancelled`. An offer reserves the stock for 48 hours.
 
-### `list()`
+A request is `{ id, seller:{id,name}, buyer:{id,name}, status, items, created_at, updated_at }`. Each item has `material_id`, `material_name`, `stock_id`, `offer_weight`, `offer_price` and `available_weight`.
 
-Returns all transaction requests relevant to the current user (as buyer or seller).
+## Lists
 
-```typescript
-const requests = useQuery(api.transactionRequests.list)
-```
-
-**Returns:** `Doc<"transactionRequests">[]`
-
----
-
-### `findById(id)`
-
-Returns a single request with expanded seller, buyer, and material details.
-
-```typescript
-const request = useQuery(api.transactionRequests.findById, { id: requestId })
-```
-
-**Returns:** Full request document with joined references or `null`
-
----
-
-## Mutations
-
-### `create(fields)`
-
-Sends a new transaction request from buyer to seller.
-
-```typescript
-await convex.mutation(api.transactionRequests.create, {
-  sellerId: collectorId,
-  materialId,
-  stockId: stock._id,  // optional reference to specific stock item
-})
-```
-
-**Args:**
-
-| Field | Type | Required |
+| Method | Path | Returns |
 |---|---|---|
-| `sellerId` | `Id<"users">` | The seller receiving the request |
-| `materialId` | `Id<"materials">` | Requested material |
-| `stockId` | `Id<"stock">` | Optional reference to a specific listed stock item |
+| GET | `/api/requests/incoming` | Requests where you are the seller (page: `cursor`, `limit`) |
+| GET | `/api/requests/outgoing` | Requests where you are the buyer |
+| GET | `/api/requests/:id` | One request (`404 not_found` if you are not a party) |
 
-Sets `status: "pending"`, `buyerId: currentUser`. Sends notification to seller.
+## Actions
 
----
+| Method | Path | Who | Body | Result |
+|---|---|---|---|---|
+| POST | `/api/requests/` | buyer | `{ "seller_id", "items": [{ "material_id", "stock_id" }] }` (1 to 50 items) | `{ id }` |
+| POST | `/api/requests/:id/offer` | seller | `{ "items": [{ "material_id", "weight", "price" }] }` | `{ ok }` |
+| POST | `/api/requests/:id/accept` | buyer | none | `{ transaction_id }` |
+| POST | `/api/requests/:id/decline` | buyer | none | `{ ok }` (back to pending) |
+| POST | `/api/requests/:id/withdraw` | seller | none | `{ ok }` (back to pending) |
+| POST | `/api/requests/:id/reject` | seller | none | `{ ok }` |
+| POST | `/api/requests/:id/cancel` | buyer | none | `{ ok }` |
 
-### `makeOffer(fields)`
-
-Seller responds with weight and price. Transitions `pending` → `offered`.
-
-```typescript
-await convex.mutation(api.transactionRequests.makeOffer, {
-  requestId,
-  offerWeight: 200,
-  offerPrice: 8.75,
-})
-```
-
-**Args:**
-
-| Field | Type | Required |
-|---|---|---|
-| `requestId` | `Id<"transactionRequests">` | Yes |
-| `offerWeight` | `number` | Weight being offered (kg) |
-| `offerPrice` | `number` | Price per kg offered (Rand) |
-
-**Throws:** If current user is not the seller, or status is not `"pending"`.
-
-Sends `"offer"` notification to buyer.
-
----
-
-### `accept(requestId)`
-
-Buyer accepts the offer. Transitions `offered` → `accepted`, creates a `transaction` record, and triggers invoice generation.
-
-```typescript
-await convex.mutation(api.transactionRequests.accept, { requestId })
-```
-
-**Args:**
-
-| Field | Type | Required |
-|---|---|---|
-| `requestId` | `Id<"transactionRequests">` | Yes |
-
-**Throws:** If current user is not the buyer, or status is not `"offered"`.
-
-**Side effects:**
-1. Inserts a `transaction` document
-2. Schedules `generateInvoice` action
-3. Sends `"accepted"` notification to seller
-4. Updates stock weight/listing status if a `stockId` was referenced
-
----
-
-### `reject(requestId)`
-
-Buyer rejects the offer. Transitions `offered` → `rejected`.
-
-```typescript
-await convex.mutation(api.transactionRequests.reject, { requestId })
-```
-
-**Throws:** If current user is not the buyer, or status is not `"offered"`.
-
-Sends `"rejected"` notification to seller.
-
----
-
-### `cancel(requestId)`
-
-Either party cancels the request at any stage before acceptance.
-
-```typescript
-await convex.mutation(api.transactionRequests.cancel, { requestId })
-```
-
-**Throws:** If the request is already `"accepted"`, `"rejected"`, or `"cancelled"`.
-
-Sends `"cancelled"` notification to the other party.
-
----
+Weights and prices are decimal strings. If the stock no longer covers the offer, the call fails with `409 conflict`. Accepting an offer that ran out or expired is also a `409`.
 
 ## Messages
 
-### `sendMessage(fields)`
+| Method | Path | What |
+|---|---|---|
+| GET | `/api/requests/:id/messages` | A page of messages, oldest first |
+| POST | `/api/requests/:id/messages` | Send `{ "content" }` (1 to 2000 characters, only while the request is `pending`) |
+| POST | `/api/requests/:id/messages/read` | Mark the thread read |
+| GET | `/api/messages/inbox` | One row per thread: `request_id`, `status`, `other`, `latest_message`, `unread_count` |
 
-Sends a negotiation message within a transaction request thread.
-
-```typescript
-await convex.mutation(api.transactionRequestMessages.send, {
-  transactionId: requestId,
-  content: 'Can we do 250 kg instead?',
-})
-```
-
-### `listMessages(transactionId)`
-
-```typescript
-const messages = useQuery(api.transactionRequestMessages.list, {
-  transactionId: requestId,
-})
-```
-
-**Returns:** `Doc<"transactionRequestMessages">[]` ordered by creation time, updating in real time.
+Live updates: `requests:<your user id>` for the lists and `request:<id>` for one request and its messages.

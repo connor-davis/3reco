@@ -12,6 +12,7 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_ADDR` | `:8180` | Address the API listens on. |
 | `THREERECO_DATABASE_URL` | `postgres://threereco:threereco@localhost:5441/threereco?sslmode=disable` | Postgres connection string. |
 | `THREERECO_WEB_ORIGIN` | `http://localhost:5173` | Origin of the web app. Used for CORS, CSRF, WebSockets and email links. |
+| `THREERECO_WEB_DIST` | `web/apps/app/dist` | Folder with the built web app. The server serves it next to `/api`; if it is missing, only the API runs. See [Web app](#web-app). |
 | `THREERECO_DEV` | `false` | Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set. |
 | `THREERECO_COOKIE_SECURE` | `false` | Set true in production so session cookies are HTTPS only. |
 | `THREERECO_TRUSTED_PROXIES` | (empty) | Comma-separated proxy addresses whose X-Forwarded-For is believed. |
@@ -31,6 +32,18 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_S3_SECRET_KEY` | `threereco-secret` | S3 secret key. |
 | `THREERECO_S3_REGION` | `us-east-1` | S3 region. |
 | `THREERECO_S3_TLS` | `false` | Use HTTPS to reach S3. |
+
+## Web app
+
+The Go binary also serves the built web app (`web/apps/app/dist`): files under
+`/assets` are cached for a year (their names carry a hash), `index.html` is never
+cached, and any other page path that is not under `/api` gets `index.html` so the
+browser router can take over. Responses are gzipped. An unknown `/api/...` path is
+still a JSON 404. The Docker image (`deployments/Dockerfile`) builds the web app and
+copies it to `/web/apps/app/dist`, so one container serves both. If the folder has no
+`index.html`, the API still runs and logs one warning.
+
+In development, `task dev` runs Vite on :5173 and proxies `/api` to :8180.
 
 ## Ports
 
@@ -101,9 +114,13 @@ Sessions and rate counts are in the database. After a restore, everyone may need
 Passwords from the first 3REco (Better Auth, scrypt) still work. The first good sign-in
 replaces the old hash with argon2id.
 
-## Moving off Convex
+## Moving from Convex (done once)
 
-Run this once, on an empty database, with the API stopped.
+The first 3REco ran on Convex. The data was moved with `3reco import-convex`, which
+stays in the binary for a rerun or a second export. It reads an `npx convex export`
+file; nothing else of Convex is left in the stack.
+
+Run it on an empty database, with the API stopped.
 
 1. Export from Convex: `npx convex export --path export.zip --include-file-storage`.
    The ZIP holds personal data and password hashes. Keep it out of git.
@@ -114,7 +131,7 @@ Run this once, on an empty database, with the API stopped.
 The import checks every row first. If any row breaks a rule (two users with one
 email, a stock row with no owner, a number that is not a number), it writes nothing,
 prints each bad row as `table`, `_id`, `field` and the reason, and exits with an
-error. Fix the data in Convex, export again and rerun. A second run on a database
+error. Fix the data at the source, export again and rerun. A second run on a database
 that already has users is refused.
 
 Sessions are not imported, so everyone signs in again with their old password
