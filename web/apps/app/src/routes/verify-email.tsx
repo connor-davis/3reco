@@ -60,7 +60,10 @@ function VerifyEmailPage() {
       }
       footer={
         <p>
-          <Link to="/sign-in" className="underline">
+          <Link
+            to="/sign-in"
+            className="inline-flex min-h-11 items-center underline"
+          >
             {verify.isSuccess ? 'Sign in' : 'Return to sign in'}
           </Link>
         </p>
@@ -103,7 +106,11 @@ function VerifyEmailPage() {
         </>
       )}
       {token && failure && email && (
-        <Link to="/verify-email" search={{ email }} className="underline">
+        <Link
+          to="/verify-email"
+          search={{ email }}
+          className="inline-flex min-h-11 items-center underline"
+        >
           Send a fresh link
         </Link>
       )}

@@ -53,11 +53,17 @@ function ForgotPasswordPage() {
       }
       footer={
         <p>
-          <Link to="/sign-in" className="underline">
+          <Link
+            to="/sign-in"
+            className="inline-flex min-h-11 items-center underline"
+          >
             Return to sign in
           </Link>
           {' · '}
-          <Link to="/sign-up" className="underline">
+          <Link
+            to="/sign-up"
+            className="inline-flex min-h-11 items-center underline"
+          >
             Create account
           </Link>
         </p>

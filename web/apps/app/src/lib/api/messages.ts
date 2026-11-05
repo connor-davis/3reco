@@ -81,6 +81,6 @@ export function useSendMessage(id: string) {
 }
 export function useReadMessages(id: string) {
   return useWrite<void, T.Ok>(`/requests/${idPath(id)}/messages/read`, 'POST', [
-    ['messages'],
+    ['messages', 'inbox'],
   ]);
 }
