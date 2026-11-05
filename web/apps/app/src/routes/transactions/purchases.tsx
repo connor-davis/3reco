@@ -1,7 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Guarded } from '@/components/access-guard';
-import { myBusinessName } from '@/lib/data/ledger';
-import { useMock } from '@/lib/mock/hooks';
 import { RecordList } from './-components/record-list';
 
 export const Route = createFileRoute('/transactions/purchases')({
@@ -13,13 +11,12 @@ export const Route = createFileRoute('/transactions/purchases')({
 });
 
 function Purchases() {
-  const { data } = useMock();
-
   return (
     <RecordList
       title="Purchases"
       description="Materials coming in. Every purchase, invoice and receipt."
-      rows={data.transactions.filter((row) => row.buyer === myBusinessName)}
+      kind="purchases"
+      exportKind="purchases"
       emptyTitle="No purchases yet"
     />
   );

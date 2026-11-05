@@ -11,15 +11,15 @@ import { StockDialog } from '@/components/dialogs/stock-dialog';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
 import { IconButton } from '@/components/icon-button';
 import { PageHeader } from '@/components/page-header';
-import { MaterialThumb } from '@/components/visuals';
+import { MaterialMark, Pager } from '@/components/transactions/list-tools';
+import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
-import { materialById } from '@/lib/data/materials';
-import { formatKg, formatRate } from '@/lib/format';
-import { useMockList } from '@/lib/mock/hooks';
-import type { Listing } from '@/lib/types';
+import { useDeleteStock, useStock, useUpdateStock } from '@/lib/api/stock';
+import type { StockItem } from '@/lib/api/types';
+import { formatKg, formatRate, toGrams } from '@/lib/format';
 
 export const Route = createFileRoute('/stock')({
   component: () => (
@@ -35,43 +35,94 @@ const statusOptions = [
   { value: 'unlisted', label: 'Unlisted' },
 ];
 
+/** What is held for open offers, or null when nothing is. */
+function heldKg(item: StockItem) {
+  const held = toGrams(item.weight) - toGrams(item.available_weight);
+
+  return held > 0 ? held / 1000 : null;
+}
+
+function ListingSwitch({ item }: { item: StockItem }) {
+  const update = useUpdateStock(item.id);
+
+  function toggle(is_listed: boolean) {
+    update.mutate(
+      { is_listed },
+      {
+        onSuccess: () =>
+          toast.success(
+            is_listed
+              ? 'Stock is now listed in the market.'
+              : 'Stock is no longer listed.'
+          ),
+        onError: (error) => toast.error(errorText(error)),
+      }
+    );
+  }
+
+  return (
+    <Field orientation="horizontal" className="w-auto">
+      <Switch
+        id={`listed-${item.id}`}
+        checked={item.is_listed}
+        disabled={update.isPending}
+        onCheckedChange={toggle}
+      />
+      <FieldLabel htmlFor={`listed-${item.id}`} className="font-normal">
+        <span className="sr-only">{item.material_name}: </span>
+        {item.is_listed ? 'Listed' : 'Unlisted'}
+      </FieldLabel>
+    </Field>
+  );
+}
+
+function Weights({ item }: { item: StockItem }) {
+  const held = heldKg(item);
+
+  return (
+    <span>
+      <span className="block">{formatKg(item.available_weight)} available</span>
+      <span className="text-xs text-muted-foreground">
+        {formatKg(item.weight)} in stock
+        {held !== null && ` · ${formatKg(held)} held for offers`}
+      </span>
+    </span>
+  );
+}
+
 function StockPage() {
-  const list = useMockList('stock');
+  const pager = usePager();
+  const stock = useStock(pager.params);
+  const remove = useDeleteStock();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
-  const [editing, setEditing] = useState<Listing | undefined>();
+  const [editing, setEditing] = useState<StockItem | undefined>();
   const [formOpen, setFormOpen] = useState(false);
-  const [removing, setRemoving] = useState<Listing | null>(null);
+  const [removing, setRemoving] = useState<StockItem | null>(null);
 
-  const shown = list.items.filter((item) => {
-    if (status === 'listed' && !item.listed) return false;
-    if (status === 'unlisted' && item.listed) return false;
+  const shown = (stock.data?.items ?? []).filter((item) => {
+    if (status === 'listed' && !item.is_listed) return false;
+    if (status === 'unlisted' && item.is_listed) return false;
 
-    return item.title.toLowerCase().includes(query.toLowerCase());
+    return item.material_name.toLowerCase().includes(query.toLowerCase());
   });
 
-  function openForm(item?: Listing) {
+  function openForm(item?: StockItem) {
     setEditing(item);
     setFormOpen(true);
   }
 
-  function toggle(item: Listing, listed: boolean) {
-    list.update(item.id, { listed });
-    toast.success(
-      listed
-        ? 'Stock is now listed in the market.'
-        : 'Stock is no longer listed.'
-    );
-  }
-
-  function actions(item: Listing) {
+  function actions(item: StockItem) {
     return (
       <div className="flex gap-1">
-        <IconButton label={`Edit ${item.title}`} onClick={() => openForm(item)}>
+        <IconButton
+          label={`Edit ${item.material_name}`}
+          onClick={() => openForm(item)}
+        >
           <Pencil />
         </IconButton>
         <IconButton
-          label={`Remove ${item.title}`}
+          label={`Remove ${item.material_name}`}
           onClick={() => setRemoving(item)}
         >
           <Trash2 />
@@ -80,59 +131,33 @@ function StockPage() {
     );
   }
 
-  const listingSwitch = (item: Listing) => (
-    <Field orientation="horizontal" className="w-auto">
-      <Switch
-        id={`listed-${item.id}`}
-        checked={item.listed}
-        onCheckedChange={(checked) => toggle(item, checked)}
-      />
-      <FieldLabel htmlFor={`listed-${item.id}`} className="font-normal">
-        <span className="sr-only">{item.title}: </span>
-        {item.listed ? 'Listed' : 'Unlisted'}
-      </FieldLabel>
-    </Field>
-  );
-
-  const columns: ColumnDef<Listing>[] = [
+  const columns: ColumnDef<StockItem>[] = [
     {
-      accessorKey: 'title',
+      accessorKey: 'material_name',
       header: 'Material',
-      cell: ({ row }) => {
-        const material = materialById(row.original.materialId);
-
-        return (
-          <span className="flex items-center gap-3">
-            <MaterialThumb
-              category={material.category}
-              className="size-9 rounded-lg"
-            />
-            <span>
-              <span className="block font-medium">{row.original.title}</span>
-              <span className="text-xs text-muted-foreground">
-                {material.tag}
-              </span>
-            </span>
-          </span>
-        );
-      },
+      cell: ({ row }) => (
+        <span className="flex items-center gap-3">
+          <MaterialMark className="size-9 rounded-lg" />
+          <span className="font-medium">{row.original.material_name}</span>
+        </span>
+      ),
     },
     {
-      accessorKey: 'availableKg',
-      header: 'Available',
-      cell: ({ row }) => formatKg(row.original.availableKg),
-    },
-    {
-      id: 'price',
-      header: 'Price / kg',
+      id: 'weight',
+      header: 'Weight',
       enableSorting: false,
-      cell: ({ row }) => formatRate(row.original.priceBreaks[0].pricePerKg),
+      cell: ({ row }) => <Weights item={row.original} />,
+    },
+    {
+      accessorKey: 'price',
+      header: 'Price / kg',
+      cell: ({ row }) => formatRate(row.original.price),
     },
     {
       id: 'listed',
       header: 'Market listing',
       enableSorting: false,
-      cell: ({ row }) => listingSwitch(row.original),
+      cell: ({ row }) => <ListingSwitch item={row.original} />,
     },
     {
       id: 'actions',
@@ -168,6 +193,7 @@ function StockPage() {
         />
       </div>
       <DataState
+        query={stock}
         isEmpty={shown.length === 0}
         icon={PackageOpen}
         emptyTitle="No stock here"
@@ -181,35 +207,40 @@ function StockPage() {
           renderCard={(item) => (
             <Card size="sm">
               <CardContent className="space-y-2">
-                <p className="font-medium">{item.title}</p>
+                <p className="font-medium">{item.material_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {formatKg(item.availableKg)} ·{' '}
-                  {formatRate(item.priceBreaks[0].pricePerKg)}
+                  {formatRate(item.price)}
                 </p>
-                {listingSwitch(item)}
+                <Weights item={item} />
+                <ListingSwitch item={item} />
                 {actions(item)}
               </CardContent>
             </Card>
           )}
           footer={
             <>
-              <span>{shown.length} materials in your stock</span>
+              <span>{shown.length} materials on this page</span>
               <span>Listed stock is visible in the market.</span>
             </>
           }
         />
       </DataState>
+      <Pager pager={pager} page={stock.data} />
       <StockDialog open={formOpen} onOpenChange={setFormOpen} stock={editing} />
       <ConfirmDialog
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
-        title={`Remove ${removing?.title ?? 'stock'}?`}
+        title={`Remove ${removing?.material_name ?? 'stock'}?`}
         description="It is taken off the market and out of your stock."
         confirmLabel="Remove stock"
         onConfirm={() => {
-          if (removing) list.remove(removing.id);
+          if (removing) {
+            remove.mutate(removing.id, {
+              onSuccess: () => toast.success('Stock removed.'),
+              onError: (error) => toast.error(errorText(error)),
+            });
+          }
           setRemoving(null);
-          toast.success('Stock removed.');
         }}
       />
     </>

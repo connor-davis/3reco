@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Guarded } from '@/components/access-guard';
 import { LinkButton } from '@/components/link-button';
-import { useMock } from '@/lib/mock/hooks';
 import { RecordList } from './-components/record-list';
 
 export const Route = createFileRoute('/transactions/')({
@@ -13,13 +12,12 @@ export const Route = createFileRoute('/transactions/')({
 });
 
 function AllTransactions() {
-  const { data } = useMock();
-
   return (
     <RecordList
       title="All transactions"
       description="Every trade on the marketplace, with its paperwork."
-      rows={data.transactions}
+      kind="mine"
+      exportKind="transactions"
       emptyTitle="No transactions yet"
       typeFilter
       actions={

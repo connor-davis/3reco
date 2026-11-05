@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import { Guarded } from '@/components/access-guard';
 import { CollectionDialog } from '@/components/dialogs/collection-dialog';
 import { Button } from '@/components/ui/button';
-import { useMock } from '@/lib/mock/hooks';
+import { useAuth } from '@/lib/auth/use-auth';
 import { RecordList } from './transactions/-components/record-list';
 
 export const Route = createFileRoute('/collections')({
@@ -16,25 +16,33 @@ export const Route = createFileRoute('/collections')({
 });
 
 function CollectionsPage() {
-  const { data } = useMock();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+
+  // A business buys for itself. Staff would have to pick a business, and the
+  // API has no list of businesses for that, so only businesses record here.
+  const canRecord = user?.role === 'business';
 
   return (
     <>
       <RecordList
         title="Collections"
         description="Record materials bought from collectors. Keep every receipt in one place."
-        rows={data.transactions.filter((row) => row.type === 'C2B')}
+        kind="mine"
+        exportKind="collections"
+        collectionsOnly
         emptyTitle="No collections yet"
         stats
         actions={
-          <Button onClick={() => setOpen(true)}>
-            <Plus data-icon="inline-start" />
-            Record collection
-          </Button>
+          canRecord && (
+            <Button onClick={() => setOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Record collection
+            </Button>
+          )
         }
       />
-      <CollectionDialog open={open} onOpenChange={setOpen} />
+      {canRecord && <CollectionDialog open={open} onOpenChange={setOpen} />}
     </>
   );
 }

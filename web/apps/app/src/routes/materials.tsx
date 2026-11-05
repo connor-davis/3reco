@@ -11,13 +11,15 @@ import { MaterialDialog } from '@/components/dialogs/material-dialog';
 import { SearchBox } from '@/components/filters';
 import { IconButton } from '@/components/icon-button';
 import { PageHeader } from '@/components/page-header';
-import { MaterialThumb } from '@/components/visuals';
+import { MaterialMark, Pager } from '@/components/transactions/list-tools';
+import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useDeleteMaterial, useMaterials } from '@/lib/api/materials';
+import type { Material } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/use-auth';
 import { formatRate } from '@/lib/format';
-import { useMock, useMockList } from '@/lib/mock/hooks';
-import type { Material } from '@/lib/types';
 
 export const Route = createFileRoute('/materials')({
   component: () => (
@@ -28,15 +30,17 @@ export const Route = createFileRoute('/materials')({
 });
 
 function MaterialsPage() {
-  const { role } = useMock();
-  const list = useMockList('materials');
+  const { user } = useAuth();
+  const pager = usePager(100);
+  const list = useMaterials(pager.params);
+  const remove = useDeleteMaterial();
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Material | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [removing, setRemoving] = useState<Material | null>(null);
 
-  const isAdmin = role === 'admin';
-  const shown = list.items.filter((material) =>
+  const isAdmin = user?.role === 'admin';
+  const shown = (list.data?.items ?? []).filter((material) =>
     material.name.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -73,24 +77,21 @@ function MaterialsPage() {
       header: 'Material',
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
-          <MaterialThumb
-            category={row.original.category}
-            className="size-9 rounded-lg"
-          />
+          <MaterialMark className="size-9 rounded-lg" />
           <span className="font-medium">{row.original.name}</span>
         </span>
       ),
     },
     {
-      accessorKey: 'carbonFactor',
+      accessorKey: 'carbon_factor',
       header: 'Carbon factor (kg CO₂ / kg)',
       enableSorting: false,
     },
-    { accessorKey: 'gwCode', header: 'GW code', enableSorting: false },
+    { accessorKey: 'gw_code', header: 'GW code', enableSorting: false },
     {
-      accessorKey: 'referencePrice',
-      header: 'Reference price',
-      cell: ({ row }) => formatRate(row.original.referencePrice),
+      accessorKey: 'price',
+      header: 'Base price',
+      cell: ({ row }) => formatRate(row.original.price),
     },
     {
       id: 'actions',
@@ -122,6 +123,7 @@ function MaterialsPage() {
         {!isAdmin && <Badge variant="outline">Read-only catalogue</Badge>}
       </div>
       <DataState
+        query={list}
         isEmpty={shown.length === 0}
         icon={Boxes}
         emptyTitle="No material matches"
@@ -136,9 +138,9 @@ function MaterialsPage() {
               <CardContent className="space-y-2">
                 <p className="font-medium">{material.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {material.carbonFactor} kg CO₂ / kg · {material.gwCode}
+                  {material.carbon_factor} kg CO₂ / kg · {material.gw_code}
                 </p>
-                <p className="text-sm">{formatRate(material.referencePrice)}</p>
+                <p className="text-sm">{formatRate(material.price)}</p>
                 {actionsFor(material)}
               </CardContent>
             </Card>
@@ -151,6 +153,7 @@ function MaterialsPage() {
           }
         />
       </DataState>
+      <Pager pager={pager} page={list.data} />
       <MaterialDialog
         open={formOpen}
         onOpenChange={setFormOpen}
@@ -160,12 +163,16 @@ function MaterialsPage() {
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
         title={`Remove ${removing?.name ?? 'material'}?`}
-        description="It leaves the catalogue. Existing trades keep their records."
+        description="It leaves the catalogue. A material that is in use cannot be removed."
         confirmLabel="Remove material"
         onConfirm={() => {
-          if (removing) list.remove(removing.id);
+          if (removing) {
+            remove.mutate(removing.id, {
+              onSuccess: () => toast.success('Material removed.'),
+              onError: (error) => toast.error(errorText(error)),
+            });
+          }
           setRemoving(null);
-          toast.success('Material removed.');
         }}
       />
     </>

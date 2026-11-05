@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -11,76 +12,93 @@ import {
 } from '@/components/form-fields';
 import { IconButton } from '@/components/icon-button';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
-import { myBusinessName } from '@/lib/data/ledger';
-import { formatRand, lineCents, toCents, toGrams } from '@/lib/format';
-import { useMock, useMockList } from '@/lib/mock/hooks';
+import { useCollectorSelection } from '@/lib/api/collectors';
+import { useMaterials } from '@/lib/api/materials';
+import { useCreateCollection } from '@/lib/api/transactions';
+import { formatRand, lineCents, toCents } from '@/lib/format';
+import { quantityError } from '@/lib/quantity';
 
 const line = z.object({
-  materialId: z.string().min(1, 'Pick a material.'),
-  kg: z
+  material_id: z.string().min(1, 'Pick a material.'),
+  weight: z.string().superRefine((value, ctx) => {
+    const message = quantityError(value);
+    if (message) ctx.addIssue({ code: 'custom', message });
+  }),
+  price: z
     .string()
-    .refine((value) => toGrams(value) > 0, 'Enter a weight above 0 kg.'),
-  pricePerKg: z
-    .string()
+    .refine(
+      (value) => /^\d{1,12}([.,]\d{1,2})?$/.test(value.trim()),
+      'Use up to 2 decimals.'
+    )
     .refine((value) => toCents(value) > 0, 'Enter a price above R 0.00.'),
 });
 
 const schema = z.object({
-  collectorId: z.string().min(1, 'Pick the collector.'),
-  date: z.string().min(1, 'Pick the collection date.'),
-  lines: z.array(line).min(1, 'Add at least one material.'),
+  collector_id: z.string().min(1, 'Pick the collector.'),
+  collection_day: z.string().min(1, 'Pick the collection date.'),
+  lines: z
+    .array(line)
+    .min(1, 'Add at least one material.')
+    .max(100, 'A collection holds at most 100 materials.')
+    .refine(
+      (lines) =>
+        new Set(lines.map((item) => item.material_id)).size === lines.length,
+      'Each material can be on the collection once.'
+    ),
 });
 
 type Values = z.infer<typeof schema>;
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 
-const emptyLine = { materialId: '', kg: '', pricePerKg: '' };
+const emptyLine = { material_id: '', weight: '', price: '' };
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+const exact = (value: string) => value.trim().replace(',', '.');
 
 /** Record a collection: one collector, a date and one or more material lines. */
 export function CollectionDialog({ open, onOpenChange }: Props) {
-  const { data } = useMock();
-  const transactions = useMockList('transactions');
-  const { control, handleSubmit, watch, reset } = useForm<Values>({
+  const collectors = useCollectorSelection();
+  const materials = useMaterials({ limit: 100 });
+  const create = useCreateCollection();
+  const [serverError, setServerError] = useState('');
+  const { control, handleSubmit, watch, reset, formState } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
-      collectorId: '',
-      date: new Date().toISOString().slice(0, 10),
+      collector_id: '',
+      collection_day: today(),
       lines: [emptyLine],
     },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
 
   const total = watch('lines').reduce(
-    (sum, item) => sum + lineCents(item.pricePerKg || '0', item.kg || '0'),
+    (sum, item) => sum + lineCents(item.price || '0', item.weight || '0'),
     0
   );
 
-  function onSubmit(values: Values) {
-    const collector = data.collectors.find(
-      (item) => item.id === values.collectorId
-    );
+  async function onSubmit(values: Values) {
+    setServerError('');
 
-    values.lines.forEach((item, index) => {
-      transactions.add({
-        id: `COL-${1100 + transactions.items.length + index}`,
-        type: 'C2B',
-        collectorId: values.collectorId,
-        seller: collector?.name ?? 'Collector',
-        buyer: myBusinessName,
-        materialId: item.materialId,
-        kg: item.kg,
-        pricePerKg: item.pricePerKg,
-        status: 'Pending',
-        date: values.date,
-        receipts: 0,
+    try {
+      await create.mutateAsync({
+        collector_id: values.collector_id,
+        collection_day: values.collection_day,
+        items: values.lines.map((item) => ({
+          material_id: item.material_id,
+          weight: exact(item.weight),
+          price: exact(item.price),
+        })),
       });
-    });
-
-    toast.success('Collection recorded.');
-    reset();
-    onOpenChange(false);
+      toast.success('Collection recorded.');
+      reset();
+      onOpenChange(false);
+    } catch (error) {
+      setServerError(errorText(error));
+    }
   }
 
   return (
@@ -89,25 +107,27 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
       onOpenChange={onOpenChange}
       wide
       title="Record a collection"
-      description="Materials you bought from a collector."
+      description="Materials you bought from a collector. Prices are per kg."
       footer={
-        <Button onClick={handleSubmit(onSubmit)}>Record collection</Button>
+        <Button disabled={create.isPending} onClick={handleSubmit(onSubmit)}>
+          Record collection
+        </Button>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <ComboboxField
             control={control}
-            name="collectorId"
+            name="collector_id"
             label="Collector"
-            options={data.collectors.map((item) => ({
+            options={(collectors.data ?? []).map((item) => ({
               value: item.id,
               label: item.name,
             }))}
           />
           <TextField
             control={control}
-            name="date"
+            name="collection_day"
             label="Collection date"
             type="date"
           />
@@ -119,21 +139,21 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
           >
             <SelectField
               control={control}
-              name={`lines.${index}.materialId`}
+              name={`lines.${index}.material_id`}
               label="Material"
-              options={data.materials.map((item) => ({
+              options={(materials.data?.items ?? []).map((item) => ({
                 value: item.id,
                 label: item.name,
               }))}
             />
             <DecimalField
               control={control}
-              name={`lines.${index}.kg`}
+              name={`lines.${index}.weight`}
               label="Weight (kg)"
             />
             <DecimalField
               control={control}
-              name={`lines.${index}.pricePerKg`}
+              name={`lines.${index}.price`}
               label="R / kg"
             />
             <IconButton
@@ -146,6 +166,11 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             </IconButton>
           </div>
         ))}
+        {formState.errors.lines?.root?.message && (
+          <p role="alert" className="text-sm text-destructive">
+            {formState.errors.lines.root.message}
+          </p>
+        )}
         <Button type="button" variant="ghost" onClick={() => append(emptyLine)}>
           <Plus data-icon="inline-start" />
           Add material line
@@ -154,6 +179,11 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
           Collection total:{' '}
           <span className="tabular-nums">{formatRand(total)}</span>
         </p>
+        {serverError && (
+          <p role="alert" className="text-sm text-destructive">
+            {serverError}
+          </p>
+        )}
       </form>
     </ResponsiveOverlay>
   );

@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Guarded } from '@/components/access-guard';
-import { myBusinessName, myCollectorId } from '@/lib/data/ledger';
-import { useMock } from '@/lib/mock/hooks';
+import { useAuth } from '@/lib/auth/use-auth';
 import { RecordList } from './-components/record-list';
 
 export const Route = createFileRoute('/transactions/sales')({
@@ -13,8 +12,8 @@ export const Route = createFileRoute('/transactions/sales')({
 });
 
 function Sales() {
-  const { role, data } = useMock();
-  const isCollector = role === 'collector';
+  const { user } = useAuth();
+  const isCollector = user?.role === 'collector';
 
   return (
     <RecordList
@@ -24,11 +23,8 @@ function Sales() {
           ? 'Your collections sold to businesses. Read only.'
           : 'Your completed and agreed sales, with the paperwork to match.'
       }
-      rows={data.transactions.filter((row) =>
-        isCollector
-          ? row.collectorId === myCollectorId
-          : row.seller === myBusinessName
-      )}
+      kind="sales"
+      exportKind="sales"
       emptyTitle="No sales yet"
       readOnly={isCollector}
     />
