@@ -76,7 +76,23 @@ func (s *Store) CancelOpenRequests(ctx context.Context, userID string) ([]Cancel
 		out = append(out, c)
 	}
 
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	rows.Close()
+
+	// A cancelled request must not keep the other side's stock reserved.
+	ids := make([]string, len(out))
+	for i, c := range out {
+		ids[i] = c.RequestID
+	}
+
+	_, err = s.db.Q(ctx).Exec(ctx, `
+		UPDATE stock_holds SET status = 'released', released_at = clock_timestamp()
+		WHERE request_id = ANY($1) AND status = 'active'`, ids)
+
+	return out, err
 }
 
 // Erase removes what is private about a user and blanks the user row, keeping

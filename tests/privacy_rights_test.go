@@ -326,3 +326,23 @@ func TestPrivacyImportEncryptsAndRecordsLegacyNotice(t *testing.T) {
 		t.Errorf("%s people agreed to terms, %s legacy acceptances recorded", agreed, legacy)
 	}
 }
+
+func TestPrivacyDeleteReleasesTheSellersHold(t *testing.T) {
+	w := newTradeWorld(t)
+	viewer := tradeNewUser(t, w.app, "business")
+	request := tradeRequest(t, w.buyer, w.seller, w.stock)
+	tradeOffer(t, w.seller, request, w.material, "40.125", "9")
+
+	listing := func() any {
+		return status(t, viewer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200).Body["weight"]
+	}
+
+	holdDecimal(t, listing(), "59.875")
+
+	// The buyer erases their account: the seller's stock is free again at once.
+	status(t, w.buyer.c.Do("POST", "/api/privacy/delete", map[string]any{"password": goodPassword}), 200)
+
+	holdDecimal(t, listing(), "100")
+	holdCount(t, w, "active", "0")
+	holdCount(t, w, "released", "1")
+}
