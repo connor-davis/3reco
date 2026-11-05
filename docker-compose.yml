@@ -20,7 +20,7 @@ services:
   # ──────────────────────────────────────────────────────────────────────────
   frontend:
     build:
-      context: ./3reco
+      context: ./web/apps/app
       dockerfile: Dockerfile
       args:
         VITE_CONVEX_URL: ${VITE_CONVEX_URL}
@@ -40,7 +40,7 @@ services:
   # ──────────────────────────────────────────────────────────────────────────
   docs:
     build:
-      context: ./3reco/documentation
+      context: ./web/apps/docs
       dockerfile: Dockerfile
     ports:
       - "127.0.0.1:3001:80"

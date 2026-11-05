@@ -28,3 +28,6 @@ dist-ssr
 
 # Local scratch (design mockups, maps)
 mystuff/
+.tmp/
+.claude/.context-guardian/
+.claude/skills/product-ops/
