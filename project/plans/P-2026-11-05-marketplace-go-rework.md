@@ -38,6 +38,9 @@ The whole repo root becomes a Viper-style Go repo. Source of truth: root `AGENTS
   leak test, not copied.
 - Design set: the 21 current pages plus Listing detail, Cart and Messages inbox
   (brief: `mystuff/designs/BRIEF.md`).
+- Brand colour is the logo green `oklch(0.648 0.2 131.684)` (owner, 2026-11-05). The
+  teal override (`hsl(183, 55%, 35%)`) at the end of today's `index.css` and on the
+  invoice header is dropped in the rebuild.
 - `web/apps/docs` content still describes Convex setup; rewritten in T14.
 
 ## Roles (Viper AGENTS.md, Orchestrator V2)
