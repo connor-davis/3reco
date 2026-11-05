@@ -74,7 +74,7 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T12 | Frontend client: fetch client + `useLive` + auth context; swap all Convex calls | done (25f8fbd Phase 0; public /api/stats). Backend perf pass eff2a50 (0008 indexes, market 867→1.7 ms) | T8, T9 |
 | T13 | Frontend rebuild in picked design, every page, light + dark | done (chunks A bfa275c, B 51fe86b, C 2d8b49e, D 921ba9e; mock removed 7572e38). Sign-up sends accepted_terms_version | T5, T12 |
 | T14 | Remove `convex/`, Convex + Better Auth packages; update compose/Dockerfile/README | done (01e8dd5; Go serves dist). Root compose and deploy.sh not run yet | T13 |
-| T15 | Verify: Go tests, build, lint, two-browser live check, migration dry run | done: audit 1 FAIL (6 should-fix, 0 blockers); fixes 5b818d5, 91f953b; re-check 5/7 fixed, 0 errors in 196 route loads, live 46-117 ms; then b539fda, 684c1df (no chunk over 500 kB), dd18fd9 (0009 quiet read receipts, tappable cards), 1d9018e (focus ring); audits 3-4 + close-out PASS (mystuff/maps/final-audit-closeout.md); task check green | T14 |
+| T15 | Verify: Go tests, build, lint, two-browser live check, migration dry run | done: audit 1 FAIL (6 should-fix, 0 blockers); fixes 5b818d5, 91f953b; re-check 5/7 fixed, 0 errors in 196 route loads, live 46-117 ms; then b539fda, 684c1df (no chunk over 500 kB), dd18fd9 (0009 quiet read receipts, tappable cards), 1d9018e (focus ring); independent audit 5 PASS on final code (mystuff/maps/final-audit-5.md); task check green | T14 |
 | T16 | PR into master with pr-evidence; owner merges | draft PR opened | T15 |
 
 ## T12-T14 decisions (orchestrator, 2026-11-05, under the owner's "finish it off" goal)
