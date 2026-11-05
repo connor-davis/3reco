@@ -30,6 +30,8 @@ const (
 	fxStock      = "stock000000000000000000000001"
 	fxTxC2B      = "txc2b000000000000000000AB12CD34EF"
 	fxTxB2B      = "txb2b000000000000000000ZZ98YX76WV"
+	fxTxGone     = "txgone000000000000000000GG11HH22"
+	fxGoneSeller = "collectorgone000000000000000009"
 	fxRequest    = "request00000000000000000000001"
 	fxLegacy     = "request00000000000000000000002"
 	fxReceipt    = "storereceipt0000000000000001"
@@ -148,6 +150,11 @@ func newFixture() *fxExport {
 						"uploadedBy": fxSignin, "uploadedAt": 1700000021000.0,
 					}},
 					"invoiceStorageId": fxInvoice,
+				},
+				// The collector was deleted after the sale; the snapshot is what is left.
+				{"_id": fxTxGone, "_creationTime": 1700000025000.0, "type": "c2b",
+					"sellerId": fxGoneSeller, "buyerId": fxBuyer, "totalPrice": n("7"),
+					"collectorSnapshot": map[string]any{"name": "Deleted Collector", "city": "Durban"},
 				},
 				{"_id": fxTxB2B, "_creationTime": 1700000030000.0, "type": "b2b",
 					"sellerId": fxSignin, "buyerId": fxBuyer, "totalPrice": n("10"),

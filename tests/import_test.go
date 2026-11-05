@@ -17,6 +17,7 @@ import (
 
 	"github.com/connor-davis/3reco/internal/services/importer"
 	store "github.com/connor-davis/3reco/internal/stores/importer"
+	tstore "github.com/connor-davis/3reco/internal/stores/transactions"
 	"github.com/connor-davis/3reco/tests/testutil"
 )
 
@@ -91,7 +92,7 @@ func TestImportCountsAndIdsKept(t *testing.T) {
 	app, report := importFixture(t)
 
 	want := map[string]int{
-		"users": 6, "collectors": 1, "materials": 2, "stock": 1, "transactions": 2,
+		"users": 6, "collectors": 1, "materials": 2, "stock": 1, "transactions": 3,
 		"transaction_items": 3, "transaction_receipts": 1, "transaction_requests": 2,
 		"transaction_request_items": 3, "transaction_request_messages": 2,
 		"request_message_reads": 2, "notifications": 1, "carts": 1, "cart_items": 1,
@@ -120,6 +121,10 @@ func TestImportCountsAndIdsKept(t *testing.T) {
 		if got := tradeText(t, app, "SELECT id FROM "+table+" WHERE id = $1", id); got != id {
 			t.Errorf("%s: id %s not kept", table, id)
 		}
+	}
+
+	if report.Notes["c2b sales whose collector was deleted (the snapshot is kept)"] != 1 {
+		t.Errorf("notes: %v", report.Notes)
 	}
 
 	if report.Notes["users from a login with no app profile"] != 1 {
@@ -380,5 +385,44 @@ func TestImportRollsBackFilesWhenTheDatabaseFails(t *testing.T) {
 
 	if keys := storedKeys(t, app); len(keys) != 0 {
 		t.Errorf("files left behind: %v", keys)
+	}
+}
+
+func TestImportDeletedCollectorKeepsTheSnapshot(t *testing.T) {
+	app, _ := importFixture(t)
+
+	doc, err := tstore.New(app.DB).Document(context.Background(), fxTxGone)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if doc.Seller.Name != "Deleted Collector" || doc.Seller.City != "Durban" {
+		t.Errorf("invoice seller %+v, want the snapshot details", doc.Seller)
+	}
+}
+
+func TestImportStrictRefusesADeletedCollectorWithNoSnapshot(t *testing.T) {
+	app := testutil.Server(t)
+	fixture := newFixture()
+
+	delete(fixture.tables["transactions"][1], "collectorSnapshot")
+
+	report, err := importer.Run(context.Background(), app.DB, app.Storage, fixture.zipFile(t))
+
+	var invalid *importer.InvalidError
+	if !errors.As(err, &invalid) || len(report.Problems) != 1 {
+		t.Fatalf("err = %v, problems %+v", err, report.Problems)
+	}
+
+	if p := report.Problems[0]; p.Table != "transactions" || p.ID != fxTxGone || p.Field != "sellerId" {
+		t.Errorf("problem %+v does not name the sale", p)
+	}
+
+	if got := tradeText(t, app, `SELECT count(*) FROM users`); got != "0" {
+		t.Errorf("users after a refused import: %s", got)
+	}
+
+	if keys := storedKeys(t, app); len(keys) != 0 {
+		t.Errorf("storage is not clean: %v", keys)
 	}
 }
