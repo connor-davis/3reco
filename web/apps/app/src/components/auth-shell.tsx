@@ -3,8 +3,6 @@ import { Link } from '@tanstack/react-router';
 import { Leaf, Recycle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { formatKg } from '@/lib/format';
 import { formatCo2, useCommunity } from '@/lib/impact';
 
@@ -81,16 +79,6 @@ function StoryPanel() {
         <h2 className="max-w-md text-4xl font-semibold tracking-tight">
           Materials find a home. People find a connection.
         </h2>
-        <Card className="max-w-sm">
-          <CardContent className="space-y-1">
-            <Badge variant="secondary">Clear PET</Badge>
-            <p className="font-medium">64 kg collected in Alexandra</p>
-            <p className="text-sm text-muted-foreground">R 307.20 paid today</p>
-          </CardContent>
-        </Card>
-        <p className="w-fit rounded-2xl rounded-bl-sm bg-card px-4 py-3 text-sm shadow-sm">
-          Looks good. Let's arrange collection.
-        </p>
       </div>
       {/* Hidden until the numbers load, so a failed load never shows zeros. */}
       {community.query.isSuccess && (
