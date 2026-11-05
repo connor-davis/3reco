@@ -13,8 +13,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { navFor, type NavLink } from '@/lib/nav';
-import { useMock, usePerson } from '@/lib/mock/hooks';
+import { isRequestPath, navFor, type NavLink } from '@/lib/nav';
+import { useAuth } from '@/lib/auth/use-auth';
 import { useBadgeCounts } from './use-badge-counts';
 import { cn } from '@/lib/utils';
 
@@ -23,14 +23,14 @@ function isActive(to: string, pathname: string): boolean {
   if (to === '/') return pathname === '/';
 
   if (to === '/market') {
-    const trade = /^\/market\/(incoming|outgoing|REQ-)/.test(pathname);
+    const trade =
+      /^\/market\/(incoming|outgoing)/.test(pathname) ||
+      isRequestPath(pathname);
     return pathname.startsWith('/market') && !trade;
   }
 
   if (to === '/messages') {
-    return (
-      pathname.startsWith('/messages') || pathname.startsWith('/market/REQ-')
-    );
+    return pathname.startsWith('/messages') || isRequestPath(pathname);
   }
 
   if (to === '/transactions') return pathname === '/transactions';
@@ -46,8 +46,8 @@ const subtitles = {
 } as const;
 
 export function AppSidebar() {
-  const { role } = useMock();
-  const person = usePerson();
+  const { user } = useAuth();
+  const role = user?.role ?? null;
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -76,13 +76,13 @@ export function AppSidebar() {
           />
           <span>3REco</span>
         </Link>
-        {role !== 'signed-out' && (
+        {user && (
           <div className="flex items-center gap-2 px-2">
-            <PersonAvatar name={person.name} />
+            <PersonAvatar name={user.name} />
             <div className="min-w-0 text-sm">
-              <p className="truncate font-medium">{person.name}</p>
+              <p className="truncate font-medium">{user.name}</p>
               <p className="truncate text-xs text-muted-foreground">
-                {subtitles[role]}
+                {role ? subtitles[role] : 'Account'}
               </p>
             </div>
           </div>

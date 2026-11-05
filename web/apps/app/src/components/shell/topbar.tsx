@@ -12,10 +12,10 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Kbd } from '@/components/ui/kbd';
-import { useMock } from '@/lib/mock/hooks';
+import { useAuth } from '@/lib/auth/use-auth';
 import { AccountMenu } from './account-menu';
 import { NotificationTray } from './notification-tray';
-import { PreviewPill } from './preview-pill';
+import { isRequestPath } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 
 const titles: Record<string, string> = {
@@ -38,7 +38,7 @@ function titleFor(pathname: string): string {
 
   if (first === 'market' && second === 'incoming') return 'Incoming requests';
   if (first === 'market' && second === 'outgoing') return 'Outgoing requests';
-  if (first === 'market' && second.startsWith('REQ-')) return 'Messages';
+  if (isRequestPath(pathname)) return 'Messages';
   if (first === 'transactions' && second) {
     return second === 'sales' ? 'Sales' : 'Purchases';
   }
@@ -49,7 +49,7 @@ function titleFor(pathname: string): string {
 type TopbarProps = { onSearch: () => void };
 
 export function Topbar({ onSearch }: TopbarProps) {
-  const { role } = useMock();
+  const { user } = useAuth();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -93,10 +93,9 @@ export function Topbar({ onSearch }: TopbarProps) {
         >
           <Search />
         </IconButton>
-        <PreviewPill variant="bar" className="min-[781px]:hidden" />
         <ThemeToggle />
-        {role === 'signed-out' ? (
-          <LinkButton to="/auth/sign-in">Sign in</LinkButton>
+        {!user ? (
+          <LinkButton to="/sign-in">Sign in</LinkButton>
         ) : (
           <>
             <NotificationTray />

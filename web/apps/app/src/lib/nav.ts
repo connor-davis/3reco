@@ -20,13 +20,13 @@ import {
   Tag,
   Inbox,
 } from 'lucide-react';
-import type { Role } from '@/lib/types';
+import type { Role } from '@/lib/api/types';
 
 export type NavLink = {
   label: string;
   to: string;
   icon: LucideIcon;
-  badge?: 'messages' | 'cart' | 'incoming';
+  badge?: 'messages' | 'incoming';
 };
 
 export type NavGroup = { label?: string; links: NavLink[] };
@@ -56,7 +56,7 @@ const staffWorkspace: NavLink[] = [
 ];
 
 /** The sidebar for each role (map section 2.1). */
-export function navFor(role: Role): NavGroup[] {
+export function navFor(role: Role | null): NavGroup[] {
   switch (role) {
     case 'admin':
       return [
@@ -81,12 +81,7 @@ export function navFor(role: Role): NavGroup[] {
             dashboard,
             messages,
             browse,
-            {
-              label: 'Your cart',
-              to: '/cart',
-              icon: ShoppingCart,
-              badge: 'cart',
-            },
+            { label: 'Your cart', to: '/cart', icon: ShoppingCart },
           ],
         },
         {
@@ -119,8 +114,8 @@ export function navFor(role: Role): NavGroup[] {
         {
           links: [
             browse,
-            { label: 'Sign in', to: '/auth/sign-in', icon: LogIn },
-            { label: 'Create account', to: '/auth/sign-up', icon: UserPlus },
+            { label: 'Sign in', to: '/sign-in', icon: LogIn },
+            { label: 'Create account', to: '/sign-up', icon: UserPlus },
           ],
         },
       ];
@@ -136,7 +131,7 @@ export type Tab = {
 };
 
 /** Phone bottom tabs. A role only sees tabs it can open (map section 2.2). */
-export function tabsFor(role: Role): Tab[] {
+export function tabsFor(role: Role | null): Tab[] {
   const home: Tab = { label: 'Home', to: '/', icon: Home };
   const search: Tab = { label: 'Search', to: '/market', icon: Search };
   const inbox: Tab = {
@@ -179,13 +174,37 @@ export function tabsFor(role: Role): Tab[] {
     default:
       return [
         search,
-        { label: 'Sign in', to: '/auth/sign-in', icon: UserCircle },
+        { label: 'Sign in', to: '/sign-in', icon: UserCircle },
         {
           label: 'Create account',
-          to: '/auth/sign-up',
+          to: '/sign-up',
           icon: UserPlus,
           raised: true,
         },
       ];
   }
 }
+
+/** Auth pages draw their own full-screen layout, with no sidebar or tabs. */
+export const authPaths = [
+  '/sign-in',
+  '/sign-up',
+  '/verify-email',
+  '/forgot-password',
+  '/reset-password',
+];
+
+export const isAuthPath = (pathname: string) => authPaths.includes(pathname);
+
+// Pages under /market that are not a request chat.
+const marketPages = ['', 'incoming', 'outgoing', 'listing', 'store'];
+
+/** True for /market/<requestId>, the chat that sits under the market route. */
+export function isRequestPath(pathname: string) {
+  const [first, second = ''] = pathname.split('/').filter(Boolean);
+  return first === 'market' && !marketPages.includes(second);
+}
+
+/** Chat screens run edge to edge, like a messenger. */
+export const isChatPath = (pathname: string) =>
+  pathname.startsWith('/messages') || isRequestPath(pathname);

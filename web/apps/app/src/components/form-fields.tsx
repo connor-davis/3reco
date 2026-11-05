@@ -289,22 +289,25 @@ export function CheckboxField<T extends FieldValues>({
   name,
   label,
 }: FieldProps<T>) {
-  const { id } = useFieldIds();
+  const { id, errorId } = useFieldIds();
 
   return (
     <Controller
       control={control}
       name={name}
-      render={({ field }) => (
-        <Field orientation="horizontal">
+      render={({ field, fieldState }) => (
+        <Field orientation="horizontal" data-invalid={fieldState.invalid}>
           <Checkbox
             id={id}
             checked={Boolean(field.value)}
             onCheckedChange={field.onChange}
+            aria-invalid={fieldState.invalid}
+            aria-describedby={fieldState.invalid ? errorId : undefined}
           />
           <FieldLabel htmlFor={id} className="font-normal">
             {label}
           </FieldLabel>
+          <FieldError id={errorId} errors={[fieldState.error]} />
         </Field>
       )}
     />

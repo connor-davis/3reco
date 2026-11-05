@@ -16,7 +16,7 @@ export function useStartChat() {
   return function startChat(listing: Listing, kg?: string) {
     if (role !== 'business') {
       toast('Sign in as a business to message sellers.');
-      navigate({ to: '/auth/sign-in' });
+      navigate({ to: '/sign-in' });
       return;
     }
 

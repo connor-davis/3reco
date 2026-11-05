@@ -34,12 +34,15 @@ function CommandDialog({
   children,
   className,
   showCloseButton = false,
+  shouldFilter = true,
   ...props
 }: Omit<React.ComponentProps<typeof Dialog>, 'children'> & {
   title?: string;
   description?: string;
   className?: string;
   showCloseButton?: boolean;
+  // Turn off cmdk's own filtering when the caller filters (for example on the server).
+  shouldFilter?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -56,7 +59,7 @@ function CommandDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         {/* cmdk's inputs and lists read their store from this root. */}
-        <Command>{children}</Command>
+        <Command shouldFilter={shouldFilter}>{children}</Command>
       </DialogContent>
     </Dialog>
   );

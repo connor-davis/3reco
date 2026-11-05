@@ -62,7 +62,7 @@ function CartPage() {
     if (!listing) return [];
 
     const rate = rateFor(listing, toGrams(line.kg) / 1000);
-    const error = quantityError(line.kg, listing);
+    const error = quantityError(line.kg, listing.availableKg);
 
     return [
       {

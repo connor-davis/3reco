@@ -3,13 +3,10 @@ import { Link } from '@tanstack/react-router';
 import { Leaf, Recycle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useMock } from '@/lib/mock/hooks';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatKg } from '@/lib/format';
-import { community, formatCo2 } from '@/lib/impact';
+import { formatCo2, useCommunity } from '@/lib/impact';
 
 type AuthShellProps = {
   title: string;
@@ -28,8 +25,6 @@ export function AuthShell({
   children,
   footer,
 }: AuthShellProps) {
-  const { pageState, setPageState } = useMock();
-
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
       <StoryPanel />
@@ -61,29 +56,7 @@ export function AuthShell({
               </Alert>
             )}
           </div>
-          {pageState === 'loading' ? (
-            <div aria-busy="true" className="space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : pageState === 'error' ? (
-            <Alert variant="destructive">
-              <AlertDescription>
-                <p>We couldn't load this page. Check your connection.</p>
-                <Button
-                  className="mt-3"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPageState('ready')}
-                >
-                  Try again
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : (
-            children
-          )}
+          {children}
           {footer && (
             <div className="space-y-2 text-center text-sm text-muted-foreground">
               {footer}
@@ -96,6 +69,8 @@ export function AuthShell({
 }
 
 function StoryPanel() {
+  const community = useCommunity();
+
   return (
     <aside className="hidden flex-col justify-between bg-muted p-12 lg:flex">
       <Link to="/" className="flex items-center gap-2 text-lg font-semibold">
@@ -117,11 +92,14 @@ function StoryPanel() {
           Looks good. Let's arrange collection.
         </p>
       </div>
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Leaf className="size-4 text-primary" aria-hidden="true" />
-        {formatKg(community.kgDiverted)} diverted · {formatCo2(community.co2Kg)}{' '}
-        saved
-      </p>
+      {/* Hidden until the numbers load, so a failed load never shows zeros. */}
+      {community.query.isSuccess && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Leaf className="size-4 text-primary" aria-hidden="true" />
+          {formatKg(community.kgDiverted)} diverted ·{' '}
+          {formatCo2(community.co2Kg)} saved
+        </p>
+      )}
     </aside>
   );
 }

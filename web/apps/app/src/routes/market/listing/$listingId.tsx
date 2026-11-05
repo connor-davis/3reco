@@ -86,7 +86,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
   const material = materialById(listing.materialId);
   const store = storeById(listing.storeId);
   const grams = toGrams(kg);
-  const problem = quantityError(kg, listing);
+  const problem = quantityError(kg, listing.availableKg);
   const valid = problem === null;
 
   const rate = rateFor(listing, grams / 1000);

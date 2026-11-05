@@ -27,6 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <DirectionProvider direction="ltr">
           <ThemeProvider defaultTheme="system" storageKey="three-theme">
+            {/* ponytail: legacy mock state for chunks B, C, D until they are merged; removed with src/lib/mock. */}
             <MockProvider>
               <RouterProvider router={router} />
             </MockProvider>

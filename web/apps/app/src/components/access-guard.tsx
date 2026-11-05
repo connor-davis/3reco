@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { Navigate } from '@tanstack/react-router';
 import { Lock } from 'lucide-react';
 import { LinkButton } from '@/components/link-button';
-import { Button } from '@/components/ui/button';
 import {
   Empty,
   EmptyContent,
@@ -11,8 +10,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
+import { RowsSkeleton } from '@/components/data-state';
 import { canOpen, roleLabels, type PageId } from '@/lib/access';
-import { useMock } from '@/lib/mock/hooks';
+import { useAuth } from '@/lib/auth/use-auth';
 
 type GuardedProps = {
   page: PageId;
@@ -24,15 +24,15 @@ type GuardedProps = {
  * instead of the page. A signed-out visitor to the dashboard goes to sign in.
  */
 export function Guarded({ page, children }: GuardedProps) {
-  const { role, setRole } = useMock();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <RowsSkeleton />;
+
+  const role = user?.role ?? null;
 
   if (canOpen(role, page)) return <>{children}</>;
 
-  if (role === 'signed-out' && page === 'dashboard') {
-    return <Navigate to="/auth/sign-in" />;
-  }
-
-  const signedOut = role === 'signed-out';
+  if (!user && page === 'dashboard') return <Navigate to="/sign-in" />;
 
   return (
     <Empty className="mx-auto mt-10 max-w-lg border">
@@ -41,23 +41,25 @@ export function Guarded({ page, children }: GuardedProps) {
           <Lock />
         </EmptyMedia>
         <EmptyTitle>
-          {signedOut
+          {!user
             ? 'Sign in to keep going.'
-            : 'This page is in another workspace.'}
+            : role
+              ? 'This page is in another workspace.'
+              : 'Your account has no role yet.'}
         </EmptyTitle>
         <EmptyDescription>
-          {signedOut
+          {!user
             ? 'Browsing is open to everyone. Everything else needs an account.'
-            : `You're viewing 3REco as ${roleLabels[role].toLowerCase()}. This page belongs to a different role.`}
+            : role
+              ? `You're signed in as ${roleLabels[role].toLowerCase()}. This page belongs to a different role.`
+              : 'An admin has to give your account a role before you can open this page.'}
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        {signedOut ? (
-          <LinkButton to="/auth/sign-in">Sign in</LinkButton>
+        {user ? (
+          <LinkButton to="/">Go to the dashboard</LinkButton>
         ) : (
-          <Button onClick={() => setRole('business')}>
-            Preview as business
-          </Button>
+          <LinkButton to="/sign-in">Sign in</LinkButton>
         )}
       </EmptyContent>
     </Empty>

@@ -1,0 +1,119 @@
+import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { AuthShell } from '@/components/auth-shell';
+import { TextField } from '@/components/form-fields';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { ApiError } from '@/lib/api/client';
+import { useSignIn } from '@/lib/api/auth';
+import { showApiError } from '@/lib/form-errors';
+
+export const Route = createFileRoute('/sign-in')({
+  component: SignInPage,
+});
+
+const schema = z.object({
+  email: z.string().email('Enter an email like you@company.co.za.'),
+  password: z.string().min(1, 'Enter your password.'),
+});
+
+type Values = z.infer<typeof schema>;
+
+function SignInPage() {
+  const navigate = useNavigate();
+  const signIn = useSignIn();
+  const [failure, setFailure] = useState<string | null>(null);
+  const [unverified, setUnverified] = useState<string | null>(null);
+
+  const { control, handleSubmit, setError, formState } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  function onSubmit(values: Values) {
+    setFailure(null);
+    setUnverified(null);
+
+    signIn.mutate(values, {
+      onSuccess: () => {
+        toast.success('Welcome back.');
+        navigate({ to: '/' });
+      },
+      onError: (error) => {
+        // The API says so when the email is not verified yet; offer the way on.
+        if (error instanceof ApiError && error.code === 'email_not_verified') {
+          setUnverified(values.email);
+        }
+        setFailure(showApiError(error, setError));
+      },
+    });
+  }
+
+  return (
+    <AuthShell
+      title="Welcome back."
+      description="Sign in to trade, chat and track your stock."
+      feedback={failure ? { tone: 'error', text: failure } : null}
+      footer={
+        <>
+          <p>
+            New to 3REco?{' '}
+            <Link
+              to="/sign-up"
+              className="font-medium text-foreground underline"
+            >
+              Create an account
+            </Link>
+          </p>
+          {unverified && (
+            <p>
+              <Link
+                to="/verify-email"
+                search={{ email: unverified }}
+                className="font-medium text-foreground underline"
+              >
+                Send the verification email again
+              </Link>
+            </p>
+          )}
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <TextField
+          control={control}
+          name="email"
+          label="Email address"
+          type="email"
+          autoComplete="email"
+          placeholder="you@company.co.za"
+        />
+        <TextField
+          control={control}
+          name="password"
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+        />
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-sm underline">
+            Forgot password?
+          </Link>
+        </div>
+        <Button type="submit" className="w-full" disabled={signIn.isPending}>
+          {signIn.isPending || formState.isSubmitting ? (
+            <>
+              <Spinner data-icon="inline-start" /> Please wait…
+            </>
+          ) : (
+            'Sign in'
+          )}
+        </Button>
+      </form>
+    </AuthShell>
+  );
+}

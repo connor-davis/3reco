@@ -25,7 +25,7 @@
   --muted-foreground: oklch(0.5 0.016 285.938);
   --accent: oklch(0.955 0.04 131);
   --accent-foreground: oklch(0.25 0.06 131);
-  --destructive: oklch(0.46 0.23 27.325);
+  --destructive: oklch(0.42 0.23 27.325);
   /* Small link text needs 4.5:1; the exact brand green only reaches 3:1 on white. */
   --link: oklch(0.46 0.14 131.684);
   --border: oklch(0.92 0.004 286.32);
@@ -66,7 +66,7 @@
   --muted-foreground: oklch(0.75 0.015 286.067);
   --accent: oklch(0.32 0.06 131);
   --accent-foreground: oklch(0.96 0.04 131);
-  --destructive: oklch(0.78 0.15 22.216);
+  --destructive: oklch(0.86 0.15 22.216);
   --link: oklch(0.768 0.2 130.85);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);

@@ -19,28 +19,34 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { roleLabels } from '@/lib/access';
-import { roleForEmail } from '@/lib/data/people';
-import { useMock, useMockList, usePerson } from '@/lib/mock/hooks';
+import {
+  useSessions,
+  useSignOut,
+  useSignOutAll,
+  useSwitchSession,
+} from '@/lib/api/auth';
+import { useAuth } from '@/lib/auth/use-auth';
 
 /** The account button in the top bar: profile, other sessions, theme, sign out. */
 export function AccountMenu() {
   const navigate = useNavigate();
-  const { role, setRole } = useMock();
+  const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const sessions = useMockList('sessions');
-  const person = usePerson();
+  const sessions = useSessions();
+  const signOut = useSignOut();
+  const signOutAll = useSignOutAll();
+  const switchSession = useSwitchSession();
 
-  if (role === 'signed-out') return null;
+  if (!user) return null;
 
-  function signOut() {
-    setRole('signed-out');
-    toast.success('You have been signed out.');
-    navigate({ to: '/auth/sign-in' });
-  }
-
-  function signAllOut() {
-    sessions.replace([]);
-    signOut();
+  function leave(all: boolean) {
+    (all ? signOutAll : signOut).mutate(undefined, {
+      onSuccess: () => {
+        toast.success('You have been signed out.');
+        navigate({ to: '/sign-in' });
+      },
+      onError: () => toast.error('We could not sign you out. Try again.'),
+    });
   }
 
   return (
@@ -49,16 +55,16 @@ export function AccountMenu() {
         render={
           <Button
             variant="ghost"
-            className="h-auto gap-2 px-2 py-1"
+            className="h-auto gap-2 px-2 py-1 max-[780px]:min-h-11"
             aria-label="Account menu"
           />
         }
       >
-        <PersonAvatar name={person.name} />
+        <PersonAvatar name={user.name} />
         <span className="hidden min-w-0 text-left text-xs sm:block">
-          <span className="block truncate font-medium">{person.name}</span>
+          <span className="block truncate font-medium">{user.name}</span>
           <span className="block truncate text-muted-foreground">
-            {roleLabels[role]}
+            {user.role ? roleLabels[user.role] : 'No role yet'}
           </span>
         </span>
         <ChevronsUpDown className="hidden sm:block" aria-hidden="true" />
@@ -67,9 +73,9 @@ export function AccountMenu() {
         <DropdownMenuGroup>
           <DropdownMenuLabel>
             <span className="block font-medium text-foreground">
-              {person.name}
+              {user.name}
             </span>
-            <span className="block text-xs">{person.email}</span>
+            <span className="block text-xs">{user.email}</span>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -82,34 +88,41 @@ export function AccountMenu() {
             Accounts in this browser
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-64">
-            {sessions.items.map((session) => (
+            {sessions.data?.sessions.map((session) => (
               <DropdownMenuItem
                 key={session.id}
                 onClick={() => {
-                  const next = roleForEmail(session.email);
+                  if (session.current) return;
 
-                  if (!next || session.email === person.email) return;
-
-                  setRole(next);
-                  toast.success(`Switched to ${session.email}.`);
+                  switchSession.mutate(session.id, {
+                    onSuccess: () =>
+                      toast.success(`Switched to ${session.email}.`),
+                    onError: () => toast.error('We could not switch account.'),
+                  });
                 }}
               >
                 <span className="min-w-0">
                   <span className="block truncate">{session.email}</span>
                   <span className="block text-xs text-muted-foreground">
-                    {session.email === person.email
+                    {session.current
                       ? 'Current session'
-                      : session.device}
+                      : (session.role && roleLabels[session.role]) ||
+                        'Signed in'}
                   </span>
                 </span>
               </DropdownMenuItem>
             ))}
+            {sessions.isError && (
+              <DropdownMenuItem onClick={() => void sessions.refetch()}>
+                Could not load accounts. Try again.
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate({ to: '/auth/sign-in' })}>
+            <DropdownMenuItem onClick={() => navigate({ to: '/sign-in' })}>
               <Plus />
               Add account
             </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={signAllOut}>
+            <DropdownMenuItem variant="destructive" onClick={() => leave(true)}>
               Sign all out
             </DropdownMenuItem>
           </DropdownMenuSubContent>
@@ -129,7 +142,7 @@ export function AccountMenu() {
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={signOut}>
+        <DropdownMenuItem onClick={() => leave(false)}>
           <LogOut />
           Sign out
         </DropdownMenuItem>
