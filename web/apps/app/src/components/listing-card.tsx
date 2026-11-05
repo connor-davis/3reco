@@ -26,7 +26,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <CardContent className="mt-3.5 space-y-1.5 px-0">
         <h3 className="font-semibold tracking-tight">
           <Link
-            className="rounded outline-none after:absolute after:inset-0 hover:underline focus-visible:after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring"
+            className="rounded outline-none after:absolute after:inset-0 hover:underline focus-visible:after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring focus-visible:after:ring-inset"
             to="/market/listing/$listingId"
             params={{ listingId: listing.id }}
           >
