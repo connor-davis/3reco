@@ -24,6 +24,22 @@ The whole repo root becomes a Viper-style Go repo. Source of truth: root `AGENTS
 - Root `AGENTS.md` (from Viper, rewritten) and `docs/style-guide.md` added. No root
   `CLAUDE.md` (owner); the old Convex `3reco/CLAUDE.md` goes with Convex in T14. Ports: API 8180, Postgres 5441, Mailpit 8026, MinIO 9010.
 
+## Decisions taken in planning (Orchestrator)
+
+- Passwords: argon2id for new hashes; migrated Better Auth scrypt hashes
+  (`saltHex:keyHex`, N=16384 r=16 p=1 dkLen=64, salt = hex string bytes) verify, then
+  rehash to argon2id on the first good sign-in.
+- IDs: text primary keys. Migrated rows keep their Convex `_id`, so invoice numbers
+  (last 8 chars of the id) and links stay the same.
+- Invoice PDFs: a small pure-Go PDF library, not Viper's headless Chromium.
+- Realtime sends invalidation events only (`changed` + topic + id); clients refetch
+  through the authorised REST routes, so no row data ever travels on the socket.
+- The security holes in backend-map section 13 are fixed in the rewrite, each with a
+  leak test, not copied.
+- Design set: the 21 current pages plus Listing detail, Cart and Messages inbox
+  (brief: `mystuff/designs/BRIEF.md`).
+- `web/apps/docs` content still describes Convex setup; rewritten in T14.
+
 ## Roles (Viper AGENTS.md, Orchestrator V2)
 
 Orchestrator Opus 5.5 plans, reviews, commits, writes docs. Mappers: Haiku 5.5 / GPT 6 Luna.
@@ -35,7 +51,7 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 |---|------|-------|-----------|
 | T1 | Map Convex backend → `mystuff/maps/backend-map.md` (every table, index, function, auth rule, subscription, file, email, aggregate, migration) | mapper (Haiku) | — |
 | T2 | Map frontend → `mystuff/maps/pages-map.md` (every route, data shown, actions, states, roles) | mapper (Luna) | — |
-| T2b | Restructure root: move `3reco/` → `web/apps/app`, docs → `web/apps/docs`, `api/` `app/` already in `reference/` (done), move `mystuff/` to root, fix compose/Dockerfile paths | Orchestrator | T1, T2 |
+| T2b | (done) Restructure root: move `3reco/` → `web/apps/app`, docs → `web/apps/docs`, `api/` `app/` already in `reference/` (done), move `mystuff/` to root, fix compose/Dockerfile paths | Orchestrator | T1, T2 |
 | T3 | Design system brief for mockups: tokens from `3reco/src/index.css`, shared rules | Orchestrator | T2 |
 | T4 | 10 interactive HTML mockup sets × every page → `mystuff/designs/NN/` | 10 designers, alternating | T3 |
 | T5 | **CHECKPOINT: owner picks a design** | owner | T4 |
