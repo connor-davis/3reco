@@ -67,7 +67,7 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T7 | (done c4f027e) Go auth: sign-up, verify email, sign-in, sessions (cookie), forgot/reset, admin role; scrypt verify of Better Auth hashes | dev | T6 |
 | T8 | (done, merged 8d37ac3) Go domain API: every Convex query/mutation/action as REST, same access rules | dev(s), split by domain | T6, T7 |
 | T9 | (done c4f027e) Realtime: LISTEN/NOTIFY → WebSocket hub, subscribe-by-topic; matches Convex live queries | dev | T6 |
-| T10 | Files (MinIO) + PDFs/CSV exports + emails (Resend/Mailpit) | dev | T8 |
+| T10 | (done a447d22) Files (MinIO) + PDFs/CSV exports + emails (Resend/Mailpit) | dev | T8 |
 | T11 | Data move: Convex export → Postgres + MinIO, count check | dev | T6, T10 |
 | T12 | Frontend client: fetch client + `useLive` + auth context; swap all Convex calls | dev | T8, T9 |
 | T13 | Frontend rebuild in picked design, every page, light + dark | dev(s) | T5, T12 |
