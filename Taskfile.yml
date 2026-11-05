@@ -1,0 +1,115 @@
+# Every everyday command in one place. Needs https://taskfile.dev
+#
+#   task          list all tasks
+#   task up       start Postgres, Mailpit and MinIO
+#   task dev      run the API and the web app
+#   task check    everything CI would check
+version: "3"
+
+vars:
+  # Podman by default. Run `task up COMPOSE="docker compose"` to use docker.
+  COMPOSE: podman compose
+  BIN: bin/3reco{{exeExt}}
+  VERSION_FLAG: -X github.com/connor-davis/3reco/internal/platform/config.Version=dev
+  # The web app has its own node_modules; name the Go roots so go never walks into it.
+  GO_PKGS: ./cmd/... ./internal/... ./tests/...
+  TEST_DB: postgres://threereco:threereco@localhost:5441/threereco?sslmode=disable
+
+env:
+  THREERECO_DEV: "true"
+
+tasks:
+  default:
+    desc: List all tasks
+    silent: true
+    cmds:
+      - task --list
+
+  up:
+    desc: Start Postgres (:5441), Mailpit (:8026) and MinIO (:9010)
+    cmds:
+      - "{{.COMPOSE}} -f deployments/docker-compose.yml up -d"
+
+  down:
+    desc: Stop Postgres, Mailpit and MinIO (data is kept)
+    cmds:
+      - "{{.COMPOSE}} -f deployments/docker-compose.yml down"
+
+  nuke:
+    desc: Delete all local data (database, inbox, files) and start fresh
+    prompt: This deletes your local 3REco database and files. Continue?
+    cmds:
+      - "{{.COMPOSE}} -f deployments/docker-compose.yml down -v"
+
+  install:
+    desc: Install the web app packages
+    cmds:
+      - cd web/apps/app && npm install
+
+  migrate:
+    desc: Run the SQL migrations
+    cmds:
+      - go run ./cmd/3reco migrate
+
+  serve:
+    desc: Run the API once (no web app)
+    cmds:
+      - go run ./cmd/3reco serve
+
+  dev:api:
+    desc: Run the API on :8180
+    cmds:
+      - go run ./cmd/3reco serve
+
+  dev:web:
+    desc: Run the Vite dev server
+    cmds:
+      - cd web/apps/app && npm run dev
+
+  dev:
+    desc: Run the API and the web app together
+    deps: [dev:api, dev:web]
+
+  build:
+    desc: Build the binary into bin/
+    cmds:
+      - go build -trimpath -ldflags "{{.VERSION_FLAG}}" -o {{.BIN}} ./cmd/3reco
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - gofmt -w cmd internal tests
+
+  vet:
+    desc: go vet and staticcheck
+    cmds:
+      - go vet {{.GO_PKGS}}
+      - go run honnef.co/go/tools/cmd/staticcheck@latest {{.GO_PKGS}}
+
+  test:
+    desc: Go tests against the real services (a missing service fails the run)
+    env:
+      THREERECO_REQUIRE_SERVICES: "1"
+      THREERECO_TEST_DATABASE_URL: "{{.TEST_DB}}"
+    cmds:
+      - go test {{.GO_PKGS}}
+
+  lint:web:
+    desc: Typecheck, lint and build the web app
+    cmds:
+      - cd web/apps/app && npm run lint
+      - cd web/apps/app && npm run build
+
+  check:
+    desc: gofmt, vet, staticcheck, Go tests, web typecheck, lint and build
+    cmds:
+      - task: fmt:check
+      - task: vet
+      - task: test
+      - task: lint:web
+
+  fmt:check:
+    desc: Fail when Go files are not formatted
+    silent: true
+    cmds:
+      - test -z "$(gofmt -l cmd internal tests)"
