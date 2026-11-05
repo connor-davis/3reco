@@ -27,14 +27,23 @@ import {
 } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useMock, useMockList } from '@/lib/mock/hooks';
+import { DataState } from '@/components/data-state';
+import { formatDate, formatTime } from '@/lib/format';
+import {
+  useNotifications,
+  useUnreadCount,
+  useReadNotification,
+  useReadAllNotifications,
+  useDismissNotification,
+  useDismissAllNotifications,
+} from '@/lib/api/notifications';
 
 /** The bell. A popover on desktop, a bottom sheet on phones. */
 export function NotificationTray() {
   const isMobile = useIsMobile();
-  const mine = useMyNotices();
+  const count = useUnreadCount();
   const [open, setOpen] = useState(false);
-  const unread = mine.filter((notice) => notice.unread).length;
+  const unread = !count.isError ? (count.data?.count ?? 0) : 0;
 
   const bell = (
     <span className="relative">
@@ -60,7 +69,13 @@ export function NotificationTray() {
           <SheetContent side="bottom" className="max-h-[85dvh]">
             <SheetHeader>
               <SheetTitle>Notifications</SheetTitle>
-              <SheetDescription>{unread} unread</SheetDescription>
+              <SheetDescription>
+                {count.isError
+                  ? 'Unread count unavailable.'
+                  : count.isPending
+                    ? 'Loading notifications…'
+                    : unread + ' unread'}
+              </SheetDescription>
             </SheetHeader>
             <TrayList onNavigate={() => setOpen(false)} />
           </SheetContent>
@@ -82,32 +97,26 @@ export function NotificationTray() {
   );
 }
 
-/** Only the notices meant for the signed-in role, so no link leads to a denied page. */
-function useMyNotices() {
-  const { role } = useMock();
-  const notices = useMockList('notices');
-
-  return notices.items.filter((notice) => notice.roles.includes(role));
-}
-
 function TrayList({ onNavigate }: { onNavigate: () => void }) {
   const navigate = useNavigate();
-  const notices = useMockList('notices');
-  const mine = useMyNotices();
+  const [cursor, setCursor] = useState<string | undefined>();
+  const notices = useNotifications({ cursor, limit: 50 });
+  const count = useUnreadCount();
+  const read = useReadNotification();
+  const readAll = useReadAllNotifications();
+  const dismiss = useDismissNotification();
+  const dismissAll = useDismissAllNotifications();
   const [tab, setTab] = useState('all');
-
-  const shown = mine.filter((notice) => tab === 'all' || notice.unread);
-
-  // These only touch this role's notices, never another role's.
-  function markAllRead() {
-    mine.forEach((notice) => notices.update(notice.id, { unread: false }));
-    toast.success('All notifications marked as read.');
-  }
-
-  function dismissAll() {
-    mine.forEach((notice) => notices.remove(notice.id));
-    toast.success('Notifications cleared.');
-  }
+  const shown = (notices.data?.items ?? []).filter(
+    (notice) => tab === 'all' || !notice.read
+  );
+  const pending =
+    read.isPending ||
+    readAll.isPending ||
+    dismiss.isPending ||
+    dismissAll.isPending;
+  const error =
+    read.error ?? readAll.error ?? dismiss.error ?? dismissAll.error;
 
   return (
     <div className="flex min-h-0 flex-col">
@@ -120,25 +129,31 @@ function TrayList({ onNavigate }: { onNavigate: () => void }) {
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="unread">
             Unread
-            <Badge variant="secondary">
-              {mine.filter((notice) => notice.unread).length}
-            </Badge>
+            {!count.isError && count.data && (
+              <Badge variant="secondary">{count.data.count}</Badge>
+            )}
           </TabsTrigger>
         </TabsList>
       </Tabs>
       <ScrollArea className="max-h-80">
-        {shown.length === 0 ? (
-          <p className="p-6 text-center text-sm text-muted-foreground">
-            You're all caught up.
-          </p>
-        ) : (
+        <DataState
+          query={[notices, count]}
+          isEmpty={shown.length === 0}
+          icon={Bell}
+          emptyTitle={
+            tab === 'unread'
+              ? 'No unread notifications on this page'
+              : 'No notifications on this page'
+          }
+          emptyText="There are no notifications on this page."
+        >
           <ul className="space-y-1 p-2">
             {shown.map((notice) => (
               <li key={notice.id}>
                 <Item size="sm">
                   <ItemContent>
                     <ItemTitle>
-                      {notice.unread && (
+                      {!notice.read && (
                         <span
                           className="size-2 rounded-full bg-primary"
                           aria-label="Unread"
@@ -146,36 +161,46 @@ function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       )}
                       {notice.title}
                     </ItemTitle>
-                    <ItemDescription>{notice.text}</ItemDescription>
+                    <ItemDescription>{notice.body}</ItemDescription>
                     <span className="text-xs text-muted-foreground">
-                      {notice.time}
+                      {formatDate(notice.created_at)} ·{' '}
+                      {formatTime(notice.created_at)}
                     </span>
                   </ItemContent>
                   <ItemActions className="flex-col items-end">
+                    {notice.link?.startsWith('/') &&
+                      !notice.link.startsWith('//') && (
+                        <Button
+                          className="min-h-11"
+                          variant="outline"
+                          disabled={pending}
+                          onClick={() =>
+                            read.mutate(notice.id, {
+                              onSuccess: () => {
+                                onNavigate();
+                                void navigate({ to: notice.link! });
+                              },
+                            })
+                          }
+                        >
+                          Open
+                        </Button>
+                      )}
+                    {!notice.read && (
+                      <Button
+                        className="min-h-11"
+                        variant="ghost"
+                        disabled={pending}
+                        onClick={() => read.mutate(notice.id)}
+                      >
+                        Mark read
+                      </Button>
+                    )}
                     <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => {
-                        notices.update(notice.id, { unread: false });
-                        onNavigate();
-                        navigate({ to: notice.to });
-                      }}
-                    >
-                      Open
-                    </Button>
-                    <Button
-                      size="xs"
+                      className="min-h-11"
                       variant="ghost"
-                      onClick={() =>
-                        notices.update(notice.id, { unread: false })
-                      }
-                    >
-                      Mark read
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => notices.remove(notice.id)}
+                      disabled={pending}
+                      onClick={() => dismiss.mutate(notice.id)}
                     >
                       Dismiss
                     </Button>
@@ -184,13 +209,60 @@ function TrayList({ onNavigate }: { onNavigate: () => void }) {
               </li>
             ))}
           </ul>
+        </DataState>
+        {error && (
+          <p role="alert" className="p-3 text-sm text-destructive">
+            {error.message} Try again.
+          </p>
+        )}
+        {(cursor || notices.data?.has_more) && (
+          <div className="flex gap-2 p-3">
+            {cursor && (
+              <Button
+                className="min-h-11"
+                variant="outline"
+                onClick={() => setCursor(undefined)}
+              >
+                First page
+              </Button>
+            )}
+            <Button
+              className="min-h-11"
+              variant="outline"
+              disabled={
+                !notices.data?.has_more || notices.isFetching || notices.isError
+              }
+              onClick={() => setCursor(notices.data?.next_cursor ?? undefined)}
+            >
+              Next page
+            </Button>
+          </div>
         )}
       </ScrollArea>
       <div className="flex justify-between border-t p-2">
-        <Button size="sm" variant="ghost" onClick={markAllRead}>
+        <Button
+          className="min-h-11"
+          variant="ghost"
+          disabled={pending}
+          onClick={() =>
+            readAll.mutate(undefined, {
+              onSuccess: () =>
+                toast.success('All notifications marked as read.'),
+            })
+          }
+        >
           Mark all read
         </Button>
-        <Button size="sm" variant="ghost" onClick={dismissAll}>
+        <Button
+          className="min-h-11"
+          variant="ghost"
+          disabled={pending}
+          onClick={() =>
+            dismissAll.mutate(undefined, {
+              onSuccess: () => toast.success('Notifications cleared.'),
+            })
+          }
+        >
           Dismiss all
         </Button>
       </div>

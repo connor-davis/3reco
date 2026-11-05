@@ -1,109 +1,156 @@
 import type { ReactNode } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Controller,
   useForm,
   type FieldValues,
+  type Path,
   type UseFormReturn,
 } from 'react-hook-form';
 import { toast } from 'sonner';
 import { SelectField, TextField } from '@/components/form-fields';
 import { Button } from '@/components/ui/button';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { banks, provinces, walletProviders } from '@/lib/data/people';
-import { useMock, useProfile } from '@/lib/mock/hooks';
-import type { Profile } from '@/lib/types';
+import { ApiError } from '@/lib/api/client';
+import { useUpdateProfile } from '@/lib/api/profile';
+import type { Profile } from '@/lib/api/types';
 import {
   bankSchema,
   businessSchema,
   locationSchema,
   personalSchema,
-  walletSchema,
+  provinces,
   type BankValues,
   type BusinessValues,
   type LocationValues,
   type PersonalValues,
-  type WalletValues,
 } from './schemas';
 
-/** Copies just the named fields out of the profile for a form's defaults. */
-function pick<K extends keyof Profile>(profile: Profile, keys: K[]) {
-  return Object.fromEntries(keys.map((key) => [key, profile[key]])) as Pick<
-    Profile,
-    K
-  >;
-}
+type Props = { profile: Profile; onSaved?: () => void | Promise<void> };
 
-type FormShellProps<T extends FieldValues> = {
-  form: UseFormReturn<T>;
-  // Writes the saved values into the person's profile record.
-  onSave: (values: T) => void;
-  children: ReactNode;
-};
-
-/** Cancel and "Save changes" under every profile form. */
 function FormShell<T extends FieldValues>({
   form,
   onSave,
   children,
-}: FormShellProps<T>) {
+}: {
+  form: UseFormReturn<T>;
+  onSave: (values: T) => Promise<unknown>;
+  children: ReactNode;
+}) {
   return (
     <form
       noValidate
       className="space-y-4"
-      onSubmit={form.handleSubmit((values) => {
-        onSave(values);
-        form.reset(values);
-        toast.success('Changes saved.');
+      onSubmit={form.handleSubmit(async (values) => {
+        form.clearErrors('root');
+        try {
+          await onSave(values);
+          form.reset(
+            Object.fromEntries(
+              Object.entries(values).map(([name, value]) => [
+                name,
+                name === 'id_number' || name === 'bank_account_number'
+                  ? ''
+                  : value,
+              ])
+            ) as T
+          );
+          toast.success('Changes saved.');
+        } catch (error) {
+          if (error instanceof ApiError) {
+            for (const [name, message] of Object.entries(error.fields ?? {})) {
+              form.setError(name as Path<T>, { message });
+            }
+          }
+          form.setError('root', {
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Changes could not be saved. Try again.',
+          });
+        }
       })}
     >
-      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+      <fieldset
+        disabled={form.formState.isSubmitting}
+        className="grid gap-4 sm:grid-cols-2"
+      >
+        {children}
+      </fieldset>
+      {form.formState.errors.root && (
+        <p role="alert" className="text-sm text-destructive">
+          {form.formState.errors.root.message}
+        </p>
+      )}
       <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={() => form.reset()}>
-          Cancel
+        <Button
+          className="min-h-11"
+          type="button"
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={() => form.reset()}
+        >
+          Cancel changes
         </Button>
-        <Button type="submit">Save changes</Button>
+        <Button
+          className="min-h-11"
+          type="submit"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? 'Saving…' : 'Save changes'}
+        </Button>
       </div>
     </form>
   );
 }
 
-export function PersonalForm() {
-  const { profile, save } = useProfile();
+export function PersonalForm({ profile, onSaved }: Props) {
+  const save = useUpdateProfile();
   const form = useForm<PersonalValues>({
     resolver: zodResolver(personalSchema),
-    defaultValues: pick(profile, [
-      'firstName',
-      'lastName',
-      'idNumber',
-      'phone',
-    ]),
+    defaultValues: {
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      phone: profile.phone,
+      id_number: '',
+    },
   });
-  const { control } = form;
-
   return (
-    <FormShell form={form} onSave={save}>
+    <FormShell
+      form={form}
+      onSave={async ({ id_number, ...values }) => {
+        await save.mutateAsync({
+          ...values,
+          name: values.first_name + ' ' + values.last_name,
+          ...(id_number ? { id_number } : {}),
+        });
+        await onSaved?.();
+      }}
+    >
       <TextField
-        control={control}
-        name="firstName"
+        control={form.control}
+        name="first_name"
         label="First name"
         autoComplete="given-name"
       />
       <TextField
-        control={control}
-        name="lastName"
+        control={form.control}
+        name="last_name"
         label="Last name"
         autoComplete="family-name"
       />
       <TextField
-        control={control}
-        name="idNumber"
+        control={form.control}
+        name="id_number"
         label="South African ID"
         inputMode="numeric"
+        description={
+          profile.id_number
+            ? 'Saved: ' + profile.id_number + '. Leave blank to keep it.'
+            : 'Enter a 13-digit ID, if applicable.'
+        }
+        autoComplete="off"
       />
       <TextField
-        control={control}
+        control={form.control}
         name="phone"
         label="Phone number"
         type="tel"
@@ -112,62 +159,92 @@ export function PersonalForm() {
   );
 }
 
-export function BusinessForm() {
-  const { profile, save } = useProfile();
+export function BusinessForm({ profile, onSaved }: Props) {
+  const save = useUpdateProfile();
   const form = useForm<BusinessValues>({
     resolver: zodResolver(businessSchema),
-    defaultValues: pick(profile, ['businessName', 'registration']),
+    defaultValues: {
+      business_name: profile.business_name,
+      business_registration_number: profile.business_registration_number,
+    },
   });
-  const { control } = form;
-
   return (
-    <FormShell form={form} onSave={save}>
-      <TextField control={control} name="businessName" label="Business name" />
+    <FormShell
+      form={form}
+      onSave={async (values) => {
+        await save.mutateAsync(values);
+        await onSaved?.();
+      }}
+    >
       <TextField
-        control={control}
-        name="registration"
+        control={form.control}
+        name="business_name"
+        label="Business name"
+      />
+      <TextField
+        control={form.control}
+        name="business_registration_number"
         label="Registration number"
       />
     </FormShell>
   );
 }
 
-function BankForm() {
-  const { profile, save } = useProfile();
+export function PayoutForm({ profile, onSaved }: Props) {
+  const save = useUpdateProfile();
   const form = useForm<BankValues>({
     resolver: zodResolver(bankSchema),
-    defaultValues: pick(profile, [
-      'holder',
-      'bank',
-      'accountType',
-      'accountNumber',
-      'branchCode',
-    ]),
+    defaultValues: {
+      bank_account_holder_name: profile.bank_account_holder_name,
+      bank_name: profile.bank_name,
+      bank_account_type: (profile.bank_account_type ||
+        'Cheque') as BankValues['bank_account_type'],
+      bank_account_number: '',
+      bank_branch_code: profile.bank_branch_code,
+    },
   });
-  const { control } = form;
-
   return (
     <FormShell
       form={form}
-      onSave={(values) => save({ ...values, payoutMethod: 'bank' })}
+      onSave={async ({ bank_account_number, ...values }) => {
+        if (!bank_account_number && !profile.bank_account_number)
+          throw new Error('Enter an account number.');
+        await save.mutateAsync({
+          ...values,
+          ...(bank_account_number ? { bank_account_number } : {}),
+        });
+        await onSaved?.();
+      }}
     >
-      <TextField control={control} name="holder" label="Account holder" />
-      <SelectField control={control} name="bank" label="Bank" options={banks} />
+      <TextField
+        control={form.control}
+        name="bank_account_holder_name"
+        label="Account holder"
+      />
+      <TextField control={form.control} name="bank_name" label="Bank" />
       <SelectField
-        control={control}
-        name="accountType"
+        control={form.control}
+        name="bank_account_type"
         label="Account type"
-        options={['Business', 'Savings', 'Cheque']}
+        options={['Cheque', 'Savings', 'Transmission']}
       />
       <TextField
-        control={control}
-        name="accountNumber"
+        control={form.control}
+        name="bank_account_number"
         label="Account number"
         inputMode="numeric"
+        autoComplete="off"
+        description={
+          profile.bank_account_number
+            ? 'Saved: ' +
+              profile.bank_account_number +
+              '. Leave blank to keep it.'
+            : 'Enter the account number.'
+        }
       />
       <TextField
-        control={control}
-        name="branchCode"
+        control={form.control}
+        name="bank_branch_code"
         label="Branch code"
         inputMode="numeric"
       />
@@ -175,106 +252,43 @@ function BankForm() {
   );
 }
 
-function WalletForm() {
-  const { profile, save } = useProfile();
-  const form = useForm<WalletValues>({
-    resolver: zodResolver(walletSchema),
-    defaultValues: pick(profile, ['walletProvider', 'walletPhone']),
+export function LocationForm({ profile, onSaved }: Props) {
+  const save = useUpdateProfile();
+  const form = useForm<LocationValues>({
+    resolver: zodResolver(locationSchema),
+    defaultValues: {
+      street_address: profile.street_address,
+      city: profile.city,
+      area_code:
+        profile.area_code === null
+          ? ''
+          : String(profile.area_code).padStart(4, '0'),
+      province: profile.province,
+    },
   });
-  const { control } = form;
-
   return (
     <FormShell
       form={form}
-      onSave={(values) => save({ ...values, payoutMethod: 'ewallet' })}
+      onSave={async ({ area_code, ...values }) => {
+        await save.mutateAsync({ ...values, area_code: Number(area_code) });
+        await onSaved?.();
+      }}
     >
-      <SelectField
-        control={control}
-        name="walletProvider"
-        label="Wallet provider"
-        options={walletProviders}
-      />
       <TextField
-        control={control}
-        name="walletPhone"
-        label="Wallet phone number"
-        type="tel"
-      />
-    </FormShell>
-  );
-}
-
-/** Collectors choose bank or e-wallet. Businesses only have a bank. */
-export function PayoutForm() {
-  const { role } = useMock();
-  const { profile } = useProfile();
-  const form = useForm<{ method: 'bank' | 'ewallet' }>({
-    defaultValues: { method: profile.payoutMethod },
-  });
-  const method = form.watch('method');
-
-  if (role !== 'collector') return <BankForm />;
-
-  return (
-    <div className="space-y-6">
-      <Controller
         control={form.control}
-        name="method"
-        render={({ field }) => (
-          <Field>
-            <FieldLabel id="payout-method-label">Payout method</FieldLabel>
-            <RadioGroup
-              value={field.value}
-              onValueChange={field.onChange}
-              aria-labelledby="payout-method-label"
-              className="flex gap-6"
-            >
-              <Field orientation="horizontal" className="w-auto">
-                <RadioGroupItem id="payout-bank" value="bank" />
-                <FieldLabel htmlFor="payout-bank" className="font-normal">
-                  Bank
-                </FieldLabel>
-              </Field>
-              <Field orientation="horizontal" className="w-auto">
-                <RadioGroupItem id="payout-ewallet" value="ewallet" />
-                <FieldLabel htmlFor="payout-ewallet" className="font-normal">
-                  E-wallet
-                </FieldLabel>
-              </Field>
-            </RadioGroup>
-          </Field>
-        )}
-      />
-      {method === 'bank' ? <BankForm /> : <WalletForm />}
-    </div>
-  );
-}
-
-export function LocationForm() {
-  const { profile, save } = useProfile();
-  const form = useForm<LocationValues>({
-    resolver: zodResolver(locationSchema),
-    defaultValues: pick(profile, ['street', 'city', 'postal', 'province']),
-  });
-  const { control } = form;
-
-  return (
-    <FormShell form={form} onSave={save}>
-      <TextField
-        control={control}
-        name="street"
+        name="street_address"
         label="Street address"
         autoComplete="street-address"
       />
-      <TextField control={control} name="city" label="City / suburb" />
+      <TextField control={form.control} name="city" label="City / suburb" />
       <TextField
-        control={control}
-        name="postal"
+        control={form.control}
+        name="area_code"
         label="Area / postal code"
         inputMode="numeric"
       />
       <SelectField
-        control={control}
+        control={form.control}
         name="province"
         label="Province"
         options={provinces}
