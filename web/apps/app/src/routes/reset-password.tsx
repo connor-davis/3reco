@@ -64,13 +64,19 @@ function ResetPasswordPage() {
         <p>
           {problem && (
             <>
-              <Link to="/forgot-password" className="underline">
+              <Link
+                to="/forgot-password"
+                className="inline-flex min-h-11 items-center underline"
+              >
                 Request a fresh email
               </Link>
               {' · '}
             </>
           )}
-          <Link to="/sign-in" className="underline">
+          <Link
+            to="/sign-in"
+            className="inline-flex min-h-11 items-center underline"
+          >
             Return to sign in
           </Link>
         </p>
