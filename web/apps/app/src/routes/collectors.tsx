@@ -11,11 +11,14 @@ import { CollectorDialog } from '@/components/dialogs/collector-dialog';
 import { SearchBox } from '@/components/filters';
 import { IconButton } from '@/components/icon-button';
 import { PageHeader } from '@/components/page-header';
+import { Pager } from '@/components/transactions/list-tools';
+import { errorText, usePager } from '@/components/transactions/pager-state';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useMockList } from '@/lib/mock/hooks';
-import type { Collector } from '@/lib/types';
+import { useCollectors, useDeleteCollector } from '@/lib/api/collectors';
+import type { Collector } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/use-auth';
 
 export const Route = createFileRoute('/collectors')({
   component: () => (
@@ -25,25 +28,63 @@ export const Route = createFileRoute('/collectors')({
   ),
 });
 
+// Account numbers arrive masked. They are printed as sent, never rebuilt.
 function payoutText(collector: Collector): string {
-  const { payout } = collector;
+  if (collector.payout_method === 'bank') {
+    const account = collector.bank_account_number ?? '';
 
-  if (payout.method === 'bank') {
-    return `Bank · ${payout.bank} ····${payout.accountNumber.slice(-4)}`;
+    return `Bank · ${collector.bank_name ?? ''} ${account}`.trim();
   }
 
-  return `E-wallet · ${payout.walletProvider}`;
+  if (collector.payout_method === 'ewallet') {
+    return `E-wallet · ${collector.ewallet_platform_name ?? ''}`.trim();
+  }
+
+  return 'Not shared';
+}
+
+type RemoveProps = { collector: Collector | null; onClose: () => void };
+
+function RemoveCollector({ collector, onClose }: RemoveProps) {
+  const remove = useDeleteCollector(collector?.id ?? '');
+  // The API asks for the collector's email, or their phone when there is none.
+  const confirmation = collector?.email || collector?.phone || '';
+
+  return (
+    <ConfirmDialog
+      open={collector !== null}
+      onOpenChange={(open) => !open && onClose()}
+      title={`Remove ${collector?.name ?? 'collector'}?`}
+      description="Their collections stay on record, but they leave your network."
+      confirmLabel="Remove collector"
+      typedName={confirmation}
+      onConfirm={() => {
+        remove.mutate(
+          { confirmation_value: confirmation },
+          {
+            onSuccess: () => toast.success('Collector removed.'),
+            onError: (error) => toast.error(errorText(error)),
+          }
+        );
+        onClose();
+      }}
+    />
+  );
 }
 
 function CollectorsPage() {
-  const list = useMockList('collectors');
+  const { user } = useAuth();
+  const pager = usePager();
+  const list = useCollectors(pager.params);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Collector | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [removing, setRemoving] = useState<Collector | null>(null);
 
-  const shown = list.items.filter((collector) =>
-    `${collector.name} ${collector.phone}`
+  // Only admin and staff may remove a collector. Businesses add and edit.
+  const canRemove = user?.role === 'admin' || user?.role === 'staff';
+  const shown = (list.data?.items ?? []).filter((collector) =>
+    `${collector.name} ${collector.phone ?? ''}`
       .toLowerCase()
       .includes(query.toLowerCase())
   );
@@ -62,12 +103,14 @@ function CollectorsPage() {
         >
           <Pencil />
         </IconButton>
-        <IconButton
-          label={`Remove ${collector.name}`}
-          onClick={() => setRemoving(collector)}
-        >
-          <Trash2 />
-        </IconButton>
+        {canRemove && (
+          <IconButton
+            label={`Remove ${collector.name}`}
+            onClick={() => setRemoving(collector)}
+          >
+            <Trash2 />
+          </IconButton>
+        )}
       </div>
     );
   }
@@ -89,7 +132,7 @@ function CollectorsPage() {
       enableSorting: false,
       cell: ({ row }) => (
         <span>
-          <span className="block">{row.original.phone}</span>
+          <span className="block">{row.original.phone ?? 'Not shared'}</span>
           <span className="text-xs text-muted-foreground">
             {row.original.email}
           </span>
@@ -136,6 +179,7 @@ function CollectorsPage() {
         />
       </div>
       <DataState
+        query={list}
         isEmpty={shown.length === 0}
         icon={Users}
         emptyTitle="No collectors found"
@@ -154,45 +198,23 @@ function CollectorsPage() {
                   <span className="font-medium">{collector.name}</span>
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  {collector.phone} · {collector.city}
+                  {collector.phone ?? 'Not shared'} · {collector.city}
                 </p>
                 <p className="text-sm">{payoutText(collector)}</p>
                 {actions(collector)}
               </CardContent>
             </Card>
           )}
-          footer={
-            <>
-              <span>{shown.length} collectors shown</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toast('That is everyone for now.')}
-              >
-                Load more
-              </Button>
-            </>
-          }
+          footer={<span>{shown.length} collectors on this page</span>}
         />
       </DataState>
+      <Pager pager={pager} page={list.data} />
       <CollectorDialog
         open={formOpen}
         onOpenChange={setFormOpen}
         collector={editing}
       />
-      <ConfirmDialog
-        open={removing !== null}
-        onOpenChange={(open) => !open && setRemoving(null)}
-        title={`Remove ${removing?.name ?? 'collector'}?`}
-        description="Their collections stay on record, but they leave your network."
-        confirmLabel="Remove collector"
-        typedName={removing?.name}
-        onConfirm={() => {
-          if (removing) list.remove(removing.id);
-          setRemoving(null);
-          toast.success('Collector removed.');
-        }}
-      />
+      <RemoveCollector collector={removing} onClose={() => setRemoving(null)} />
     </>
   );
 }

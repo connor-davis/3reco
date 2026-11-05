@@ -1,24 +1,29 @@
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { DecimalField, SelectField, TextField } from '@/components/form-fields';
+import { DecimalField, TextField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
-import { categories } from '@/lib/data/materials';
+import { ApiError } from '@/lib/api/client';
+import { useCreateMaterial, useUpdateMaterial } from '@/lib/api/materials';
+import type { Material } from '@/lib/api/types';
 import { toCents } from '@/lib/format';
-import { useMockList } from '@/lib/mock/hooks';
-import type { Material } from '@/lib/types';
+
+const decimal = /^\d{1,12}([.,]\d{1,6})?$/;
 
 const schema = z.object({
   name: z.string().min(2, 'Enter the material name.'),
-  category: z.string().min(1, 'Pick a category.'),
-  carbonFactor: z
+  carbon_factor: z
     .string()
+    .refine((value) => decimal.test(value.trim()), 'Use a plain number.')
     .refine((value) => toCents(value) > 0, 'Enter the kg CO₂ saved per kg.'),
-  gwCode: z.string().min(3, 'Enter the GW code, for example GW-PET-01.'),
-  referencePrice: z
+  gw_code: z.string().min(3, 'Enter the GW code, for example GW-PET-01.'),
+  price: z
     .string()
+    .refine((value) => decimal.test(value.trim()), 'Use a plain number.')
     .refine((value) => toCents(value) > 0, 'Enter a price above R 0.00.'),
 });
 
@@ -31,39 +36,48 @@ type Props = {
   material?: Material;
 };
 
+const exact = (value: string) => value.trim().replace(',', '.');
+
 /** Add or edit a catalogue material (admin only). */
 export function MaterialDialog({ open, onOpenChange, material }: Props) {
-  const list = useMockList('materials');
-  const { control, handleSubmit } = useForm<Values>({
+  const create = useCreateMaterial();
+  const update = useUpdateMaterial(material?.id ?? '');
+  const [serverError, setServerError] = useState('');
+  const { control, handleSubmit, setError } = useForm<Values>({
     resolver: zodResolver(schema),
     values: {
       name: material?.name ?? '',
-      category: material?.category ?? '',
-      carbonFactor: material?.carbonFactor ?? '',
-      gwCode: material?.gwCode ?? '',
-      referencePrice: material?.referencePrice ?? '',
+      carbon_factor: material?.carbon_factor ?? '',
+      gw_code: material?.gw_code ?? '',
+      price: material?.price ?? '',
     },
   });
 
-  function onSubmit(values: Values) {
-    const next = {
+  async function onSubmit(values: Values) {
+    setServerError('');
+    const input = {
       ...values,
-      category: values.category as Material['category'],
+      carbon_factor: exact(values.carbon_factor),
+      price: exact(values.price),
     };
 
-    if (material) {
-      list.update(material.id, next);
-      toast.success('Material updated.');
-    } else {
-      list.add({
-        id: values.name.toLowerCase().replace(/\W+/g, '-'),
-        tag: values.name.split(' ')[0],
-        ...next,
-      });
-      toast.success('Material added.');
+    try {
+      if (material) {
+        await update.mutateAsync(input);
+        toast.success('Material updated.');
+      } else {
+        await create.mutateAsync(input);
+        toast.success('Material added.');
+      }
+      onOpenChange(false);
+    } catch (error) {
+      if (error instanceof ApiError && error.fields) {
+        for (const [name, message] of Object.entries(error.fields)) {
+          if (name in values) setError(name as keyof Values, { message });
+        }
+      }
+      setServerError(errorText(error));
     }
-
-    onOpenChange(false);
   }
 
   return (
@@ -77,30 +91,32 @@ export function MaterialDialog({ open, onOpenChange, material }: Props) {
           : 'Add a material you buy or sell, with its CO₂ factor.'
       }
       footer={
-        <Button onClick={handleSubmit(onSubmit)}>
+        <Button
+          disabled={create.isPending || update.isPending}
+          onClick={handleSubmit(onSubmit)}
+        >
           {material ? 'Save changes' : 'Add material'}
         </Button>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <TextField control={control} name="name" label="Material name" />
-        <SelectField
-          control={control}
-          name="category"
-          label="Category"
-          options={[...categories]}
-        />
         <DecimalField
           control={control}
-          name="carbonFactor"
+          name="carbon_factor"
           label="Carbon factor (kg CO₂ / kg)"
         />
-        <TextField control={control} name="gwCode" label="GW code" />
+        <TextField control={control} name="gw_code" label="GW code" />
         <DecimalField
           control={control}
-          name="referencePrice"
-          label="Reference price (R / kg)"
+          name="price"
+          label="Base price (R / kg)"
         />
+        {serverError && (
+          <p role="alert" className="text-sm text-destructive">
+            {serverError}
+          </p>
+        )}
       </form>
     </ResponsiveOverlay>
   );

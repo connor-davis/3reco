@@ -1,25 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import type { DateRange } from 'react-day-picker';
-import {
-  Boxes,
-  Download,
-  Eye,
-  FileText,
-  Receipt,
-  UserRound,
-} from 'lucide-react';
+import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
-import { StatusBadge } from '@/components/badges';
 import { DataState, RowsSkeleton } from '@/components/data-state';
-import {
-  InvoiceDialog,
-  PartyDialog,
-  ReceiptDialog,
-} from '@/components/dialogs/record-dialogs';
+import { TransactionDialog } from '@/components/dialogs/record-dialogs';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
-import { IconButton } from '@/components/icon-button';
 import { PageHeader } from '@/components/page-header';
 import { StatCard, StatGrid } from '@/components/stat-card';
+import { Pager } from '@/components/transactions/list-tools';
+import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -31,21 +20,27 @@ import {
   ItemGroup,
   ItemTitle,
 } from '@/components/ui/item';
-import { materialById } from '@/lib/data/materials';
+import { useExport, type ExportKind } from '@/lib/api/exports';
+import { useTransactions } from '@/lib/api/transactions';
+import type { Transaction } from '@/lib/api/types';
 import {
   formatDate,
   formatKg,
   formatRand,
   formatRate,
-  lineCents,
+  toCents,
   toGrams,
 } from '@/lib/format';
-import type { Transaction } from '@/lib/types';
 
 type Props = {
   title: string;
   description: string;
-  rows: Transaction[];
+  // Which list the API serves: mine (all, for staff), purchases or sales.
+  kind: 'mine' | 'purchases' | 'sales';
+  // Which CSV the Export button downloads. Left out when the role has none.
+  exportKind?: ExportKind;
+  // Keep only collections (c2b) from the list.
+  collectionsOnly?: boolean;
   emptyTitle: string;
   // Staff pages add a Business-to-business / collector filter.
   typeFilter?: boolean;
@@ -57,51 +52,87 @@ type Props = {
 
 const typeOptions = [
   { value: 'all', label: 'All types' },
-  { value: 'B2B', label: 'B2B' },
-  { value: 'C2B', label: 'C2B' },
+  { value: 'b2b', label: 'B2B' },
+  { value: 'c2b', label: 'C2B' },
 ];
 
 const csvOptions = [
-  { value: 'transaction', label: 'Transaction CSV' },
-  { value: 'material', label: 'Material CSV' },
+  { value: 'transaction', label: 'One row per trade' },
+  { value: 'material', label: 'One row per material' },
 ];
 
-/** The shared record list: filters, optional stats, rows and their dialogs. */
+const dayOf = (row: Transaction) => row.collection_day ?? row.effective_at;
+
+function weightOf(row: Transaction) {
+  return row.items.reduce((sum, item) => sum + toGrams(item.weight), 0);
+}
+
+function titleOf(row: Transaction) {
+  const names = row.items.map((item) => item.material_name);
+  const more = names.length > 2 ? ` +${names.length - 2} more` : '';
+
+  return `${names.slice(0, 2).join(', ')}${more} · ${formatKg(weightOf(row) / 1000)}`;
+}
+
+/** The shared record list: filters, optional stats, rows and the detail dialog. */
 export function RecordList({
   title,
   description,
-  rows,
+  kind,
+  exportKind,
+  collectionsOnly = false,
   emptyTitle,
   typeFilter = false,
   actions,
   stats = false,
   readOnly = false,
 }: Props) {
+  const pager = usePager();
+  const list = useTransactions(kind, pager.params);
+  const download = useExport(exportKind ?? 'transactions');
   const [query, setQuery] = useState('');
+  const [range, setRange] = useState<DateRange | undefined>();
   const [type, setType] = useState('all');
   const [csv, setCsv] = useState('transaction');
-  const [range, setRange] = useState<DateRange | undefined>();
-  const [receipt, setReceipt] = useState<Transaction | null>(null);
-  const [invoice, setInvoice] = useState<Transaction | null>(null);
-  const [party, setParty] = useState<Transaction | null>(null);
+  const [open, setOpen] = useState<Transaction | null>(null);
 
+  const rows = (list.data?.items ?? []).filter(
+    (row) => !collectionsOnly || row.type === 'c2b'
+  );
   const shown = rows.filter((row) => {
     if (type !== 'all' && row.type !== type) return false;
 
-    const day = new Date(row.date);
+    const day = new Date(dayOf(row));
     if (range?.from && day < range.from) return false;
     if (range?.to && day > range.to) return false;
 
-    const text = `${row.id} ${row.seller} ${row.buyer} ${materialById(row.materialId).name}`;
+    const text = `${row.id} ${row.invoice_number} ${row.seller.name} ${row.buyer.name} ${row.items
+      .map((item) => item.material_name)
+      .join(' ')}`;
 
     return text.toLowerCase().includes(query.toLowerCase());
   });
 
   const totalCents = shown.reduce(
-    (sum, row) => sum + lineCents(row.pricePerKg, row.kg),
+    (sum, row) => sum + toCents(row.total_price),
     0
   );
-  const totalGrams = shown.reduce((sum, row) => sum + toGrams(row.kg), 0);
+  const totalGrams = shown.reduce((sum, row) => sum + weightOf(row), 0);
+
+  function exportCsv() {
+    // The export routes want full timestamps, covering the whole last day.
+    const to = range?.to && new Date(range.to);
+    to?.setHours(23, 59, 59, 999);
+
+    download.mutate(
+      {
+        from: range?.from?.toISOString(),
+        to: to?.toISOString(),
+        itemised: csv === 'material',
+      },
+      { onError: (error) => toast.error(errorText(error)) }
+    );
+  }
 
   return (
     <>
@@ -143,21 +174,27 @@ export function RecordList({
             onChange={setType}
           />
         )}
-        <ChoiceSelect
-          label="Export format"
-          value={csv}
-          options={csvOptions}
-          onChange={setCsv}
-        />
-        <Button
-          variant="outline"
-          onClick={() => toast('Exports are coming soon.')}
-        >
-          <Download data-icon="inline-start" />
-          Export
-        </Button>
+        {exportKind && !readOnly && (
+          <>
+            <ChoiceSelect
+              label="Export format"
+              value={csv}
+              options={csvOptions}
+              onChange={setCsv}
+            />
+            <Button
+              variant="outline"
+              disabled={download.isPending}
+              onClick={exportCsv}
+            >
+              <Download data-icon="inline-start" />
+              Export
+            </Button>
+          </>
+        )}
       </div>
       <DataState
+        query={list}
         isEmpty={shown.length === 0}
         icon={Receipt}
         emptyTitle={rows.length === 0 ? emptyTitle : 'No matching records'}
@@ -172,58 +209,41 @@ export function RecordList({
           {shown.map((row) => (
             <Item key={row.id}>
               <ItemContent className="min-w-48">
-                <ItemTitle>
-                  {materialById(row.materialId).name} · {formatKg(row.kg)}
-                </ItemTitle>
+                <ItemTitle>{titleOf(row)}</ItemTitle>
                 <ItemDescription>
-                  {row.seller} → {row.buyer}
+                  {row.seller.name} → {row.buyer.name}
                 </ItemDescription>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(row.date)} · {formatRate(row.pricePerKg)} ·{' '}
-                  {row.id}
+                  {formatDate(dayOf(row))} · {row.invoice_number}
+                  {row.items.length === 1 &&
+                    ` · ${formatRate(row.items[0].price)}`}
                 </p>
               </ItemContent>
               <ItemActions className="flex-wrap">
-                <Badge variant="outline">{row.type}</Badge>
-                <StatusBadge status={row.status} />
+                <Badge variant="outline">{row.type.toUpperCase()}</Badge>
                 <span className="w-28 text-right font-semibold tabular-nums">
-                  {formatRand(lineCents(row.pricePerKg, row.kg))}
+                  {formatRand(toCents(row.total_price))}
                 </span>
-                <IconButton
-                  label={`Party details for ${row.id}`}
-                  onClick={() => setParty(row)}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOpen(row)}
                 >
-                  <UserRound />
-                </IconButton>
-                {row.receipts > 0 && (
-                  <IconButton
-                    label={`Receipts for ${row.id} (${row.receipts})`}
-                    onClick={() => setReceipt(row)}
-                  >
-                    <Eye />
-                  </IconButton>
-                )}
-                {!readOnly && row.invoiceNo && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setInvoice(row)}
-                  >
-                    Invoice
-                  </Button>
-                )}
+                  Details
+                  {!readOnly && ` (${row.receipts.length} receipts)`}
+                </Button>
               </ItemActions>
             </Item>
           ))}
         </ItemGroup>
       </DataState>
-      <ReceiptDialog
-        key={receipt?.id}
-        record={receipt}
-        onClose={() => setReceipt(null)}
+      <Pager pager={pager} page={list.data} />
+      <TransactionDialog
+        key={open?.id}
+        record={open}
+        readOnly={readOnly}
+        onClose={() => setOpen(null)}
       />
-      <InvoiceDialog record={invoice} onClose={() => setInvoice(null)} />
-      <PartyDialog record={party} onClose={() => setParty(null)} />
     </>
   );
 }

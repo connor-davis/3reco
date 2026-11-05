@@ -1,51 +1,106 @@
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { SelectField, TextField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { errorText } from '@/components/transactions/pager-state';
+import { phoneSchema } from '@/components/transactions/phone';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { banks, provinces, walletProviders } from '@/lib/data/people';
-import { useMockList } from '@/lib/mock/hooks';
-import type { Collector } from '@/lib/types';
+import { ApiError } from '@/lib/api/client';
+import { useCreateCollector, useUpdateCollector } from '@/lib/api/collectors';
+import type { Collector, CollectorInput } from '@/lib/api/types';
 
-const schema = z
-  .object({
-    name: z.string().min(2, 'Enter the full name.'),
-    email: z.string().email('Enter a valid email.'),
-    phone: z
-      .string()
-      .regex(/^0\d{2} ?\d{3} ?\d{4}$/, 'Use a phone like 082 555 0148.'),
-    street: z.string().min(3, 'Enter the street address.'),
-    city: z.string().min(2, 'Enter the city or suburb.'),
-    postal: z.string().regex(/^\d{4}$/, 'The area code is 4 digits.'),
-    province: z.string().min(1, 'Pick a province.'),
-    method: z.enum(['bank', 'ewallet']),
-    bank: z.string(),
-    accountNumber: z.string(),
-    walletProvider: z.string(),
-    walletPhone: z.string(),
-  })
-  .superRefine((values, ctx) => {
-    const fail = (path: string, message: string) =>
-      ctx.addIssue({ code: 'custom', path: [path], message });
+const provinces = [
+  'Eastern Cape',
+  'Free State',
+  'Gauteng',
+  'KwaZulu-Natal',
+  'Limpopo',
+  'Mpumalanga',
+  'Northern Cape',
+  'North West',
+  'Western Cape',
+];
+const banks = [
+  'FNB',
+  'Capitec',
+  'Standard Bank',
+  'ABSA',
+  'Nedbank',
+  'African Bank',
+];
+const accountTypes = ['Cheque', 'Savings', 'Transmission'];
+const walletProviders = [
+  'FNB eWallet',
+  'Standard Bank Instant Money',
+  'ABSA CashSend',
+];
 
-    if (values.method === 'bank') {
-      if (!values.bank) fail('bank', 'Pick a bank.');
-      if (!/^\d{6,16}$/.test(values.accountNumber)) {
-        fail('accountNumber', 'The account number is 6 to 16 digits.');
+function schemaFor(collector?: Collector) {
+  // The API sends account numbers masked. A masked value left as it is means
+  // "keep what is saved", so it passes; anything new must be real digits.
+  const unchanged = (value: string, saved?: string) =>
+    !!saved && value === saved;
+
+  return z
+    .object({
+      name: z.string().min(2, 'Enter the full name.'),
+      email: z.string().email('Enter a valid email.'),
+      phone: phoneSchema,
+      street_address: z.string().min(3, 'Enter the street address.'),
+      city: z.string().min(2, 'Enter the city or suburb.'),
+      area_code: z.string().regex(/^\d{4}$/, 'The area code is 4 digits.'),
+      province: z.string().min(1, 'Pick a province.'),
+      payout_method: z.enum(['bank', 'ewallet']),
+      bank_account_holder_name: z.string(),
+      bank_name: z.string(),
+      bank_account_type: z.string(),
+      bank_account_number: z.string(),
+      bank_branch_code: z.string(),
+      ewallet_platform_name: z.string(),
+      ewallet_payment_id: z.string(),
+    })
+    .superRefine((values, ctx) => {
+      const fail = (path: string, message: string) =>
+        ctx.addIssue({ code: 'custom', path: [path], message });
+
+      if (values.payout_method === 'bank') {
+        if (!values.bank_account_holder_name.trim()) {
+          fail('bank_account_holder_name', 'Enter the account holder.');
+        }
+        if (!values.bank_name) fail('bank_name', 'Pick a bank.');
+        if (!values.bank_account_type) {
+          fail('bank_account_type', 'Pick an account type.');
+        }
+        if (!values.bank_branch_code.trim()) {
+          fail('bank_branch_code', 'Enter the branch code.');
+        }
+        if (
+          !/^\d{6,16}$/.test(values.bank_account_number) &&
+          !unchanged(values.bank_account_number, collector?.bank_account_number)
+        ) {
+          fail('bank_account_number', 'The account number is 6 to 16 digits.');
+        }
+      } else {
+        if (!values.ewallet_platform_name) {
+          fail('ewallet_platform_name', 'Pick a wallet provider.');
+        }
+        if (
+          !values.ewallet_payment_id.trim() ||
+          (values.ewallet_payment_id !== collector?.ewallet_payment_id &&
+            !/^\d{9,12}$/.test(values.ewallet_payment_id.replace(/\s/g, '')))
+        ) {
+          fail('ewallet_payment_id', 'Enter the wallet phone number.');
+        }
       }
-    } else {
-      if (!values.walletProvider)
-        fail('walletProvider', 'Pick a wallet provider.');
-      if (!values.walletPhone)
-        fail('walletPhone', 'Enter the wallet phone number.');
-    }
-  });
+    });
+}
 
-type Values = z.infer<typeof schema>;
+type Values = z.infer<ReturnType<typeof schemaFor>>;
 
 type Props = {
   open: boolean;
@@ -54,68 +109,74 @@ type Props = {
 };
 
 function toValues(collector?: Collector): Values {
-  const payout = collector?.payout;
-
   return {
     name: collector?.name ?? '',
     email: collector?.email ?? '',
     phone: collector?.phone ?? '',
-    street: collector?.street ?? '',
+    street_address: collector?.street_address ?? '',
     city: collector?.city ?? '',
-    postal: collector?.postal ?? '',
+    area_code: collector?.area_code ? String(collector.area_code) : '',
     province: collector?.province ?? '',
-    method: payout?.method ?? 'bank',
-    bank: payout?.method === 'bank' ? payout.bank : '',
-    accountNumber: payout?.method === 'bank' ? payout.accountNumber : '',
-    walletProvider: payout?.method === 'ewallet' ? payout.walletProvider : '',
-    walletPhone: payout?.method === 'ewallet' ? payout.walletPhone : '',
+    payout_method: collector?.payout_method === 'ewallet' ? 'ewallet' : 'bank',
+    bank_account_holder_name: collector?.bank_account_holder_name ?? '',
+    bank_name: collector?.bank_name ?? '',
+    bank_account_type: collector?.bank_account_type ?? '',
+    bank_account_number: collector?.bank_account_number ?? '',
+    bank_branch_code: collector?.bank_branch_code ?? '',
+    ewallet_platform_name: collector?.ewallet_platform_name ?? '',
+    ewallet_payment_id: collector?.ewallet_payment_id ?? '',
+  };
+}
+
+/** The payout side that is not in use is sent empty, so the API accepts it. */
+function toInput(values: Values): CollectorInput {
+  const bank = values.payout_method === 'bank';
+  const { area_code, ...rest } = values;
+
+  return {
+    ...rest,
+    area_code: Number(area_code),
+    bank_account_holder_name: bank ? values.bank_account_holder_name : '',
+    bank_name: bank ? values.bank_name : '',
+    bank_account_type: bank ? values.bank_account_type : '',
+    bank_account_number: bank ? values.bank_account_number : '',
+    bank_branch_code: bank ? values.bank_branch_code : '',
+    ewallet_platform_name: bank ? '' : values.ewallet_platform_name,
+    ewallet_payment_id: bank ? '' : values.ewallet_payment_id,
   };
 }
 
 /** Add or edit a collector, with the payout details they get paid to. */
 export function CollectorDialog({ open, onOpenChange, collector }: Props) {
-  const list = useMockList('collectors');
-  const { control, handleSubmit, watch } = useForm<Values>({
-    resolver: zodResolver(schema),
+  const create = useCreateCollector();
+  const update = useUpdateCollector(collector?.id ?? '');
+  const [serverError, setServerError] = useState('');
+  const { control, handleSubmit, watch, setError } = useForm<Values>({
+    resolver: zodResolver(schemaFor(collector)),
     values: toValues(collector),
   });
-  const method = watch('method');
+  const method = watch('payout_method');
 
-  function onSubmit(values: Values) {
-    const payout: Collector['payout'] =
-      values.method === 'bank'
-        ? {
-            method: 'bank',
-            bank: values.bank,
-            accountType: 'Savings',
-            accountNumber: values.accountNumber,
-            branchCode: '000000',
-          }
-        : {
-            method: 'ewallet',
-            walletProvider: values.walletProvider,
-            walletPhone: values.walletPhone,
-          };
-    const next = {
-      name: values.name,
-      email: values.email,
-      phone: values.phone,
-      street: values.street,
-      city: values.city,
-      postal: values.postal,
-      province: values.province,
-      payout,
-    };
+  async function onSubmit(values: Values) {
+    setServerError('');
 
-    if (collector) {
-      list.update(collector.id, next);
-      toast.success('Collector updated.');
-    } else {
-      list.add({ id: values.name.toLowerCase().replace(/\W+/g, '-'), ...next });
-      toast.success('Collector added.');
+    try {
+      if (collector) {
+        await update.mutateAsync(toInput(values));
+        toast.success('Collector updated.');
+      } else {
+        await create.mutateAsync(toInput(values));
+        toast.success('Collector added.');
+      }
+      onOpenChange(false);
+    } catch (error) {
+      if (error instanceof ApiError && error.fields) {
+        for (const [name, message] of Object.entries(error.fields)) {
+          if (name in values) setError(name as keyof Values, { message });
+        }
+      }
+      setServerError(errorText(error));
     }
-
-    onOpenChange(false);
   }
 
   return (
@@ -126,11 +187,14 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
       title={collector ? 'Edit collector' : 'Add collector'}
       description={
         collector
-          ? 'Change this collector’s contact and payout details.'
+          ? 'Change this collector’s contact and payout details. Saved account numbers show only their last digits.'
           : 'Add someone you buy from, with how to reach and pay them.'
       }
       footer={
-        <Button onClick={handleSubmit(onSubmit)}>
+        <Button
+          disabled={create.isPending || update.isPending}
+          onClick={handleSubmit(onSubmit)}
+        >
           {collector ? 'Save changes' : 'Add collector'}
         </Button>
       }
@@ -143,11 +207,15 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
         <TextField control={control} name="name" label="Full name" />
         <TextField control={control} name="email" label="Email" type="email" />
         <TextField control={control} name="phone" label="Phone" type="tel" />
-        <TextField control={control} name="street" label="Street address" />
+        <TextField
+          control={control}
+          name="street_address"
+          label="Street address"
+        />
         <TextField control={control} name="city" label="City / suburb" />
         <TextField
           control={control}
-          name="postal"
+          name="area_code"
           label="Area code"
           inputMode="numeric"
         />
@@ -159,7 +227,7 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
         />
         <Controller
           control={control}
-          name="method"
+          name="payout_method"
           render={({ field }) => (
             <Field className="sm:col-span-2">
               <FieldLabel id="collector-method-label">Payout method</FieldLabel>
@@ -190,16 +258,34 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
         />
         {method === 'bank' ? (
           <>
+            <TextField
+              control={control}
+              name="bank_account_holder_name"
+              label="Account holder"
+            />
             <SelectField
               control={control}
-              name="bank"
+              name="bank_name"
               label="Bank"
               options={banks}
             />
+            <SelectField
+              control={control}
+              name="bank_account_type"
+              label="Account type"
+              options={accountTypes}
+            />
             <TextField
               control={control}
-              name="accountNumber"
+              name="bank_account_number"
               label="Account number"
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <TextField
+              control={control}
+              name="bank_branch_code"
+              label="Branch code"
               inputMode="numeric"
             />
           </>
@@ -207,17 +293,23 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
           <>
             <SelectField
               control={control}
-              name="walletProvider"
+              name="ewallet_platform_name"
               label="Wallet provider"
               options={walletProviders}
             />
             <TextField
               control={control}
-              name="walletPhone"
+              name="ewallet_payment_id"
               label="Wallet phone number"
               type="tel"
+              autoComplete="off"
             />
           </>
+        )}
+        {serverError && (
+          <p role="alert" className="text-sm text-destructive sm:col-span-2">
+            {serverError}
+          </p>
         )}
       </form>
     </ResponsiveOverlay>
