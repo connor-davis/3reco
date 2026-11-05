@@ -14,7 +14,11 @@ see; review checks the rest.
 
 - Go: put a call on one line if it fits in 100 characters. If it doesn't,
   put one argument per line. Don't reformat old code just for this.
-- TypeScript: prettier decides line breaks (80 characters).
+- TypeScript: Prettier decides line breaks (80 characters), using the root
+  `prettier.config.js`. Run it on every file you touch. One statement per
+  line, one JSX element per line once it wraps.
+- Never squeeze code onto one line to stay under the 900-line limit. Split
+  the file by job instead.
 
 ```go
 // Good: fits on one line.

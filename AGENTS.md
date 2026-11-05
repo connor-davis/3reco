@@ -83,7 +83,10 @@ The rules are in [docs/style-guide.md](docs/style-guide.md). In short:
 - Blank lines between steps. Comments say why, in plain words.
 - Go: a doc comment on every exported name; a call goes on one line if it
   fits in 100 characters, otherwise one argument per line.
-- No file over 900 lines.
+- No file over 900 lines. Split a long file by job; never squeeze lines to
+  fit.
+- TypeScript is formatted by Prettier (root `prettier.config.js`) and
+  linted by ESLint. Both must pass with no changes left.
 - UI: match the file around you, and reuse the shared components before
   making new ones. Plain words on screen.
 - UI design: the picked marketplace design lives in `mystuff/designs/`
