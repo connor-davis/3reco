@@ -5,6 +5,7 @@ package mail
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,10 +26,18 @@ import (
 
 // Message is one email with a text and an HTML body.
 type Message struct {
-	To      string
-	Subject string
-	Text    string
-	HTML    string
+	To          string
+	Subject     string
+	Text        string
+	HTML        string
+	Attachments []Attachment
+}
+
+// Attachment is a named file included in both SMTP and Resend messages.
+type Attachment struct {
+	Filename    string `json:"filename"`
+	ContentType string `json:"content_type"`
+	Content     []byte `json:"content"`
 }
 
 // Mailer sends messages. Build it with New.
@@ -92,13 +101,18 @@ func (m *Mailer) smtpHost() string {
 }
 
 func (m *Mailer) sendResend(ctx context.Context, msg Message) error {
-	body, err := json.Marshal(map[string]any{
+	payload := map[string]any{
 		"from":    m.cfg.FromEmail,
 		"to":      []string{msg.To},
 		"subject": msg.Subject,
 		"html":    msg.HTML,
 		"text":    msg.Text,
-	})
+	}
+	if len(msg.Attachments) > 0 {
+		payload["attachments"] = msg.Attachments
+	}
+
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
@@ -144,10 +158,31 @@ func (m *Mailer) sendSMTP(msg Message) error {
 	fmt.Fprintf(&buf, "Subject: %s\r\n", encodeHeader(msg.Subject))
 	fmt.Fprintf(&buf, "Date: %s\r\n", time.Now().Format(time.RFC1123Z))
 	fmt.Fprint(&buf, "MIME-Version: 1.0\r\n")
+	if len(msg.Attachments) > 0 {
+		fmt.Fprintf(&buf, "Content-Type: multipart/mixed; boundary=%s-mixed\r\n\r\n", boundary)
+		fmt.Fprintf(&buf, "--%s-mixed\r\n", boundary)
+	}
 	fmt.Fprintf(&buf, "Content-Type: multipart/alternative; boundary=%s\r\n\r\n", boundary)
 	writePart(&buf, boundary, "text/plain", msg.Text)
 	writePart(&buf, boundary, "text/html", msg.HTML)
 	fmt.Fprintf(&buf, "--%s--\r\n", boundary)
+	for _, attachment := range msg.Attachments {
+		fmt.Fprintf(&buf, "--%s-mixed\r\n", boundary)
+		fmt.Fprintf(&buf, "Content-Type: %s\r\n", attachment.ContentType)
+		fmt.Fprintf(&buf, "Content-Disposition: %s\r\n", mime.FormatMediaType(
+			"attachment", map[string]string{"filename": attachment.Filename}))
+		fmt.Fprint(&buf, "Content-Transfer-Encoding: base64\r\n\r\n")
+
+		encoded := base64.StdEncoding.EncodeToString(attachment.Content)
+		for len(encoded) > 0 {
+			width := min(76, len(encoded))
+			fmt.Fprint(&buf, encoded[:width], "\r\n")
+			encoded = encoded[width:]
+		}
+	}
+	if len(msg.Attachments) > 0 {
+		fmt.Fprintf(&buf, "--%s-mixed--\r\n", boundary)
+	}
 
 	addr := net.JoinHostPort(m.smtpHost(), strconv.Itoa(m.cfg.SMTPPort))
 

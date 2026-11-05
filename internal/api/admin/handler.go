@@ -26,6 +26,11 @@ func (h *Handler) Register(api fiber.Router) {
 	api.Get("/admin/users", admin, h.users)
 	api.Delete("/admin/users/:id", admin, h.remove)
 	api.Patch("/admin/users/:id/role", admin, h.setRole)
+	api.Get("/admin/exports/users", middleware.RequireUser, h.export("users"))
+	api.Get("/admin/exports/transactions", middleware.RequireUser, h.export("transactions"))
+	api.Get("/exports/collections", middleware.RequireUser, h.export("collections"))
+	api.Get("/exports/purchases", middleware.RequireUser, h.export("purchases"))
+	api.Get("/exports/sales", middleware.RequireUser, h.export("sales"))
 
 	api.Get("/admin/dashboard", middleware.RequireRole(auth.RoleAdmin, auth.RoleStaff), h.admin)
 	api.Get("/dashboard/business", middleware.RequireRole(auth.RoleBusiness), h.business)

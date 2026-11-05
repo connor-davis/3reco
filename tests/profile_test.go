@@ -1,11 +1,74 @@
 package tests
 
 import (
+	"bytes"
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/connor-davis/3reco/tests/testutil"
 )
+
+func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
+	app := testutil.Server(t)
+	owner := tradeNewUser(t, app, "business")
+	stranger := tradeNewUser(t, app, "business")
+	legacy := "https://identity.example.test/picture.png"
+	tradeExec(t, app, `UPDATE users SET image=$2 WHERE id=$1`, owner.id, legacy)
+	before := owner.c.Do("GET", "/api/profile", nil)
+	if before.Body["avatar_url"] != legacy {
+		t.Fatal("legacy image fallback missing")
+	}
+
+	path := "/api/users/" + owner.id + "/avatar"
+	tradeWant(t, "foreign avatar write", uploadImage(t, app, stranger.c, path, receiptImage(1)), 404)
+	tradeWant(t, "foreign avatar delete", stranger.c.Do("DELETE", path, nil), 404)
+	tradeWant(t, "anonymous upload", uploadImage(t, app, app.NewClient(t), "/api/profile/avatar", receiptImage(1)), 401)
+	for _, data := range [][]byte{nil, []byte("GIF89a"),
+		append(receiptImage(1), make([]byte, 2<<20)...)} {
+		tradeWant(t, "bad avatar", uploadImage(t, app, owner.c, "/api/profile/avatar", data), 400)
+	}
+
+	image := receiptImage(7)
+	got := uploadImage(t, app, owner.c, "/api/profile/avatar", image)
+	tradeWant(t, "avatar uploaded", got, 200)
+	if got.Body["avatar_url"] != path || strings.Contains(string(got.Raw), "avatars/") {
+		t.Fatalf("avatar projection: %s", got.Raw)
+	}
+	public := app.NewClient(t).Do("GET", path, nil)
+	if public.Status != 200 || !bytes.Equal(public.Raw, image) {
+		t.Fatal("public avatar bytes differ")
+	}
+	for _, route := range []string{"/api/users/" + owner.id, "/api/stores/" + owner.id} {
+		if got := stranger.c.Do("GET", route, nil); got.Body["avatar_url"] != path {
+			t.Fatalf("avatar URL missing in %s: %s", route, got.Raw)
+		}
+	}
+	if got := stranger.c.Do("GET", "/api/profile", nil); got.Body["avatar_url"] != "" {
+		t.Fatal("upload changed someone else's avatar")
+	}
+
+	old := tradeText(t, app, `SELECT avatar_key FROM users WHERE id=$1`, owner.id)
+	// The multipart name and declared MIME are ignored; detection permits WEBP.
+	webp := []byte("RIFF1234WEBPVP8 " + strings.Repeat("x", 32))
+	tradeWant(t, "replace WEBP", uploadImage(t, app, owner.c, "/api/profile/avatar", webp), 200)
+	if reader, err := app.Storage.Get(context.Background(), old); err == nil {
+		_ = reader.Close()
+		t.Fatal("replaced avatar object remains")
+	}
+	if count := objectCount(t, app, "avatars/"); count != 1 {
+		t.Fatalf("avatar objects %d, want 1", count)
+	}
+
+	tradeWant(t, "clear avatar", owner.c.Do("DELETE", "/api/profile/avatar", nil), 200)
+	if count := objectCount(t, app, "avatars/"); count != 0 {
+		t.Fatal("deleted avatar object remains")
+	}
+	tradeWant(t, "cleared public avatar", stranger.c.Do("GET", path, nil), 404)
+	if got := owner.c.Do("GET", "/api/profile", nil); got.Body["avatar_url"] != legacy {
+		t.Fatal("clearing uploaded avatar lost the legacy fallback")
+	}
+}
 
 func TestProfileUpdateCannotDesyncEmail(t *testing.T) {
 	app := testutil.Server(t)

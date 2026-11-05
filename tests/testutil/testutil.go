@@ -25,6 +25,9 @@ import (
 	"github.com/connor-davis/3reco/internal/api"
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/database"
+	"github.com/connor-davis/3reco/internal/platform/storage"
+	"github.com/connor-davis/3reco/internal/services/invoices"
+	"github.com/connor-davis/3reco/internal/services/transactions"
 )
 
 const defaultDB = "postgres://threereco:threereco@localhost:5441/threereco?sslmode=disable"
@@ -90,10 +93,13 @@ func NewDB(t testing.TB) *database.DB {
 
 // App is a running API for one test.
 type App struct {
-	DB     *database.DB
-	Config config.Config
-	URL    string // http://127.0.0.1:<port>
-	Host   string // 127.0.0.1:<port>
+	Invoices *invoices.Service
+	Trades   *transactions.Service
+	Storage  *storage.Client
+	DB       *database.DB
+	Config   config.Config
+	URL      string // http://127.0.0.1:<port>
+	Host     string // 127.0.0.1:<port>
 }
 
 // Server starts the whole API on a random port against a fresh database.
@@ -125,13 +131,17 @@ func Server(t testing.TB, tweak ...func(*config.Config)) *App {
 		fn(&cfg)
 	}
 
+	objects := testStorage(t, &cfg)
+
 	var listener *api.Listener
+	var invoiceService *invoices.Service
+	var transactionService *transactions.Service
 
 	app := fx.New(
 		fx.NopLogger,
 		fx.Supply(cfg, db),
 		api.Module,
-		fx.Populate(&listener),
+		fx.Populate(&listener, &invoiceService, &transactionService),
 	)
 
 	if err := app.Err(); err != nil {
@@ -152,7 +162,10 @@ func Server(t testing.TB, tweak ...func(*config.Config)) *App {
 		_ = app.Stop(stop)
 	})
 
-	return &App{DB: db, Config: cfg, URL: "http://" + listener.Addr(), Host: listener.Addr()}
+	return &App{
+		DB: db, Storage: objects, Invoices: invoiceService, Trades: transactionService,
+		Config: cfg, URL: "http://" + listener.Addr(), Host: listener.Addr(),
+	}
 }
 
 // Client is one browser: it keeps cookies between calls.
@@ -238,9 +251,17 @@ func (c *Client) SetCookie(name, value string) {
 
 // Mail is one message read back from Mailpit.
 type Mail struct {
-	Subject string
-	Text    string
-	HTML    string
+	Subject     string
+	Text        string
+	HTML        string
+	Attachments []MailAttachment
+}
+
+// MailAttachment is the attachment metadata returned by Mailpit.
+type MailAttachment struct {
+	FileName    string
+	ContentType string
+	Size        int
 }
 
 var tokenRe = regexp.MustCompile(`[?&]token=([A-Za-z0-9_-]+)`)
@@ -294,10 +315,13 @@ func findMail(t testing.TB, to, subject string) (Mail, bool) {
 			continue
 		}
 
-		var full struct{ Text, HTML string }
+		var full struct {
+			Text, HTML  string
+			Attachments []MailAttachment
+		}
 
 		if mailpit(t, "/api/v1/message/"+msg.ID, &full) {
-			return Mail{Subject: msg.Subject, Text: full.Text, HTML: full.HTML}, true
+			return Mail{Subject: msg.Subject, Text: full.Text, HTML: full.HTML, Attachments: full.Attachments}, true
 		}
 	}
 
@@ -326,11 +350,11 @@ func mailpit(t testing.TB, path string, into any) bool {
 func NoMail(t testing.TB, to string) bool {
 	t.Helper()
 
-	var list struct{ Total int }
+	var list struct{ Count int }
 
 	mailpit(t, "/api/v1/search?query="+url.QueryEscape("to:"+to), &list)
 
-	return list.Total == 0
+	return list.Count == 0
 }
 
 // Email returns an address no other test uses.

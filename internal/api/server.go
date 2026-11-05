@@ -29,6 +29,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
+	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
@@ -51,6 +52,7 @@ import (
 var Module = fx.Module("api",
 	fx.Provide(
 		mail.New,
+		storage.New,
 		authstore.New,
 		auth.New,
 		realtime.New,
@@ -78,9 +80,14 @@ var Module = fx.Module("api",
 		Listen,
 	),
 	tradeProviders,
+	fx.Invoke(storageLifecycle),
 	fx.Invoke(background),
 	fx.Invoke(func(*Listener) {}),
 )
+
+func storageLifecycle(lc fx.Lifecycle, objects *storage.Client) {
+	lc.Append(fx.Hook{OnStart: objects.EnsureBucket})
+}
 
 // routes is everything that registers routes under /api.
 type routes struct {

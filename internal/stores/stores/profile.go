@@ -13,6 +13,7 @@ type Profile struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
 	Image         string    `json:"image"`
+	AvatarURL     string    `json:"avatar_url"`
 	City          string    `json:"city"`
 	Province      string    `json:"province"`
 	ItemCount     int       `json:"item_count"`
@@ -23,7 +24,7 @@ type Profile struct {
 }
 
 var profileColumns = `u.id,` + database.DisplayName("u") + `,
-	COALESCE(u.image,''),COALESCE(u.city,''),COALESCE(u.province,''),
+	COALESCE(u.image,''),CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar' ELSE COALESCE(u.image,'') END,COALESCE(u.city,''),COALESCE(u.province,''),
 	(SELECT count(*) FROM stock s WHERE s.owner_id=u.id AND s.is_listed AND s.weight>0),
 	ARRAY(SELECT DISTINCT m.name FROM stock s JOIN materials m ON m.id=s.material_id
 	WHERE s.owner_id=u.id AND s.is_listed AND s.weight>0 ORDER BY m.name),
@@ -41,6 +42,7 @@ func (records *Store) Find(ctx context.Context, id string) (Profile, error) {
 		&item.ID,
 		&item.Name,
 		&item.Image,
+		&item.AvatarURL,
 		&item.City,
 		&item.Province,
 		&item.ItemCount,
@@ -78,6 +80,7 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 			&item.ID,
 			&item.Name,
 			&item.Image,
+			&item.AvatarURL,
 			&item.City,
 			&item.Province,
 			&item.ItemCount,

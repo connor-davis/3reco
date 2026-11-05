@@ -16,6 +16,7 @@ type Profile struct {
 	Role                       string `json:"role"`
 	Name                       string `json:"name"`
 	Image                      string `json:"image"`
+	AvatarURL                  string `json:"avatar_url"`
 	Phone                      string `json:"phone"`
 	FirstName                  string `json:"first_name"`
 	LastName                   string `json:"last_name"`
@@ -40,6 +41,7 @@ type PublicUser struct {
 	ID           string    `json:"id"`
 	Name         string    `json:"name"`
 	Image        string    `json:"image"`
+	AvatarURL    string    `json:"avatar_url"`
 	BusinessName string    `json:"business_name"`
 	Role         string    `json:"role"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -53,7 +55,7 @@ func New(db *database.DB) *Store { return &Store{db: db} }
 
 // Find reads the caller's active profile and optionally locks it for PATCH.
 func (records *Store) Find(ctx context.Context, id string, lock bool) (Profile, error) {
-	query := `SELECT id,COALESCE(email,''),COALESCE(role,''),COALESCE(name,''),COALESCE(image,''),COALESCE(phone,''),COALESCE(first_name,''),COALESCE(last_name,''),COALESCE(id_number,''),COALESCE(business_name,''),COALESCE(business_registration_number,''),COALESCE(bank_account_holder_name,''),COALESCE(bank_name,''),COALESCE(bank_account_number,''),COALESCE(bank_branch_code,''),COALESCE(bank_account_type,''),COALESCE(street_address,''),COALESCE(city,''),COALESCE(province,''),
+	query := `SELECT id,COALESCE(email,''),COALESCE(role,''),COALESCE(name,''),COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE(phone,''),COALESCE(first_name,''),COALESCE(last_name,''),COALESCE(id_number,''),COALESCE(business_name,''),COALESCE(business_registration_number,''),COALESCE(bank_account_holder_name,''),COALESCE(bank_name,''),COALESCE(bank_account_number,''),COALESCE(bank_branch_code,''),COALESCE(bank_account_type,''),COALESCE(street_address,''),COALESCE(city,''),COALESCE(province,''),
  area_code,profile_complete,agreed_to_terms FROM users WHERE id=$1 AND NOT is_removed`
 	if lock {
 		query += ` FOR UPDATE`
@@ -66,6 +68,7 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Profile, 
 		&item.Role,
 		&item.Name,
 		&item.Image,
+		&item.AvatarURL,
 		&item.Phone,
 		&item.FirstName,
 		&item.LastName,
@@ -142,13 +145,14 @@ func (records *Store) Public(ctx context.Context, id string) (PublicUser, error)
 	var item PublicUser
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`SELECT id,name,COALESCE(image,''),COALESCE(business_name,''),
+		`SELECT id,name,COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE(business_name,''),
  COALESCE(role,''),created_at FROM users WHERE id=$1 AND NOT is_removed`,
 		id,
 	).Scan(
 		&item.ID,
 		&item.Name,
 		&item.Image,
+		&item.AvatarURL,
 		&item.BusinessName,
 		&item.Role,
 		&item.CreatedAt,
@@ -161,7 +165,7 @@ func (records *Store) Public(ctx context.Context, id string) (PublicUser, error)
 func (records *Store) Directory(ctx context.Context, query paging.Query) ([]PublicUser, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT id,name,COALESCE(image,''),COALESCE(business_name,''),
+		`SELECT id,name,COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE(business_name,''),
  role,created_at FROM users WHERE role='collector' AND NOT is_removed
  AND ($1='' OR (created_at,id)<($2,$1))
  ORDER BY created_at DESC,id DESC LIMIT NULLIF($3,0)`,
@@ -181,6 +185,7 @@ func (records *Store) Directory(ctx context.Context, query paging.Query) ([]Publ
 			&item.ID,
 			&item.Name,
 			&item.Image,
+			&item.AvatarURL,
 			&item.BusinessName,
 			&item.Role,
 			&item.CreatedAt,

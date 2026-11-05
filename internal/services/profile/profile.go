@@ -12,17 +12,21 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
+	"github.com/connor-davis/3reco/internal/platform/storage"
 	store "github.com/connor-davis/3reco/internal/stores/profile"
 )
 
 // Service owns profile validation and edits.
 type Service struct {
-	db    *database.DB
-	store *store.Store
+	db      *database.DB
+	store   *store.Store
+	objects *storage.Client
 }
 
 // New builds the service.
-func New(db *database.DB, rows *store.Store) *Service { return &Service{db: db, store: rows} }
+func New(db *database.DB, rows *store.Store, objects *storage.Client) *Service {
+	return &Service{db: db, store: rows, objects: objects}
+}
 
 // Input lists editable fields only. Email changes belong to verified auth flows.
 type Input struct {

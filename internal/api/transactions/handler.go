@@ -9,14 +9,22 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/files"
+	"github.com/connor-davis/3reco/internal/services/invoices"
 	svc "github.com/connor-davis/3reco/internal/services/transactions"
 )
 
 // Handler serves /api/transactions.
-type Handler struct{ svc *svc.Service }
+type Handler struct {
+	svc      *svc.Service
+	files    *files.Service
+	invoices *invoices.Service
+}
 
 // New builds the handler.
-func New(s *svc.Service) *Handler { return &Handler{svc: s} }
+func New(s *svc.Service, files *files.Service, invoices *invoices.Service) *Handler {
+	return &Handler{svc: s, files: files, invoices: invoices}
+}
 
 // Register adds the routes to the /api router. Every one needs a signed-in
 // user; the service decides which rows that user may see.
@@ -32,7 +40,6 @@ func (h *Handler) Register(api fiber.Router) {
 
 	r.Get("/:id", h.get)
 	r.Get("/:id/invoice", h.invoice)
-	r.Post("/:id/receipts/upload", h.receiptUpload)
 	r.Post("/:id/receipts", h.receiptAttach)
 	r.Get("/:id/receipts/:receipt_id", h.receiptDownload)
 }

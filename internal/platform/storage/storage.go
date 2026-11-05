@@ -62,7 +62,19 @@ func (c *Client) Put(
 
 // Get opens the object. The caller closes it.
 func (c *Client) Get(ctx context.Context, key string) (io.ReadCloser, error) {
-	return c.mc.GetObject(ctx, c.bucket, key, minio.GetObjectOptions{})
+	object, err := c.mc.GetObject(ctx, c.bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// MinIO opens lazily. Check before HTTP headers promise a successful file.
+	if _, err := object.Stat(); err != nil {
+		_ = object.Close()
+
+		return nil, err
+	}
+
+	return object, nil
 }
 
 // Remove deletes the object. A missing object is not an error.

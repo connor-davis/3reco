@@ -1,55 +1,58 @@
 package transactions
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v3"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 )
 
-// notYet is the answer of the invoice and receipt routes until T10 builds the
-// PDF and file work. The access check runs first, so the route already
-// refuses strangers the way the finished one will.
-var notYet = &apperr.Error{
-	Status:  http.StatusNotImplemented,
-	Code:    "not_implemented",
-	Message: "This is not available yet.",
-}
-
-// invoice is open to staff and both sides of the trade.
 func (h *Handler) invoice(c fiber.Ctx) error {
-	if _, err := h.svc.Detail(c.Context(), caller(c), c.Params("id")); err != nil {
+	reader, number, err := h.invoices.Download(c.Context(), caller(c), c.Params("id"))
+	if err != nil {
 		return err
 	}
 
-	return notYet
+	c.Set("Content-Type", "application/pdf")
+	c.Set("Content-Disposition", `attachment; filename="3rEco-Invoice-`+number+`.pdf"`)
+	c.Set("Cache-Control", "private, no-store")
+
+	return c.SendStream(reader)
 }
 
-// receiptDownload is open to staff and both sides of the trade.
 func (h *Handler) receiptDownload(c fiber.Ctx) error {
-	if _, err := h.svc.Detail(c.Context(), caller(c), c.Params("id")); err != nil {
+	reader, receipt, err := h.files.Download(
+		c.Context(), caller(c), c.Params("id"), c.Params("receipt_id"))
+	if err != nil {
 		return err
 	}
 
-	return notYet
+	c.Set("Content-Type", receipt.ContentType)
+	c.Set("Content-Disposition", `attachment; filename="`+receipt.FileName+`"`)
+	c.Set("Cache-Control", "private, no-store")
+
+	return c.SendStream(reader)
 }
 
-// receiptUpload is open to the two sides of the trade only; staff read
-// receipts but never add them.
-func (h *Handler) receiptUpload(c fiber.Ctx) error {
-	if _, err := h.svc.Participant(c.Context(), caller(c), c.Params("id")); err != nil {
-		return err
-	}
-
-	return notYet
-}
-
-// receiptAttach is open to the two sides of the trade only.
 func (h *Handler) receiptAttach(c fiber.Ctx) error {
 	if _, err := h.svc.Participant(c.Context(), caller(c), c.Params("id")); err != nil {
 		return err
 	}
 
-	return notYet
+	file, err := c.FormFile("file")
+	if err != nil {
+		return apperr.BadRequest("Choose an image in the file field.", nil)
+	}
+
+	reader, err := file.Open()
+	if err != nil {
+		return apperr.BadRequest("Could not read the image.", nil)
+	}
+	defer reader.Close()
+
+	receipt, err := h.files.Attach(c.Context(), caller(c), c.Params("id"), file.Filename, reader)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(receipt)
 }

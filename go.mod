@@ -3,6 +3,8 @@ module github.com/connor-davis/3reco
 go 1.27.1
 
 require (
+	github.com/fasthttp/websocket v1.5.12
+	github.com/go-pdf/fpdf v0.9.0
 	github.com/gofiber/contrib/v3/websocket v1.2.12
 	github.com/gofiber/fiber/v3 v3.6.1
 	github.com/jackc/pgx/v5 v5.12.0
@@ -16,7 +18,6 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/fasthttp/websocket v1.5.12 // indirect
 	github.com/gofiber/schema v1.9.3 // indirect
 	github.com/gofiber/utils/v2 v2.6.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect

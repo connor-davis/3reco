@@ -24,6 +24,9 @@ func (handler *Handler) Register(router fiber.Router) {
 	router.Get("/profile/optional", handler.optional)
 	router.Get("/profile", middleware.RequireUser, handler.find)
 	router.Patch("/profile", middleware.RequireUser, handler.update)
+	router.Post("/profile/avatar", middleware.RequireUser, handler.uploadAvatar)
+	router.Delete("/profile/avatar", middleware.RequireUser, handler.deleteAvatar)
+	router.Get("/users/:id/avatar", handler.avatar)
 	router.Get("/users", middleware.RequireUser, handler.directory)
 	router.Get("/users/:id", handler.public)
 }

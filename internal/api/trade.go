@@ -10,11 +10,14 @@ import (
 	reviewsapi "github.com/connor-davis/3reco/internal/api/reviews"
 	transactionsapi "github.com/connor-davis/3reco/internal/api/transactions"
 	adminsvc "github.com/connor-davis/3reco/internal/services/admin"
+	filessvc "github.com/connor-davis/3reco/internal/services/files"
+	invoicessvc "github.com/connor-davis/3reco/internal/services/invoices"
 	notessvc "github.com/connor-davis/3reco/internal/services/notifications"
 	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
 	reviewssvc "github.com/connor-davis/3reco/internal/services/reviews"
 	transactionssvc "github.com/connor-davis/3reco/internal/services/transactions"
 	adminstore "github.com/connor-davis/3reco/internal/stores/admin"
+	filesstore "github.com/connor-davis/3reco/internal/stores/files"
 	notesstore "github.com/connor-davis/3reco/internal/stores/notifications"
 	requestsstore "github.com/connor-davis/3reco/internal/stores/requests"
 	reviewsstore "github.com/connor-davis/3reco/internal/stores/reviews"
@@ -24,6 +27,7 @@ import (
 // tradeProviders builds the trade and operations area: requests, transactions,
 // reviews, notifications and admin.
 var tradeProviders = fx.Provide(
+	filesstore.New, filessvc.New, invoicessvc.New,
 	notesstore.New, notessvc.New, notesapi.New,
 	transactionsstore.New, transactionssvc.New, transactionsapi.New,
 	requestsstore.New, requestssvc.New, requestsapi.New,

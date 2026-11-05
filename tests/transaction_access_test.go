@@ -18,18 +18,18 @@ func TestTransactionAccess(t *testing.T) {
 	tradeWant(t, "anonymous detail", anon.Do("GET", path, nil), 401)
 	tradeWant(t, "missing detail", outsider.c.Do("GET", "/api/transactions/nope", nil), 404)
 
-	// The invoice and receipt routes check access before they say "not yet".
-	tradeWant(t, "buyer invoice", w.buyer.c.Do("GET", path+"/invoice", nil), 501)
-	tradeWant(t, "staff invoice", staff.c.Do("GET", path+"/invoice", nil), 501)
+	// Document routes keep the same concealed access checks after T10.
+	tradeWant(t, "buyer invoice", w.buyer.c.Do("GET", path+"/invoice", nil), 200)
+	tradeWant(t, "staff invoice", staff.c.Do("GET", path+"/invoice", nil), 200)
 	tradeWant(t, "outsider invoice", outsider.c.Do("GET", path+"/invoice", nil), 404)
 	tradeWant(t, "anonymous invoice", anon.Do("GET", path+"/invoice", nil), 401)
 
-	tradeWant(t, "buyer receipt", w.buyer.c.Do("GET", path+"/receipts/r1", nil), 501)
+	tradeWant(t, "buyer receipt", w.buyer.c.Do("GET", path+"/receipts/r1", nil), 404)
 	tradeWant(t, "outsider receipt", outsider.c.Do("GET", path+"/receipts/r1", nil), 404)
 	tradeWant(t, "anonymous receipt", anon.Do("GET", path+"/receipts/r1", nil), 401)
 
-	for _, p := range []string{path + "/receipts/upload", path + "/receipts"} {
-		tradeWant(t, "seller adds "+p, w.seller.c.Do("POST", p, map[string]any{}), 501)
+	for _, p := range []string{path + "/receipts"} {
+		tradeWant(t, "seller adds "+p, w.seller.c.Do("POST", p, map[string]any{}), 400)
 		tradeWant(t, "staff adds "+p, staff.c.Do("POST", p, map[string]any{}), 404)
 		tradeWant(t, "outsider adds "+p, outsider.c.Do("POST", p, map[string]any{}), 404)
 		tradeWant(t, "anonymous adds "+p, anon.Do("POST", p, map[string]any{}), 401)

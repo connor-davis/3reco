@@ -13,6 +13,7 @@ line when you add an owner.
 | SQL migrations: runner, then the files in order | `database/migrate.go`, `database/migrations/*.sql` |
 | Send email (Resend, or SMTP to Mailpit) and the action email template | `mail/mail.go` |
 | Files in MinIO or S3: put, get, remove, presign | `storage/storage.go` |
+| A4 invoice layout, wrapping, pagination and exact decimal formatting (MIT-licensed go-pdf/fpdf) | `pdf/invoice.go` |
 
 ## Database tables (`internal/platform/database/migrations`)
 
@@ -22,6 +23,7 @@ line when you add an owner.
 | `0002_market.sql` | collectors, materials, stock, transactions and their items and receipts, requests and their items and messages, notifications, carts, reviews |
 | `0003_realtime.sql` | `notify_change()` and the `realtime` trigger on each live table |
 | `0004_domain_api.sql` | `request_message_reads`, message and market indexes, `notify_change()` for read marks |
+| `0005_files_invoices.sql` | `users.avatar_key`, preserving legacy identity images |
 
 Never rename a merged migration. Add a new file.
 
@@ -44,7 +46,14 @@ Never rename a merged migration. Add a new file.
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
 | Transactions: lists, detail, collector sale, direct sale, stock moves, invoice hook | `internal/stores/transactions`, `internal/services/transactions`, `internal/api/transactions` |
-| Invoice and receipt routes (access check, then 501 until T10) | `internal/api/transactions/receipts.go` |
+| Authorized multipart receipt upload and streamed receipt/invoice downloads | `internal/api/transactions/receipts.go` |
+| Bounded image sniffing, receipt participation, SHA duplicates, five-file lock and failed-write cleanup | `internal/services/files/receipts.go` |
+| Receipt metadata, transaction row lock and scoped object lookup SQL | `internal/stores/files/files.go` |
+| Snapshot-first private document reads, invoice key locking/replacement and bounded export ID pages | `internal/stores/transactions/documents.go` |
+| After-commit invoice hook, document composition, storage replacement, attached buyer mail and on-demand recovery | `internal/services/invoices/invoices.go` |
+| CSV download routes and response streaming | `internal/api/admin/exports.go` |
+| Export roles, inclusive timestamps, exact columns, SAST formatting and formula guard | `internal/services/admin/exports.go` |
+| Streaming allowlisted active account export SQL | `internal/stores/admin/exports.go` |
 | Store reviews, public review lists, admin remove | `internal/stores/reviews`, `internal/services/reviews`, `internal/api/reviews` |
 | Admin users, role change, removal, the three dashboards | `internal/stores/admin`, `internal/services/admin`, `internal/api/admin` |
 | Wiring of the trade area into the server | `internal/api/trade.go` |
@@ -69,6 +78,10 @@ Never rename a merged migration. Add a new file.
 | Job | Owner |
 | --- | --- |
 | Fresh database per test, running API, cookie client, Mailpit reader | `tests/testutil/testutil.go` |
+| Unique MinIO test bucket, required-service gate and object/bucket cleanup | `tests/testutil/storage.go` |
+| Receipt sniffing, access leaks, SHA duplicate cleanup and concurrent sixth upload | `tests/receipts_test.go` |
+| Invoice authorization, exact decimals, pagination, snapshots, regeneration, rollback and attached Mailpit messages | `tests/invoices_test.go` |
+| Five CSV schemas, role/owner scope, effective date bounds, escaping and formula guard | `tests/exports_test.go` |
 | Code rules: doc comments, file length | `tests/style_test.go` |
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |
@@ -89,6 +102,9 @@ Never rename a merged migration. Add a new file.
 | Catalog reads and administrator mutation handlers | `internal/api/materials/catalog.go` |
 | Material catalog route registration | `internal/api/materials/handler.go` |
 | Private profile edits and safe account directory handlers | `internal/api/profile/handler.go` |
+| Caller avatar upload/delete and public image stream with cache headers | `internal/api/profile/avatar.go` |
+| Avatar byte validation, caller-only replacement and after-commit object removal | `internal/services/profile/avatar.go` |
+| Active avatar reference reads, row locks and updates | `internal/stores/profile/avatar.go` |
 | Owner stock mutation handlers | `internal/api/stock/crud.go` |
 | Stock route registration and reads | `internal/api/stock/handler.go` |
 | Public store route registration | `internal/api/stores/handler.go` |
