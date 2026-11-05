@@ -1,195 +1,88 @@
 import { useState } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { UserRound } from 'lucide-react';
 import { toast } from 'sonner';
-import { z } from 'zod';
-import { SelectField, TextField } from '@/components/form-fields';
+import { DataState } from '@/components/data-state';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { banks, provinces } from '@/lib/data/people';
-import { useMock, useProfile } from '@/lib/mock/hooks';
+import { useProfile, useUpdateProfile } from '@/lib/api/profile';
 import {
-  bankSchema,
-  businessSchema,
-  locationSchema,
-  personalSchema,
-} from '@/routes/profile/-components/schemas';
-
-// The same rules the profile forms use, so a wizard answer is always a valid
-// profile answer.
-const rules = {
-  ...personalSchema.shape,
-  ...businessSchema.shape,
-  ...bankSchema.shape,
-  ...locationSchema.shape,
-};
-
-type Field =
-  | 'firstName'
-  | 'lastName'
-  | 'phone'
-  | 'businessName'
-  | 'bank'
-  | 'accountNumber'
-  | 'street'
-  | 'province';
-
-type Values = Record<Field, string>;
-type Step = { title: string; fields: Field[] };
-
-const businessSteps: Step[] = [
-  { title: 'Basic details', fields: ['firstName', 'lastName', 'phone'] },
-  { title: 'Business details', fields: ['businessName'] },
-  { title: 'Bank & payout', fields: ['bank', 'accountNumber'] },
-  { title: 'Location', fields: ['street', 'province'] },
-];
-
-// Collectors have no business, so they skip that step and its rules.
-const collectorSteps = businessSteps.filter(
-  (step) => step.title !== 'Business details'
-);
+  PersonalForm,
+  BusinessForm,
+  PayoutForm,
+  LocationForm,
+} from '@/routes/profile/-components/forms';
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 
-/** "Finish your profile". It cannot be dismissed until the last step. */
 export function ProfileWizard({ open, onOpenChange }: Props) {
-  const { role } = useMock();
-
-  // Keyed by role so a role change starts a fresh form with the right rules.
-  return (
-    <WizardBody
-      key={role}
-      steps={role === 'collector' ? collectorSteps : businessSteps}
-      open={open}
-      onOpenChange={onOpenChange}
-    />
-  );
+  return open ? <WizardBody onOpenChange={onOpenChange} /> : null;
 }
 
-type BodyProps = Props & { steps: Step[] };
-
-function WizardBody({ steps, open, onOpenChange }: BodyProps) {
-  const { save } = useProfile();
+function WizardBody({ onOpenChange }: Omit<Props, 'open'>) {
+  const query = useProfile();
+  const save = useUpdateProfile();
   const [index, setIndex] = useState(0);
+  const profile = query.data;
+  const steps =
+    profile?.role === 'business'
+      ? ['Personal', 'Business', 'Bank', 'Location']
+      : ['Personal', 'Location'];
   const step = steps[index];
-  const last = index === steps.length - 1;
-  const fields = steps.flatMap((item) => item.fields);
-
-  // Only the fields this role can see are validated and given a default.
-  const schema = z.object(
-    Object.fromEntries(fields.map((field) => [field, rules[field]]))
-  );
-  const { control, trigger, handleSubmit, reset } = useForm<Values>({
-    resolver: zodResolver(schema) as unknown as Resolver<Values>,
-    defaultValues: Object.fromEntries(
-      fields.map((field) => [field, ''])
-    ) as Values,
-  });
 
   async function next() {
-    if (!(await trigger(step.fields))) return;
-    setIndex(index + 1);
-  }
-
-  function finish(values: Values) {
-    save(values);
-    toast.success('Profile complete. Welcome aboard.');
-    setIndex(0);
-    reset();
-    onOpenChange(false);
+    if (index < steps.length - 1) setIndex(index + 1);
+    else {
+      await save.mutateAsync({ profile_complete: true });
+      toast.success('Profile complete.');
+      onOpenChange(false);
+    }
   }
 
   return (
     <ResponsiveOverlay
-      open={open}
+      open
       onOpenChange={onOpenChange}
-      locked
       title="Finish your profile"
-      description={`Step ${index + 1} of ${steps.length}: ${step.title}`}
+      description={'Step ' + (index + 1) + ' of ' + steps.length + ': ' + step}
       footer={
-        <>
-          <Button
-            variant="outline"
-            disabled={index === 0}
-            onClick={() => setIndex(index - 1)}
-          >
-            Previous
-          </Button>
-          {last ? (
-            <Button onClick={handleSubmit(finish)}>Complete</Button>
-          ) : (
-            <Button onClick={next}>Next</Button>
-          )}
-        </>
+        <Button
+          className="min-h-11"
+          variant="outline"
+          disabled={index === 0 || save.isPending}
+          onClick={() => setIndex(index - 1)}
+        >
+          Previous
+        </Button>
       }
     >
-      <div className="space-y-4">
+      <DataState
+        query={query}
+        isEmpty={!profile}
+        icon={UserRound}
+        emptyTitle="No profile yet"
+        emptyText="Sign in to set up your profile."
+      >
         <Progress
           value={((index + 1) / steps.length) * 100}
           aria-label="Profile progress"
+          className="mb-4"
         />
-        <form
-          noValidate
-          className="space-y-4"
-          onSubmit={(event) => event.preventDefault()}
-        >
-          {step.fields.includes('firstName') && (
-            <>
-              <TextField
-                control={control}
-                name="firstName"
-                label="First name"
-              />
-              <TextField control={control} name="lastName" label="Last name" />
-              <TextField
-                control={control}
-                name="phone"
-                label="Phone number"
-                type="tel"
-              />
-            </>
-          )}
-          {step.fields.includes('businessName') && (
-            <TextField
-              control={control}
-              name="businessName"
-              label="Business name"
-            />
-          )}
-          {step.fields.includes('bank') && (
-            <>
-              <SelectField
-                control={control}
-                name="bank"
-                label="Bank"
-                options={banks}
-              />
-              <TextField
-                control={control}
-                name="accountNumber"
-                label="Account number"
-                inputMode="numeric"
-              />
-            </>
-          )}
-          {step.fields.includes('street') && (
-            <>
-              <TextField
-                control={control}
-                name="street"
-                label="Street address"
-              />
-              <SelectField
-                control={control}
-                name="province"
-                label="Province"
-                options={provinces}
-              />
-            </>
-          )}
-        </form>
-      </div>
+        {profile && (
+          <>
+            {step === 'Personal' && (
+              <PersonalForm profile={profile} onSaved={next} />
+            )}
+            {step === 'Business' && (
+              <BusinessForm profile={profile} onSaved={next} />
+            )}
+            {step === 'Bank' && <PayoutForm profile={profile} onSaved={next} />}
+            {step === 'Location' && (
+              <LocationForm profile={profile} onSaved={next} />
+            )}
+          </>
+        )}
+      </DataState>
     </ResponsiveOverlay>
   );
 }

@@ -1,26 +1,33 @@
-import { formatDate } from '@/lib/format';
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Download, Trash2, Users } from 'lucide-react';
+import { Download, Trash2, Users, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Guarded } from '@/components/access-guard';
-import { StatusBadge } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { DataState, RowsSkeleton } from '@/components/data-state';
+import { DataState } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
 import { PageHeader } from '@/components/page-header';
 import { PersonAvatar } from '@/components/visuals';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useMockList } from '@/lib/mock/hooks';
-import type { Role, UserRecord } from '@/lib/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  useAdminUsers,
+  useSetUserRole,
+  useDeleteUser,
+  usePrivacyEvents,
+} from '@/lib/api/admin';
+import { useExport } from '@/lib/api/exports';
+import type { Role, AdminUser, PrivacyEvent } from '@/lib/api/types';
+import { formatDate } from '@/lib/format';
 
 export const Route = createFileRoute('/admin/users')({
   component: () => (
     <Guarded page="users">
-      <UsersPage />
+      <AdminPage />
     </Guarded>
   ),
 });
@@ -28,46 +35,86 @@ export const Route = createFileRoute('/admin/users')({
 const roleOptions = ['business', 'collector', 'staff', 'admin'];
 const filterOptions = [{ value: 'all', label: 'All roles' }, ...roleOptions];
 
-function UsersPage() {
-  const list = useMockList('users');
-  const [query, setQuery] = useState('');
-  const [role, setRole] = useState('all');
-  const [removing, setRemoving] = useState<UserRecord | null>(null);
-
-  const shown = list.items.filter((user) => {
-    if (role !== 'all' && user.role !== role) return false;
-
-    return `${user.name} ${user.email}`
-      .toLowerCase()
-      .includes(query.toLowerCase());
-  });
-
-  function changeRole(user: UserRecord, next: string) {
-    list.update(user.id, { role: next as Exclude<Role, 'signed-out'> });
-    toast.success(`${user.name} is now ${next}.`);
-  }
-
-  function roleSelect(user: UserRecord) {
-    return (
-      <ChoiceSelect
-        label={`Role for ${user.name}`}
-        value={user.role}
-        options={roleOptions}
-        onChange={(next) => changeRole(user, next)}
+function AdminPage() {
+  return (
+    <>
+      <PageHeader
+        title="People on 3REco"
+        description="Manage accounts and review privacy activity."
       />
-    );
-  }
+      <Tabs defaultValue="users">
+        <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="privacy">Privacy events</TabsTrigger>
+        </TabsList>
+        <TabsContent value="users">
+          <UsersPage />
+        </TabsContent>
+        <TabsContent value="privacy">
+          <PrivacyEvents />
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+}
 
-  function removeButton(user: UserRecord) {
+function RoleSelect({ user }: { user: AdminUser }) {
+  const change = useSetUserRole(user.id);
+  return (
+    <div className="space-y-2">
+      <fieldset disabled={change.isPending}>
+        <ChoiceSelect
+          label={'Role for ' + user.name}
+          value={user.role ?? ''}
+          options={roleOptions}
+          onChange={(role) =>
+            change.mutate(
+              { role: role as Role },
+              { onSuccess: () => toast.success('Role updated.') }
+            )
+          }
+        />
+      </fieldset>
+      {change.isError && (
+        <p role="alert" className="text-sm text-destructive">
+          {change.error.message} Try again.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function UsersPage() {
+  const [cursor, setCursor] = useState<string | undefined>();
+  const list = useAdminUsers({ cursor, limit: 50 });
+  const remove = useDeleteUser();
+  const download = useExport('users');
+  const [search, setSearch] = useState('');
+  const [role, setRole] = useState('all');
+  const [removing, setRemoving] = useState<AdminUser | null>(null);
+  const shown = (list.data?.items ?? []).filter(
+    (user) =>
+      (role === 'all' || user.role === role) &&
+      (user.name + ' ' + (user.email ?? ''))
+        .toLowerCase()
+        .includes(search.toLowerCase())
+  );
+
+  function removeButton(user: AdminUser) {
     return (
-      <Button variant="destructive" size="sm" onClick={() => setRemoving(user)}>
+      <Button
+        className="min-h-11"
+        variant="destructive"
+        disabled={remove.isPending}
+        onClick={() => setRemoving(user)}
+      >
         <Trash2 data-icon="inline-start" />
         Remove user
       </Button>
     );
   }
 
-  const columns: ColumnDef<UserRecord>[] = [
+  const columns: ColumnDef<AdminUser>[] = [
     {
       accessorKey: 'name',
       header: 'Person',
@@ -77,7 +124,7 @@ function UsersPage() {
           <span>
             <span className="block font-medium">{row.original.name}</span>
             <span className="text-xs text-muted-foreground">
-              {row.original.email}
+              {row.original.email ?? 'No email'}
             </span>
           </span>
         </span>
@@ -87,17 +134,21 @@ function UsersPage() {
       id: 'role',
       header: 'Role',
       enableSorting: false,
-      cell: ({ row }) => roleSelect(row.original),
+      cell: ({ row }) => <RoleSelect user={row.original} />,
     },
     {
-      accessorKey: 'joined',
+      accessorKey: 'created_at',
       header: 'Joined',
-      cell: ({ row }) => formatDate(row.original.joined),
+      cell: ({ row }) => formatDate(row.original.created_at),
     },
     {
-      accessorKey: 'profile',
+      accessorKey: 'profile_complete',
       header: 'Profile',
-      cell: ({ row }) => <StatusBadge status={row.original.profile} />,
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {row.original.profile_complete ? 'Complete' : 'Incomplete'}
+        </Badge>
+      ),
     },
     {
       id: 'actions',
@@ -108,25 +159,12 @@ function UsersPage() {
   ];
 
   return (
-    <>
-      <PageHeader
-        title="People on 3REco"
-        description="Change a role or remove an account."
-        actions={
-          <Button
-            variant="outline"
-            onClick={() => toast('User export is coming soon.')}
-          >
-            <Download data-icon="inline-start" />
-            Export users
-          </Button>
-        }
-      />
-      <div className="mb-6 flex flex-wrap gap-3">
+    <div className="space-y-6 pt-4">
+      <div className="flex flex-wrap gap-3">
         <SearchBox
-          label="Search names or emails"
-          value={query}
-          onChange={setQuery}
+          label="Search names or emails on this page"
+          value={search}
+          onChange={setSearch}
         />
         <ChoiceSelect
           label="Role"
@@ -134,13 +172,27 @@ function UsersPage() {
           options={filterOptions}
           onChange={setRole}
         />
+        <Button
+          className="min-h-11"
+          variant="outline"
+          disabled={download.isPending}
+          onClick={() => download.mutate({})}
+        >
+          <Download data-icon="inline-start" />
+          {download.isPending ? 'Exporting…' : 'Export users'}
+        </Button>
       </div>
+      {(remove.error || download.error) && (
+        <p role="alert" className="text-sm text-destructive">
+          {(remove.error ?? download.error)?.message} Try again.
+        </p>
+      )}
       <DataState
+        query={list}
         isEmpty={shown.length === 0}
         icon={Users}
         emptyTitle="No one matches"
-        emptyText="Try another name or role."
-        skeleton={<RowsSkeleton />}
+        emptyText="Try another name, role or page."
       >
         <DataTable
           columns={columns}
@@ -148,47 +200,141 @@ function UsersPage() {
           renderCard={(user) => (
             <Card size="sm">
               <CardContent className="space-y-3">
-                <span className="flex items-center gap-3">
-                  <PersonAvatar name={user.name} />
-                  <span>
-                    <span className="block font-medium">{user.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {user.email}
-                    </span>
-                  </span>
-                </span>
-                {roleSelect(user)}
-                <StatusBadge status={user.profile} />
+                <p className="font-medium">{user.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {user.email ?? 'No email'} · Joined{' '}
+                  {formatDate(user.created_at)}
+                </p>
+                <RoleSelect user={user} />
+                <Badge variant="secondary">
+                  {user.profile_complete ? 'Complete' : 'Incomplete'}
+                </Badge>
                 {removeButton(user)}
               </CardContent>
             </Card>
           )}
-          footer={
-            <>
-              <span>{shown.length} users shown</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toast('That is everyone for now.')}
-              >
-                Load more
-              </Button>
-            </>
-          }
         />
       </DataState>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-muted-foreground">
+          {shown.length} users shown on this page
+        </span>
+        {cursor && (
+          <Button
+            className="min-h-11"
+            variant="outline"
+            onClick={() => setCursor(undefined)}
+          >
+            First page
+          </Button>
+        )}
+        <Button
+          className="min-h-11"
+          variant="outline"
+          disabled={!list.data?.has_more || list.isFetching || list.isError}
+          onClick={() => setCursor(list.data?.next_cursor ?? undefined)}
+        >
+          Next page
+        </Button>
+      </div>
       <ConfirmDialog
+        key={removing?.id ?? 'none'}
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
-        title={`Remove ${removing?.name ?? 'user'}?`}
-        description="They lose access straight away. Their trade records stay."
+        title={'Remove ' + (removing?.name ?? 'user') + '?'}
+        description="They lose access straight away. Their completed trade records are anonymised."
         confirmLabel="Remove user"
+        typedName={removing?.email ?? removing?.name}
         onConfirm={() => {
-          if (removing) list.remove(removing.id);
-          setRemoving(null);
-          toast.success('User removed.');
+          if (!removing) return;
+          remove.mutate(removing.id, {
+            onSuccess: () => {
+              setRemoving(null);
+              toast.success('User removed.');
+            },
+          });
         }}
       />
-    </>
+    </div>
+  );
+}
+
+const privacyKinds: Record<string, string> = {
+  export: 'Data download',
+  delete: 'Account deletion',
+  admin_full_view: 'Full identifier viewed',
+};
+
+function PrivacyEvents() {
+  const [cursor, setCursor] = useState<string | undefined>();
+  const query = usePrivacyEvents({ cursor, limit: 50 });
+  const columns: ColumnDef<PrivacyEvent>[] = [
+    {
+      accessorKey: 'kind',
+      header: 'Event',
+      cell: ({ row }) => privacyKinds[row.original.kind] ?? row.original.kind,
+    },
+    { accessorKey: 'actor_id', header: 'Actor ID' },
+    {
+      accessorKey: 'subject_id',
+      header: 'Subject ID',
+      cell: ({ row }) => row.original.subject_id ?? 'Removed account',
+    },
+    {
+      accessorKey: 'created_at',
+      header: 'Date',
+      cell: ({ row }) => formatDate(row.original.created_at),
+    },
+  ];
+  return (
+    <div className="space-y-4 pt-4">
+      <p className="text-sm text-muted-foreground">
+        Data exports, account deletions and administrator access to full
+        identifiers. Records are kept for two years.
+      </p>
+      <DataState
+        query={query}
+        isEmpty={query.data?.items.length === 0}
+        icon={ShieldCheck}
+        emptyTitle="No privacy events"
+        emptyText="Privacy activity will appear here."
+      >
+        <DataTable
+          columns={columns}
+          data={query.data?.items ?? []}
+          renderCard={(event) => (
+            <Card size="sm">
+              <CardContent className="space-y-2 break-all text-sm">
+                <p className="font-medium">
+                  {privacyKinds[event.kind] ?? event.kind}
+                </p>
+                <p>Actor: {event.actor_id}</p>
+                <p>Subject: {event.subject_id ?? 'Removed account'}</p>
+                <p>{formatDate(event.created_at)}</p>
+              </CardContent>
+            </Card>
+          )}
+        />
+      </DataState>
+      <div className="flex gap-3">
+        {cursor && (
+          <Button
+            className="min-h-11"
+            variant="outline"
+            onClick={() => setCursor(undefined)}
+          >
+            First page
+          </Button>
+        )}
+        <Button
+          className="min-h-11"
+          variant="outline"
+          disabled={!query.data?.has_more || query.isFetching || query.isError}
+          onClick={() => setCursor(query.data?.next_cursor ?? undefined)}
+        >
+          Next page
+        </Button>
+      </div>
+    </div>
   );
 }
