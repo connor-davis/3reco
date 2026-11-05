@@ -59,7 +59,7 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T2b | (done) Restructure root: move `3reco/` → `web/apps/app`, docs → `web/apps/docs`, `api/` `app/` already in `reference/` (done), move `mystuff/` to root, fix compose/Dockerfile paths | Orchestrator | T1, T2 |
 | T3 | Design system brief for mockups: tokens from `3reco/src/index.css`, shared rules | Orchestrator | T2 |
 | T4 | 10 interactive HTML mockup sets × every page → `mystuff/designs/NN/` | 10 designers, alternating | T3 |
-| T5 | **CHECKPOINT: owner picks a design** | owner | T4 |
+| T5 | (picked 2026-11-05) Base 10-chat-commerce; borrow UI from 04, 05, 06, 09; phone layout from 08. Build one final design as a Vite + TanStack + shadcn app in `mystuff/final-design`, audited for full shadcn use. T13 follows it. | owner, then dev + audit | T4 |
 | T6 | (done c4f027e) Go skeleton: module, config, Postgres pool, SQL migrations for every table, docker compose (Postgres, MinIO, Mailpit) | dev | T1 |
 | T7 | (done c4f027e) Go auth: sign-up, verify email, sign-in, sessions (cookie), forgot/reset, admin role; scrypt verify of Better Auth hashes | dev | T6 |
 | T8 | Go domain API: every Convex query/mutation/action as REST, same access rules | dev(s), split by domain | T6, T7 |
