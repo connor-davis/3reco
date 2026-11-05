@@ -11,8 +11,9 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
-	"github.com/connor-davis/3reco/internal/services/transactions"
+	"github.com/connor-davis/3reco/internal/services/privacy"
 	store "github.com/connor-davis/3reco/internal/stores/admin"
+	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
 	tstore "github.com/connor-davis/3reco/internal/stores/transactions"
 )
 
@@ -22,10 +23,11 @@ var roles = []string{auth.RoleAdmin, auth.RoleStaff, auth.RoleBusiness, auth.Rol
 // Service is the admin rules. The routes check the caller's role, and the
 // methods that change data check it again.
 type Service struct {
-	db     *database.DB
-	store  *store.Store
-	trades *tstore.Store
-	txs    *transactions.Service
+	db      *database.DB
+	store   *store.Store
+	trades  *tstore.Store
+	privacy *privacy.Service
+	audit   *pstore.Store
 }
 
 // New builds the service.
@@ -33,9 +35,10 @@ func New(
 	db *database.DB,
 	s *store.Store,
 	trades *tstore.Store,
-	txs *transactions.Service,
+	privacyService *privacy.Service,
+	audit *pstore.Store,
 ) *Service {
-	return &Service{db: db, store: s, trades: trades, txs: txs}
+	return &Service{db: db, store: s, trades: trades, privacy: privacyService, audit: audit}
 }
 
 func requireAdmin(user auth.User) error {
@@ -104,7 +107,8 @@ func (s *Service) SetRole(ctx context.Context, user auth.User, id, role string) 
 }
 
 // Remove erases a user. Their finished transactions stay, under the name
-// "Removed account", and every invoice that named them is rebuilt.
+// "Removed account", and every invoice that named them is rebuilt. It is the
+// same erase a person can ask for themself.
 func (s *Service) Remove(ctx context.Context, user auth.User, id string) error {
 	if err := requireAdmin(user); err != nil {
 		return err
@@ -114,30 +118,5 @@ func (s *Service) Remove(ctx context.Context, user auth.User, id string) error {
 		return apperr.Forbidden("You cannot remove your own account.")
 	}
 
-	return s.db.InTx(ctx, func(ctx context.Context) error {
-		found, err := s.store.LockActive(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		if !found {
-			return apperr.NotFound("User not found.")
-		}
-
-		ids, err := s.store.Trades(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		if err := s.store.Erase(ctx, id, user.ID); err != nil {
-			return err
-		}
-
-		// The other side of each trade is not told: nothing new happened to them.
-		for _, tid := range ids {
-			s.txs.QueueInvoice(ctx, tid, false)
-		}
-
-		return nil
-	})
+	return s.privacy.Erase(ctx, user.ID, id)
 }

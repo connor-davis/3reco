@@ -66,6 +66,9 @@ type NewUser struct {
 	PasswordHash string
 	Role         string // empty for an ordinary sign-up
 	Verified     bool
+	// NoticeVersion is the privacy notice the person accepted; empty for
+	// accounts made by `admin create`.
+	NoticeVersion string
 }
 
 // CreateUser inserts a user and returns ErrEmailTaken on a duplicate email.
@@ -84,15 +87,26 @@ func (s *Store) CreateUser(ctx context.Context, in NewUser) (User, error) {
 	id := database.NewID()
 
 	_, err := s.db.Q(ctx).Exec(ctx, `
-		INSERT INTO users (id, email, email_verified, email_verified_at, password_hash, name, role)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		id, strings.ToLower(in.Email), in.Verified, verifiedAt, in.PasswordHash, in.Name, role)
+		INSERT INTO users (id, email, email_verified, email_verified_at, password_hash, name, role,
+			agreed_to_terms)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		id, strings.ToLower(in.Email), in.Verified, verifiedAt, in.PasswordHash, in.Name, role,
+		in.NoticeVersion != "")
 	if _, dup := database.IsUnique(err); dup {
 		return User{}, ErrEmailTaken
 	}
 
 	if err != nil {
 		return User{}, err
+	}
+
+	if in.NoticeVersion != "" {
+		_, err = s.db.Q(ctx).Exec(ctx, `
+			INSERT INTO privacy_notice_acceptances (user_id, version) VALUES ($1, $2)`,
+			id, in.NoticeVersion)
+		if err != nil {
+			return User{}, err
+		}
 	}
 
 	return s.UserByID(ctx, id)

@@ -75,7 +75,8 @@ func TestInvoiceResendAttachmentEncoding(t *testing.T) {
 func TestInvoiceNumberStable(t *testing.T) {
 	w := newTradeWorld(t)
 	tradeExec(t, w.app, `UPDATE users SET bank_account_holder_name='Invoice Holder',bank_name='Test Bank',
-		bank_account_number='123456789',bank_branch_code='250655',bank_account_type='Cheque' WHERE id=$1`, w.seller.id)
+		bank_account_number=$2,bank_branch_code='250655',bank_account_type='Cheque' WHERE id=$1`,
+		w.seller.id, testutil.Seal(t, "123456789"))
 	id := tradeSale(t, w.seller, w.buyer, w.material, "1.234567", "8.123456")
 	number := strings.ToUpper(id[len(id)-8:])
 	path := "/api/transactions/" + id + "/invoice"
@@ -146,13 +147,14 @@ func TestInvoiceSnapshotAndRollback(t *testing.T) {
 	w := newTradeWorld(t)
 	collector := tradeCollector(t, w.app, w.buyer, "+27800000009")
 	tradeExec(t, w.app, `UPDATE collectors SET payout_method='ewallet',ewallet_platform_name='Frozen Wallet',
-		ewallet_payment_id='snapshot-payment' WHERE id=$1`, collector)
+		ewallet_payment_id=$2 WHERE id=$1`, collector, testutil.Seal(t, "snapshot-payment"))
 	got := w.buyer.c.Do("POST", "/api/transactions/collections",
 		tradeCollection(collector, "", tradeLine(w.material, "2", "3.25")))
 	tradeWant(t, "snapshot collection", got, 200)
 	id := got.Body["transaction_id"].(string)
 	testutil.WaitMail(t, w.buyer.email, strings.ToUpper(id[len(id)-8:]))
-	tradeExec(t, w.app, `UPDATE collectors SET ewallet_payment_id='changed-payment' WHERE id=$1`, collector)
+	tradeExec(t, w.app, `UPDATE collectors SET ewallet_payment_id=$2 WHERE id=$1`,
+		collector, testutil.Seal(t, "changed-payment"))
 	if err := w.app.Invoices.Generate(context.Background(), id, false); err != nil {
 		t.Fatal(err)
 	}

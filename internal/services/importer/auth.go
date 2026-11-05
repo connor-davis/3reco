@@ -64,6 +64,7 @@ func (p *planner) planUsers() {
 	for _, app := range appUsers {
 		r := newRow(p.rep, "users", app)
 		out := r.build(userFields)
+		p.seal(r, out, "id_number", "bank_account_number")
 		r.created(out, true)
 
 		auth := matches.authFor[r.id]

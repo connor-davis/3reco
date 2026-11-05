@@ -3,6 +3,7 @@ package importer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
@@ -90,6 +91,20 @@ func (p *planner) collectorSnapshot(r *row, out store.Row) {
 		switch value.(type) {
 		case string, json.Number:
 			renamed[column] = value
+		}
+	}
+
+	// The snapshot is a copy of the collector row, so it holds sealed values too.
+	for _, column := range []string{"bank_account_number", "ewallet_payment_id"} {
+		if value, found := renamed[column]; found {
+			sealed, err := p.cipher.Encrypt(fmt.Sprint(value))
+			if err != nil {
+				r.fail("collectorSnapshot", "cannot be encrypted")
+
+				return
+			}
+
+			renamed[column] = sealed
 		}
 	}
 

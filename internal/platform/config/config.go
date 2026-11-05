@@ -25,6 +25,9 @@ type Config struct {
 	DBMaxConns      int
 	ShutdownTimeout time.Duration
 	BodyLimit       int
+	// FieldKey is the base64 key that seals ID and account numbers. It is
+	// checked when the server starts, not here, so `health` still works.
+	FieldKey string
 
 	SMTPHost     string
 	SMTPPort     int
@@ -59,6 +62,7 @@ var EnvVars = []EnvVar{
 	{"THREERECO_DB_MAX_CONNS", "25", "Largest Postgres pool."},
 	{"THREERECO_SHUTDOWN_TIMEOUT", "15s", "How long to wait for requests to finish on stop."},
 	{"THREERECO_BODY_LIMIT", "10485760", "Largest request body in bytes."},
+	{"THREERECO_FIELD_KEY", "", "Required. Base64 of 32 random bytes; seals ID numbers, account numbers and ewallet ids. Losing it loses those fields."},
 	{"THREERECO_SMTP_HOST", "", "SMTP host (Mailpit locally). Empty means no SMTP unless dev."},
 	{"THREERECO_SMTP_PORT", "1026", "SMTP port."},
 	{"RESEND_API_KEY", "", "Resend API key. When set, mail goes through Resend."},
@@ -81,6 +85,7 @@ func Load() (Config, error) {
 		Dev:            envBool("THREERECO_DEV"),
 		CookieSecure:   envBool("THREERECO_COOKIE_SECURE"),
 		TrustedProxies: envList("THREERECO_TRUSTED_PROXIES"),
+		FieldKey:       Env("THREERECO_FIELD_KEY", ""),
 		SMTPHost:       Env("THREERECO_SMTP_HOST", ""),
 		ResendAPIKey:   Env("RESEND_API_KEY", ""),
 		ResendURL:      Env("THREERECO_RESEND_URL", "https://api.resend.com"),

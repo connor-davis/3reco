@@ -36,6 +36,8 @@ type Document struct {
 	Seller     Contact
 	Buyer      Contact
 	InvoiceKey string
+	// Anonymised is true once the retention job removed the parties' details.
+	Anonymised bool
 }
 
 // Document reads snapshot-first collector details, current businesses and exact line values.
@@ -47,7 +49,8 @@ func (s *Store) Document(ctx context.Context, id string) (Document, error) {
 	}
 
 	var sellerJSON, buyerJSON []byte
-	err = s.db.Q(ctx).QueryRow(ctx, `SELECT COALESCE(t.invoice_key,''),
+	var anonymised bool
+	err = s.db.Q(ctx).QueryRow(ctx, `SELECT COALESCE(t.invoice_key,''),t.anonymised_at IS NOT NULL,
 		CASE WHEN t.type='b2b' THEN to_jsonb(s) ELSE
 		COALESCE(to_jsonb(c),'{}'::jsonb) || COALESCE((SELECT jsonb_object_agg(key,value)
 		FROM jsonb_each(COALESCE(t.collector_snapshot,'{}'::jsonb))
@@ -55,19 +58,52 @@ func (s *Store) Document(ctx context.Context, id string) (Document, error) {
 		to_jsonb(b) FROM transactions t JOIN users b ON b.id=t.buyer_id
 		LEFT JOIN users s ON t.type='b2b' AND s.id=t.seller_id
 		LEFT JOIN collectors c ON t.type='c2b' AND c.id=t.seller_id WHERE t.id=$1`, id).Scan(
-		&out.InvoiceKey, &sellerJSON, &buyerJSON)
+		&out.InvoiceKey, &anonymised, &sellerJSON, &buyerJSON)
 	if err != nil {
 		return out, err
 	}
 
 	out.Trade = trade
+
+	// After the retention period the parties' details are gone for good.
+	if anonymised {
+		out.Anonymised = true
+		out.Seller, out.Buyer = Contact{Name: "Removed party"}, Contact{Name: "Removed party"}
+
+		return out, nil
+	}
+
 	if len(sellerJSON) != 0 {
 		if err := json.Unmarshal(sellerJSON, &out.Seller); err != nil {
 			return out, err
 		}
 	}
 
-	return out, json.Unmarshal(buyerJSON, &out.Buyer)
+	if err := json.Unmarshal(buyerJSON, &out.Buyer); err != nil {
+		return out, err
+	}
+
+	for _, contact := range []*Contact{&out.Seller, &out.Buyer} {
+		if err := s.open(contact); err != nil {
+			return out, err
+		}
+	}
+
+	return out, nil
+}
+
+// open decrypts the two sealed fields of a contact read from a JSON copy of a
+// users or collectors row, or from a snapshot.
+func (s *Store) open(contact *Contact) error {
+	var err error
+
+	if contact.Account, err = s.cipher.Decrypt(contact.Account); err != nil {
+		return err
+	}
+
+	contact.PaymentID, err = s.cipher.Decrypt(contact.PaymentID)
+
+	return err
 }
 
 // LockInvoice serializes invoice renders and returns the current object key.

@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
@@ -14,6 +15,35 @@ func collectorBody(phone string) map[string]any {
 		"payout_method": "bank", "bank_account_holder_name": "Holder", "bank_name": "Bank",
 		"bank_account_number": "123456789", "bank_branch_code": "123456", "bank_account_type": "Savings",
 		"street_address": "Private Street", "city": "Cape Town", "province": "Western Cape", "area_code": 8000}
+}
+
+// noPrivateKeysButMasks is noPrivateKeys for collectors, which show the account
+// number and e-wallet id masked to everyone who may not see them in full.
+func noPrivateKeysButMasks(t *testing.T, value any) {
+	t.Helper()
+
+	switch node := value.(type) {
+	case map[string]any:
+		for _, key := range []string{"bank_account_number", "ewallet_payment_id"} {
+			if got, ok := node[key].(string); ok {
+				if got != "" && !strings.HasPrefix(got, "******") {
+					t.Errorf("%s %q is not masked", key, got)
+				}
+
+				delete(node, key)
+			}
+		}
+
+		for _, child := range node {
+			noPrivateKeysButMasks(t, child)
+		}
+	case []any:
+		for _, child := range node {
+			noPrivateKeysButMasks(t, child)
+		}
+	}
+
+	noPrivateKeys(t, value)
 }
 
 func TestCollectorDetailsRedactPayout(t *testing.T) {
@@ -29,7 +59,11 @@ func TestCollectorDetailsRedactPayout(t *testing.T) {
 	status(t, anonymous.Do("GET", "/api/collectors/"+id, nil), 401)
 	for _, client := range []*testutil.Client{member, other} {
 		result := status(t, client.Do("GET", "/api/collectors/"+id, nil), 200)
-		noPrivateKeys(t, result.Body)
+		if result.Body["bank_account_number"] != "******6789" {
+			t.Fatalf("account number not masked: %s", result.Raw)
+		}
+
+		noPrivateKeysButMasks(t, result.Body)
 		if _, ok := result.Body["street_address"]; ok {
 			t.Fatal("private address visible")
 		}
@@ -43,7 +77,7 @@ func TestCollectorDetailsRedactPayout(t *testing.T) {
 	}
 
 	result := status(t, other.Do("GET", "/api/collectors", nil), 200)
-	noPrivateKeys(t, result.Body)
+	noPrivateKeysButMasks(t, result.Body)
 	if len(pageItems(t, result)) != 1 {
 		t.Fatalf("legacy directory: %s", result.Raw)
 	}

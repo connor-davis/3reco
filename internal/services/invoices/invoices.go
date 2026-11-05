@@ -15,12 +15,15 @@ import (
 
 	"go.uber.org/fx"
 
+	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/pdf"
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/privacy"
 	"github.com/connor-davis/3reco/internal/services/transactions"
+	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
 	store "github.com/connor-davis/3reco/internal/stores/transactions"
 )
 
@@ -31,6 +34,7 @@ type Service struct {
 	objects *storage.Client
 	mailer  *mail.Mailer
 	trades  *transactions.Service
+	audit   *pstore.Store
 	pending sync.WaitGroup
 }
 
@@ -42,8 +46,11 @@ func New(
 	objects *storage.Client,
 	mailer *mail.Mailer,
 	trades *transactions.Service,
+	audit *pstore.Store,
 ) *Service {
-	service := &Service{db: db, store: rows, objects: objects, mailer: mailer, trades: trades}
+	service := &Service{
+		db: db, store: rows, objects: objects, mailer: mailer, trades: trades, audit: audit,
+	}
 	trades.SetInvoiceHook(service.queue)
 	lifecycle.Append(fx.Hook{OnStop: func(ctx context.Context) error {
 		finished := make(chan struct{})
@@ -174,6 +181,11 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 			return err
 		}
 
+		// Past the retention period the personal details are gone: nothing to render.
+		if document.Anonymised {
+			return nil
+		}
+
 		data, err = pdf.Render(Compose(document))
 		if err != nil {
 			return err
@@ -243,6 +255,18 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 	document, err := s.store.Document(ctx, id)
 	if err != nil {
 		return nil, "", err
+	}
+
+	if document.Anonymised {
+		return nil, "", apperr.NotFound("That invoice is no longer kept.")
+	}
+
+	// The PDF shows the seller's full account number: an admin read is audited.
+	if auth.HasRole(user, "admin") && document.Seller.Account != "" {
+		err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView)
+		if err != nil {
+			return nil, "", err
+		}
 	}
 
 	if document.InvoiceKey != "" {

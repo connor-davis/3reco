@@ -77,7 +77,7 @@ func TestAdminRemoveUser(t *testing.T) {
 		`SELECT count(*)::text FROM stock WHERE owner_id = $1`,
 		`SELECT count(*)::text FROM notifications WHERE user_id = $1`,
 		`SELECT count(*)::text FROM sessions WHERE user_id = $1`,
-		`SELECT count(*)::text FROM transaction_requests WHERE seller_id = $1`,
+		`SELECT count(*)::text FROM transaction_requests WHERE seller_id = $1 AND status <> 'cancelled'`,
 	} {
 		if n := tradeText(t, w.app, sql, w.seller.id); n != "0" {
 			t.Errorf("%s: %s rows left, want 0", sql, n)
@@ -88,7 +88,13 @@ func TestAdminRemoveUser(t *testing.T) {
 		t.Errorf("removed user kept their email")
 	}
 
-	tradeWant(t, "buyer's old request", w.buyer.c.Do("GET", "/api/requests/"+id, nil), 404)
+	// The buyer's open request is cancelled, not deleted, so they see what happened.
+	old := w.buyer.c.Do("GET", "/api/requests/"+id, nil)
+	tradeWant(t, "buyer's old request", old, 200)
+
+	if old.Body["status"] != "cancelled" {
+		t.Errorf("buyer's old request status %v, want cancelled", old.Body["status"])
+	}
 
 	// They are gone from the list, and cannot sign in again.
 	if raw := string(admin.c.Do("GET", "/api/admin/users", nil).Raw); strings.Contains(raw, w.seller.id) {

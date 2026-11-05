@@ -27,7 +27,7 @@ func importFixture(t *testing.T) (*testutil.App, *importer.Report) {
 
 	app := testutil.Server(t)
 
-	report, err := importer.Run(context.Background(), app.DB, app.Storage, newFixture().zipFile(t))
+	report, err := importer.Run(context.Background(), app.DB, app.Storage, testutil.Cipher(t), newFixture().zipFile(t))
 	if err != nil {
 		t.Fatalf("import: %v\n%s", err, printed(report))
 	}
@@ -314,7 +314,7 @@ func TestImportRefusesASecondRun(t *testing.T) {
 
 	before := tradeText(t, app, `SELECT (SELECT count(*) FROM users) || '/' || (SELECT count(*) FROM transactions)`)
 
-	_, err := importer.Run(context.Background(), app.DB, app.Storage, newFixture().zipFile(t))
+	_, err := importer.Run(context.Background(), app.DB, app.Storage, testutil.Cipher(t), newFixture().zipFile(t))
 
 	var notEmpty *store.NotEmptyError
 	if !errors.As(err, &notEmpty) {
@@ -339,7 +339,7 @@ func TestImportStrictRefusesBadRows(t *testing.T) {
 	fixture.tables["users"][3]["email"] = "SIGNIN@example.test"
 	fixture.tables["stock"][0]["ownerId"] = "nobody"
 
-	report, err := importer.Run(context.Background(), app.DB, app.Storage, fixture.zipFile(t))
+	report, err := importer.Run(context.Background(), app.DB, app.Storage, testutil.Cipher(t), fixture.zipFile(t))
 
 	var invalid *importer.InvalidError
 	if !errors.As(err, &invalid) {
@@ -374,7 +374,7 @@ func TestImportRollsBackFilesWhenTheDatabaseFails(t *testing.T) {
 	// so the failure comes late: after the files are already in storage.
 	fixture.tables["transactions"][1]["totalPrice"] = json.Number("1e999999")
 
-	_, err := importer.Run(context.Background(), app.DB, app.Storage, fixture.zipFile(t))
+	_, err := importer.Run(context.Background(), app.DB, app.Storage, testutil.Cipher(t), fixture.zipFile(t))
 	if err == nil {
 		t.Fatal("import of an impossible number succeeded")
 	}
@@ -391,7 +391,7 @@ func TestImportRollsBackFilesWhenTheDatabaseFails(t *testing.T) {
 func TestImportDeletedCollectorKeepsTheSnapshot(t *testing.T) {
 	app, _ := importFixture(t)
 
-	doc, err := tstore.New(app.DB).Document(context.Background(), fxTxGone)
+	doc, err := tstore.New(app.DB, testutil.Cipher(t)).Document(context.Background(), fxTxGone)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -407,7 +407,7 @@ func TestImportStrictRefusesADeletedCollectorWithNoSnapshot(t *testing.T) {
 
 	delete(fixture.tables["transactions"][1], "collectorSnapshot")
 
-	report, err := importer.Run(context.Background(), app.DB, app.Storage, fixture.zipFile(t))
+	report, err := importer.Run(context.Background(), app.DB, app.Storage, testutil.Cipher(t), fixture.zipFile(t))
 
 	var invalid *importer.InvalidError
 	if !errors.As(err, &invalid) || len(report.Problems) != 1 {

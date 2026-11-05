@@ -293,6 +293,26 @@ var snapshotColumns = map[string]string{
 	"ewalletPlatformName": "ewallet_platform_name", "ewalletPaymentId": "ewallet_payment_id",
 }
 
+// seal encrypts the listed text columns of a built row. An empty value stays
+// empty. The importer is the only writer besides the API, so it seals too.
+func (p *planner) seal(r *row, out store.Row, columns ...string) {
+	for _, column := range columns {
+		text, ok := out[column].(string)
+		if !ok {
+			continue
+		}
+
+		sealed, err := p.cipher.Encrypt(text)
+		if err != nil {
+			r.fail(column, "cannot be encrypted")
+
+			continue
+		}
+
+		out[column] = sealed
+	}
+}
+
 // list reads an array of objects (items, receiptAttachments). Absent is an
 // empty list; the wrong shape is a problem.
 func (r *row) list(key string) []doc {
