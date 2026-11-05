@@ -51,6 +51,11 @@ tasks:
     cmds:
       - go run ./cmd/3reco migrate
 
+  import-convex:
+    desc: Load a `npx convex export` ZIP into an empty database and MinIO
+    cmds:
+      - go run ./cmd/3reco import-convex {{.CLI_ARGS}}
+
   serve:
     desc: Run the API once (no web app)
     cmds:

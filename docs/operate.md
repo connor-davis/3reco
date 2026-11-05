@@ -76,3 +76,25 @@ Sessions and rate counts are in the database. After a restore, everyone may need
 
 Passwords from the first 3REco (Better Auth, scrypt) still work. The first good sign-in
 replaces the old hash with argon2id.
+
+## Moving off Convex
+
+Run this once, on an empty database, with the API stopped.
+
+1. Export from Convex: `npx convex export --path export.zip --include-file-storage`.
+   The ZIP holds personal data and password hashes. Keep it out of git.
+2. `task up`, then `task migrate`.
+3. `task import-convex -- export.zip`.
+4. Check the table of counts it prints: `source` and `loaded` must match on every line.
+
+The import checks every row first. If any row breaks a rule (two users with one
+email, a stock row with no owner, a number that is not a number), it writes nothing,
+prints each bad row as `table`, `_id`, `field` and the reason, and exits with an
+error. Fix the data in Convex, export again and rerun. A second run on a database
+that already has users is refused.
+
+Sessions are not imported, so everyone signs in again with their old password
+(it is upgraded on the first sign-in). Old chat messages are marked read.
+A login with no profile in the export is imported as a user with no role, who
+finishes their profile after signing in. Sales whose collector was deleted keep
+the collector details saved on the sale.

@@ -71,7 +71,7 @@ Never rename a merged migration. Add a new file.
 | Job | Owner |
 | --- | --- |
 | Fiber app, shared steps, error handler, fx wiring, listener, hourly purge | `internal/api/server.go` |
-| The binary: `serve`, `migrate`, `admin create`, `health`, `version` | `cmd/3reco/main.go` |
+| The binary: `serve`, `migrate`, `admin create`, `import-convex`, `health`, `version` | `cmd/3reco/main.go` |
 
 ## Tests
 
@@ -140,3 +140,18 @@ Never rename a merged migration. Add a new file.
 | Profile email protection, bank rules and public account leak tests | `tests/profile_test.go` |
 | Stock ownership, explicit zero price and notification rollback tests | `tests/stock_test.go` |
 | Store profiles, listed inventory summaries and public reviews integration tests | `tests/stores_test.go` |
+
+## Convex import (`import-convex`)
+
+| Job | Owner |
+| --- | --- |
+| Run order: empty check, plan, strict stop, file upload, one transaction, rollback of files | `internal/services/importer/convex.go` |
+| Open the export ZIP safely, find a table's `documents.jsonl`, read blobs, decode `$integer`/`$float` | `internal/services/importer/zip.go` |
+| Field tables, exact numbers, times, checks that report bad rows | `internal/services/importer/values.go` |
+| Users joined with Better Auth logins, passwords, removed users, data-URL avatars | `internal/services/importer/auth.go` |
+| Collectors, materials, stock, notifications, carts, reviews | `internal/services/importer/market.go` |
+| Transactions, receipts, invoices, requests, messages and read marks | `internal/services/importer/market_trades.go` |
+| MinIO uploads, rollback removal, sha256 | `internal/services/importer/files.go` |
+| Counts and bad-row report | `internal/services/importer/report.go` |
+| Empty check, lock, trigger switch, inserts, counts (all the SQL) | `internal/stores/importer/store.go` |
+| Made-up export and tests for the import | `tests/import_fixture_test.go`, `tests/import_test.go` |

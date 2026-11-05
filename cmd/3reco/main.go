@@ -3,6 +3,7 @@
 //	3reco serve          run the API
 //	3reco migrate        apply the SQL migrations and stop
 //	3reco admin create   make (or promote) an admin: --email --password --name
+//	3reco import-convex <export.zip>  load a Convex export into an empty database
 //	3reco health         exit 0 when the local server answers (for Docker)
 //	3reco version        print the version
 package main
@@ -25,7 +26,9 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
+	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/importer"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 )
 
@@ -56,6 +59,8 @@ func run(args []string) error {
 
 			return nil
 		})
+	case "import-convex":
+		return importConvex(args[1:])
 	case "admin":
 		if len(args) > 1 && args[1] == "create" {
 			return adminCreate(args[2:])
@@ -66,7 +71,7 @@ func run(args []string) error {
 }
 
 func usage() error {
-	return fmt.Errorf("usage: 3reco serve | migrate | admin create | health | version")
+	return fmt.Errorf("usage: 3reco serve | migrate | admin create | import-convex <export.zip> | health | version")
 }
 
 // withDB loads the config, connects and migrates, then runs fn.
@@ -133,6 +138,34 @@ func adminCreate(args []string) error {
 		fmt.Println("admin ready:", strings.ToLower(*email))
 
 		return nil
+	})
+}
+
+// importConvex loads a `npx convex export` ZIP into an empty database and
+// MinIO. Stop the API first: the import should not run beside a live server.
+func importConvex(args []string) error {
+	fs := flag.NewFlagSet("import-convex", flag.ContinueOnError)
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if fs.NArg() != 1 {
+		return fmt.Errorf("usage: 3reco import-convex <export.zip> (stop the API first)")
+	}
+
+	return withDB(func(ctx context.Context, cfg config.Config, db *database.DB) error {
+		objects, err := storage.New(cfg)
+		if err != nil {
+			return err
+		}
+
+		report, err := importer.Run(ctx, db, objects, fs.Arg(0))
+		if report != nil {
+			report.Print(os.Stdout)
+		}
+
+		return err
 	})
 }
 
