@@ -59,6 +59,9 @@ if err := json.Unmarshal(body, &in); err != nil {
 
 - Reuse the shared components and the owners listed in
   [code-map.md](code-map.md) before making a new piece.
+- Pages are TanStack Router file routes in `src/routes/` (the router plugin
+  builds `routeTree.gen.ts`). No `pages/` folder. A page's own pieces sit
+  next to it in a `-components/` folder, which the router skips.
 - Plain words on screen. If a non-coder wouldn't know the word, use another.
 - Every page has a loading, empty and error state, and works in light and
   dark.
