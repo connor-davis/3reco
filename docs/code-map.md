@@ -168,6 +168,17 @@ Never rename a merged migration. Add a new file.
 | HTTP error/decimal contracts and socket lifecycle tests | `web/apps/app/tests/api.test.mjs` |
 | Signed-in user context and auth query cache | `web/apps/app/src/lib/auth/`, `src/lib/api/auth.ts` |
 
+## Web app serving and deployment
+
+| Job | Owner |
+| --- | --- |
+| Serve `web/apps/app/dist`: long cache on `/assets`, `index.html` never cached, page fallback, gzip, one log when the folder is missing | `internal/api/web.go` |
+| Where the built web app lives (`THREERECO_WEB_DIST`) | `internal/platform/config/config.go` |
+| Static serving tests: fallback, cache headers, JSON 404 on `/api`, missing folder | `tests/web_test.go` |
+| One image: builds the web app, builds the binary, copies `dist` in | `deployments/Dockerfile` |
+| Production stack (api, Postgres, MinIO, docs) | `docker-compose.yml`, `.env.example` |
+| One-command production deploy (writes `.env`, starts the stack) | `deploy.sh` |
+
 ## Convex import (`import-convex`)
 
 | Job | Owner |

@@ -1,107 +1,42 @@
 # Transactions
 
-Transactions are the permanent, immutable records of completed sales on the 3rEco platform.
+A transaction is the record of a completed trade: who sold to whom, which materials, what weight and what price, plus an invoice and optional receipts.
 
-## Transaction Types
+## Types
 
-| Code | Full Name | Parties |
+| Type | Meaning | How it is made |
 |---|---|---|
-| `c2b` | Collector to Business | Collector sells to Business |
-| `b2b` | Business to Business | Business sells surplus to another Business |
+| `c2b` | Collector to business | A business records a collection from one of its collectors |
+| `b2b` | Business to business | A request is accepted, or a direct sale is recorded |
 
-## How Transactions Are Created
-
-Transactions are created automatically when a buyer accepts a transaction request:
+## Making one
 
 ```typescript
-// Triggered inside api.transactionRequests.accept
-await ctx.db.insert('transactions', {
-  sellerId: request.sellerId,
-  buyerId: request.buyerId,
-  materialId: request.materialId,
-  weight: request.offerWeight,
-  price: request.offerPrice,
-  type: determinedType,  // 'c2b' or 'b2b' based on seller type
-})
-```
-
-Direct sale mutations also exist for admin-facilitated transactions:
-
-```typescript
-// C2B direct sale (admin use)
-await convex.mutation(api.transactions.collectorToBusinessSale, {
-  sellerId, buyerId, materialId, weight, price,
+// A business records a collection
+await fetch('/api/transactions/collections', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    collector_id, business_id,
+    items: [{ material_id, weight: '125', price: '6.50' }],
+    collection_day: '2026-11-05',
+  }),
 })
 
-// B2B direct sale (admin use)
-await convex.mutation(api.transactions.businessToBusinessSale, {
-  sellerId, buyerId, materialId, weight, price,
-})
+// A direct business-to-business sale
+await fetch('/api/transactions/sales', { /* same shape: { business_id, items } */ })
 ```
 
-## Calculating Transaction Value
+Weights and prices are decimal strings, never JSON numbers. A trade has up to 100 lines and no repeated material. Stock is checked and moved in the same database transaction, so a trade either happens completely or not at all.
 
-The total value of any transaction is:
+## Invoice and receipts
 
-```
-total = price × weight
-```
+- A PDF invoice is made for every trade and downloaded from `GET /api/transactions/:id/invoice`. See [Invoices](/docs/features/invoices).
+- Either side can attach up to five receipt images (PNG or JPEG, 5 MiB each) with `POST /api/transactions/:id/receipts`.
 
-For example, 250 kg at R8.50/kg = **R2,125.00**
+## Seeing them
 
-Price is stored as **Rand per kilogram**. Weight is stored in **kilograms**.
+`GET /api/transactions/` lists your trades, `/purchases` the ones where you bought and `/sales` the business-to-business ones where you sold. Admins and staff see everything on their dashboard and exports. Each person only ever reads trades they took part in.
 
-## Invoice Generation
-
-Immediately after a transaction is created, a PDF invoice is generated:
-
-1. A Convex **action** (not a mutation — actions can call external APIs and do async work) generates the PDF
-2. The PDF binary is uploaded to **Convex file storage** via `ctx.storage.store()`
-3. The returned `storageId` is patched back onto the transaction: `invoiceStorageId`
-4. The invoice is accessible via a signed URL: `ctx.storage.getUrl(transaction.invoiceStorageId)`
-
-```typescript
-// Getting the download URL on the frontend
-const invoiceUrl = useQuery(api.transactions.getInvoiceUrl, { transactionId })
-// Returns a temporary signed URL to the PDF in Convex storage
-```
-
-## Invoice Contents
-
-Each PDF invoice includes:
-
-- Invoice number (derived from transaction ID)
-- Date of transaction
-- Seller and buyer details (name, address, registration number)
-- Material name and GW code
-- Weight (kg)
-- Price per kg
-- **Total** (price × weight)
-- VAT breakdown (if applicable)
-
-## Transaction History
-
-Users can view their transaction history filtered by:
-
-- **Date range** — supports standard presets plus custom picker
-- **Type** — C2B, B2B, or all
-- **Material** — filter by material name
-
-```typescript
-// Business viewing their expenses
-const expenses = useQuery(api.transactions.listExpenses, {
-  startDate, endDate,
-})
-
-// Collector viewing their sales
-const sales = useQuery(api.transactions.listSales, {
-  startDate, endDate,
-})
-
-// Admin viewing all transactions
-const all = useQuery(api.transactions.list)
-```
-
-<Callout type="note" title="Immutability">
-  Transaction records are never modified after creation — they are the audit trail. If a transaction was entered incorrectly by an admin, it must be reversed with a corrective transaction, not edited.
-</Callout>
+The total value of a trade is the sum of `weight × price` over its lines, worked out exactly on the server. See [Transactions API](/docs/api/transactions) for the full shape.

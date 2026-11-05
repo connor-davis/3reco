@@ -1,123 +1,32 @@
 # Marketplace
 
-The marketplace is the core of 3rEco — where businesses find and purchase recyclable materials from collectors (and other businesses).
+The marketplace is where listed stock meets buyers. It has public store pages, a cart, and the request and offer flow.
 
-## Transaction Types
+## Browsing
 
-| Type | Parties | Description |
-|---|---|---|
-| **C2B** | Collector → Business | Business purchases from a collector |
-| **B2B** | Business → Business | Business purchases surplus stock from another business |
+| Route | What |
+|---|---|
+| `GET /api/market/listings` | Listed stock, a page. Filters: `seller_id`, `material_id`, `q`. Your own stock is left out when you are signed in |
+| `GET /api/market/listings/:id` | One listing |
+| `GET /api/stores` and `/api/stores/:id` | Stores and their rating |
+| `GET /api/stores/:id/listings` | Listings of one store |
+| `GET /api/stores/:seller_id/reviews` | Reviews of a store |
 
-## Browsing Stock
+A listing shows the **available** weight (stock minus open offers). Rows with nothing available are hidden. No sign-in is needed to browse.
 
-The marketplace displays all stock items where `isListed = true`. Each card shows:
+## Cart
 
-- Material name and GW code
-- Weight available (kg)
-- Price per kg (Rand)
-- Seller's display name or business name
-- **Request** button
+A signed-in buyer keeps a cart per seller: `GET`, `PUT` and `DELETE /api/cart?seller_id=...`. The cart is saved on the server, so it follows the buyer to another device.
 
-Listings can be filtered by material type.
+## Request and offer flow
 
-## Transaction Request Workflow
+1. **Request.** The buyer sends `POST /api/requests/` with the seller and the stock lines they want. The seller is notified.
+2. **Chat.** Both sides can message while the request is `pending`.
+3. **Offer.** The seller offers a weight and price per line. The stock is held for 48 hours and the buyer is notified.
+4. **Decision.** The buyer accepts (a transaction is recorded and an invoice made) or declines. The seller can withdraw. Either side can end it: the seller rejects, the buyer cancels.
 
-### 1. Send Request (Business)
+If the offered weight is no longer free, the call fails with `409 conflict`. See [Requests API](/docs/api/transaction-requests) for every call.
 
-```typescript
-await convex.mutation(api.transactionRequests.create, {
-  sellerId: stock.ownerId,
-  materialId: stock.materialId,
-  stockId: stock._id,
-})
-// Creates { status: "pending", buyerId: currentUser, sellerId: ... }
-```
+## Live updates
 
-The seller (collector) receives an immediate real-time notification.
-
-### 2. Respond with Offer (Seller)
-
-The seller reviews the pending request and submits an offer:
-
-```typescript
-await convex.mutation(api.transactionRequests.makeOffer, {
-  requestId,
-  offerWeight: 200,   // kg
-  offerPrice: 8.75,   // R/kg
-})
-// Updates { status: "offered", offerWeight: 200, offerPrice: 8.75 }
-```
-
-The buyer receives a notification that an offer has been made.
-
-### 3. Accept or Reject (Buyer)
-
-**Accept:**
-```typescript
-await convex.mutation(api.transactionRequests.accept, { requestId })
-// Creates transaction record, generates invoice, updates stock
-// Sets { status: "accepted" }
-```
-
-**Reject:**
-```typescript
-await convex.mutation(api.transactionRequests.reject, { requestId })
-// Sets { status: "rejected" }
-```
-
-### 4. Cancel (Either party)
-
-Either party can cancel at any time before acceptance:
-
-```typescript
-await convex.mutation(api.transactionRequests.cancel, { requestId })
-// Sets { status: "cancelled" }
-```
-
-## Negotiation Messages
-
-While a request is `pending` or `offered`, both parties can exchange messages in a negotiation thread:
-
-```typescript
-// Send a message
-await convex.mutation(api.transactionRequestMessages.send, {
-  transactionId: requestId,
-  content: 'I can do 200 kg but need R9/kg for this grade.',
-})
-
-// Subscribe to the thread
-const messages = useQuery(api.transactionRequestMessages.list, { transactionId: requestId })
-```
-
-Messages are displayed in real time for both parties.
-
-## Request Status State Machine
-
-```
-         ┌─────────────────────┐
-         │        pending       │
-         └──────────┬──────────┘
-                    │ makeOffer
-                    ▼
-         ┌─────────────────────┐
-         │        offered       │
-         └──────┬──────────────┘
-          accept│       │reject
-                ▼       ▼
-           accepted  rejected
-
-         Any state + cancel → cancelled
-```
-
-## Real-Time Updates
-
-Because all queries are Convex subscriptions, both buyer and seller see status changes immediately:
-
-- When a seller submits an offer, the buyer's request card updates from "pending" to "offered" without a page refresh
-- When a buyer accepts, the seller's inventory reflects the completed sale instantly
-- Notifications fire automatically on each status transition
-
-<Callout type="note" title="Concurrent requests">
-  Multiple buyers can send requests for the same stock item simultaneously. The seller handles them independently. Only the first accepted request results in a transaction — the seller should cancel remaining open requests to keep their inbox clean.
-</Callout>
+The `market` topic tells open market pages to refetch, and `request:<id>` keeps one request and its chat in step for both sides. Nothing polls.

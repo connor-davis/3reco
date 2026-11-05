@@ -55,11 +55,8 @@ const navGroups: NavGroup[] = [
     icon: <Terminal size={15} />,
     items: [
       { label: 'Frontend Guide', to: '/docs/dev/frontend' },
-      { label: 'Convex Functions', to: '/docs/dev/convex-functions' },
-      { label: 'Aggregates', to: '/docs/dev/aggregates' },
       { label: 'Error Handling', to: '/docs/dev/error-handling' },
       { label: 'Notifications Pattern', to: '/docs/dev/notifications' },
-      { label: 'Internal Actions', to: '/docs/dev/internal-actions' },
       { label: 'Deployment', to: '/docs/dev/deployment' },
     ],
   },

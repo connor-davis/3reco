@@ -1,0 +1,10 @@
+# Keep the Docker build context small: only what deployments/Dockerfile reads.
+.git
+reference
+mystuff
+project
+docs
+bin
+**/node_modules
+**/dist
+.env*

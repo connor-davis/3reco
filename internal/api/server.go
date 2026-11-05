@@ -188,6 +188,8 @@ func New(r routes) *fiber.App {
 	// Unknown /api paths get a JSON 404.
 	api.Use(func(c fiber.Ctx) error { return apperr.NotFound("No such API endpoint.") })
 
+	serveWeb(app, cfg.WebDist)
+
 	return app
 }
 

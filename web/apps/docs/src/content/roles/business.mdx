@@ -61,13 +61,15 @@ Negotiation → acceptance → B2B transaction
 During an active transaction request, both parties can exchange messages:
 
 ```typescript
-await convex.mutation(api.transactionRequestMessages.send, {
-  transactionId: requestId,
-  content: 'Can you do 500kg at R8.50/kg?',
+await fetch(`/api/requests/${requestId}/messages`, {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ content: 'Can you do 500kg at R8.50/kg?' }),
 })
 ```
 
-Messages appear in real time in the negotiation thread and are stored against the `transactionRequests` document.
+Messages appear in real time in the negotiation thread and are stored against the request.
 
 ## Transaction History
 
@@ -76,4 +78,4 @@ Businesses can view all their completed transactions, filtered by:
 - Transaction type (C2B / B2B)
 - Material
 
-Each transaction links to the auto-generated **PDF invoice** stored in Convex file storage.
+Each transaction links to the auto-generated **PDF invoice** stored in file storage.
