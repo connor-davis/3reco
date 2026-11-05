@@ -42,6 +42,8 @@ The whole repo root becomes a Viper-style Go repo. Source of truth: root `AGENTS
   teal override (`hsl(183, 55%, 35%)`) at the end of today's `index.css` and on the
   invoice header is dropped in the rebuild.
 - `web/apps/docs` content still describes Convex setup; rewritten in T14.
+- The 11 old web lint errors (`react-refresh/only-export-components` in `components/ui`)
+  are fixed when the web app is rewired in T12/T13, not by loosening the rule.
 
 ## Roles (Viper AGENTS.md, Orchestrator V2)
 
@@ -58,10 +60,10 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T3 | Design system brief for mockups: tokens from `3reco/src/index.css`, shared rules | Orchestrator | T2 |
 | T4 | 10 interactive HTML mockup sets × every page → `mystuff/designs/NN/` | 10 designers, alternating | T3 |
 | T5 | **CHECKPOINT: owner picks a design** | owner | T4 |
-| T6 | Go skeleton: module, config, Postgres pool, SQL migrations for every table, docker compose (Postgres, MinIO, Mailpit) | dev | T1 |
-| T7 | Go auth: sign-up, verify email, sign-in, sessions (cookie), forgot/reset, admin role; scrypt verify of Better Auth hashes | dev | T6 |
+| T6 | (done c4f027e) Go skeleton: module, config, Postgres pool, SQL migrations for every table, docker compose (Postgres, MinIO, Mailpit) | dev | T1 |
+| T7 | (done c4f027e) Go auth: sign-up, verify email, sign-in, sessions (cookie), forgot/reset, admin role; scrypt verify of Better Auth hashes | dev | T6 |
 | T8 | Go domain API: every Convex query/mutation/action as REST, same access rules | dev(s), split by domain | T6, T7 |
-| T9 | Realtime: LISTEN/NOTIFY → WebSocket hub, subscribe-by-topic; matches Convex live queries | dev | T6 |
+| T9 | (done c4f027e) Realtime: LISTEN/NOTIFY → WebSocket hub, subscribe-by-topic; matches Convex live queries | dev | T6 |
 | T10 | Files (MinIO) + PDFs/CSV exports + emails (Resend/Mailpit) | dev | T8 |
 | T11 | Data move: Convex export → Postgres + MinIO, count check | dev | T6, T10 |
 | T12 | Frontend client: fetch client + `useLive` + auth context; swap all Convex calls | dev | T8, T9 |
