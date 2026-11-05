@@ -1,80 +1,96 @@
-import { toast } from 'sonner';
-import { co2For, kgFor } from '@/lib/impact';
-import { storeById } from '@/lib/data/stores';
-import { useMock, useMockList } from '@/lib/mock/hooks';
-import type { MarketRequest } from '@/lib/types';
+import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/auth/use-auth';
+import { ApiError } from '@/lib/api/client';
+import {
+  useAcceptRequest,
+  useCreateRequest,
+  useRequestAction,
+} from '@/lib/api/requests';
+import { useSendMessage } from '@/lib/api/messages';
+import type { Listing, TradeRequest } from '@/lib/api/types';
 
-/** Every change a person can make to a request. All of it is mock state. */
-export function useRequestActions(request: MarketRequest) {
-  const { setCelebrate } = useMock();
-  const requests = useMockList('requests');
-  const messages = useMockList('messages');
-  const transactions = useMockList('transactions');
+export function useStartChat() {
+  const create = useCreateRequest();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
-  function say(from: 'me' | 'system', text: string) {
-    messages.append({
-      id: `${request.id}-m${messages.items.length}`,
-      requestId: request.id,
-      from,
-      text,
-      sentAt: new Date().toISOString(),
-    });
+  async function startChat(listing: Listing) {
+    setError(null);
+    if (user?.role !== 'business') {
+      setError('Sign in as a business to message sellers.');
+      return false;
+    }
+
+    try {
+      const result = await create.mutateAsync({
+        seller_id: listing.seller_id,
+        items: [{ material_id: listing.material_id, stock_id: listing.id }],
+      });
+      await navigate({
+        to: '/messages/$requestId',
+        params: { requestId: result.id },
+      });
+      return true;
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'Could not start this conversation.'
+      );
+      return false;
+    }
   }
 
-  function setStatus(
-    status: MarketRequest['status'],
-    note: string,
-    toastText: string
-  ) {
-    requests.update(request.id, {
-      status,
-      offerPending: false,
-      preview: note,
-      lastAt: 'Now',
-    });
-    say('system', note);
-    toast.success(toastText);
+  return { startChat, error, isPending: create.isPending };
+}
+
+export function useRequestActions(request: TradeRequest) {
+  const send = useSendMessage(request.id);
+  const accept = useAcceptRequest(request.id);
+  const decline = useRequestAction(request.id, 'decline');
+  const cancel = useRequestAction(request.id, 'cancel');
+  const reject = useRequestAction(request.id, 'reject');
+  const withdraw = useRequestAction(request.id, 'withdraw');
+  const client = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const [transactionId, setTransactionId] = useState<string>();
+
+  async function run(action: () => Promise<unknown>) {
+    setError(null);
+    try {
+      await action();
+      return true;
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'Could not update this request.'
+      );
+      if (cause instanceof ApiError && cause.status === 409) {
+        await client.invalidateQueries({ queryKey: ['requests', request.id] });
+      }
+      return false;
+    }
   }
 
   return {
-    send: (text: string) => {
-      say('me', text);
-      requests.update(request.id, { preview: text, lastAt: 'Now', unread: 0 });
-    },
-    accept: () => {
-      // One transaction and invoice per material line, so stock and
-      // invoices see the same lines the offer showed.
-      const number = request.id.replace('REQ-', '');
-
-      request.items.forEach((line, index) =>
-        transactions.add({
-          id: `TX-${number}-${index + 1}`,
-          type: 'B2B',
-          requestId: request.id,
-          seller: storeById(request.sellerId).name,
-          buyer: storeById(request.buyerId).name,
-          materialId: line.materialId,
-          kg: line.kg,
-          pricePerKg: line.pricePerKg,
-          status: 'Pending',
-          date: new Date().toISOString().slice(0, 10),
-          receipts: 0,
-          invoiceNo: `INV-2026-${number}-${index + 1}`,
-        })
-      );
-      setStatus(
-        'Accepted',
-        'Offer accepted. An invoice is on its way.',
-        'Offer accepted.'
-      );
-      setCelebrate({ kg: kgFor(request.items), co2: co2For(request.items) });
-    },
-    decline: () => setStatus('Requested', 'Offer declined.', 'Offer declined.'),
-    cancel: () =>
-      setStatus('Cancelled', 'Request cancelled.', 'Request cancelled.'),
-    reject: () =>
-      setStatus('Rejected', 'Request rejected.', 'Request rejected.'),
-    withdraw: () =>
-      setStatus('Requested', 'Offer withdrawn.', 'Your offer was withdrawn.'),
+    error,
+    transactionId,
+    isPending: [send, accept, decline, cancel, reject, withdraw].some(
+      (mutation) => mutation.isPending
+    ),
+    send: (content: string) => run(() => send.mutateAsync({ content })),
+    accept: () =>
+      run(async () => {
+        const result = await accept.mutateAsync();
+        setTransactionId(result.transaction_id);
+      }),
+    decline: () => run(() => decline.mutateAsync()),
+    cancel: () => run(() => cancel.mutateAsync()),
+    reject: () => run(() => reject.mutateAsync()),
+    withdraw: () => run(() => withdraw.mutateAsync()),
   };
 }

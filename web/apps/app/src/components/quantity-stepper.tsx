@@ -42,6 +42,7 @@ export function QuantityStepper({
         <IconButton
           label={`Less ${label}`}
           size="icon-sm"
+          type="button"
           onClick={() => nudge(-1)}
         >
           <Minus />
@@ -63,6 +64,7 @@ export function QuantityStepper({
         <IconButton
           label={`More ${label}`}
           size="icon-sm"
+          type="button"
           onClick={() => nudge(1)}
         >
           <Plus />

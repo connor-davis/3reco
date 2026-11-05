@@ -1,32 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ArrowLeft, Info, MoreVertical, Paperclip, Send } from 'lucide-react';
-import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { ArrowLeft, Info, MessageSquare } from 'lucide-react';
 import { StatusBadge } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { DataState } from '@/components/data-state';
+import { TextField } from '@/components/form-fields';
 import { IconButton } from '@/components/icon-button';
 import { OfferDialog } from '@/components/dialogs/offer-dialog';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/lib/auth/use-auth';
+import { useMessageHistory, useReadMessages } from '@/lib/api/messages';
+import type { TradeRequest } from '@/lib/api/types';
 import { formatTime } from '@/lib/format';
-import { quickReplies } from '@/lib/data/requests';
-import { useMock } from '@/lib/mock/hooks';
 import { cn } from '@/lib/utils';
-import type { MarketRequest } from '@/lib/types';
 import { InvoiceCard, OfferCard } from './cards';
 import { DealAside } from './deal-aside';
 import { DealStepper } from './deal-stepper';
@@ -34,40 +26,65 @@ import {
   canMakeOffer,
   canRespond,
   counterpartyOf,
-  iAmSeller,
   isClosed,
+  orderedMessages,
 } from './helpers';
 import { useRequestActions } from './use-request-actions';
 
-type Confirm = 'cancel' | 'reject' | 'withdraw' | null;
+type Confirm = 'cancel' | 'reject' | 'withdraw';
+const schema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, 'Enter a message.')
+    .max(2000, 'Keep your message within 2 000 characters.'),
+});
 
-/** Chat head, stepper, message stream, offer cards and the composer. */
-export function Conversation({ request }: { request: MarketRequest }) {
-  const { role, data } = useMock();
+export function Conversation({ request }: { request: TradeRequest }) {
+  const { user } = useAuth();
   const actions = useRequestActions(request);
-  const [draft, setDraft] = useState('');
+  const history = useMessageHistory(request.id);
+  const read = useReadMessages(request.id);
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: { content: '' },
+  });
   const [offerOpen, setOfferOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [confirm, setConfirm] = useState<Confirm>(null);
-
-  const other = counterpartyOf(request);
-  const messages = data.messages.filter(
-    (message) => message.requestId === request.id
+  const [confirm, setConfirm] = useState<Confirm | null>(null);
+  const other = counterpartyOf(request, user?.id);
+  const seller = request.seller.id === user?.id;
+  const participant = seller || request.buyer.id === user?.id;
+  const canAct = user?.role === 'business' && participant && !isClosed(request);
+  const messages = orderedMessages(
+    history.data?.pages.flatMap((page) => page.items) ?? []
   );
-  const readOnly = role !== 'business' || isClosed(request);
-  const seller = iAmSeller(request);
+  const newest = messages.at(-1)?.id;
+  const newestIncoming = messages
+    .filter((message) => message.sender_id !== user?.id)
+    .at(-1)?.id;
   const bottom = useRef<HTMLDivElement>(null);
+  const lastRead = useRef<string | null>(null);
+  const { fetchNextPage, hasNextPage, isFetching, isFetchNextPageError } =
+    history;
 
-  // Keep the newest message in view, like a messenger.
+  // Cursors run oldest first. Reach the tail before enabling the composer.
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: 'end' });
-  }, [request.id, messages.length, request.offerPending]);
+    if (hasNextPage && !isFetching && !isFetchNextPageError)
+      void fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetching, isFetchNextPageError]);
 
-  function submit() {
-    if (!draft.trim()) return;
-    actions.send(draft.trim());
-    setDraft('');
-  }
+  useEffect(() => {
+    if (!hasNextPage) bottom.current?.scrollIntoView({ block: 'end' });
+  }, [newest, hasNextPage, request.status]);
+
+  const markRead = read.mutate;
+  useEffect(() => {
+    if (!newestIncoming || hasNextPage || lastRead.current === newestIncoming)
+      return;
+    lastRead.current = newestIncoming;
+    markRead();
+  }, [newestIncoming, hasNextPage, markRead]);
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-chat">
@@ -79,132 +96,164 @@ export function Conversation({ request }: { request: MarketRequest }) {
         >
           <ArrowLeft className="size-5" />
         </Link>
-        <PersonAvatar name={other.name} online={other.online} />
+        <PersonAvatar name={other.name} />
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold">{other.name}</h2>
-          <p className="truncate text-xs text-muted-foreground">
-            {other.online ? 'Online now' : 'Last seen today'} · {other.contact}
-          </p>
+          <StatusBadge status={request.status} />
         </div>
-        {role === 'business' && canMakeOffer(request) ? (
-          <Button
-            size="sm"
-            className="max-[780px]:hidden"
-            onClick={() => setOfferOpen(true)}
-          >
-            Make offer
-          </Button>
-        ) : (
-          <span className="max-[780px]:hidden">
-            <StatusBadge
-              status={role === 'business' ? request.status : 'View only'}
-            />
-          </span>
-        )}
-        <IconButton
-          label="Request details"
-          className="min-[1360px]:hidden"
-          onClick={() => setInfoOpen(true)}
-        >
+        <IconButton label="Request details" onClick={() => setInfoOpen(true)}>
           <Info />
         </IconButton>
-        {role === 'business' && !isClosed(request) && (
-          <ActionsMenu
-            seller={seller}
-            request={request}
-            onPick={setConfirm}
-            onOffer={() => setOfferOpen(true)}
-          />
-        )}
       </header>
-      <div className="border-b bg-card px-4 py-3 sm:px-6">
+      <div className="space-y-3 border-b bg-card px-4 py-3 sm:px-6">
         <DealStepper status={request.status} />
+        {canAct && (
+          <div className="flex flex-wrap gap-2">
+            {canMakeOffer(request, user?.id) && (
+              <Button
+                disabled={actions.isPending}
+                onClick={() => setOfferOpen(true)}
+              >
+                {request.status === 'offered' ? 'Change offer' : 'Make offer'}
+              </Button>
+            )}
+            {seller && request.status === 'offered' && (
+              <Button
+                variant="outline"
+                disabled={actions.isPending}
+                onClick={() => setConfirm('withdraw')}
+              >
+                Withdraw offer
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              disabled={actions.isPending}
+              onClick={() => setConfirm(seller ? 'reject' : 'cancel')}
+            >
+              {seller ? 'Reject request' : 'Cancel request'}
+            </Button>
+          </div>
+        )}
       </div>
       <ScrollArea className="min-h-0 flex-1">
-        <div
-          className="space-y-4 px-4 py-6 sm:px-6"
-          role="log"
-          aria-live="polite"
-          aria-label={`Conversation with ${other.name}`}
-        >
-          {messages.map((message) => (
-            <Bubble
-              key={message.id}
-              from={message.from}
-              text={message.text}
-              sentAt={message.sentAt}
-            />
-          ))}
-          {request.offerPending && (
+        <div className="space-y-4 px-4 py-6 sm:px-6">
+          <DataState
+            query={history}
+            isEmpty={!messages.length}
+            icon={MessageSquare}
+            emptyTitle="Start the conversation"
+            emptyText="Ask about the material and agree on the details."
+          >
+            <div
+              role="log"
+              aria-live="polite"
+              aria-label={`Conversation with ${other.name}`}
+              className="space-y-4"
+            >
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    'max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-xs',
+                    message.sender_id === user?.id
+                      ? 'ml-auto bg-outgoing'
+                      : 'bg-card'
+                  )}
+                >
+                  <p className="break-words whitespace-pre-wrap">
+                    {message.content}
+                  </p>
+                  <time
+                    dateTime={message.created_at}
+                    className="mt-1 block text-right text-xs text-muted-foreground"
+                  >
+                    {formatTime(message.created_at)}
+                  </time>
+                </div>
+              ))}
+            </div>
+          </DataState>
+          {hasNextPage && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Loading the latest messages…
+            </p>
+          )}
+          {isFetchNextPageError && (
+            <Button variant="outline" onClick={() => void fetchNextPage()}>
+              Try loading messages again
+            </Button>
+          )}
+          {request.status === 'offered' && (
             <OfferCard
               request={request}
-              canRespond={role === 'business' && canRespond(request)}
-              onAccept={actions.accept}
-              onDecline={actions.decline}
+              canRespond={canAct && canRespond(request, user?.id)}
+              onAccept={() => void actions.accept()}
+              onDecline={() => void actions.decline()}
+              disabled={actions.isPending}
             />
           )}
-          {['Accepted', 'Invoiced', 'Completed'].includes(request.status) && (
-            <InvoiceCard request={request} />
+          {request.status === 'accepted' && (
+            <InvoiceCard
+              request={request}
+              transactionId={actions.transactionId}
+            />
           )}
           <div ref={bottom} />
         </div>
       </ScrollArea>
-      {readOnly ? (
-        <p className="border-t bg-card px-6 py-4 text-center text-sm text-muted-foreground">
-          {isClosed(request)
-            ? 'This request is closed.'
-            : 'Staff view · Read only'}
-        </p>
-      ) : (
-        <footer className="space-y-3 border-t bg-card px-4 py-4 sm:px-6">
-          <div className="flex flex-wrap gap-2 max-[780px]:[&>button:nth-child(n+3)]:hidden">
-            {quickReplies.map((reply) => (
-              <Button
-                key={reply}
-                variant="outline"
-                size="sm"
-                onClick={() => actions.send(reply)}
-              >
-                {reply}
-              </Button>
-            ))}
-          </div>
+      <footer className="space-y-3 border-t bg-card px-4 py-4 sm:px-6">
+        {actions.error && (
+          <p role="alert" className="text-sm text-destructive">
+            {actions.error}
+          </p>
+        )}
+        {read.error && (
+          <p role="alert" className="text-sm text-destructive">
+            {read.error.message}{' '}
+            <Button variant="outline" size="sm" onClick={() => read.mutate()}>
+              Retry read receipt
+            </Button>
+          </p>
+        )}
+        {canAct && request.status === 'pending' ? (
           <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              submit();
-            }}
+            className="flex items-end gap-3"
+            noValidate
+            onSubmit={form.handleSubmit(async ({ content }) => {
+              if (await actions.send(content)) form.reset();
+            })}
           >
-            <InputGroup>
-              <InputGroupAddon>
-                <IconButton
-                  label="Attach a file"
-                  type="button"
-                  onClick={() => toast('Attaching files is coming soon.')}
-                >
-                  <Paperclip />
-                </IconButton>
-              </InputGroupAddon>
-              <InputGroupInput
-                aria-label={`Message ${other.name}`}
-                placeholder={`Message ${other.name}…`}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
+            <div className="min-w-0 flex-1">
+              <TextField
+                control={form.control}
+                name="content"
+                label={`Message ${other.name}`}
+                autoComplete="off"
               />
-              <InputGroupAddon align="inline-end">
-                <IconButton
-                  label="Send message"
-                  type="submit"
-                  variant="default"
-                  disabled={!draft.trim()}
-                >
-                  <Send />
-                </IconButton>
-              </InputGroupAddon>
-            </InputGroup>
+            </div>
+            <Button
+              type="submit"
+              disabled={
+                actions.isPending ||
+                history.isPending ||
+                history.isError ||
+                !!hasNextPage
+              }
+            >
+              Send
+            </Button>
           </form>
-        </footer>
-      )}
+        ) : (
+          <p className="text-center text-sm text-muted-foreground">
+            {isClosed(request)
+              ? 'This request is closed.'
+              : request.status === 'offered'
+                ? 'Respond to or withdraw the offer to continue messaging.'
+                : 'Read only'}
+          </p>
+        )}
+      </footer>
       <OfferDialog
         open={offerOpen}
         onOpenChange={setOfferOpen}
@@ -220,114 +269,23 @@ export function Conversation({ request }: { request: MarketRequest }) {
       </ResponsiveOverlay>
       <ConfirmDialog
         open={confirm !== null}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title={confirmCopy[confirm ?? 'cancel'].title}
-        description={confirmCopy[confirm ?? 'cancel'].text}
-        confirmLabel={confirmCopy[confirm ?? 'cancel'].label}
+        onOpenChange={(open) => {
+          if (!open) setConfirm(null);
+        }}
+        title={`${confirm ?? 'cancel'} this request?`}
+        description={
+          confirm === 'withdraw'
+            ? 'The reserved stock will be released and negotiation can continue.'
+            : 'The other party will be notified.'
+        }
+        confirmLabel={confirm ?? 'Confirm'}
         onConfirm={() => {
-          if (confirm) actions[confirm]();
-          setConfirm(null);
+          if (confirm)
+            void actions[confirm]().then((ok) => {
+              if (ok) setConfirm(null);
+            });
         }}
       />
     </section>
-  );
-}
-
-const confirmCopy = {
-  cancel: {
-    title: 'Cancel this request?',
-    text: 'The seller will be told. You can start a new request any time.',
-    label: 'Cancel request',
-  },
-  reject: {
-    title: 'Reject this request?',
-    text: 'The buyer will be told that you cannot supply this order.',
-    label: 'Reject request',
-  },
-  withdraw: {
-    title: 'Withdraw your offer?',
-    text: 'The request goes back to its first step.',
-    label: 'Withdraw offer',
-  },
-};
-
-type MenuProps = {
-  seller: boolean;
-  request: MarketRequest;
-  onPick: (confirm: Confirm) => void;
-  onOffer: () => void;
-};
-
-function ActionsMenu({ seller, request, onPick, onOffer }: MenuProps) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <IconButton label="Conversation actions">
-            <MoreVertical />
-          </IconButton>
-        }
-      />
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          {canMakeOffer(request) && (
-            <DropdownMenuItem className="min-[781px]:hidden" onClick={onOffer}>
-              Make offer
-            </DropdownMenuItem>
-          )}
-          {request.offerPending && seller && (
-            <DropdownMenuItem onClick={() => onPick('withdraw')}>
-              Withdraw my offer
-            </DropdownMenuItem>
-          )}
-          {seller ? (
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => onPick('reject')}
-            >
-              Reject incoming request
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => onPick('cancel')}
-            >
-              Cancel my outgoing request
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-type BubbleProps = {
-  from: 'me' | 'them' | 'system';
-  text: string;
-  sentAt: string;
-};
-
-function Bubble({ from, text, sentAt }: BubbleProps) {
-  if (from === 'system') {
-    return <p className="text-center text-xs text-muted-foreground">{text}</p>;
-  }
-
-  return (
-    <div
-      className={cn(
-        'max-w-[80%] px-4 py-3 text-sm shadow-xs',
-        from === 'me'
-          ? 'ml-auto rounded-[14px_3px_14px_14px] bg-outgoing'
-          : 'rounded-[3px_14px_14px_14px] bg-card'
-      )}
-    >
-      <p>{text}</p>
-      <time
-        dateTime={sentAt}
-        className="mt-1 block text-right text-xs text-muted-foreground"
-      >
-        {formatTime(sentAt)}
-      </time>
-    </div>
   );
 }
