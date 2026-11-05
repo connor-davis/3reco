@@ -131,13 +131,51 @@ func (records *Store) List(ctx context.Context, query paging.Query) ([]Collector
 	return items, rows.Err()
 }
 
-// Created lists the collectors a user recorded, for their own data export.
+// Created lists the collectors a user recorded, for their own data export. It
+// reads in keyset pages so no single query holds every row; the export needs
+// them all, so the pages are joined.
 func (records *Store) Created(ctx context.Context, userID string) ([]Collector, error) {
+	items := []Collector{}
+
+	for {
+		var cursor *time.Time
+
+		afterID := ""
+		if len(items) > 0 {
+			last := items[len(items)-1]
+			cursor, afterID = &last.CreatedAt, last.ID
+		}
+
+		page, err := records.createdPage(ctx, userID, cursor, afterID)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, page...)
+		if len(page) < createdPageSize {
+			return items, nil
+		}
+	}
+}
+
+const createdPageSize = 500
+
+func (records *Store) createdPage(
+	ctx context.Context,
+	userID string,
+	after *time.Time,
+	afterID string,
+) ([]Collector, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT `+columns+` FROM collectors
- WHERE created_by_user_id=$1 OR created_by_business_id=$1 ORDER BY created_at,id`,
+ WHERE (created_by_user_id=$1 OR created_by_business_id=$1)
+ AND ($2::timestamptz IS NULL OR (created_at,id)>($2,$3))
+ ORDER BY created_at,id LIMIT $4`,
 		userID,
+		after,
+		afterID,
+		createdPageSize,
 	)
 	if err != nil {
 		return nil, err

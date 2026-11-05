@@ -8,9 +8,11 @@ import (
 	"errors"
 	"log/slog"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/compress"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
@@ -142,6 +144,8 @@ func New(r routes) *fiber.App {
 	app.Use(securityHeaders)
 
 	api := app.Group("/api")
+
+	api.Use(compress.New(compress.Config{Next: skipCompression}))
 
 	api.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.WebOrigin},
@@ -358,4 +362,17 @@ func Listen(lc fx.Lifecycle, app *fiber.App, cfg config.Config) *Listener {
 	})
 
 	return l
+}
+
+// skipCompression leaves the WebSocket and the streamed CSV, PDF and file
+// downloads alone: they are already compact or must not be buffered.
+func skipCompression(c fiber.Ctx) bool {
+	path := c.Path()
+
+	return path == "/api/live" ||
+		strings.HasPrefix(path, "/api/admin/exports/") ||
+		strings.HasPrefix(path, "/api/exports/") ||
+		strings.HasSuffix(path, "/invoice") ||
+		strings.Contains(path, "/receipts/") ||
+		strings.HasSuffix(path, "/avatar")
 }

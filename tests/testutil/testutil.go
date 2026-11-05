@@ -29,6 +29,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/invoices"
 	"github.com/connor-davis/3reco/internal/services/privacy"
+	"github.com/connor-davis/3reco/internal/services/realtime"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 )
 
@@ -128,6 +129,7 @@ func NewDB(t testing.TB) *database.DB {
 
 // App is a running API for one test.
 type App struct {
+	Hub      *realtime.Hub
 	Invoices *invoices.Service
 	Trades   *transactions.Service
 	Privacy  *privacy.Service
@@ -184,6 +186,7 @@ func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 	objects := testStorage(t, &cfg)
 
 	var listener *api.Listener
+	var hub *realtime.Hub
 	var invoiceService *invoices.Service
 	var transactionService *transactions.Service
 	var privacyService *privacy.Service
@@ -192,7 +195,7 @@ func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 		fx.NopLogger,
 		fx.Supply(cfg, db),
 		api.Module,
-		fx.Populate(&listener, &invoiceService, &transactionService, &privacyService),
+		fx.Populate(&listener, &hub, &invoiceService, &transactionService, &privacyService),
 	)
 
 	if err := app.Err(); err != nil {
@@ -214,7 +217,7 @@ func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 	})
 
 	return &App{
-		DB: db, Storage: objects, Invoices: invoiceService, Trades: transactionService, Privacy: privacyService,
+		DB: db, Hub: hub, Storage: objects, Invoices: invoiceService, Trades: transactionService, Privacy: privacyService,
 		Config: cfg, URL: "http://" + listener.Addr(), Host: listener.Addr(),
 	}, nil
 }
