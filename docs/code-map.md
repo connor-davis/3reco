@@ -27,6 +27,7 @@ line when you add an owner.
 | `0006_stock_holds.sql` | `stock_holds`, exact held/available SQL functions and hold realtime topics |
 | `0007_privacy.sql` | `privacy_notice_acceptances`, `privacy_events`, `transactions.anonymised_at` |
 | `0008_perf_indexes.sql` | Sort-order indexes for market, stock, transactions, requests, messages, notifications and users |
+| `0009_quiet_read_receipts.sql` | Drops the `realtime` trigger on `request_message_reads` |
 
 Never rename a merged migration. Add a new file.
 

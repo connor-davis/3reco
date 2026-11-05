@@ -29,7 +29,10 @@ export function OfferCard({
   return (
     <Card size="sm" className="max-w-sm">
       <CardHeader className="bg-accent py-3">
-        <CardTitle>Offer · {request.items.length} materials</CardTitle>
+        <CardTitle>
+          Offer · {request.items.length}{' '}
+          {request.items.length === 1 ? 'material' : 'materials'}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <ul className="space-y-3">
