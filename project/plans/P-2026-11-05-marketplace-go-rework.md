@@ -71,10 +71,10 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T11 | (done fdce044, 9d983e8; dry run on the real export loaded every row) Data move: Convex export → Postgres + MinIO, count check | dev | T6, T10 |
 | T11b | Stock holds (Viper-style): hold stock while an offer is open, release on decline/withdraw/cancel/expiry; map `mystuff/maps/holds-privacy-map.md` | done (4fa380e): 48h hold at offer, expiry loop, direct sale and stock edits respect holds | T8 |
 | T11c | POPIA + GDPR: every technical control (consent, notices, access/export, correction, erasure as anonymise where tax law needs the record, retention, audit log, security, breach support); owner paperwork listed separately | done (a517b8b, d708414, 6759e86): field encryption, export, self-delete, retention, notice version, audit log. Open: re-key command; web sign-up must send accepted_terms_version (T13). Owner paperwork still open | T8, T10 |
-| T12 | Frontend client: fetch client + `useLive` + auth context; swap all Convex calls | dev | T8, T9 |
-| T13 | Frontend rebuild in picked design, every page, light + dark | dev(s) | T5, T12 |
-| T14 | Remove `convex/`, Convex + Better Auth packages; update compose/Dockerfile/README | dev | T13 |
-| T15 | Verify: Go tests, build, lint, two-browser live check, migration dry run | Orchestrator + qa | T14 |
+| T12 | Frontend client: fetch client + `useLive` + auth context; swap all Convex calls | done (25f8fbd Phase 0; public /api/stats). Backend perf pass eff2a50 (0008 indexes, market 867→1.7 ms) | T8, T9 |
+| T13 | Frontend rebuild in picked design, every page, light + dark | done (chunks A bfa275c, B 51fe86b, C 2d8b49e, D 921ba9e; mock removed 7572e38). Sign-up sends accepted_terms_version | T5, T12 |
+| T14 | Remove `convex/`, Convex + Better Auth packages; update compose/Dockerfile/README | done (01e8dd5; Go serves dist). Root compose and deploy.sh not run yet | T13 |
+| T15 | Verify: Go tests, build, lint, two-browser live check, migration dry run | audit 1: FAIL on 6 should-fix, 0 blockers (mystuff/maps/final-audit.md); fixes in progress | T14 |
 | T16 | PR into master with pr-evidence; owner merges | Orchestrator | T15 |
 
 ## T12-T14 decisions (orchestrator, 2026-11-05, under the owner's "finish it off" goal)
