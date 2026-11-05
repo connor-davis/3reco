@@ -1,15 +1,19 @@
-import { useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { useRouterState } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ImpactDialog } from '@/components/dialogs/impact-dialog';
 import { AppSidebar } from './app-sidebar';
 import { BottomTabs } from './bottom-tabs';
-import { CommandSearch } from './command-search';
 import { Topbar } from './topbar';
 import { isAuthPath, isChatPath } from '@/lib/nav';
+
+const CommandSearch = lazy(() =>
+  import('./command-search').then((module) => ({
+    default: module.CommandSearch,
+  }))
+);
 
 const chatPad = 'pb-[3.25rem] min-[781px]:pb-0';
 const pagePad = cn(
@@ -23,12 +27,27 @@ const pagePad = cn(
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchLoaded, setSearchLoaded] = useState(false);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
   const bare = isAuthPath(pathname);
   // Chat screens run edge to edge, like a messenger, so they skip the page padding.
   const chat = isChatPath(pathname);
+
+  // Keep the shortcut available before the search implementation has loaded.
+  useEffect(() => {
+    if (bare) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key.toLowerCase() === 'k' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        setSearchLoaded(true);
+        setSearchOpen((open) => !open);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [bare]);
 
   return (
     <TooltipProvider>
@@ -52,16 +71,24 @@ export function AppShell({ children }: { children: ReactNode }) {
             tabIndex={-1}
             className="outline-none"
           >
-            <Topbar onSearch={() => setSearchOpen(true)} />
+            <Topbar
+              onSearch={() => {
+                setSearchLoaded(true);
+                setSearchOpen(true);
+              }}
+            />
             <div className={cn('w-full flex-1', chat ? chatPad : pagePad)}>
               {children}
             </div>
           </SidebarInset>
           <BottomTabs />
-          <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} />
+          {searchLoaded && (
+            <Suspense fallback={null}>
+              <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} />
+            </Suspense>
+          )}
         </SidebarProvider>
       )}
-      <ImpactDialog />
       <Toaster position="top-center" />
     </TooltipProvider>
   );
