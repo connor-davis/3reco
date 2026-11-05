@@ -15,13 +15,13 @@ export const Route = createFileRoute('/forgot-password')({
   component: ForgotPasswordPage,
 });
 
-const schema = z.object({
-  email: z.string().email('Enter an email like you@company.co.za.'),
-});
-
-type Values = z.infer<typeof schema>;
-
 function ForgotPasswordPage() {
+  const schema = z.object({
+    email: z.string().email('Enter an email like you@company.co.za.'),
+  });
+
+  type Values = z.infer<typeof schema>;
+
   const forgot = useForgotPassword();
   const [failure, setFailure] = useState<string | null>(null);
   const { control, handleSubmit, setError } = useForm<Values>({

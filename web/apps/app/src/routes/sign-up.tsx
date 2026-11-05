@@ -17,18 +17,18 @@ export const Route = createFileRoute('/sign-up')({
 // The terms version the API accepts (internal/platform/config/privacy.go).
 const TERMS_VERSION = '2026-11';
 
-const schema = z.object({
-  name: z.string().min(2, 'Enter your full name.'),
-  email: z.string().email('Enter an email like you@company.co.za.'),
-  password: z.string().min(8, 'Use at least 8 characters.'),
-  accepted: z
-    .boolean()
-    .refine(Boolean, 'Accept the terms to create an account.'),
-});
-
-type Values = z.infer<typeof schema>;
-
 function SignUpPage() {
+  const schema = z.object({
+    name: z.string().min(2, 'Enter your full name.'),
+    email: z.string().email('Enter an email like you@company.co.za.'),
+    password: z.string().min(8, 'Use at least 8 characters.'),
+    accepted: z
+      .boolean()
+      .refine(Boolean, 'Accept the terms to create an account.'),
+  });
+
+  type Values = z.infer<typeof schema>;
+
   const navigate = useNavigate();
   const signUp = useSignUp();
   const [failure, setFailure] = useState<string | null>(null);

@@ -143,22 +143,24 @@ function SellerCart({ sellerId }: { sellerId: string }) {
   );
 }
 
-const cartSchema = z.object({
-  items: z
-    .array(
-      z.object({
-        stock_id: z.string(),
-        material_id: z.string(),
-        weight: z.string().superRefine((value, ctx) => {
-          const message = quantityError(value);
-          if (message) ctx.addIssue({ code: 'custom', message });
-        }),
-      })
-    )
-    .min(1, 'Add a material first.')
-    .max(50, 'Send at most 50 materials in one request.'),
-});
-type CartValues = z.infer<typeof cartSchema>;
+function createCartSchema() {
+  return z.object({
+    items: z
+      .array(
+        z.object({
+          stock_id: z.string(),
+          material_id: z.string(),
+          weight: z.string().superRefine((value, ctx) => {
+            const message = quantityError(value);
+            if (message) ctx.addIssue({ code: 'custom', message });
+          }),
+        })
+      )
+      .min(1, 'Add a material first.')
+      .max(50, 'Send at most 50 materials in one request.'),
+  });
+}
+type CartValues = z.infer<ReturnType<typeof createCartSchema>>;
 
 function CartForm({
   sellerId,
@@ -183,7 +185,7 @@ function CartForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const form = useForm<CartValues>({
-    resolver: zodResolver(cartSchema),
+    resolver: zodResolver(createCartSchema()),
     defaultValues: {
       items: items.map((item) => ({
         stock_id: item.stock_id,
