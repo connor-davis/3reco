@@ -58,7 +58,10 @@ function SignUpPage() {
       footer={
         <p>
           Already have an account?{' '}
-          <Link to="/sign-in" className="font-medium text-foreground underline">
+          <Link
+            to="/sign-in"
+            className="inline-flex min-h-11 items-center font-medium text-foreground underline"
+          >
             Sign in
           </Link>
         </p>
@@ -90,7 +93,29 @@ function SignUpPage() {
         <CheckboxField
           control={control}
           name="accepted"
-          label="I accept the terms and privacy notice."
+          label={
+            <>
+              I accept the{' '}
+              <Link
+                to="/terms"
+                target="_blank"
+                rel="noopener"
+                className="underline"
+              >
+                terms
+              </Link>{' '}
+              and{' '}
+              <Link
+                to="/privacy"
+                target="_blank"
+                rel="noopener"
+                className="underline"
+              >
+                privacy notice
+              </Link>
+              .
+            </>
+          }
         />
         <Button type="submit" className="w-full" disabled={signUp.isPending}>
           {signUp.isPending ? (

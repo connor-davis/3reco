@@ -30,3 +30,11 @@ export function useDeleteAccount() {
     },
   });
 }
+
+// Public: people read these before they have an account.
+export function usePublicNotice() {
+  return useResource<T.PublicNotice>(
+    ['privacy', 'notice', 'current'],
+    '/privacy/notice/current'
+  );
+}

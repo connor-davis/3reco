@@ -100,9 +100,9 @@ func TestPrivacyFieldsAreCiphertextAtRest(t *testing.T) {
 		}
 	}
 
-	// The owner still reads their own values back in full.
+	// The owner reads their own values back masked; the export has them in full.
 	own := status(t, w.seller.c.Do("GET", "/api/profile", nil), 200).Body
-	if own["id_number"] != "8001015009087" || own["bank_account_number"] != "62001234567" {
+	if own["id_number"] != "******9087" || own["bank_account_number"] != "******4567" {
 		t.Errorf("owner's own profile is not readable: %v", own)
 	}
 }
@@ -252,5 +252,14 @@ func TestPrivacyCollectorLoginCountsOnlyWithSamePhone(t *testing.T) {
 	got = status(t, login.c.Do("GET", "/api/collectors/"+collector, nil), 200).Body
 	if got["bank_account_number"] != "123456789" {
 		t.Errorf("linked login: %v", got)
+	}
+}
+
+func TestPrivacyNoticeTextIsPublic(t *testing.T) {
+	app := testutil.Server(t)
+	got := status(t, app.NewClient(t).Do("GET", "/api/privacy/notice/current", nil), 200).Body
+
+	if got["version"] != config.NoticeVersion || got["terms"] == "" || got["privacy"] == "" {
+		t.Fatalf("notice text: %v", got)
 	}
 }

@@ -34,6 +34,7 @@ func (h *Handler) Register(api fiber.Router) {
 	api.Get("/privacy/export", middleware.RequireUser, h.export)
 	api.Post("/privacy/delete", middleware.RequireUser, limited, h.remove)
 	api.Get("/privacy/notice", middleware.RequireUser, h.notice)
+	api.Get("/privacy/notice/current", h.currentNotice)
 	api.Post("/privacy/notice/accept", middleware.RequireUser, h.accept)
 	api.Get("/admin/privacy-events", middleware.RequireRole(auth.RoleAdmin), h.events)
 }
@@ -100,4 +101,13 @@ func (h *Handler) events(c fiber.Ctx) error {
 	}
 
 	return c.JSON(page)
+}
+
+// currentNotice is public: people read the documents before they sign up.
+func (h *Handler) currentNotice(c fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"version": config.NoticeVersion,
+		"terms":   config.NoticeTerms,
+		"privacy": config.NoticePrivacy,
+	})
 }

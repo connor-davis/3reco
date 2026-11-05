@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/platform/storage"
@@ -51,12 +52,16 @@ type Input struct {
 	AgreedToTerms              *bool   `json:"agreed_to_terms"`
 }
 
-// Find reads only the profile selected by the session.
+// Find reads only the profile selected by the session. The ID and bank
+// numbers come back masked; the privacy export reads the store for full values.
 func (service *Service) Find(ctx context.Context, id string) (store.Profile, error) {
 	item, err := service.store.Find(ctx, id, false)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return item, apperr.NotFound("No such profile.")
 	}
+
+	item.IDNumber = crypt.Mask(item.IDNumber)
+	item.BankAccountNumber = crypt.Mask(item.BankAccountNumber)
 
 	return item, err
 }
@@ -121,7 +126,7 @@ func (service *Service) Update(ctx context.Context, id string, in Input) error {
 				item.LastName = strings.TrimSpace(*in.LastName)
 			}
 
-			if in.IDNumber != nil {
+			if in.IDNumber != nil && !isMask(*in.IDNumber, item.IDNumber) {
 				item.IDNumber = strings.TrimSpace(*in.IDNumber)
 			}
 
@@ -141,7 +146,7 @@ func (service *Service) Update(ctx context.Context, id string, in Input) error {
 				item.BankName = strings.TrimSpace(*in.BankName)
 			}
 
-			if in.BankAccountNumber != nil {
+			if in.BankAccountNumber != nil && !isMask(*in.BankAccountNumber, item.BankAccountNumber) {
 				item.BankAccountNumber = strings.TrimSpace(*in.BankAccountNumber)
 			}
 
@@ -210,4 +215,8 @@ func (service *Service) Update(ctx context.Context, id string, in Input) error {
 			return service.store.Save(ctx, item)
 		},
 	)
+}
+
+func isMask(sent, current string) bool {
+	return current != "" && strings.TrimSpace(sent) == crypt.Mask(current)
 }

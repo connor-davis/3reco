@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
 import { ReviewDialog } from '@/components/dialogs/review-dialog';
 import { ListingCard } from '@/components/listing-card';
@@ -34,6 +35,7 @@ function StorePage() {
   const remove = useDeleteReview();
   const chat = useStartChat();
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   return (
     <DataState
@@ -165,7 +167,7 @@ function StorePage() {
                         <Button
                           variant="destructive"
                           disabled={remove.isPending}
-                          onClick={() => remove.mutate(review.id)}
+                          onClick={() => setDeleteId(review.id)}
                         >
                           Delete review
                         </Button>
@@ -201,6 +203,17 @@ function StorePage() {
               </div>
             </TabsContent>
           </Tabs>
+          <ConfirmDialog
+            open={deleteId !== null}
+            onOpenChange={(open) => !open && setDeleteId(null)}
+            title="Delete this review?"
+            description="The review is removed for good. This cannot be undone."
+            confirmLabel="Delete review"
+            onConfirm={() => {
+              if (deleteId) remove.mutate(deleteId);
+              setDeleteId(null);
+            }}
+          />
           <ReviewDialog
             open={reviewOpen}
             onOpenChange={setReviewOpen}

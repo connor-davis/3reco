@@ -320,3 +320,8 @@ export interface Stats {
   deals: number;
   top_stores: { id: string; name: string; kg: Decimal }[];
 }
+export interface PublicNotice {
+  version: string;
+  terms: string;
+  privacy: string;
+}

@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CollectorsRouteImport } from './routes/collectors'
@@ -40,6 +42,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StockRoute = StockRouteImport.update({
   id: '/stock',
   path: '/stock',
@@ -58,6 +65,11 @@ const SignInRoute = SignInRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MaterialsRoute = MaterialsRouteImport.update({
@@ -169,10 +181,12 @@ export interface FileRoutesByFullPath {
   '/collectors': typeof CollectorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/materials': typeof MaterialsRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
@@ -196,10 +210,12 @@ export interface FileRoutesByTo {
   '/collectors': typeof CollectorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/materials': typeof MaterialsRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
@@ -224,10 +240,12 @@ export interface FileRoutesById {
   '/collectors': typeof CollectorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/materials': typeof MaterialsRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
@@ -253,10 +271,12 @@ export interface FileRouteTypes {
     | '/collectors'
     | '/forgot-password'
     | '/materials'
+    | '/privacy'
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
     | '/stock'
+    | '/terms'
     | '/verify-email'
     | '/admin/users'
     | '/market/$requestId'
@@ -280,10 +300,12 @@ export interface FileRouteTypes {
     | '/collectors'
     | '/forgot-password'
     | '/materials'
+    | '/privacy'
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
     | '/stock'
+    | '/terms'
     | '/verify-email'
     | '/admin/users'
     | '/market/$requestId'
@@ -307,10 +329,12 @@ export interface FileRouteTypes {
     | '/collectors'
     | '/forgot-password'
     | '/materials'
+    | '/privacy'
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
     | '/stock'
+    | '/terms'
     | '/verify-email'
     | '/admin/users'
     | '/market/$requestId'
@@ -335,10 +359,12 @@ export interface RootRouteChildren {
   CollectorsRoute: typeof CollectorsRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   MaterialsRoute: typeof MaterialsRoute
+  PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   StockRoute: typeof StockRoute
+  TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   AdminUsersRoute: typeof AdminUsersRoute
   MarketRequestIdRoute: typeof MarketRequestIdRoute
@@ -362,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stock': {
@@ -390,6 +423,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/materials': {
@@ -543,10 +583,12 @@ const rootRouteChildren: RootRouteChildren = {
   CollectorsRoute: CollectorsRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   MaterialsRoute: MaterialsRoute,
+  PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   StockRoute: StockRoute,
+  TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   AdminUsersRoute: AdminUsersRoute,
   MarketRequestIdRoute: MarketRequestIdRoute,
