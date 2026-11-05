@@ -17,7 +17,8 @@ DECLARE
 BEGIN
   IF TG_OP = 'DELETE' THEN rec := OLD; ELSE rec := NEW; END IF;
 
-  row_id := rec.id;
+  -- cart_items has no id column; its branch sets row_id itself.
+  IF TG_TABLE_NAME <> 'cart_items' THEN row_id := rec.id; END IF;
 
   CASE TG_TABLE_NAME
     WHEN 'notifications' THEN
@@ -30,7 +31,7 @@ BEGIN
 
       -- The public market only changes when a listed row appears, changes or goes.
       IF was_listed OR (TG_OP <> 'DELETE' AND NEW.is_listed) THEN
-        topics := topics || 'market';
+        topics := array_append(topics, 'market');
       END IF;
 
     WHEN 'carts' THEN

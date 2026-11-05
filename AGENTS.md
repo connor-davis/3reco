@@ -180,6 +180,8 @@ Add short notes here when something surprises you, under the closest group.
   `NOT (a AND NULL)` is NULL, so an `IF` quietly skips. Wrap it in
   `COALESCE(..., '')`.
 - Nullable columns scan into `sql.NullString` or a pointer, not `string`.
+- `text_array || 'word'` reads the word as an array literal and fails. Use
+  `array_append(arr, 'word')`.
 - Migrations are keyed by the whole file name and run in name order. Never
   rename a merged one, or databases that ran it run it again.
 - A `fiber.Ctx` is also a `context.Context`, so passing `c` where a helper
