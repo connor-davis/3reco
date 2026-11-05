@@ -17,6 +17,8 @@ vars:
 
 env:
   THREERECO_DEV: "true"
+  # Dev-only key for the encrypted personal fields. Never use it in production.
+  THREERECO_FIELD_KEY: "M3JlY28tZGV2LWZpZWxkLWtleS0wMTIzNDU2Nzg5YWI="
 
 tasks:
   default:
@@ -95,6 +97,7 @@ tasks:
     desc: Go tests against the real services (a missing service fails the run)
     env:
       THREERECO_REQUIRE_SERVICES: "1"
+      THREERECO_FIELD_KEY: "M3JlY28tZGV2LWZpZWxkLWtleS0wMTIzNDU2Nzg5YWI="
       THREERECO_TEST_DATABASE_URL: "{{.TEST_DB}}"
     cmds:
       - go test {{.GO_PKGS}}

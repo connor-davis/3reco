@@ -25,6 +25,7 @@ line when you add an owner.
 | `0004_domain_api.sql` | `request_message_reads`, message and market indexes, `notify_change()` for read marks |
 | `0005_files_invoices.sql` | `users.avatar_key`, preserving legacy identity images |
 | `0006_stock_holds.sql` | `stock_holds`, exact held/available SQL functions and hold realtime topics |
+| `0007_privacy.sql` | `privacy_notice_acceptances`, `privacy_events`, `transactions.anonymised_at` |
 
 Never rename a merged migration. Add a new file.
 
@@ -44,6 +45,11 @@ Never rename a merged migration. Add a new file.
 | --- | --- |
 | Cursor paging: page shape, cursor, limit | `internal/platform/paging/paging.go` |
 | Shared SQL: safe display name, SAST effective date, `Party` | `internal/platform/database/sql.go` |
+| Encrypting ID and bank fields (AES-256-GCM, `v1:` prefix) and the `******1234` mask | `internal/platform/crypt/crypt.go` |
+| Notice version and retention periods (the one place to change them) | `internal/platform/config/privacy.go` |
+| Export, self-delete, notice, audit log, hourly retention: SQL, rules, `/api/privacy` routes | `internal/stores/privacy`, `internal/services/privacy`, `internal/api/privacy` |
+| Who sees a collector's full account number (creator, own login, admin; the rest masked) | `internal/services/collectors/collectors.go` |
+| Privacy tests: ciphertext at rest, mask and full view, export, delete, retention, notice, audit | `tests/privacy_test.go`, `tests/privacy_rights_test.go`, `tests/fieldcrypt_test.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
 | Offer reservation locks, releases and set-based expiry SQL | `internal/stores/requests/holds.go` |

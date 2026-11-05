@@ -140,8 +140,9 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 		t.Fatal("empty transaction missing blank item row")
 	}
 
-	tradeExec(t, w.app, `UPDATE users SET bank_account_number='never-export-bank',id_number='never-export-id',
-		first_name='+formula',last_name='-formula' WHERE id=$1`, w.buyer.id)
+	tradeExec(t, w.app, `UPDATE users SET bank_account_number=$2,id_number=$3,
+		first_name='+formula',last_name='-formula' WHERE id=$1`, w.buyer.id,
+		testutil.Seal(t, "never-export-bank"), testutil.Seal(t, "never-export-id"))
 	tradeExec(t, w.app, `UPDATE users SET is_removed=true WHERE id=$1`, w.seller.id)
 	rows = csvRows(t, admin.c, "/api/admin/exports/users")
 	want := []string{"Email", "Account Type", "First Name", "Last Name", "Business Name", "Business Reg. No.",

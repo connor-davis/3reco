@@ -50,6 +50,8 @@ type credentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Token    string `json:"token"`
+
+	AcceptedTermsVersion string `json:"accepted_terms_version"`
 }
 
 func body(c fiber.Ctx) (credentials, error) {
@@ -70,7 +72,7 @@ func (h *Handler) signUp(c fiber.Ctx) error {
 		return err
 	}
 
-	if err := h.svc.SignUp(c.Context(), in.Name, in.Email, in.Password); err != nil {
+	if err := h.svc.SignUp(c.Context(), in.Name, in.Email, in.Password, in.AcceptedTermsVersion); err != nil {
 		return err
 	}
 

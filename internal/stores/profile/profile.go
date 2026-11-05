@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 )
@@ -48,10 +49,13 @@ type PublicUser struct {
 }
 
 // Store runs profile SQL.
-type Store struct{ db *database.DB }
+type Store struct {
+	db     *database.DB
+	cipher *crypt.Cipher
+}
 
-// New builds the store.
-func New(db *database.DB) *Store { return &Store{db: db} }
+// New builds the store. The cipher seals the ID and account numbers at rest.
+func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
 // Find reads the caller's active profile and optionally locks it for PATCH.
 func (records *Store) Find(ctx context.Context, id string, lock bool) (Profile, error) {
@@ -88,12 +92,32 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Profile, 
 		&item.AgreedToTerms,
 	)
 
+	if err != nil {
+		return item, err
+	}
+
+	if item.IDNumber, err = records.cipher.Decrypt(item.IDNumber); err != nil {
+		return item, err
+	}
+
+	item.BankAccountNumber, err = records.cipher.Decrypt(item.BankAccountNumber)
+
 	return item, err
 }
 
 // Save changes only editable fields on the caller's row.
 func (records *Store) Save(ctx context.Context, item Profile) error {
-	_, err := records.db.Q(ctx).Exec(
+	idNumber, err := records.cipher.Encrypt(item.IDNumber)
+	if err != nil {
+		return err
+	}
+
+	account, err := records.cipher.Encrypt(item.BankAccountNumber)
+	if err != nil {
+		return err
+	}
+
+	_, err = records.db.Q(ctx).Exec(
 		ctx,
 		`UPDATE users SET
 		name=$2,
@@ -120,12 +144,12 @@ func (records *Store) Save(ctx context.Context, item Profile) error {
 		item.Phone,
 		item.FirstName,
 		item.LastName,
-		item.IDNumber,
+		idNumber,
 		item.BusinessName,
 		item.BusinessRegistrationNumber,
 		item.BankAccountHolderName,
 		item.BankName,
-		item.BankAccountNumber,
+		account,
 		item.BankBranchCode,
 		item.BankAccountType,
 		item.StreetAddress,

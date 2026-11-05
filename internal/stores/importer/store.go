@@ -208,6 +208,15 @@ func (s *Store) SetRemovedBy(ctx context.Context, updates []RemovedBy) error {
 	return nil
 }
 
+// LegacyAcceptances records the old agreed_to_terms flag as notice version
+// "legacy", so those people are asked again for the current notice.
+func (s *Store) LegacyAcceptances(ctx context.Context) error {
+	_, err := s.db.Q(ctx).Exec(ctx, `INSERT INTO privacy_notice_acceptances (user_id, version, accepted_at)
+		SELECT id, 'legacy', updated_at FROM users WHERE agreed_to_terms AND NOT is_removed`)
+
+	return err
+}
+
 // Count returns the rows in a table, for the report.
 func (s *Store) Count(ctx context.Context, table string) (int, error) {
 	if !identifier.MatchString(table) {

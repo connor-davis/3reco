@@ -37,6 +37,7 @@ func (p *planner) planCollectors() {
 	for _, d := range p.docs["collectors"] {
 		r := newRow(p.rep, "collectors", d)
 		out := r.build(fields)
+		p.seal(r, out, "bank_account_number", "ewallet_payment_id")
 		r.created(out, true)
 
 		if phone, ok := out["normalized_phone"].(string); ok {

@@ -21,6 +21,7 @@ func signUp(t *testing.T, app *testutil.App, c *testutil.Client, verify bool) st
 
 	res := c.Do("POST", "/api/auth/sign-up", map[string]any{
 		"name": "Test User", "email": email, "password": goodPassword,
+		"accepted_terms_version": config.NoticeVersion,
 	})
 	if res.Status != http.StatusOK {
 		t.Fatalf("sign-up: %d %s", res.Status, res.Raw)
@@ -62,6 +63,7 @@ func TestSignUpVerifyAndSignIn(t *testing.T) {
 
 	short := c.Do("POST", "/api/auth/sign-up", map[string]any{
 		"name": "A", "email": testutil.Email("short"), "password": "short",
+		"accepted_terms_version": config.NoticeVersion,
 	})
 	if short.Status != 400 {
 		t.Fatalf("short password: %d, want 400", short.Status)
@@ -139,6 +141,7 @@ func TestSignUpHidesExistingEmail(t *testing.T) {
 	// used to find who has an account.
 	res := c.Do("POST", "/api/auth/sign-up", map[string]any{
 		"name": "Other", "email": strings.ToUpper(email), "password": "another password",
+		"accepted_terms_version": config.NoticeVersion,
 	})
 	if res.Status != 200 {
 		t.Fatalf("duplicate sign-up: %d %s", res.Status, res.Raw)

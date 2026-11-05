@@ -15,6 +15,7 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_DEV` | `false` | Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set. |
 | `THREERECO_COOKIE_SECURE` | `false` | Set true in production so session cookies are HTTPS only. |
 | `THREERECO_TRUSTED_PROXIES` | (empty) | Comma-separated proxy addresses whose X-Forwarded-For is believed. |
+| `THREERECO_FIELD_KEY` | (none, **required**) | Base64 of 32 random bytes. Encrypts ID numbers, bank account numbers and e-wallet ids. The server will not start without it. See [Field key](#field-key). |
 | `THREERECO_AUTH_RATE_LIMIT` | `20` | Requests per minute, per address, on each auth route. |
 | `THREERECO_DB_MAX_CONNS` | `25` | Largest Postgres pool. |
 | `THREERECO_SHUTDOWN_TIMEOUT` | `15s` | How long to wait for requests to finish on stop. |
@@ -60,6 +61,29 @@ The API runs the SQL migrations by itself when it starts. `3reco migrate` runs t
 - Set `RESEND_API_KEY` and `AUTH_FROM_EMAIL`. Without a key, mail only works to an SMTP host.
 - Behind a proxy, set `THREERECO_TRUSTED_PROXIES`, or every visitor shares one address and the sign-in limit hits everyone.
 - `3reco health` exits 0 when the server answers; the Docker image uses it as its health check.
+
+## Field key
+
+ID numbers, bank account numbers and e-wallet ids are stored encrypted (AES-256-GCM).
+The key is `THREERECO_FIELD_KEY`: 32 random bytes, base64 encoded. The server refuses to start without a valid one.
+
+Make one, once, and store it in your secret manager:
+
+```
+openssl rand -base64 32
+```
+
+- Keep a copy apart from the database backups. A backup with its key beside it is no longer protected.
+- **If the key is lost, those fields are lost.** Nothing can read them back; people have to enter them again.
+- Do not change the key on a running system. Values written with the old key stop opening. There is no re-key command yet.
+- `task` sets a fixed dev key. Never reuse it in production.
+
+## Privacy rights and clean-up
+
+- `GET /api/privacy/export` gives a person all their own data. `POST /api/privacy/delete` erases their account after a password check.
+- Once an hour the server deletes notifications and carts older than 90 days, personal details on trades older than 5 years, and audit lines older than 2 years. The periods are in `internal/platform/config/privacy.go`.
+- `privacy_events` is the audit log: who exported, deleted, or read a full ID or bank number. Admins read it at `GET /api/admin/privacy-events`.
+- Raising `NoticeVersion` in the same file makes the notice show again as not accepted.
 
 ## Backups
 

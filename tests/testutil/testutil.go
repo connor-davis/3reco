@@ -24,11 +24,46 @@ import (
 
 	"github.com/connor-davis/3reco/internal/api"
 	"github.com/connor-davis/3reco/internal/platform/config"
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/invoices"
+	"github.com/connor-davis/3reco/internal/services/privacy"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 )
+
+// FieldKey is the encryption key every test server uses.
+const FieldKey = "M3JlY28tZGV2LWZpZWxkLWtleS0wMTIzNDU2Nzg5YWI="
+
+// Seal encrypts a value the way the stores do, for tests that write the
+// protected columns with raw SQL.
+func Seal(t testing.TB, plain string) string {
+	t.Helper()
+
+	cipher, err := crypt.New(FieldKey)
+	if err != nil {
+		t.Fatalf("cipher: %v", err)
+	}
+
+	sealed, err := cipher.Encrypt(plain)
+	if err != nil {
+		t.Fatalf("encrypt: %v", err)
+	}
+
+	return sealed
+}
+
+// Cipher is the test field cipher.
+func Cipher(t testing.TB) *crypt.Cipher {
+	t.Helper()
+
+	cipher, err := crypt.New(FieldKey)
+	if err != nil {
+		t.Fatalf("cipher: %v", err)
+	}
+
+	return cipher
+}
 
 const defaultDB = "postgres://threereco:threereco@localhost:5441/threereco?sslmode=disable"
 
@@ -95,6 +130,7 @@ func NewDB(t testing.TB) *database.DB {
 type App struct {
 	Invoices *invoices.Service
 	Trades   *transactions.Service
+	Privacy  *privacy.Service
 	Storage  *storage.Client
 	DB       *database.DB
 	Config   config.Config
@@ -105,6 +141,19 @@ type App struct {
 // Server starts the whole API on a random port against a fresh database.
 // tweak may change the config before it starts.
 func Server(t testing.TB, tweak ...func(*config.Config)) *App {
+	t.Helper()
+
+	app, err := TryServer(t, tweak...)
+	if err != nil {
+		t.Fatalf("start api: %v", err)
+	}
+
+	return app
+}
+
+// TryServer is Server, but hands back the start error instead of failing, for
+// tests that expect the server to refuse to start.
+func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 	t.Helper()
 
 	// Request logs make a failing run hard to read; warnings and errors stay.
@@ -126,6 +175,7 @@ func Server(t testing.TB, tweak ...func(*config.Config)) *App {
 	cfg.ResendAPIKey = ""
 	cfg.Dev = true
 	cfg.ShutdownTimeout = 2 * time.Second
+	cfg.FieldKey = FieldKey
 
 	for _, fn := range tweak {
 		fn(&cfg)
@@ -136,23 +186,24 @@ func Server(t testing.TB, tweak ...func(*config.Config)) *App {
 	var listener *api.Listener
 	var invoiceService *invoices.Service
 	var transactionService *transactions.Service
+	var privacyService *privacy.Service
 
 	app := fx.New(
 		fx.NopLogger,
 		fx.Supply(cfg, db),
 		api.Module,
-		fx.Populate(&listener, &invoiceService, &transactionService),
+		fx.Populate(&listener, &invoiceService, &transactionService, &privacyService),
 	)
 
 	if err := app.Err(); err != nil {
-		t.Fatalf("start api: %v", err)
+		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := app.Start(ctx); err != nil {
-		t.Fatalf("start api: %v", err)
+		return nil, err
 	}
 
 	t.Cleanup(func() {
@@ -163,9 +214,9 @@ func Server(t testing.TB, tweak ...func(*config.Config)) *App {
 	})
 
 	return &App{
-		DB: db, Storage: objects, Invoices: invoiceService, Trades: transactionService,
+		DB: db, Storage: objects, Invoices: invoiceService, Trades: transactionService, Privacy: privacyService,
 		Config: cfg, URL: "http://" + listener.Addr(), Host: listener.Addr(),
-	}
+	}, nil
 }
 
 // Client is one browser: it keeps cookies between calls.

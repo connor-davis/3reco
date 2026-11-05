@@ -109,6 +109,26 @@ func (h *Hub) Leave(c *Client) {
 	c.once.Do(func() { close(c.closed) })
 }
 
+// DisconnectUser closes every socket the user has open, at once. The 30 second
+// recheck would drop them anyway; an erased account should not wait.
+func (h *Hub) DisconnectUser(userID string) {
+	h.mu.Lock()
+
+	var open []*Client
+
+	for c := range h.clients {
+		if c.UserID == userID {
+			open = append(open, c)
+		}
+	}
+
+	h.mu.Unlock()
+
+	for _, c := range open {
+		h.Leave(c)
+	}
+}
+
 // Subscribe adds a topic after checking the client may hear it.
 func (h *Hub) Subscribe(ctx context.Context, c *Client, topic string) error {
 	if err := h.allowed(ctx, c, topic); err != nil {

@@ -3,10 +3,12 @@ package collectors
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 )
@@ -30,22 +32,28 @@ type Collector struct {
 	City                  string    `json:"city"`
 	Province              string    `json:"province"`
 	AreaCode              *int      `json:"area_code,omitempty"`
+	NormalizedPhone       string    `json:"-"`
 	CreatedByUserID       string    `json:"-"`
 	CreatedByBusinessID   *string   `json:"-"`
 	CreatedAt             time.Time `json:"created_at"`
 }
 
 // Store runs collector SQL.
-type Store struct{ db *database.DB }
+type Store struct {
+	db     *database.DB
+	cipher *crypt.Cipher
+}
 
-// New builds the store.
-func New(db *database.DB) *Store { return &Store{db: db} }
+// New builds the store. The cipher seals the account number and ewallet id.
+func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
 const columns = `id,COALESCE(name,''),COALESCE(email,''),COALESCE(phone,''),COALESCE(image,''),COALESCE(bank_account_holder_name,''),COALESCE(bank_name,''),COALESCE(bank_account_number,''),COALESCE(bank_branch_code,''),COALESCE(bank_account_type,''),COALESCE(payout_method,''),COALESCE(ewallet_platform_name,''),COALESCE(ewallet_payment_id,''),COALESCE(street_address,''),COALESCE(city,''),COALESCE(province,''),
- area_code,created_by_user_id,created_by_business_id,created_at`
+ area_code,COALESCE(normalized_phone,''),created_by_user_id,created_by_business_id,created_at`
 
-func scan(row pgx.Row, item *Collector) error {
-	return row.Scan(
+// scan reads one row and opens the sealed fields, so a Collector always holds
+// plain values. Services mask them for people who may not see the whole value.
+func (records *Store) scan(row pgx.Row, item *Collector) error {
+	err := row.Scan(
 		&item.ID,
 		&item.Name,
 		&item.Email,
@@ -63,10 +71,22 @@ func scan(row pgx.Row, item *Collector) error {
 		&item.City,
 		&item.Province,
 		&item.AreaCode,
+		&item.NormalizedPhone,
 		&item.CreatedByUserID,
 		&item.CreatedByBusinessID,
 		&item.CreatedAt,
 	)
+	if err != nil {
+		return err
+	}
+
+	if item.BankAccountNumber, err = records.cipher.Decrypt(item.BankAccountNumber); err != nil {
+		return err
+	}
+
+	item.EwalletPaymentID, err = records.cipher.Decrypt(item.EwalletPaymentID)
+
+	return err
 }
 
 // Find reads a collector with an optional edit lock.
@@ -77,7 +97,7 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 	}
 
 	var item Collector
-	err := scan(records.db.Q(ctx).QueryRow(ctx, query, id), &item)
+	err := records.scan(records.db.Q(ctx).QueryRow(ctx, query, id), &item)
 
 	return item, err
 }
@@ -101,7 +121,33 @@ func (records *Store) List(ctx context.Context, query paging.Query) ([]Collector
 	items := []Collector{}
 	for rows.Next() {
 		var item Collector
-		if err := scan(rows, &item); err != nil {
+		if err := records.scan(rows, &item); err != nil {
+			return nil, err
+		}
+
+		items = append(items, item)
+	}
+
+	return items, rows.Err()
+}
+
+// Created lists the collectors a user recorded, for their own data export.
+func (records *Store) Created(ctx context.Context, userID string) ([]Collector, error) {
+	rows, err := records.db.Q(ctx).Query(
+		ctx,
+		`SELECT `+columns+` FROM collectors
+ WHERE created_by_user_id=$1 OR created_by_business_id=$1 ORDER BY created_at,id`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []Collector{}
+	for rows.Next() {
+		var item Collector
+		if err := records.scan(rows, &item); err != nil {
 			return nil, err
 		}
 
@@ -130,6 +176,10 @@ func (records *Store) PhoneConflict(ctx context.Context, phone string) (bool, er
 
 // Create records creator IDs supplied by the session.
 func (records *Store) Create(ctx context.Context, item Collector) error {
+	if err := records.seal(&item); err != nil {
+		return err
+	}
+
 	_, err := records.db.Q(ctx).Exec(
 		ctx,
 		`INSERT INTO collectors(id,name,email,phone,image,bank_account_holder_name,bank_name,bank_account_number,bank_branch_code,bank_account_type,payout_method,ewallet_platform_name,ewallet_payment_id,street_address,city,province,
@@ -163,6 +213,10 @@ func (records *Store) Create(ctx context.Context, item Collector) error {
 
 // Save saves a previously locked collector.
 func (records *Store) Save(ctx context.Context, item Collector) error {
+	if err := records.seal(&item); err != nil {
+		return err
+	}
+
 	_, err := records.db.Q(ctx).Exec(
 		ctx,
 		`UPDATE collectors SET
@@ -205,6 +259,34 @@ func (records *Store) Save(ctx context.Context, item Collector) error {
 	return err
 }
 
+func (records *Store) seal(item *Collector) error {
+	var err error
+
+	if item.BankAccountNumber, err = records.cipher.Encrypt(item.BankAccountNumber); err != nil {
+		return err
+	}
+
+	item.EwalletPaymentID, err = records.cipher.Encrypt(item.EwalletPaymentID)
+
+	return err
+}
+
+// OwnPhone returns the canonical phone of a user, to find the collector record
+// that belongs to their login.
+func (records *Store) OwnPhone(ctx context.Context, userID string) (string, error) {
+	var phone string
+	err := records.db.Q(ctx).QueryRow(
+		ctx,
+		`SELECT COALESCE(normalized_phone,'') FROM users WHERE id=$1 AND NOT is_removed`,
+		userID,
+	).Scan(&phone)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+
+	return phone, err
+}
+
 // Delete removes the collector; historical transactions retain their snapshots.
 func (records *Store) Delete(ctx context.Context, id string) error {
 	_, err := records.db.Q(ctx).Exec(ctx, `DELETE FROM collectors WHERE id=$1`, id)
@@ -215,7 +297,7 @@ func (records *Store) Delete(ctx context.Context, id string) error {
 // ByPhone scopes phone lookups in SQL so an unrelated business cannot distinguish missing records.
 func (records *Store) ByPhone(ctx context.Context, phone, creator string) (Collector, error) {
 	var item Collector
-	err := scan(
+	err := records.scan(
 		records.db.Q(ctx).QueryRow(
 			ctx,
 			`SELECT `+columns+` FROM collectors

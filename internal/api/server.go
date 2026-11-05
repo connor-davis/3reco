@@ -21,12 +21,14 @@ import (
 	marketapi "github.com/connor-davis/3reco/internal/api/market"
 	materialsapi "github.com/connor-davis/3reco/internal/api/materials"
 	"github.com/connor-davis/3reco/internal/api/middleware"
+	privacyapi "github.com/connor-davis/3reco/internal/api/privacy"
 	profileapi "github.com/connor-davis/3reco/internal/api/profile"
 	"github.com/connor-davis/3reco/internal/api/sockets"
 	stockapi "github.com/connor-davis/3reco/internal/api/stock"
 	storesapi "github.com/connor-davis/3reco/internal/api/stores"
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/config"
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/storage"
@@ -34,6 +36,7 @@ import (
 	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
+	privacysvc "github.com/connor-davis/3reco/internal/services/privacy"
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
@@ -43,6 +46,7 @@ import (
 	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
+	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
 	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
 	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
 	storesstore "github.com/connor-davis/3reco/internal/stores/stores"
@@ -52,6 +56,7 @@ import (
 // and a connected *database.DB.
 var Module = fx.Module("api",
 	fx.Provide(
+		crypt.FromConfig,
 		mail.New,
 		storage.New,
 		authstore.New,
@@ -67,6 +72,9 @@ var Module = fx.Module("api",
 		materialsstore.New,
 		materialssvc.New,
 		materialsapi.New,
+		privacystore.New,
+		privacysvc.New,
+		privacyapi.New,
 		profilestore.New,
 		profilesvc.New,
 		profileapi.New,
@@ -102,6 +110,7 @@ type routes struct {
 	Collectors *collectorsapi.Handler
 	Market     *marketapi.Handler
 	Materials  *materialsapi.Handler
+	Privacy    *privacyapi.Handler
 	Profile    *profileapi.Handler
 	Stock      *stockapi.Handler
 	Stores     *storesapi.Handler
@@ -159,6 +168,7 @@ func New(r routes) *fiber.App {
 	r.Collectors.Register(api)
 	r.Market.Register(api)
 	r.Materials.Register(api)
+	r.Privacy.Register(api)
 	r.Profile.Register(api)
 	r.Stock.Register(api)
 	r.Stores.Register(api)
@@ -238,7 +248,13 @@ func errorHandler(c fiber.Ctx, err error) error {
 }
 
 // background starts the realtime hub and the hourly purge with the app.
-func background(lc fx.Lifecycle, hub *realtime.Hub, a *auth.Service, requests *requestssvc.Service) {
+func background(
+	lc fx.Lifecycle,
+	hub *realtime.Hub,
+	a *auth.Service,
+	requests *requestssvc.Service,
+	p *privacysvc.Service,
+) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	lc.Append(fx.Hook{
@@ -246,6 +262,7 @@ func background(lc fx.Lifecycle, hub *realtime.Hub, a *auth.Service, requests *r
 			go hub.Run(ctx)
 			go purgeLoop(ctx, a)
 			go offerExpiryLoop(ctx, requests)
+			go retentionLoop(ctx, p)
 
 			return nil
 		},
@@ -284,6 +301,24 @@ func purgeLoop(ctx context.Context, a *auth.Service) {
 		case <-tick.C:
 			if err := a.Purge(ctx); err != nil {
 				slog.Warn("purge failed", "err", err)
+			}
+		}
+	}
+}
+
+// retentionLoop runs the privacy clean-up (old notifications, carts, trades)
+// every hour. The first run waits an hour, like the session purge.
+func retentionLoop(ctx context.Context, p *privacysvc.Service) {
+	tick := time.NewTicker(time.Hour)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+			if err := p.Retain(ctx); err != nil {
+				slog.Warn("privacy retention failed", "err", err)
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	store "github.com/connor-davis/3reco/internal/stores/importer"
@@ -35,6 +36,7 @@ var requiredTables = []string{
 type planner struct {
 	a         *archive
 	rep       *Report
+	cipher    *crypt.Cipher
 	docs      map[string][]doc
 	rows      map[string][]store.Row
 	blobs     []blob
@@ -55,6 +57,7 @@ func Run(
 	ctx context.Context,
 	db *database.DB,
 	objects *storage.Client,
+	cipher *crypt.Cipher,
 	zipPath string,
 ) (*Report, error) {
 	rows := store.New(db)
@@ -71,7 +74,7 @@ func Run(
 	defer a.Close()
 
 	rep := newReport()
-	p := &planner{a: a, rep: rep}
+	p := &planner{a: a, rep: rep, cipher: cipher}
 
 	if err := p.plan(); err != nil {
 		return rep, err
@@ -179,6 +182,11 @@ func (p *planner) load(ctx context.Context, rows *store.Store) error {
 		// removed_by points at other users, so it waits until all of them exist.
 		if table == "users" {
 			if err := rows.SetRemovedBy(ctx, p.removedBy); err != nil {
+				return err
+			}
+
+			// The old agreed_to_terms had no version; keep it as "legacy".
+			if err := rows.LegacyAcceptances(ctx); err != nil {
 				return err
 			}
 		}

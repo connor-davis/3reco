@@ -10,21 +10,27 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/privacy"
 	profile "github.com/connor-davis/3reco/internal/services/profile"
 	store "github.com/connor-davis/3reco/internal/stores/collectors"
+	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
 )
 
 // Service owns collector rules and transactions.
 type Service struct {
 	db    *database.DB
 	store *store.Store
+	audit *pstore.Store
 }
 
 // New builds the service.
-func New(db *database.DB, rows *store.Store) *Service { return &Service{db: db, store: rows} }
+func New(db *database.DB, rows *store.Store, audit *pstore.Store) *Service {
+	return &Service{db: db, store: rows, audit: audit}
+}
 
 // Input preserves omitted collector fields on PATCH.
 type Input struct {
@@ -46,13 +52,41 @@ type Input struct {
 	AreaCode              *int    `json:"area_code"`
 }
 
-func manages(user auth.User, item store.Collector) bool {
-	return auth.HasRole(user, "admin", "staff") ||
-		(auth.HasRole(user, "business") && item.CreatedByBusinessID != nil && *item.CreatedByBusinessID == user.ID)
+// own tells whether the collector record is the caller's own login: the two
+// share a normalized phone number.
+func (service *Service) own(ctx context.Context, user auth.User, item store.Collector) (bool, error) {
+	if !auth.HasRole(user, "collector") || item.NormalizedPhone == "" {
+		return false, nil
+	}
+
+	phone, err := service.store.OwnPhone(ctx, user.ID)
+
+	return phone != "" && phone == item.NormalizedPhone, err
 }
 
-func redact(user auth.User, item store.Collector) store.Collector {
-	if manages(user, item) {
+func creator(user auth.User, item store.Collector) bool {
+	return auth.HasRole(user, "business") && item.CreatedByBusinessID != nil &&
+		*item.CreatedByBusinessID == user.ID
+}
+
+// manages is who may see the contact details and change the record.
+func manages(user auth.User, item store.Collector, own bool) bool {
+	return auth.HasRole(user, "admin", "staff") || creator(user, item) || own
+}
+
+// full is who may read the whole account number and e-wallet id. Staff may
+// manage a collector but only see them masked.
+func full(user auth.User, item store.Collector, own bool) bool {
+	return auth.HasRole(user, "admin") || creator(user, item) || own
+}
+
+func redact(user auth.User, item store.Collector, own bool) store.Collector {
+	if !full(user, item, own) {
+		item.BankAccountNumber = crypt.Mask(item.BankAccountNumber)
+		item.EwalletPaymentID = crypt.Mask(item.EwalletPaymentID)
+	}
+
+	if manages(user, item, own) {
 		return item
 	}
 
@@ -61,13 +95,11 @@ func redact(user auth.User, item store.Collector) store.Collector {
 
 	item.BankAccountHolderName = ""
 	item.BankName = ""
-	item.BankAccountNumber = ""
 	item.BankBranchCode = ""
 	item.BankAccountType = ""
 
 	item.PayoutMethod = ""
 	item.EwalletPlatformName = ""
-	item.EwalletPaymentID = ""
 
 	item.StreetAddress = ""
 	item.AreaCode = nil
@@ -76,6 +108,8 @@ func redact(user auth.User, item store.Collector) store.Collector {
 }
 
 // Find returns a redacted collector unless the caller has management scope.
+// Identifiers are masked unless the caller is the creating business, the
+// collector themself or an admin; an admin read is written to the audit log.
 func (service *Service) Find(ctx context.Context, user auth.User, id string) (store.Collector, error) {
 	if user.ID == "" {
 		return store.Collector{}, apperr.Unauthorized("Please sign in.")
@@ -86,7 +120,24 @@ func (service *Service) Find(ctx context.Context, user auth.User, id string) (st
 		return item, apperr.NotFound("No such collector.")
 	}
 
-	return redact(user, item), err
+	if err != nil {
+		return item, err
+	}
+
+	own, err := service.own(ctx, user, item)
+	if err != nil {
+		return item, err
+	}
+
+	if auth.HasRole(user, "admin") && !creator(user, item) && hasIdentifier(item) {
+		err = service.audit.Record(ctx, user.ID, item.ID, privacy.KindAdminFullView)
+	}
+
+	return redact(user, item, own), err
+}
+
+func hasIdentifier(item store.Collector) bool {
+	return item.BankAccountNumber != "" || item.EwalletPaymentID != ""
 }
 
 // List keeps the legacy directory while gating private fields on every row.
@@ -100,8 +151,24 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		return nil, err
 	}
 
+	// An admin reading the directory sees full identifiers: one audit line per call.
+	audited := false
+
 	for i := range items {
-		items[i] = redact(user, items[i])
+		own, err := service.own(ctx, user, items[i])
+		if err != nil {
+			return nil, err
+		}
+
+		if !audited && auth.HasRole(user, "admin") && hasIdentifier(items[i]) {
+			audited = true
+
+			if err := service.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView); err != nil {
+				return nil, err
+			}
+		}
+
+		items[i] = redact(user, items[i], own)
 	}
 
 	if selection {
@@ -143,12 +210,14 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 			if !creating {
 				var err error
 				item, err = service.store.Find(ctx, id, true)
-				if errors.Is(err, pgx.ErrNoRows) || (err == nil && !manages(user, item)) {
-					return apperr.NotFound("No such collector.")
+				if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+					return err
 				}
 
-				if err != nil {
-					return err
+				// Only staff, admins and the creating business may change a
+				// collector, never the collector's own login.
+				if errors.Is(err, pgx.ErrNoRows) || !manages(user, item, false) {
+					return apperr.NotFound("No such collector.")
 				}
 			}
 
@@ -176,7 +245,8 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				item.BankName = strings.TrimSpace(*in.BankName)
 			}
 
-			if in.BankAccountNumber != nil {
+			// A masked value sent back from a form means "unchanged".
+			if in.BankAccountNumber != nil && !isMask(*in.BankAccountNumber, item.BankAccountNumber) {
 				item.BankAccountNumber = strings.TrimSpace(*in.BankAccountNumber)
 			}
 
@@ -196,7 +266,7 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				item.EwalletPlatformName = strings.TrimSpace(*in.EwalletPlatformName)
 			}
 
-			if in.EwalletPaymentID != nil {
+			if in.EwalletPaymentID != nil && !isMask(*in.EwalletPaymentID, item.EwalletPaymentID) {
 				item.EwalletPaymentID = strings.TrimSpace(*in.EwalletPaymentID)
 			}
 
@@ -283,4 +353,8 @@ func (service *Service) Delete(ctx context.Context, user auth.User, id, confirma
 			return service.store.Delete(ctx, id)
 		},
 	)
+}
+
+func isMask(sent, current string) bool {
+	return current != "" && strings.TrimSpace(sent) == crypt.Mask(current)
 }

@@ -26,7 +26,7 @@ func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client,
 	err := app.DB.Pool.QueryRow(
 		context.Background(),
 		`UPDATE users SET role=NULLIF($2,''),
-		phone=$3,id_number='private-id',bank_account_number='private-account',
+		phone=$3,id_number=$4,bank_account_number=$5,
 		bank_account_holder_name='Private Holder',bank_name='Private Bank',bank_branch_code='123456',
 		bank_account_type='Savings',
 		business_name=CASE WHEN $2='business' THEN 'Business '||id ELSE NULL END
@@ -34,6 +34,8 @@ func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client,
 		email,
 		role,
 		"+27"+domainPhone()[1:],
+		testutil.Seal(t, "private-id"),
+		testutil.Seal(t, "private-account"),
 	).Scan(
 		&id,
 	)

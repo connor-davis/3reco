@@ -71,8 +71,13 @@ var errBadLogin = apperr.Unauthorized("Wrong email or password.")
 
 // SignUp creates an account and sends the verification email. An email that is
 // already registered looks the same to the caller, so the form cannot be used
-// to find out who has an account.
-func (s *Service) SignUp(ctx context.Context, name, email, password string) error {
+// to find out who has an account. The person must have accepted the current
+// privacy notice.
+func (s *Service) SignUp(ctx context.Context, name, email, password, noticeVersion string) error {
+	if noticeVersion != config.NoticeVersion {
+		return apperr.Field("accepted_terms_version", "Please accept the current privacy notice.")
+	}
+
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return apperr.Field("name", "Enter your name.")
@@ -92,7 +97,16 @@ func (s *Service) SignUp(ctx context.Context, name, email, password string) erro
 		return err
 	}
 
-	user, err := s.store.CreateUser(ctx, store.NewUser{Name: name, Email: email, PasswordHash: hash})
+	var user store.User
+
+	err = s.db.InTx(ctx, func(ctx context.Context) error {
+		var err error
+		user, err = s.store.CreateUser(ctx, store.NewUser{
+			Name: name, Email: email, PasswordHash: hash, NoticeVersion: noticeVersion,
+		})
+
+		return err
+	})
 
 	switch {
 	case errors.Is(err, store.ErrEmailTaken):
@@ -148,6 +162,27 @@ func (s *Service) SignIn(
 	}
 
 	return token, *user, nil
+}
+
+// ConfirmPassword checks the signed-in person's password again before a step
+// that cannot be undone.
+func (s *Service) ConfirmPassword(ctx context.Context, userID, password string) error {
+	user, err := s.store.UserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if user.PasswordHash == nil {
+		burnPasswordCheck(password)
+
+		return apperr.Field("password", "That password is wrong.")
+	}
+
+	if ok, _ := VerifyPassword(password, *user.PasswordHash); !ok {
+		return apperr.Field("password", "That password is wrong.")
+	}
+
+	return nil
 }
 
 // Authenticate turns a cookie token into its session. A session older than

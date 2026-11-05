@@ -24,6 +24,7 @@ import (
 
 	"github.com/connor-davis/3reco/internal/api"
 	"github.com/connor-davis/3reco/internal/platform/config"
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/storage"
@@ -160,7 +161,12 @@ func importConvex(args []string) error {
 			return err
 		}
 
-		report, err := importer.Run(ctx, db, objects, fs.Arg(0))
+		cipher, err := crypt.FromConfig(cfg)
+		if err != nil {
+			return err
+		}
+
+		report, err := importer.Run(ctx, db, objects, cipher, fs.Arg(0))
 		if report != nil {
 			report.Print(os.Stdout)
 		}

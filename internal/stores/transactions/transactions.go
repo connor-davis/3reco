@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 )
@@ -77,10 +78,14 @@ var scopeSQL = map[Scope]string{
 }
 
 // Store runs the transaction SQL.
-type Store struct{ db *database.DB }
+type Store struct {
+	db     *database.DB
+	cipher *crypt.Cipher
+}
 
-// New builds the store.
-func New(db *database.DB) *Store { return &Store{db: db} }
+// New builds the store. The cipher opens the sealed account numbers that
+// invoices and exports print.
+func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
 var selectTransaction = `
 	SELECT t.id, t.type, t.seller_id,

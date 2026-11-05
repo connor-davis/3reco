@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/pdf"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/invoices"
+	"github.com/connor-davis/3reco/internal/services/privacy"
 	tstore "github.com/connor-davis/3reco/internal/stores/transactions"
 )
 
@@ -101,6 +103,11 @@ func (s *Service) PrepareExport(
 	}
 
 	itemised := rawItemised == "true"
+
+	// Only an admin or a business reading their own purchases sees full
+	// account numbers in a CSV; staff get the masked form.
+	mask := !auth.HasRole(user, auth.RoleAdmin, auth.RoleBusiness)
+	adminView := auth.HasRole(user, auth.RoleAdmin)
 	return Export{Filename: kind + ".csv", Write: func(ctx context.Context, output io.Writer) error {
 		writer := csv.NewWriter(output)
 		write := func(cells []string) error {
@@ -145,10 +152,25 @@ func (s *Service) PrepareExport(
 			return err
 		}
 
+		audited := false
+
 		return s.trades.ExportIDs(ctx, scope, owner, tradeType, from, to, func(id string) error {
 			document, err := s.trades.Document(ctx, id)
 			if err != nil {
 				return err
+			}
+
+			seller := &document.Seller
+			if mask {
+				seller.Account, seller.PaymentID = crypt.Mask(seller.Account), crypt.Mask(seller.PaymentID)
+			} else if adminView && !audited && document.Trade.Type == "c2b" &&
+				(seller.Account != "" || seller.PaymentID != "") {
+				// One audit line per export: an admin read full payout details.
+				audited = true
+
+				if err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView); err != nil {
+					return err
+				}
 			}
 
 			for _, row := range exportRows(document, itemised) {
