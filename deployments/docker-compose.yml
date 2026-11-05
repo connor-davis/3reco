@@ -1,0 +1,54 @@
+name: threereco
+# Local services for 3REco. The API and the web app run on your machine (so Go
+# and Vite reload); only what they talk to runs here.
+#
+#   task up      start everything
+#   task down    stop it, keep the data
+#   task nuke    stop it and delete the data
+#
+# The host ports sit next to Viper's (5440, 8025, 9000) so both can run at once.
+
+services:
+  # Postgres keeps all the data.
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_USER: threereco
+      POSTGRES_PASSWORD: threereco
+      POSTGRES_DB: threereco
+    ports:
+      - "5441:5432"
+    volumes:
+      # Postgres 18 keeps data under /var/lib/postgresql/<version>, so mount the parent.
+      - threereco-pg:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U threereco -d threereco"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Mailpit is a fake mail server. Read the mail at http://localhost:8026.
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    ports:
+      - "1026:1025" # SMTP (the API sends here)
+      - "8026:8025" # web inbox and HTTP API
+
+  # MinIO is a local S3. Console: http://localhost:9011 (threereco / threereco-secret).
+  minio:
+    image: docker.io/chainguard/minio:latest
+    # Runs as root so it can write the data folder.
+    user: "0"
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: threereco
+      MINIO_ROOT_PASSWORD: threereco-secret
+    ports:
+      - "9010:9000" # S3 API
+      - "9011:9001" # web console
+    volumes:
+      - threereco-minio:/data
+
+volumes:
+  threereco-pg:
+  threereco-minio:

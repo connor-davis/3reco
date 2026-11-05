@@ -1,0 +1,220 @@
+import { useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { toast } from 'sonner';
+import { Guarded } from '@/components/access-guard';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { DataState, RowsSkeleton } from '@/components/data-state';
+import { DataTable } from '@/components/data-table';
+import { CollectorDialog } from '@/components/dialogs/collector-dialog';
+import { SearchBox } from '@/components/filters';
+import { IconButton } from '@/components/icon-button';
+import { PageHeader } from '@/components/page-header';
+import { Pager } from '@/components/transactions/list-tools';
+import { errorText, usePager } from '@/components/transactions/pager-state';
+import { PersonAvatar } from '@/components/visuals';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useCollectors, useDeleteCollector } from '@/lib/api/collectors';
+import type { Collector } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/use-auth';
+
+export const Route = createFileRoute('/collectors')({
+  component: () => (
+    <Guarded page="collectors">
+      <CollectorsPage />
+    </Guarded>
+  ),
+});
+
+// Account numbers arrive masked. They are printed as sent, never rebuilt.
+function payoutText(collector: Collector): string {
+  if (collector.payout_method === 'bank') {
+    const account = collector.bank_account_number ?? '';
+
+    return `Bank · ${collector.bank_name ?? ''} ${account}`.trim();
+  }
+
+  if (collector.payout_method === 'ewallet') {
+    return `E-wallet · ${collector.ewallet_platform_name ?? ''}`.trim();
+  }
+
+  return 'Not shared';
+}
+
+type RemoveProps = { collector: Collector | null; onClose: () => void };
+
+function RemoveCollector({ collector, onClose }: RemoveProps) {
+  const remove = useDeleteCollector(collector?.id ?? '');
+  // The API asks for the collector's email, or their phone when there is none.
+  const confirmation = collector?.email || collector?.phone || '';
+
+  return (
+    <ConfirmDialog
+      open={collector !== null}
+      onOpenChange={(open) => !open && onClose()}
+      title={`Remove ${collector?.name ?? 'collector'}?`}
+      description="Their collections stay on record, but they leave your network."
+      confirmLabel="Remove collector"
+      typedName={confirmation}
+      onConfirm={() => {
+        remove.mutate(
+          { confirmation_value: confirmation },
+          {
+            onSuccess: () => toast.success('Collector removed.'),
+            onError: (error) => toast.error(errorText(error)),
+          }
+        );
+        onClose();
+      }}
+    />
+  );
+}
+
+function CollectorsPage() {
+  const { user } = useAuth();
+  const pager = usePager();
+  const list = useCollectors(pager.params);
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState<Collector | undefined>();
+  const [formOpen, setFormOpen] = useState(false);
+  const [removing, setRemoving] = useState<Collector | null>(null);
+
+  // Only admin and staff may remove a collector. Businesses add and edit.
+  const canRemove = user?.role === 'admin' || user?.role === 'staff';
+  const shown = (list.data?.items ?? []).filter((collector) =>
+    `${collector.name} ${collector.phone ?? ''}`
+      .toLowerCase()
+      .includes(query.toLowerCase())
+  );
+
+  function openForm(collector?: Collector) {
+    setEditing(collector);
+    setFormOpen(true);
+  }
+
+  function actions(collector: Collector) {
+    return (
+      <div className="flex gap-1">
+        <IconButton
+          label={`Edit ${collector.name}`}
+          onClick={() => openForm(collector)}
+        >
+          <Pencil />
+        </IconButton>
+        {canRemove && (
+          <IconButton
+            label={`Remove ${collector.name}`}
+            onClick={() => setRemoving(collector)}
+          >
+            <Trash2 />
+          </IconButton>
+        )}
+      </div>
+    );
+  }
+
+  const columns: ColumnDef<Collector>[] = [
+    {
+      accessorKey: 'name',
+      header: 'Collector',
+      cell: ({ row }) => (
+        <span className="flex items-center gap-3">
+          <PersonAvatar name={row.original.name} />
+          <span className="font-medium">{row.original.name}</span>
+        </span>
+      ),
+    },
+    {
+      id: 'contact',
+      header: 'Contact',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span>
+          <span className="block">{row.original.phone ?? 'Not shared'}</span>
+          <span className="text-xs text-muted-foreground">
+            {row.original.email}
+          </span>
+        </span>
+      ),
+    },
+    {
+      id: 'location',
+      header: 'Location',
+      enableSorting: false,
+      cell: ({ row }) => `${row.original.city}, ${row.original.province}`,
+    },
+    {
+      id: 'payout',
+      header: 'Payout details',
+      enableSorting: false,
+      cell: ({ row }) => payoutText(row.original),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      cell: ({ row }) => actions(row.original),
+    },
+  ];
+
+  return (
+    <>
+      <PageHeader
+        title="Your collector network"
+        description="The people who bring you material, and how you pay them."
+        actions={
+          <Button onClick={() => openForm()}>
+            <Plus data-icon="inline-start" />
+            Add collector
+          </Button>
+        }
+      />
+      <div className="mb-6">
+        <SearchBox
+          label="Search collectors or phone numbers"
+          value={query}
+          onChange={setQuery}
+        />
+      </div>
+      <DataState
+        query={list}
+        isEmpty={shown.length === 0}
+        icon={Users}
+        emptyTitle="No collectors found"
+        emptyText="Add the people who collect for you."
+        emptyAction={<Button onClick={() => openForm()}>Add collector</Button>}
+        skeleton={<RowsSkeleton />}
+      >
+        <DataTable
+          columns={columns}
+          data={shown}
+          renderCard={(collector) => (
+            <Card size="sm">
+              <CardContent className="space-y-2">
+                <span className="flex items-center gap-3">
+                  <PersonAvatar name={collector.name} />
+                  <span className="font-medium">{collector.name}</span>
+                </span>
+                <p className="text-sm text-muted-foreground">
+                  {collector.phone ?? 'Not shared'} · {collector.city}
+                </p>
+                <p className="text-sm">{payoutText(collector)}</p>
+                {actions(collector)}
+              </CardContent>
+            </Card>
+          )}
+          footer={<span>{shown.length} collectors on this page</span>}
+        />
+      </DataState>
+      <Pager pager={pager} page={list.data} />
+      <CollectorDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        collector={editing}
+      />
+      <RemoveCollector collector={removing} onClose={() => setRemoving(null)} />
+    </>
+  );
+}

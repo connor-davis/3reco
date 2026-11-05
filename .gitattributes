@@ -1,0 +1,18 @@
+# gofmt wants LF; Windows checkouts with core.autocrlf would turn Go files CRLF.
+*.go  text eol=lf
+*.sql text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+# Prettier wants LF; keep web and docs files LF on Windows too.
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.mjs  text eol=lf
+*.json text eol=lf
+*.css  text eol=lf
+*.md   text eol=lf
+*.html text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.webmanifest text eol=lf
+*.svg text eol=lf

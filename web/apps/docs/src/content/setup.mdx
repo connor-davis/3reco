@@ -1,0 +1,51 @@
+# Setup & Installation
+
+## Prerequisites
+
+| Tool | Version | Notes |
+|---|---|---|
+| Go | 1.27 | builds the server |
+| Node.js | 22 | builds the web app |
+| [Task](https://taskfile.dev) | any | runs every command |
+| Podman or Docker | any | runs Postgres, Mailpit and MinIO |
+
+On Windows and Mac, run `podman machine start` first if the machine is not running.
+
+## Run it locally
+
+```bash
+task up        # start Postgres (localhost:5441), Mailpit (http://localhost:8026), MinIO (localhost:9010)
+task install   # install the web app packages
+task dev       # API on :8180 plus the Vite dev server on :5173
+```
+
+Open http://localhost:5173. Vite sends every `/api` request (and the WebSocket) to the API, so the web app needs no environment variables. The API runs the SQL migrations by itself when it starts.
+
+Email goes to Mailpit in development: open http://localhost:8026 to read verification and password reset mail.
+
+## Make an admin
+
+Sign-up creates people with no role. Create (or promote) the first admin from the command line:
+
+```bash
+go run ./cmd/3reco admin create --email you@example.com --password '<a strong password>' --name 'Your Name'
+```
+
+An admin can then set roles for other users.
+
+## Useful commands
+
+| Command | What it does |
+|---|---|
+| `task` | list every command |
+| `task test` | Go tests against the real services (needs `task up`) |
+| `task check` | gofmt, vet, staticcheck, Go tests, web typecheck, lint and build |
+| `task migrate` | run the SQL migrations and stop |
+| `task down` | stop the services, keep the data |
+| `task nuke` | stop the services and delete all local data |
+
+## Next steps
+
+- [Environment Variables](/docs/environment)
+- [Architecture Overview](/docs/architecture)
+- [Deployment](/docs/dev/deployment)

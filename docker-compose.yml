@@ -1,46 +1,73 @@
 # =============================================================================
-#  3reco – Docker Compose
+#  3REco - production Docker Compose
 #
 #  Services:
-#    frontend          React 19 + Vite frontend
-#    docs              Documentation site
-#    convex-backend    Convex self-hosted backend  (ports 3210 / 3211)
-#    convex-dashboard  Convex admin dashboard      (port 6791)
+#    api       the Go binary: the API, WebSocket and the built web app (:8180)
+#    postgres  Postgres 18
+#    minio     file storage (S3 compatible)
+#    docs      documentation site
 #
-#  Required env vars – copy .env.example to .env and fill in your values.
+#  Copy .env.example to .env first (deploy.sh does this for you). Put a
+#  reverse proxy (Caddy, nginx) in front for HTTPS: app.<domain> goes to
+#  127.0.0.1:8180 and docs.<domain> to 127.0.0.1:3001.
 # =============================================================================
 
 services:
-
-  # ──────────────────────────────────────────────────────────────────────────
-  # React 19 + Vite frontend
-  #   Built at image-build time with Bun.
-  #   VITE_CONVEX_URL is baked into the JS bundle – rebuild the image whenever
-  #   the Convex backend URL changes.
-  # ──────────────────────────────────────────────────────────────────────────
-  frontend:
+  api:
     build:
-      context: ./3reco
-      dockerfile: Dockerfile
-      args:
-        VITE_CONVEX_URL: ${VITE_CONVEX_URL}
-        VITE_CONVEX_SITE_URL: ${VITE_CONVEX_SITE_URL}
+      context: .
+      dockerfile: deployments/Dockerfile
+    environment:
+      THREERECO_ADDR: ":8180"
+      THREERECO_DATABASE_URL: postgres://threereco:${POSTGRES_PASSWORD}@postgres:5432/threereco?sslmode=disable
+      THREERECO_WEB_ORIGIN: ${THREERECO_WEB_ORIGIN}
+      THREERECO_COOKIE_SECURE: "true"
+      THREERECO_TRUSTED_PROXIES: ${THREERECO_TRUSTED_PROXIES:-}
+      THREERECO_FIELD_KEY: ${THREERECO_FIELD_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      AUTH_FROM_EMAIL: ${AUTH_FROM_EMAIL}
+      THREERECO_S3_ENDPOINT: minio:9000
+      THREERECO_S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      THREERECO_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
     ports:
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:8180:8180"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
-  # ──────────────────────────────────────────────────────────────────────────
-  # Documentation site
-  #   Built at image-build time with Bun. No runtime env vars required.
-  # ──────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_USER: threereco
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: threereco
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U threereco"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: docker.io/chainguard/minio:latest
+    # Runs as root so it can write the data folder.
+    user: "0"
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
   docs:
     build:
-      context: ./3reco/documentation
+      context: ./web/apps/docs
       dockerfile: Dockerfile
     ports:
       - "127.0.0.1:3001:80"
@@ -51,76 +78,6 @@ services:
       timeout: 5s
       retries: 3
 
-  # ──────────────────────────────────────────────────────────────────────────
-  # Convex self-hosted backend
-  #   Exposes:
-  #     3210 → Convex backend API  (CONVEX_CLOUD_ORIGIN)
-  #     3211 → Convex HTTP actions / site proxy  (CONVEX_SITE_ORIGIN)
-  #   Data persisted in Docker volume `convex-data`.
-  # ──────────────────────────────────────────────────────────────────────────
-  convex-backend:
-    image: ghcr.io/get-convex/convex-backend:latest
-    stop_grace_period: 10s
-    stop_signal: SIGINT
-    environment:
-      # Required: unique name and 64-byte hex secret for this deployment
-      - INSTANCE_NAME=${INSTANCE_NAME}
-      - INSTANCE_SECRET=${INSTANCE_SECRET}
-      # Public origin URLs (used by Convex for CORS and auth token issuer)
-      - CONVEX_CLOUD_ORIGIN=${CONVEX_CLOUD_ORIGIN}
-      - CONVEX_SITE_ORIGIN=${CONVEX_SITE_ORIGIN}
-      # Better Auth backend configuration
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - SITE_URL=${SITE_URL}
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - AUTH_FROM_EMAIL=${AUTH_FROM_EMAIL}
-      # Allow HTTP (set to false once HTTPS certs are in place)
-      - DO_NOT_REQUIRE_SSL=true
-      # JVM heap – increase on servers with more RAM
-      - RUST_LOG=${RUST_LOG:-info}
-      # ── Optional: external SQL database instead of built-in SQLite ──────
-      # - POSTGRES_URL=${POSTGRES_URL}
-      # - MYSQL_URL=${MYSQL_URL}
-      # ── Optional: S3-compatible file storage ────────────────────────────
-      # - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      # - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      # - AWS_REGION=${AWS_REGION}
-      # - S3_STORAGE_FILES_BUCKET=${S3_STORAGE_FILES_BUCKET}
-    volumes:
-      - convex-data:/convex/data
-    ports:
-      - "127.0.0.1:3210:3210"
-      - "127.0.0.1:3211:3211"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3210/version || wget -qO- http://localhost:3210/version > /dev/null 2>&1"]
-      interval: 10s
-      timeout: 10s
-      start_period: 60s
-      retries: 10
-    restart: unless-stopped
-
-  # ──────────────────────────────────────────────────────────────────────────
-  # Convex admin dashboard
-  #   Access at:  http://convex-dashboard.{SERVER_NAME}
-  #   Log in with the admin key generated by:
-  #     docker compose exec convex-backend ./generate_admin_key.sh
-  # ──────────────────────────────────────────────────────────────────────────
-  convex-dashboard:
-    image: ghcr.io/get-convex/convex-dashboard:latest
-    stop_grace_period: 10s
-    stop_signal: SIGINT
-    environment:
-      - NEXT_PUBLIC_DEPLOYMENT_URL=${CONVEX_CLOUD_ORIGIN}
-    depends_on:
-      convex-backend:
-        condition: service_healthy
-    ports:
-      - "127.0.0.1:6791:6791"
-    restart: unless-stopped
-
-# =============================================================================
-#  Named volumes
-# =============================================================================
 volumes:
-  # Persistent Convex backend data (SQLite DB + uploaded files)
-  convex-data:
+  postgres-data:
+  minio-data:

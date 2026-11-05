@@ -1,0 +1,32 @@
+# Marketplace
+
+The marketplace is where listed stock meets buyers. It has public store pages, a cart, and the request and offer flow.
+
+## Browsing
+
+| Route | What |
+|---|---|
+| `GET /api/market/listings` | Listed stock, a page. Filters: `seller_id`, `material_id`, `q`. Your own stock is left out when you are signed in |
+| `GET /api/market/listings/:id` | One listing |
+| `GET /api/stores` and `/api/stores/:id` | Stores and their rating |
+| `GET /api/stores/:id/listings` | Listings of one store |
+| `GET /api/stores/:seller_id/reviews` | Reviews of a store |
+
+A listing shows the **available** weight (stock minus open offers). Rows with nothing available are hidden. No sign-in is needed to browse.
+
+## Cart
+
+A signed-in buyer keeps a cart per seller: `GET`, `PUT` and `DELETE /api/cart?seller_id=...`. The cart is saved on the server, so it follows the buyer to another device.
+
+## Request and offer flow
+
+1. **Request.** The buyer sends `POST /api/requests/` with the seller and the stock lines they want. The seller is notified.
+2. **Chat.** Both sides can message while the request is `pending`.
+3. **Offer.** The seller offers a weight and price per line. The stock is held for 48 hours and the buyer is notified.
+4. **Decision.** The buyer accepts (a transaction is recorded and an invoice made) or declines. The seller can withdraw. Either side can end it: the seller rejects, the buyer cancels.
+
+If the offered weight is no longer free, the call fails with `409 conflict`. See [Requests API](/docs/api/transaction-requests) for every call.
+
+## Live updates
+
+The `market` topic tells open market pages to refetch, and `request:<id>` keeps one request and its chat in step for both sides. Nothing polls.

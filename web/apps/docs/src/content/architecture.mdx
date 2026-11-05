@@ -1,0 +1,48 @@
+# Architecture Overview
+
+3rEco is one Go binary plus a React app. The binary serves the API under `/api` and the built web app everywhere else.
+
+## System Diagram
+
+```
+Browser (React 19 SPA)
+   │  HTTP + cookies            WebSocket /api/live
+   ▼                            ▼
+┌──────────────────────────────────────────┐
+│  Go server (Fiber v3)                    │
+│  handlers → services → stores            │
+│  realtime hub ◄── LISTEN/NOTIFY          │
+└───────┬──────────────┬───────────┬───────┘
+        ▼              ▼           ▼
+    Postgres      MinIO / S3     Resend
+   (all data)   (files, PDFs)    (email)
+```
+
+## Layers
+
+| Layer | Folder | Job |
+|---|---|---|
+| Handlers | `internal/api/<area>` | Fiber routes: read the request, check who is calling, call a service. No SQL |
+| Services | `internal/services/<area>` | Business rules: stock, the request and transaction state machine, prices, invoice numbers |
+| Stores | `internal/stores/<area>` | Database access with pgx, one store per area |
+| Platform | `internal/platform` | Config, database and migrations, mail, storage, PDF, errors |
+
+Every route checks who is calling and what they own, and has a test that tries to read or change someone else's data.
+
+## Realtime
+
+Postgres triggers send a `NOTIFY` on every change to a live table. The realtime service listens, and pushes a small `changed` event (a topic and an id, never row data) to every WebSocket client allowed on that topic. The client refetches what is on screen. A client may only join topics it owns, for example `notifications:<its own user id>`.
+
+## Money and weight
+
+Money and weights are exact: `numeric` in Postgres and decimal strings in JSON, never floats.
+
+## Serving the web app
+
+The server reads `THREERECO_WEB_DIST` (default `web/apps/app/dist`). Files under `/assets` are cached for a year, `index.html` is never cached, any other page path gets `index.html`, and responses are gzipped. An unknown `/api/...` path stays a JSON 404.
+
+## Where to read more
+
+- [Authentication](/docs/auth)
+- [Database Schema](/docs/schema)
+- [Error Handling](/docs/dev/error-handling)

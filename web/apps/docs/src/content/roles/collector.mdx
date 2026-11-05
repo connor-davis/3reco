@@ -1,0 +1,58 @@
+# Collector Users
+
+Collectors are the sellers on the 3rEco platform. They gather recyclable materials and sell them to businesses. In the app, collectors have a single focused view: their **Dashboard**, which tracks all their sales activity.
+
+## Onboarding
+
+Collectors complete their profile with:
+
+- First name, last name
+- ID number
+- Contact details (phone, address, city, province, area code)
+- Acceptance of terms
+
+`profileComplete` is set to `true` after the form is submitted, unlocking access to the full app.
+
+## What Collectors Can Access
+
+Collectors see only the **Dashboard**, notifications, and their profile. They do not have access to the Marketplace, Stock, or Transactions pages.
+
+| Page | Available to Collectors |
+|---|---|
+| Dashboard | ✅ |
+| Market (browse / requests) | ❌ |
+| Stock management | ❌ |
+| Collections | ❌ |
+| Transactions | ❌ |
+| Notifications | ✅ |
+| Profile | ✅ |
+
+## Collector Dashboard
+
+The collector dashboard shows revenue and sales analytics for all sales where they were the seller:
+
+| Stat | Calculation |
+|---|---|
+| **Total Revenue** | Sum of `price × weight` for all sales |
+| **Total Volume Sold** | Sum of `weight` for all sales (kg) |
+| **Carbon Savings** | Sum of `weight × material.carbonFactor` |
+
+A **daily sales line chart** shows volume sold per day over the last 30 days. A **latest sales table** shows the 5 most recent transactions with material, buyer, weight, price, and date.
+
+Date range filtering is available for all stats.
+
+## How Collector Sales Are Recorded
+
+Collectors do not initiate trades in the UI. Their sales are recorded by businesses via a **direct purchase**: a business goes to the Transactions page and clicks **Record purchase**, selecting the collector, material, weight, and price. This creates a `c2b` transaction immediately and the collector sees it on their dashboard.
+
+## Transaction Record
+
+After a c2b sale is recorded:
+
+- A transaction is created with `type: "c2b"` and the collector as the seller
+- A PDF invoice is generated and stored in file storage
+- The collector's dashboard stats update in real time
+
+<Callout type="tip" title="How do I know when I have a sale?">
+  You will receive a notification when a business records a purchase from you. Your dashboard stats and sales table update immediately — no refresh needed.
+</Callout>

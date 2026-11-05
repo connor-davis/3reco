@@ -1,0 +1,55 @@
+# Deployment
+
+3rEco ships as two images: the app (the Go binary with the built web app inside) and these docs. Postgres and MinIO run beside them.
+
+## Services
+
+| Service | What | Host port |
+|---|---|---|
+| `api` | The Go binary: API, WebSocket and the web app | `127.0.0.1:8180` |
+| `postgres` | Postgres 18 | not published |
+| `minio` | File storage (S3 compatible) | not published |
+| `docs` | This documentation site | `127.0.0.1:3001` |
+
+Put a reverse proxy with HTTPS (Caddy or nginx) in front: `app.<domain>` goes to `127.0.0.1:8180` and `docs.<domain>` to `127.0.0.1:3001`. Pass WebSocket upgrades through for `/api/live`.
+
+## One-command deploy
+
+```bash
+RESEND_API_KEY=... AUTH_FROM_EMAIL=... ./deploy.sh yourdomain.com
+```
+
+`deploy.sh` does this:
+
+1. Works out the web origin (`https://app.<domain>`)
+2. Makes the database password, file store password and `THREERECO_FIELD_KEY` if `.env` does not have them yet (existing values are kept)
+3. Writes `.env`
+4. Runs `docker compose up -d --build`
+
+The API runs the database migrations itself when it starts.
+
+<Callout type="warning">
+  Back up `THREERECO_FIELD_KEY` somewhere safe, apart from the database backups. If it is lost, ID numbers and bank account numbers cannot be read again.
+</Callout>
+
+## The image
+
+`deployments/Dockerfile` has three stages: Node builds the web app (`npm ci`, `npm run build`), Go builds the binary, and the final distroless image holds the binary plus the web app's `dist/` at `/web/apps/app/dist`. It runs as a non-root user and has a health check (`3reco health`).
+
+```bash
+podman build -f deployments/Dockerfile -t 3reco --build-arg VERSION=v0.1.0 .
+```
+
+## Backups
+
+Everything that matters is in the Postgres database and the S3 bucket. Back up both:
+
+```bash
+pg_dump "$THREERECO_DATABASE_URL" --format=custom --file=threereco.dump
+```
+
+## Behind a proxy
+
+Set `THREERECO_TRUSTED_PROXIES` to the proxy's address. Without it every visitor looks like one address, and the sign-in rate limit hits everyone.
+
+See [Environment Variables](/docs/environment) for every setting and `docs/operate.md` in the repository for the full operations notes.
