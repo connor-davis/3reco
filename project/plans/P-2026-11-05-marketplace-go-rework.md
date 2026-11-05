@@ -76,3 +76,18 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T14 | Remove `convex/`, Convex + Better Auth packages; update compose/Dockerfile/README | dev | T13 |
 | T15 | Verify: Go tests, build, lint, two-browser live check, migration dry run | Orchestrator + qa | T14 |
 | T16 | PR into master with pr-evidence; owner merges | Orchestrator | T15 |
+
+## T12-T14 decisions (orchestrator, 2026-11-05, under the owner's "finish it off" goal)
+
+Map: `mystuff/maps/t12-t14-web-map.md` section 6.
+
+- D1 Price tiers: dropped. One price per stock line, as the API has. No min lot.
+- D2 Store online/verified/hours/contact/map coords: removed from the UI. Map view goes (no coords); list only.
+- D3 Community and impact numbers: one public `GET /api/stats` (completed-trade kg, CO2 from material carbon factors, deal count, top stores by kg) built in Phase 0.
+- D4 Auth routes lose the `/auth` prefix: `/sign-in`, `/sign-up`, `/verify-email`, `/reset-password`, `/forgot-password` (match the email links).
+- D5 Statuses follow the API: pending, offered, accepted, rejected, cancelled. No Counter.
+- D6 Profile gets a "Your data" tab (download, delete account, notice); transaction detail gets receipt upload.
+- D7 The Go binary serves `web/apps/app/dist` (SPA fallback, gzip, long cache on hashed assets). One container. Built in T14.
+- D8 No self-serve collector role change; collector link is by profile phone, role set by admin.
+- D9 Preview pill and page-state switcher removed from the real app.
+- npm is the package manager; root `prettier.config.js` applies.
