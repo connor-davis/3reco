@@ -42,6 +42,9 @@ The whole repo root becomes a Viper-style Go repo. Source of truth: root `AGENTS
   teal override (`hsl(183, 55%, 35%)`) at the end of today's `index.css` and on the
   invoice header is dropped in the rebuild.
 - `web/apps/docs` content still describes Convex setup; rewritten in T14.
+- T8 notes: a collector login links to its collector row by phone (no direct link in
+  Convex); recheck in T11. Inbox shows pending requests only. Exports skipped and
+  invoice/receipt routes return 501 until T10.
 - The 11 old web lint errors (`react-refresh/only-export-components` in `components/ui`)
   are fixed when the web app is rewired in T12/T13, not by loosening the rule.
 
@@ -62,7 +65,7 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 | T5 | (picked 2026-11-05) Base 10-chat-commerce; borrow UI from 04, 05, 06, 09; phone layout from 08. Build one final design as a Vite + TanStack + shadcn app in `mystuff/final-design`, audited for full shadcn use. T13 follows it. | owner, then dev + audit | T4 |
 | T6 | (done c4f027e) Go skeleton: module, config, Postgres pool, SQL migrations for every table, docker compose (Postgres, MinIO, Mailpit) | dev | T1 |
 | T7 | (done c4f027e) Go auth: sign-up, verify email, sign-in, sessions (cookie), forgot/reset, admin role; scrypt verify of Better Auth hashes | dev | T6 |
-| T8 | Go domain API: every Convex query/mutation/action as REST, same access rules | dev(s), split by domain | T6, T7 |
+| T8 | (done, merged 8d37ac3) Go domain API: every Convex query/mutation/action as REST, same access rules | dev(s), split by domain | T6, T7 |
 | T9 | (done c4f027e) Realtime: LISTEN/NOTIFY → WebSocket hub, subscribe-by-topic; matches Convex live queries | dev | T6 |
 | T10 | Files (MinIO) + PDFs/CSV exports + emails (Resend/Mailpit) | dev | T8 |
 | T11 | Data move: Convex export → Postgres + MinIO, count check | dev | T6, T10 |
