@@ -25,3 +25,6 @@ dist-ssr
 
 # TanStack Router generated temp files
 .tanstack/
+
+# Local scratch (design mockups, maps)
+mystuff/
