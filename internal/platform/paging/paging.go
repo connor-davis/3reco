@@ -34,6 +34,32 @@ type Cursor struct {
 	ID string
 }
 
+// Query combines a cursor and page size, including the owner-scoped all mode.
+type Query struct {
+	Cursor
+	Limit int
+	All   bool
+}
+
+// Parse applies the shared cursor and limit rules to a list request.
+func Parse(raw, limit string, all bool) (Query, error) {
+	cursor, err := ParseCursor(raw)
+	if err != nil {
+		return Query{}, err
+	}
+
+	return Query{Cursor: cursor, Limit: Limit(limit), All: all}, nil
+}
+
+// Size includes a lookahead row, or zero for SQL LIMIT NULLIF(size, 0).
+func (query Query) Size() int {
+	if query.All {
+		return 0
+	}
+
+	return query.Limit + 1
+}
+
 // ParseCursor reads a cursor the API handed out earlier. Empty means the start.
 func ParseCursor(raw string) (Cursor, error) {
 	if raw == "" {
