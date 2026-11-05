@@ -1,170 +1,36 @@
-import BackButton from '@/components/back-button';
-import TransactionPartyDetails from '@/components/transactions/party-details';
-import TransactionItemContent from '@/components/transactions/item-content';
-import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
-import {
-  InvoiceDownloadButton,
-  ReceiptDownloadButton,
-} from '@/components/transactions/invoice-download';
-import ExportCsvControls, {
-  type ExportRowFormat,
-} from '@/components/transactions/export-csv-controls';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { Item, ItemActions, ItemFooter } from '@/components/ui/item';
-import { Label } from '@/components/ui/label';
-import { useConvexPaginatedQuery } from '@convex-dev/react-query';
-import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
-import { format } from 'date-fns';
-import { ChevronRightIcon, PackageIcon, TruckIcon } from 'lucide-react';
-import { useState } from 'react';
-import type { DateRange } from 'react-day-picker';
-import { useQuery } from 'convex/react';
-import { getEffectiveTransactionDate } from '@/lib/transactions';
+import { Guarded } from '@/components/access-guard';
+import { myBusinessName, myCollectorId } from '@/lib/data/ledger';
+import { useMock } from '@/lib/mock/hooks';
+import { RecordList } from './-components/record-list';
 
 export const Route = createFileRoute('/transactions/sales')({
-  component: RouteComponent,
+  component: () => (
+    <Guarded page="sales">
+      <Sales />
+    </Guarded>
+  ),
 });
 
-function RouteComponent() {
-  const {
-    results: transactions,
-    status,
-    loadMore,
-  } = useConvexPaginatedQuery(
-    api.transactions.listSalesWithPagination,
-    {},
-    { initialNumItems: 50 }
-  );
-  const isInitialLoading = status === 'LoadingFirstPage';
-  const isLoadingMore = status === 'LoadingMore';
-  const canLoadMore = status === 'CanLoadMore' || isLoadingMore;
-
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [exportFormat, setExportFormat] = useState<ExportRowFormat>('transaction');
-
-  const exportData = useQuery(api.exports.exportMySales, {
-    itemised: exportFormat === 'material',
-    from: dateRange?.from?.getTime(),
-    to: dateRange?.to
-      ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999).getTime()
-      : undefined,
-  });
-
-  const filtered = transactions?.filter((t) => {
-    const effectiveDate = getEffectiveTransactionDate(t);
-
-    if (dateRange?.from && effectiveDate < dateRange.from.getTime()) return false;
-    if (dateRange?.to) {
-      const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
-      if (effectiveDate > toEnd.getTime()) return false;
-    }
-    return true;
-  });
+function Sales() {
+  const { role, data } = useMock();
+  const isCollector = role === 'collector';
 
   return (
-    <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton />
-          <Label className="text-lg">Sales</Label>
-        </div>
-        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
-          <DateRangePicker value={dateRange} onChange={setDateRange} align="end" />
-          <ExportCsvControls
-            rows={exportData}
-            format={exportFormat}
-            onFormatChange={setExportFormat}
-            filenameBase="sales"
-            size="sm"
-          />
-        </div>
-      </div>
-
-      {isInitialLoading ? (
-        <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <TruckIcon />
-              </EmptyMedia>
-              <EmptyTitle>Loading sales...</EmptyTitle>
-            </EmptyHeader>
-          </Empty>
-        </div>
-      ) : (
-        <>
-        {!filtered ||
-          (filtered.length === 0 && (
-            <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <PackageIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>No sales yet</EmptyTitle>
-                  <EmptyDescription>Your sales will appear here.</EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
-              </Empty>
-            </div>
-          ))}
-
-        {filtered && filtered.length > 0 && (
-          <VirtualizedPaginatedList
-            className="h-full"
-            items={filtered}
-            hasMore={canLoadMore}
-            isLoadingMore={isLoadingMore}
-            loadMore={() => loadMore(50)}
-            getItemKey={(transaction) => transaction._id}
-            renderItem={(transaction) => {
-              const effectiveDate = getEffectiveTransactionDate(transaction);
-
-              return (
-                <Item variant="backgroundOutline" key={transaction._id}>
-                  <TransactionItemContent _id={transaction._id} />
-
-                  <ItemActions>
-                    {transaction.type === 'c2b' ? (
-                      <ReceiptDownloadButton
-                        transactionId={transaction._id}
-                        attachments={transaction.receiptAttachments ?? []}
-                      />
-                    ) : null}
-                    <InvoiceDownloadButton
-                      transactionId={transaction._id}
-                      creationTime={transaction._creationTime}
-                      transactionDate={effectiveDate}
-                    />
-                    <TransactionPartyDetails
-                      {...(transaction.type === 'c2b'
-                        ? { collectorId: transaction.sellerId as Id<'collectors'> }
-                        : { userId: transaction.sellerId as Id<'users'> })}
-                    />
-                    <ChevronRightIcon className="size-4" />
-                    <TransactionPartyDetails userId={transaction.buyerId} />
-                  </ItemActions>
-
-                  <ItemFooter>
-                    {format(new Date(effectiveDate), 'dd/MM/yyyy')}
-                  </ItemFooter>
-                </Item>
-              );
-            }}
-          />
-        )}
-        </>
+    <RecordList
+      title="Sales"
+      description={
+        isCollector
+          ? 'Your collections sold to businesses. Read only.'
+          : 'Your completed and agreed sales, with the paperwork to match.'
+      }
+      rows={data.transactions.filter((row) =>
+        isCollector
+          ? row.collectorId === myCollectorId
+          : row.seller === myBusinessName
       )}
-    </div>
+      emptyTitle="No sales yet"
+      readOnly={isCollector}
+    />
   );
 }

@@ -1,133 +1,173 @@
-﻿import BackButton from '@/components/back-button';
-import CreateMaterialDialog from '@/components/dialogs/materials/create';
-import RemoveMaterialByIdDialog from '@/components/dialogs/materials/remove';
-import EditMaterialByIdDialog from '@/components/dialogs/materials/update';
-import PageHeaderActions from '@/components/page-header-actions';
-import { Button } from '@/components/ui/button';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemTitle,
-} from '@/components/ui/item';
-import { Label } from '@/components/ui/label';
-import { useConvexQuery } from '@convex-dev/react-query';
-import { api } from '@convex/_generated/api';
-import { createFileRoute } from '@tanstack/react-router';
-import { PackageIcon, PencilIcon, SearchIcon, TrashIcon } from 'lucide-react';
 import { useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Boxes, Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Guarded } from '@/components/access-guard';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { DataTable } from '@/components/data-table';
+import { DataState, RowsSkeleton } from '@/components/data-state';
+import { MaterialDialog } from '@/components/dialogs/material-dialog';
+import { SearchBox } from '@/components/filters';
+import { IconButton } from '@/components/icon-button';
+import { PageHeader } from '@/components/page-header';
+import { MaterialThumb } from '@/components/visuals';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { formatRate } from '@/lib/format';
+import { useMock, useMockList } from '@/lib/mock/hooks';
+import type { Material } from '@/lib/types';
 
 export const Route = createFileRoute('/materials')({
-  component: RouteComponent,
+  component: () => (
+    <Guarded page="materials">
+      <MaterialsPage />
+    </Guarded>
+  ),
 });
 
-function RouteComponent() {
-  const materials = useConvexQuery(api.materials.list, {});
-  const [search, setSearch] = useState('');
+function MaterialsPage() {
+  const { role } = useMock();
+  const list = useMockList('materials');
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState<Material | undefined>();
+  const [formOpen, setFormOpen] = useState(false);
+  const [removing, setRemoving] = useState<Material | null>(null);
 
-  const filtered = materials?.filter((m) =>
-    m.name.toLowerCase().includes(search.toLowerCase())
+  const isAdmin = role === 'admin';
+  const shown = list.items.filter((material) =>
+    material.name.toLowerCase().includes(query.toLowerCase())
   );
 
-  return (
-    <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton />
-          <Label className="text-lg">Materials</Label>
-        </div>
-        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
-          <PageHeaderActions
-            title="Materials"
-            description="Search or add materials."
-          >
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Search materials..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-full"
-              />
-            </div>
-            <CreateMaterialDialog>
-              <Button className="w-full">Create Material</Button>
-            </CreateMaterialDialog>
-          </PageHeaderActions>
-        </div>
+  function openForm(material?: Material) {
+    setEditing(material);
+    setFormOpen(true);
+  }
+
+  function actionsFor(material: Material) {
+    if (!isAdmin)
+      return <span className="text-sm text-muted-foreground">View only</span>;
+
+    return (
+      <div className="flex gap-1">
+        <IconButton
+          label={`Edit ${material.name}`}
+          onClick={() => openForm(material)}
+        >
+          <Pencil />
+        </IconButton>
+        <IconButton
+          label={`Remove ${material.name}`}
+          onClick={() => setRemoving(material)}
+        >
+          <Trash2 />
+        </IconButton>
       </div>
+    );
+  }
 
-      {!filtered ||
-        (filtered.length === 0 && (
-          <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <PackageIcon />
-                </EmptyMedia>
-                <EmptyTitle>
-                  {search ? 'No results found' : 'No materials yet'}
-                </EmptyTitle>
-                <EmptyDescription>
-                  {search
-                    ? `No materials match "${search}".`
-                    : 'Add a material and it will appear here.'}
-                </EmptyDescription>
-              </EmptyHeader>
-              {!search && (
-                <EmptyContent className="flex-row justify-center gap-2">
-                  <CreateMaterialDialog>
-                    <Button>Add Material</Button>
-                  </CreateMaterialDialog>
-                </EmptyContent>
-              )}
-            </Empty>
-          </div>
-        ))}
+  const columns: ColumnDef<Material>[] = [
+    {
+      accessorKey: 'name',
+      header: 'Material',
+      cell: ({ row }) => (
+        <span className="flex items-center gap-3">
+          <MaterialThumb
+            category={row.original.category}
+            className="size-9 rounded-lg"
+          />
+          <span className="font-medium">{row.original.name}</span>
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'carbonFactor',
+      header: 'Carbon factor (kg CO₂ / kg)',
+      enableSorting: false,
+    },
+    { accessorKey: 'gwCode', header: 'GW code', enableSorting: false },
+    {
+      accessorKey: 'referencePrice',
+      header: 'Reference price',
+      cell: ({ row }) => formatRate(row.original.referencePrice),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => actionsFor(row.original),
+    },
+  ];
 
-      {filtered && filtered.length > 0 && (
-        <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-          {filtered?.map((material) => (
-            <Item variant="backgroundOutline" key={material._id}>
-              <ItemContent>
-                <ItemTitle>{material.name}</ItemTitle>
-                <ItemDescription>
-                  Carbon footprint: {material.carbonFactor} kg CO2e per kg
-                  {' · '}Waste code: {material.gwCode}
-                  {' · '}Price: R{material.price} per kg
-                </ItemDescription>
-              </ItemContent>
-
-              <ItemActions>
-                <EditMaterialByIdDialog _id={material._id}>
-                  <Button variant="ghost" size="icon">
-                    <PencilIcon />
-                  </Button>
-                </EditMaterialByIdDialog>
-
-                <RemoveMaterialByIdDialog
-                  _id={material._id}
-                  materialName={material.name}
-                >
-                  <Button variant="destructiveGhost" size="icon">
-                    <TrashIcon />
-                  </Button>
-                </RemoveMaterialByIdDialog>
-              </ItemActions>
-            </Item>
-          ))}
-        </div>
-      )}
-    </div>
+  return (
+    <>
+      <PageHeader
+        title="Material catalogue"
+        description="The grades, rates and carbon factors behind every trade."
+        actions={
+          isAdmin && (
+            <Button onClick={() => openForm()}>
+              <Plus data-icon="inline-start" />
+              Add material
+            </Button>
+          )
+        }
+      />
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <SearchBox
+          label="Search material names"
+          value={query}
+          onChange={setQuery}
+        />
+        {!isAdmin && <Badge variant="outline">Read-only catalogue</Badge>}
+      </div>
+      <DataState
+        isEmpty={shown.length === 0}
+        icon={Boxes}
+        emptyTitle="No material matches"
+        emptyText="Try a different name."
+        skeleton={<RowsSkeleton />}
+      >
+        <DataTable
+          columns={columns}
+          data={shown}
+          renderCard={(material) => (
+            <Card size="sm">
+              <CardContent className="space-y-2">
+                <p className="font-medium">{material.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {material.carbonFactor} kg CO₂ / kg · {material.gwCode}
+                </p>
+                <p className="text-sm">{formatRate(material.referencePrice)}</p>
+                {actionsFor(material)}
+              </CardContent>
+            </Card>
+          )}
+          footer={
+            <>
+              <span>{shown.length} material grades</span>
+              <span>Carbon factors apply per kg traded</span>
+            </>
+          }
+        />
+      </DataState>
+      <MaterialDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        material={editing}
+      />
+      <ConfirmDialog
+        open={removing !== null}
+        onOpenChange={(open) => !open && setRemoving(null)}
+        title={`Remove ${removing?.name ?? 'material'}?`}
+        description="It leaves the catalogue. Existing trades keep their records."
+        confirmLabel="Remove material"
+        onConfirm={() => {
+          if (removing) list.remove(removing.id);
+          setRemoving(null);
+          toast.success('Material removed.');
+        }}
+      />
+    </>
   );
 }

@@ -13,13 +13,16 @@ import { Route as StockRouteImport } from './routes/stock'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as CollectorsRouteImport } from './routes/collectors'
 import { Route as CollectionsRouteImport } from './routes/collections'
+import { Route as CartRouteImport } from './routes/cart'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TransactionsIndexRouteImport } from './routes/transactions/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as MessagesIndexRouteImport } from './routes/messages/index'
 import { Route as MarketIndexRouteImport } from './routes/market/index'
 import { Route as TransactionsSalesRouteImport } from './routes/transactions/sales'
 import { Route as TransactionsPurchasesRouteImport } from './routes/transactions/purchases'
+import { Route as MessagesRequestIdRouteImport } from './routes/messages/$requestId'
 import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
@@ -29,7 +32,8 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store.$sellerId'
+import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store/$sellerId'
+import { Route as MarketListingListingIdRouteImport } from './routes/market/listing/$listingId'
 
 const StockRoute = StockRouteImport.update({
   id: '/stock',
@@ -49,6 +53,11 @@ const CollectorsRoute = CollectorsRouteImport.update({
 const CollectionsRoute = CollectionsRouteImport.update({
   id: '/collections',
   path: '/collections',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -71,6 +80,11 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MessagesIndexRoute = MessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MarketIndexRoute = MarketIndexRouteImport.update({
   id: '/market/',
   path: '/market/',
@@ -84,6 +98,11 @@ const TransactionsSalesRoute = TransactionsSalesRouteImport.update({
 const TransactionsPurchasesRoute = TransactionsPurchasesRouteImport.update({
   id: '/transactions/purchases',
   path: '/transactions/purchases',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRequestIdRoute = MessagesRequestIdRouteImport.update({
+  id: '/messages/$requestId',
+  path: '/messages/$requestId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketOutgoingRoute = MarketOutgoingRouteImport.update({
@@ -136,10 +155,16 @@ const MarketStoreSellerIdRoute = MarketStoreSellerIdRouteImport.update({
   path: '/market/store/$sellerId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketListingListingIdRoute = MarketListingListingIdRouteImport.update({
+  id: '/market/listing/$listingId',
+  path: '/market/listing/$listingId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
   '/materials': typeof MaterialsRoute
@@ -153,16 +178,20 @@ export interface FileRoutesByFullPath {
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
+  '/messages/$requestId': typeof MessagesRequestIdRoute
   '/transactions/purchases': typeof TransactionsPurchasesRoute
   '/transactions/sales': typeof TransactionsSalesRoute
   '/market/': typeof MarketIndexRoute
+  '/messages/': typeof MessagesIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
+  '/market/listing/$listingId': typeof MarketListingListingIdRoute
   '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
   '/materials': typeof MaterialsRoute
@@ -176,17 +205,21 @@ export interface FileRoutesByTo {
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
+  '/messages/$requestId': typeof MessagesRequestIdRoute
   '/transactions/purchases': typeof TransactionsPurchasesRoute
   '/transactions/sales': typeof TransactionsSalesRoute
   '/market': typeof MarketIndexRoute
+  '/messages': typeof MessagesIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/transactions': typeof TransactionsIndexRoute
+  '/market/listing/$listingId': typeof MarketListingListingIdRoute
   '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
   '/materials': typeof MaterialsRoute
@@ -200,11 +233,14 @@ export interface FileRoutesById {
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
+  '/messages/$requestId': typeof MessagesRequestIdRoute
   '/transactions/purchases': typeof TransactionsPurchasesRoute
   '/transactions/sales': typeof TransactionsSalesRoute
   '/market/': typeof MarketIndexRoute
+  '/messages/': typeof MessagesIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
+  '/market/listing/$listingId': typeof MarketListingListingIdRoute
   '/market/store/$sellerId': typeof MarketStoreSellerIdRoute
 }
 export interface FileRouteTypes {
@@ -212,6 +248,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/cart'
     | '/collections'
     | '/collectors'
     | '/materials'
@@ -225,16 +262,20 @@ export interface FileRouteTypes {
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
+    | '/messages/$requestId'
     | '/transactions/purchases'
     | '/transactions/sales'
     | '/market/'
+    | '/messages/'
     | '/profile/'
     | '/transactions/'
+    | '/market/listing/$listingId'
     | '/market/store/$sellerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/cart'
     | '/collections'
     | '/collectors'
     | '/materials'
@@ -248,16 +289,20 @@ export interface FileRouteTypes {
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
+    | '/messages/$requestId'
     | '/transactions/purchases'
     | '/transactions/sales'
     | '/market'
+    | '/messages'
     | '/profile'
     | '/transactions'
+    | '/market/listing/$listingId'
     | '/market/store/$sellerId'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/cart'
     | '/collections'
     | '/collectors'
     | '/materials'
@@ -271,17 +316,21 @@ export interface FileRouteTypes {
     | '/market/$requestId'
     | '/market/incoming'
     | '/market/outgoing'
+    | '/messages/$requestId'
     | '/transactions/purchases'
     | '/transactions/sales'
     | '/market/'
+    | '/messages/'
     | '/profile/'
     | '/transactions/'
+    | '/market/listing/$listingId'
     | '/market/store/$sellerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CartRoute: typeof CartRoute
   CollectionsRoute: typeof CollectionsRoute
   CollectorsRoute: typeof CollectorsRoute
   MaterialsRoute: typeof MaterialsRoute
@@ -295,11 +344,14 @@ export interface RootRouteChildren {
   MarketRequestIdRoute: typeof MarketRequestIdRoute
   MarketIncomingRoute: typeof MarketIncomingRoute
   MarketOutgoingRoute: typeof MarketOutgoingRoute
+  MessagesRequestIdRoute: typeof MessagesRequestIdRoute
   TransactionsPurchasesRoute: typeof TransactionsPurchasesRoute
   TransactionsSalesRoute: typeof TransactionsSalesRoute
   MarketIndexRoute: typeof MarketIndexRoute
+  MessagesIndexRoute: typeof MessagesIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   TransactionsIndexRoute: typeof TransactionsIndexRoute
+  MarketListingListingIdRoute: typeof MarketListingListingIdRoute
   MarketStoreSellerIdRoute: typeof MarketStoreSellerIdRoute
 }
 
@@ -333,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -361,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/messages/': {
+      id: '/messages/'
+      path: '/messages'
+      fullPath: '/messages/'
+      preLoaderRoute: typeof MessagesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/market/': {
       id: '/market/'
       path: '/market'
@@ -380,6 +446,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions/purchases'
       fullPath: '/transactions/purchases'
       preLoaderRoute: typeof TransactionsPurchasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages/$requestId': {
+      id: '/messages/$requestId'
+      path: '/messages/$requestId'
+      fullPath: '/messages/$requestId'
+      preLoaderRoute: typeof MessagesRequestIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/market/outgoing': {
@@ -452,12 +525,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketStoreSellerIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/market/listing/$listingId': {
+      id: '/market/listing/$listingId'
+      path: '/market/listing/$listingId'
+      fullPath: '/market/listing/$listingId'
+      preLoaderRoute: typeof MarketListingListingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CartRoute: CartRoute,
   CollectionsRoute: CollectionsRoute,
   CollectorsRoute: CollectorsRoute,
   MaterialsRoute: MaterialsRoute,
@@ -471,11 +552,14 @@ const rootRouteChildren: RootRouteChildren = {
   MarketRequestIdRoute: MarketRequestIdRoute,
   MarketIncomingRoute: MarketIncomingRoute,
   MarketOutgoingRoute: MarketOutgoingRoute,
+  MessagesRequestIdRoute: MessagesRequestIdRoute,
   TransactionsPurchasesRoute: TransactionsPurchasesRoute,
   TransactionsSalesRoute: TransactionsSalesRoute,
   MarketIndexRoute: MarketIndexRoute,
+  MessagesIndexRoute: MessagesIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   TransactionsIndexRoute: TransactionsIndexRoute,
+  MarketListingListingIdRoute: MarketListingListingIdRoute,
   MarketStoreSellerIdRoute: MarketStoreSellerIdRoute,
 }
 export const routeTree = rootRouteImport

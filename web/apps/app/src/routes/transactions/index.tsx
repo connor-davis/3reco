@@ -1,210 +1,32 @@
-import BackButton from '@/components/back-button';
-import TransactionPartyDetails from '@/components/transactions/party-details';
-import TransactionItemContent from '@/components/transactions/item-content';
-import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
-import {
-  InvoiceDownloadButton,
-  ReceiptDownloadButton,
-} from '@/components/transactions/invoice-download';
-import PageHeaderActions from '@/components/page-header-actions';
-import ExportCsvControls, {
-  type ExportRowFormat,
-} from '@/components/transactions/export-csv-controls';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { Item, ItemActions, ItemFooter } from '@/components/ui/item';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useConvexPaginatedQuery } from '@convex-dev/react-query';
-import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
 import { createFileRoute } from '@tanstack/react-router';
-import { format } from 'date-fns';
-import { ChevronRightIcon, CreditCardIcon, VanIcon } from 'lucide-react';
-import { useState } from 'react';
-import type { DateRange } from 'react-day-picker';
-import { useQuery } from 'convex/react';
-import { getEffectiveTransactionDate } from '@/lib/transactions';
+import { Guarded } from '@/components/access-guard';
+import { LinkButton } from '@/components/link-button';
+import { useMock } from '@/lib/mock/hooks';
+import { RecordList } from './-components/record-list';
 
 export const Route = createFileRoute('/transactions/')({
-  component: RouteComponent,
+  component: () => (
+    <Guarded page="transactions">
+      <AllTransactions />
+    </Guarded>
+  ),
 });
 
-const TRANSACTION_TYPE_LABELS = {
-  all: 'All sales',
-  c2b: 'Collector to business',
-  b2b: 'Business to business',
-} as const;
-
-function RouteComponent() {
-  const {
-    results: transactions,
-    status: transactionsStatus,
-    loadMore: loadMoreTransactions,
-  } = useConvexPaginatedQuery(
-    api.transactions.listWithPagination,
-    {},
-    { initialNumItems: 50 }
-  );
-  const isInitialLoading = transactionsStatus === 'LoadingFirstPage';
-  const isLoadingMore = transactionsStatus === 'LoadingMore';
-  const canLoadMoreTransactions =
-    transactionsStatus === 'CanLoadMore' || isLoadingMore;
-
-  const [typeFilter, setTypeFilter] = useState<'all' | 'c2b' | 'b2b'>('all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [exportFormat, setExportFormat] = useState<ExportRowFormat>('transaction');
-
-  const exportData = useQuery(api.exports.exportTransactions, {
-    itemised: exportFormat === 'material',
-    from: dateRange?.from?.getTime(),
-    to: dateRange?.to
-      ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999).getTime()
-      : undefined,
-  });
-
-  const filtered = transactions?.filter((t) => {
-    const effectiveDate = getEffectiveTransactionDate(t);
-
-    if (typeFilter !== 'all' && t.type !== typeFilter) return false;
-    if (dateRange?.from && effectiveDate < dateRange.from.getTime()) return false;
-    if (dateRange?.to) {
-      const toEnd = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
-      if (effectiveDate > toEnd.getTime()) return false;
-    }
-    return true;
-  });
+function AllTransactions() {
+  const { data } = useMock();
 
   return (
-    <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton />
-
-          <Label className="text-lg">Transactions</Label>
-        </div>
-        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
-          <PageHeaderActions
-            title="Transactions"
-            description="Filter or export transactions."
-          >
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-              <SelectTrigger className="w-full">
-                <SelectValue>{TRANSACTION_TYPE_LABELS[typeFilter]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All sales</SelectItem>
-                <SelectItem value="c2b">Collector to business</SelectItem>
-                <SelectItem value="b2b">Business to business</SelectItem>
-              </SelectContent>
-            </Select>
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              align="start"
-              fullWidth
-            />
-            <ExportCsvControls
-              rows={exportData}
-              format={exportFormat}
-              onFormatChange={setExportFormat}
-              filenameBase="transactions"
-              fullWidth
-            />
-          </PageHeaderActions>
-        </div>
-      </div>
-
-      {isInitialLoading ? (
-        <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <VanIcon />
-              </EmptyMedia>
-              <EmptyTitle>Loading transactions...</EmptyTitle>
-            </EmptyHeader>
-          </Empty>
-        </div>
-      ) : (
-        <>
-        {!filtered ||
-          (filtered.length === 0 && (
-            <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <CreditCardIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>No transactions yet</EmptyTitle>
-                  <EmptyDescription>
-                    Your sales and purchases will appear here.
-                  </EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
-              </Empty>
-            </div>
-          ))}
-
-        {filtered && filtered.length > 0 && (
-          <VirtualizedPaginatedList
-            className="h-full"
-            items={filtered}
-            hasMore={canLoadMoreTransactions}
-            isLoadingMore={isLoadingMore}
-            loadMore={() => loadMoreTransactions(50)}
-            getItemKey={(transaction) => transaction._id}
-            renderItem={(transaction) => {
-              const effectiveDate = getEffectiveTransactionDate(transaction);
-
-              return (
-                <Item variant="backgroundOutline" key={transaction._id}>
-                  <TransactionItemContent _id={transaction._id} />
-
-                  <ItemActions>
-                    {transaction.type === 'c2b' ? (
-                      <ReceiptDownloadButton
-                        transactionId={transaction._id}
-                        attachments={transaction.receiptAttachments ?? []}
-                      />
-                    ) : null}
-                    <InvoiceDownloadButton
-                      transactionId={transaction._id}
-                      creationTime={transaction._creationTime}
-                      transactionDate={effectiveDate}
-                    />
-                    <TransactionPartyDetails
-                      {...(transaction.type === 'c2b'
-                        ? { collectorId: transaction.sellerId as Id<'collectors'> }
-                        : { userId: transaction.sellerId as Id<'users'> })}
-                    />
-                    <ChevronRightIcon className="size-4" />
-                    <TransactionPartyDetails userId={transaction.buyerId} />
-                  </ItemActions>
-
-                  <ItemFooter>
-                    {format(new Date(effectiveDate), 'dd/MM/yyyy')}
-                  </ItemFooter>
-                </Item>
-              );
-            }}
-          />
-        )}
-        </>
-      )}
-    </div>
+    <RecordList
+      title="All transactions"
+      description="Every trade on the marketplace, with its paperwork."
+      rows={data.transactions}
+      emptyTitle="No transactions yet"
+      typeFilter
+      actions={
+        <LinkButton to="/messages" variant="outline">
+          Open messages
+        </LinkButton>
+      }
+    />
   );
 }

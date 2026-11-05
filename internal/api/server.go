@@ -24,6 +24,7 @@ import (
 	privacyapi "github.com/connor-davis/3reco/internal/api/privacy"
 	profileapi "github.com/connor-davis/3reco/internal/api/profile"
 	"github.com/connor-davis/3reco/internal/api/sockets"
+	statsapi "github.com/connor-davis/3reco/internal/api/stats"
 	stockapi "github.com/connor-davis/3reco/internal/api/stock"
 	storesapi "github.com/connor-davis/3reco/internal/api/stores"
 	"github.com/connor-davis/3reco/internal/platform/apperr"
@@ -40,6 +41,7 @@ import (
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
+	statssvc "github.com/connor-davis/3reco/internal/services/stats"
 	stocksvc "github.com/connor-davis/3reco/internal/services/stock"
 	storessvc "github.com/connor-davis/3reco/internal/services/stores"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
@@ -48,6 +50,7 @@ import (
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
 	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
 	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
+	statsstore "github.com/connor-davis/3reco/internal/stores/stats"
 	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
 	storesstore "github.com/connor-davis/3reco/internal/stores/stores"
 )
@@ -72,6 +75,9 @@ var Module = fx.Module("api",
 		materialsstore.New,
 		materialssvc.New,
 		materialsapi.New,
+		statsstore.New,
+		statssvc.New,
+		statsapi.New,
 		privacystore.New,
 		privacysvc.New,
 		privacyapi.New,
@@ -109,6 +115,7 @@ type routes struct {
 	Socket     *sockets.Handler
 	Collectors *collectorsapi.Handler
 	Market     *marketapi.Handler
+	Stats      *statsapi.Handler
 	Materials  *materialsapi.Handler
 	Privacy    *privacyapi.Handler
 	Profile    *profileapi.Handler
@@ -168,6 +175,7 @@ func New(r routes) *fiber.App {
 	r.Collectors.Register(api)
 	r.Market.Register(api)
 	r.Materials.Register(api)
+	r.Stats.Register(api)
 	r.Privacy.Register(api)
 	r.Profile.Register(api)
 	r.Stock.Register(api)

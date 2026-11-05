@@ -1,219 +1,40 @@
-import BackButton from '@/components/back-button';
-import CreateCollectionDialog from '@/components/dialogs/collections/create';
-import CollectionItemContent from '@/components/collections/item-content';
-import {
-  InvoiceDownloadButton,
-  ReceiptDownloadButton,
-} from '@/components/transactions/invoice-download';
-import PageHeaderActions from '@/components/page-header-actions';
-import ExportCsvControls, {
-  type ExportRowFormat,
-} from '@/components/transactions/export-csv-controls';
-import { Button } from '@/components/ui/button';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { VirtualizedPaginatedList } from '@/components/virtualized-paginated-list';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { Item, ItemActions, ItemFooter } from '@/components/ui/item';
-import { Label } from '@/components/ui/label';
-import { useConvexPaginatedQuery } from '@convex-dev/react-query';
-import { api } from '@convex/_generated/api';
-import type { Id } from '@convex/_generated/dataModel';
-import { createFileRoute } from '@tanstack/react-router';
-import { format } from 'date-fns';
-import { ChevronRightIcon, VanIcon } from 'lucide-react';
 import { useState } from 'react';
-import type { DateRange } from 'react-day-picker';
-import TransactionPartyDetails from '@/components/transactions/party-details';
-import { useQuery } from 'convex/react';
-import { getEffectiveTransactionDate } from '@/lib/transactions';
+import { createFileRoute } from '@tanstack/react-router';
+import { Plus } from 'lucide-react';
+import { Guarded } from '@/components/access-guard';
+import { CollectionDialog } from '@/components/dialogs/collection-dialog';
+import { Button } from '@/components/ui/button';
+import { useMock } from '@/lib/mock/hooks';
+import { RecordList } from './transactions/-components/record-list';
 
 export const Route = createFileRoute('/collections')({
-  component: RouteComponent,
+  component: () => (
+    <Guarded page="collections">
+      <CollectionsPage />
+    </Guarded>
+  ),
 });
 
-function RouteComponent() {
-  const currentUser = useQuery(api.users.currentUser);
-  const {
-    results: collections,
-    status: collectionsStatus,
-    loadMore: loadMoreCollections,
-  } = useConvexPaginatedQuery(
-    api.transactions.listExpensesWithPagination,
-    {},
-    { initialNumItems: 50 }
-  );
-  const isInitialLoading = collectionsStatus === 'LoadingFirstPage';
-  const isLoadingMore = collectionsStatus === 'LoadingMore';
-  const canLoadMoreCollections =
-    collectionsStatus === 'CanLoadMore' || isLoadingMore;
-
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [exportFormat, setExportFormat] = useState<ExportRowFormat>('transaction');
-  const showCounterpartyDetails =
-    currentUser?.role === 'admin' || currentUser?.role === 'staff';
-
-  const exportData = useQuery(api.exports.exportCollections, {
-    itemised: exportFormat === 'material',
-    from: dateRange?.from?.getTime(),
-    to: dateRange?.to
-      ? new Date(
-          dateRange.to.getFullYear(),
-          dateRange.to.getMonth(),
-          dateRange.to.getDate(),
-          23,
-          59,
-          59,
-          999
-        ).getTime()
-      : undefined,
-  });
-
-  const filtered = collections?.filter((c) => {
-    if (c.type !== 'c2b') return false;
-
-    const effectiveDate = getEffectiveTransactionDate(c);
-
-    if (dateRange?.from && effectiveDate < dateRange.from.getTime())
-      return false;
-    if (dateRange?.to) {
-      const toEnd = new Date(
-        dateRange.to.getFullYear(),
-        dateRange.to.getMonth(),
-        dateRange.to.getDate(),
-        23,
-        59,
-        59,
-        999
-      );
-      if (effectiveDate > toEnd.getTime()) return false;
-    }
-    return true;
-  });
+function CollectionsPage() {
+  const { data } = useMock();
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton />
-
-          <Label className="text-lg">Collections</Label>
-        </div>
-        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
-          <PageHeaderActions
-            title="Collections"
-            description="Filter, export, or add a collection."
-          >
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              align="start"
-              fullWidth
-            />
-            <ExportCsvControls
-              rows={exportData}
-              format={exportFormat}
-              onFormatChange={setExportFormat}
-              filenameBase="collections"
-              fullWidth
-            />
-            <CreateCollectionDialog>
-              <Button className="w-full">Add Collection</Button>
-            </CreateCollectionDialog>
-          </PageHeaderActions>
-        </div>
-      </div>
-
-      {isInitialLoading ? (
-        <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <VanIcon />
-              </EmptyMedia>
-              <EmptyTitle>Loading collections...</EmptyTitle>
-            </EmptyHeader>
-          </Empty>
-        </div>
-      ) : (
-        <>
-          {!filtered ||
-            (filtered.length === 0 && (
-              <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <VanIcon />
-                    </EmptyMedia>
-                    <EmptyTitle>No collections yet</EmptyTitle>
-                    <EmptyDescription>
-                      Add a collection and it will appear here.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent className="flex-row justify-center gap-2">
-                    <CreateCollectionDialog>
-                      <Button>Add Collection</Button>
-                    </CreateCollectionDialog>
-                  </EmptyContent>
-                </Empty>
-              </div>
-            ))}
-
-          {filtered && filtered.length > 0 && (
-            <VirtualizedPaginatedList
-              className="h-full"
-              items={filtered}
-              hasMore={canLoadMoreCollections}
-              isLoadingMore={isLoadingMore}
-              loadMore={() => loadMoreCollections(50)}
-              getItemKey={(collection) => collection._id}
-              renderItem={(collection) => {
-                const effectiveDate = getEffectiveTransactionDate(collection);
-
-                return (
-                  <Item variant="backgroundOutline" key={collection._id}>
-                    <CollectionItemContent
-                      _id={collection._id}
-                      receiptCount={collection.receiptAttachments?.length ?? 0}
-                    />
-
-                    <ItemActions>
-                      <ReceiptDownloadButton
-                        transactionId={collection._id}
-                        attachments={collection.receiptAttachments ?? []}
-                      />
-                      <InvoiceDownloadButton
-                        transactionId={collection._id}
-                        creationTime={collection._creationTime}
-                        transactionDate={effectiveDate}
-                      />
-                      <TransactionPartyDetails
-                        collectorId={collection.sellerId as Id<'collectors'>}
-                      />
-                      {showCounterpartyDetails ? (
-                        <>
-                          <ChevronRightIcon className="size-4" />
-                          <TransactionPartyDetails userId={collection.buyerId} />
-                        </>
-                      ) : null}
-                    </ItemActions>
-
-                    <ItemFooter>
-                      {format(new Date(effectiveDate), 'dd/MM/yyyy')}
-                    </ItemFooter>
-                  </Item>
-                );
-              }}
-            />
-          )}
-        </>
-      )}
-    </div>
+    <>
+      <RecordList
+        title="Collections"
+        description="Record materials bought from collectors. Keep every receipt in one place."
+        rows={data.transactions.filter((row) => row.type === 'C2B')}
+        emptyTitle="No collections yet"
+        stats
+        actions={
+          <Button onClick={() => setOpen(true)}>
+            <Plus data-icon="inline-start" />
+            Record collection
+          </Button>
+        }
+      />
+      <CollectionDialog open={open} onOpenChange={setOpen} />
+    </>
   );
 }

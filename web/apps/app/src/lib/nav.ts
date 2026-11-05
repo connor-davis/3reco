@@ -1,0 +1,191 @@
+import {
+  Boxes,
+  ClipboardList,
+  FileText,
+  Home,
+  LayoutDashboard,
+  type LucideIcon,
+  MessageSquare,
+  PackageOpen,
+  Receipt,
+  Search,
+  Send,
+  Store,
+  ShoppingCart,
+  TrendingUp,
+  UserCircle,
+  UserPlus,
+  Users,
+  LogIn,
+  Tag,
+  Inbox,
+} from 'lucide-react';
+import type { Role } from '@/lib/types';
+
+export type NavLink = {
+  label: string;
+  to: string;
+  icon: LucideIcon;
+  badge?: 'messages' | 'cart' | 'incoming';
+};
+
+export type NavGroup = { label?: string; links: NavLink[] };
+
+const dashboard: NavLink = {
+  label: 'Dashboard',
+  to: '/',
+  icon: LayoutDashboard,
+};
+const messages: NavLink = {
+  label: 'Messages',
+  to: '/messages',
+  icon: MessageSquare,
+  badge: 'messages',
+};
+const browse: NavLink = {
+  label: 'Browse materials',
+  to: '/market',
+  icon: Search,
+};
+
+const staffWorkspace: NavLink[] = [
+  { label: 'Collections', to: '/collections', icon: ClipboardList },
+  { label: 'Collectors', to: '/collectors', icon: Users },
+  { label: 'All transactions', to: '/transactions', icon: Receipt },
+  { label: 'Materials', to: '/materials', icon: Boxes },
+];
+
+/** The sidebar for each role (map section 2.1). */
+export function navFor(role: Role): NavGroup[] {
+  switch (role) {
+    case 'admin':
+      return [
+        { links: [dashboard, messages, browse] },
+        {
+          label: 'Workspace',
+          links: [
+            ...staffWorkspace,
+            { label: 'User management', to: '/admin/users', icon: Users },
+          ],
+        },
+      ];
+    case 'staff':
+      return [
+        { links: [dashboard, messages, browse] },
+        { label: 'Workspace', links: staffWorkspace },
+      ];
+    case 'business':
+      return [
+        {
+          links: [
+            dashboard,
+            messages,
+            browse,
+            {
+              label: 'Your cart',
+              to: '/cart',
+              icon: ShoppingCart,
+              badge: 'cart',
+            },
+          ],
+        },
+        {
+          label: 'Your trade',
+          links: [
+            {
+              label: 'Incoming requests',
+              to: '/market/incoming',
+              icon: Inbox,
+              badge: 'incoming',
+            },
+            { label: 'Outgoing requests', to: '/market/outgoing', icon: Send },
+          ],
+        },
+        {
+          label: 'Workspace',
+          links: [
+            { label: 'Stock', to: '/stock', icon: PackageOpen },
+            { label: 'Collections', to: '/collections', icon: ClipboardList },
+            { label: 'Collectors', to: '/collectors', icon: Users },
+            { label: 'Purchases', to: '/transactions/purchases', icon: Tag },
+            { label: 'Sales', to: '/transactions/sales', icon: TrendingUp },
+          ],
+        },
+      ];
+    case 'collector':
+      return [{ links: [dashboard, browse] }];
+    default:
+      return [
+        {
+          links: [
+            browse,
+            { label: 'Sign in', to: '/auth/sign-in', icon: LogIn },
+            { label: 'Create account', to: '/auth/sign-up', icon: UserPlus },
+          ],
+        },
+      ];
+  }
+}
+
+export type Tab = {
+  label: string;
+  to: string;
+  icon: LucideIcon;
+  raised?: boolean;
+  badge?: 'messages';
+};
+
+/** Phone bottom tabs. A role only sees tabs it can open (map section 2.2). */
+export function tabsFor(role: Role): Tab[] {
+  const home: Tab = { label: 'Home', to: '/', icon: Home };
+  const search: Tab = { label: 'Search', to: '/market', icon: Search };
+  const inbox: Tab = {
+    label: 'Messages',
+    to: '/messages',
+    icon: MessageSquare,
+    badge: 'messages',
+  };
+  const account: Tab = { label: 'Account', to: '/profile', icon: UserCircle };
+
+  switch (role) {
+    case 'admin':
+    case 'staff':
+      return [
+        home,
+        search,
+        { label: 'Sell', to: '/collections', icon: FileText, raised: true },
+        inbox,
+        account,
+      ];
+    case 'business':
+      return [
+        home,
+        search,
+        { label: 'Sell', to: '/stock', icon: Store, raised: true },
+        inbox,
+        account,
+      ];
+    case 'collector':
+      return [
+        home,
+        {
+          label: 'My sales',
+          to: '/transactions/sales',
+          icon: TrendingUp,
+          raised: true,
+        },
+        account,
+      ];
+    default:
+      return [
+        search,
+        { label: 'Sign in', to: '/auth/sign-in', icon: UserCircle },
+        {
+          label: 'Create account',
+          to: '/auth/sign-up',
+          icon: UserPlus,
+          raised: true,
+        },
+      ];
+  }
+}
