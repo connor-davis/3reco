@@ -43,7 +43,8 @@ app.
   helpers).
 - `docs` - [start here](docs/start-here.md), [code map](docs/code-map.md),
   [style guide](docs/style-guide.md), [operate](docs/operate.md).
-- `api`, `app` - the first 3REco (Express and its app). Reference only.
+- `reference/api`, `reference/app` - the first 3REco (Express and its app).
+  Reference only.
 - `project` - scope briefs, plans, decisions and delivery records.
   `mystuff` - local notes, maps and design mockups, untracked.
 
@@ -97,7 +98,7 @@ The rules are in [docs/style-guide.md](docs/style-guide.md). In short:
   merges; agents never merge unless told to.
 - Stay local: no cloud accounts in development. Use MinIO for files and
   Mailpit for email.
-- `api/` (Express) and `app/` are the first 3REco. They are reference
+- `reference/api/` (Express) and `reference/app/` are the first 3REco. They are reference
   material: read them for old business rules, but never change, build or
   delete them.
 
