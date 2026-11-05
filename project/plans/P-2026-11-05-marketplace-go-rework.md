@@ -21,8 +21,8 @@ The whole repo root becomes a Viper-style Go repo. Source of truth: root `AGENTS
 - `mystuff/` at root, gitignored: `maps/`, `designs/01..10/`.
 - Legacy `api/` (Express) and `app/` (first 3REco) moved to `reference/api` and
   `reference/app` as reference material. Never delete or change them (owner, 2026-11-05).
-- Root `AGENTS.md` (from Viper, rewritten), `CLAUDE.md` (`@AGENTS.md`),
-  `docs/style-guide.md` added. Ports: API 8180, Postgres 5441, Mailpit 8026, MinIO 9010.
+- Root `AGENTS.md` (from Viper, rewritten) and `docs/style-guide.md` added. No root
+  `CLAUDE.md` (owner); the old Convex `3reco/CLAUDE.md` goes with Convex in T14. Ports: API 8180, Postgres 5441, Mailpit 8026, MinIO 9010.
 
 ## Roles (Viper AGENTS.md, Orchestrator V2)
 
