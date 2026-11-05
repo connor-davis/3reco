@@ -41,18 +41,6 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
   const [text, setText] = useState('');
   const q = useDebounced(text.trim());
 
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (event.key.toLowerCase() === 'k' && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        onOpenChange(!open);
-      }
-    }
-
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onOpenChange]);
-
   const needle = text.trim().toLowerCase();
   const pages = [
     ...navFor(user?.role ?? null).flatMap((group) => group.links),

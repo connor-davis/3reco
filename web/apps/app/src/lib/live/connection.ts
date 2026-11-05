@@ -8,6 +8,7 @@ export class LiveConnection {
   private socket?: WebSocket;
   private timer?: ReturnType<typeof setTimeout>;
   private attempts = 0;
+  private hasConnected = false;
   private stopped = false;
   private topics = new Map<string, Set<Listener>>();
   private denied = new Set<string>();
@@ -64,8 +65,9 @@ export class LiveConnection {
         this.send('subscribe', topic);
         for (const listener of listeners) listener.status('connected');
       }
-      // Events may have been lost while disconnected.
-      void this.client.invalidateQueries();
+      // Only a reconnect needs to recover events lost while disconnected.
+      if (this.hasConnected) void this.client.invalidateQueries();
+      this.hasConnected = true;
     };
     socket.onmessage = (event) => {
       let message: { type?: string; topic?: string };
@@ -88,10 +90,13 @@ export class LiveConnection {
         message.type === 'changed' &&
         !this.denied.has(message.topic)
       ) {
+        // Several mounted consumers can share one query and topic.
+        const keys = new Map<string, QueryKey>();
         for (const listener of listeners ?? []) {
-          for (const key of listener.keys)
-            void this.client.invalidateQueries({ queryKey: key });
+          for (const key of listener.keys) keys.set(JSON.stringify(key), key);
         }
+        for (const key of keys.values())
+          void this.client.invalidateQueries({ queryKey: key });
       }
     };
     socket.onerror = () => socket.close();

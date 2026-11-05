@@ -72,6 +72,43 @@ func TestRequestMessagesSendReadAndInbox(t *testing.T) {
 	}
 }
 
+func TestRequestOfferedInbox(t *testing.T) {
+	w := newTradeWorld(t)
+	outsider := tradeNewUser(t, w.app, "business")
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+
+	tradeWant(t, "send before offer", tradeSay(t, w.buyer, id, "Still available?"), 200)
+	tradeOffer(t, w.seller, id, w.material, "40", "9")
+
+	for _, party := range []tradeUser{w.buyer, w.seller} {
+		inbox := party.c.Do("GET", "/api/messages/inbox", nil)
+		tradeWant(t, "offered inbox", inbox, 200)
+		rows := tradeItems(inbox)
+
+		if len(rows) != 1 {
+			t.Fatalf("inbox for %s: want 1 offered thread: %s", party.id, inbox.Raw)
+		}
+
+		row, _ := rows[0].(map[string]any)
+		if row["request_id"] != id || row["status"] != "offered" {
+			t.Errorf("inbox for %s: want offered request %s, got %v", party.id, id, row)
+		}
+
+		// Offers remain visible, but messaging stays paused until the offer is resolved.
+		tradeWant(t, "offered chat paused", tradeSay(t, party, id, "hello?"), 409)
+	}
+
+	inbox := outsider.c.Do("GET", "/api/messages/inbox", nil)
+	tradeWant(t, "stranger inbox", inbox, 200)
+
+	for _, item := range tradeItems(inbox) {
+		row, _ := item.(map[string]any)
+		if row["request_id"] == id {
+			t.Errorf("stranger inbox contains offered request %s", id)
+		}
+	}
+}
+
 // Hole 7: strangers cannot read, write or mark messages of a request.
 func TestRequestMessagesLeak(t *testing.T) {
 	w := newTradeWorld(t)

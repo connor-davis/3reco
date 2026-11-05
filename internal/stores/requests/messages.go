@@ -16,7 +16,7 @@ type Message struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Thread is one row of the inbox: a pending request, the other person, the
+// Thread is one row of the inbox: an active request, the other person, the
 // newest message (if any) and how many of the other person's messages the
 // caller has not read.
 type Thread struct {
@@ -88,7 +88,7 @@ func (s *Store) MarkRead(ctx context.Context, requestID, userID string) error {
 	return err
 }
 
-// Inbox returns up to limit+1 pending requests the user takes part in, most
+// Inbox returns up to limit+1 pending or offered requests the user takes part in, most
 // recent activity first. Activity is the newest message, or the request
 // itself when nobody has written yet.
 func (s *Store) Inbox(
@@ -108,7 +108,7 @@ func (s *Store) Inbox(
 		LEFT JOIN LATERAL (
 			SELECT id, sender_id, content, created_at FROM transaction_request_messages
 			WHERE request_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) lm ON true
-		WHERE (r.seller_id = $1 OR r.buyer_id = $1) AND r.status = 'pending'
+		WHERE (r.seller_id = $1 OR r.buyer_id = $1) AND r.status IN ('pending', 'offered')
 			AND ($2::timestamptz IS NULL OR (COALESCE(lm.created_at, r.created_at), r.id) < ($2, $3))
 		ORDER BY activity DESC, r.id DESC
 		LIMIT $4)

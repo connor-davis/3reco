@@ -1,24 +1,8 @@
-import type { ReactNode } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
+import { lazy, Suspense, useState, type ReactNode } from 'react';
 
-type ResponsiveOverlayProps = {
+const OverlayBody = lazy(() => import('./responsive-overlay-body'));
+
+export type ResponsiveOverlayProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -30,57 +14,16 @@ type ResponsiveOverlayProps = {
   locked?: boolean;
 };
 
-/**
- * A Dialog on desktop and a bottom Drawer on phones (map section 3). Every
- * form or list overlay in the app goes through this one wrapper.
- */
-export function ResponsiveOverlay({
-  open,
-  onOpenChange,
-  title,
-  description,
-  children,
-  footer,
-  wide = false,
-  locked = false,
-}: ResponsiveOverlayProps) {
-  const isMobile = useIsMobile();
+/** Load the dialog and drawer implementations only when an overlay is first opened. */
+export function ResponsiveOverlay(props: ResponsiveOverlayProps) {
+  const [loaded, setLoaded] = useState(props.open);
+  if (props.open && !loaded) setLoaded(true);
+  if (!props.open && !loaded) return null;
 
-  function handleChange(next: boolean) {
-    if (!locked) onOpenChange(next);
-  }
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={handleChange} showSwipeHandle>
-        <DrawerContent className="max-h-[92dvh]">
-          <DrawerHeader className="text-left">
-            <DrawerTitle>{title}</DrawerTitle>
-            {<DrawerDescription>{description}</DrawerDescription>}
-          </DrawerHeader>
-          <div className="overflow-y-auto px-4 pb-2">{children}</div>
-          {footer && <DrawerFooter>{footer}</DrawerFooter>}
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
+  // Keep the implementation mounted after closing for focus restoration and exit motion.
   return (
-    <Dialog open={open} onOpenChange={handleChange}>
-      <DialogContent
-        showCloseButton={!locked}
-        className={cn(
-          'max-h-[90dvh] overflow-y-auto',
-          wide ? 'sm:max-w-2xl' : 'sm:max-w-md'
-        )}
-      >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
-        </DialogHeader>
-        {children}
-        {footer && <DialogFooter>{footer}</DialogFooter>}
-      </DialogContent>
-    </Dialog>
+    <Suspense fallback={null}>
+      <OverlayBody {...props} />
+    </Suspense>
   );
 }

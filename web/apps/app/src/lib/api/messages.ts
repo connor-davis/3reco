@@ -61,18 +61,16 @@ export function useMessages(id: string, params: Paging = {}) {
     !!id
   );
 }
-export function useInbox(params: Paging = {}) {
-  const query = useResource<Page<T.Thread>>(
-    ['messages', 'inbox', params],
-    `/messages/inbox${queryString(params)}`,
-    ['requests:me'],
-    true
-  );
-  useLiveTopics(
-    query.data?.items.map((thread) => `request:${thread.request_id}`) ?? [],
-    [['messages', 'inbox']]
-  );
-  return query;
+// Badges and previews read the same first page as the paged inbox list.
+export function useInbox(params: Pick<Paging, 'limit'> = {}) {
+  const query = useThreadHistory();
+  const page = query.data?.pages[0];
+  return {
+    ...query,
+    data: page
+      ? { ...page, items: page.items.slice(0, params.limit ?? 100) }
+      : undefined,
+  };
 }
 export function useSendMessage(id: string) {
   return useWrite<{ content: string }, T.Created & { created_at: string }>(

@@ -100,6 +100,78 @@ test('session changes erase old account data and keep the auth observer connecte
   client.clear();
 });
 
+test('inbox badges, preview and list share one cold read and retain cursor paging', async () => {
+  const client = new query.QueryClient({
+    defaultOptions: { queries: { staleTime: 30_000, retry: false } },
+  });
+  const calls = [];
+  let cached;
+  const hooks = load('../src/lib/api/messages.ts', {
+    require: (name) => {
+      if (name === '@tanstack/react-query')
+        return {
+          useInfiniteQuery: (options) => ({ ...options, data: cached }),
+        };
+      if (name === '../auth/use-auth')
+        return { useAuth: () => ({ user: { id: 'buyer' } }) };
+      if (name === '../live/use-live') return { useLiveTopics() {} };
+      if (name === './resource') return { idPath: encodeURIComponent };
+      if (name === './paging')
+        return {
+          queryString: (params) =>
+            '?' +
+            new URLSearchParams(
+              Object.entries(params).filter(([, value]) => value !== undefined)
+            ),
+        };
+      if (name === './client')
+        return {
+          api: async (path) => {
+            calls.push(path);
+            const next = path.includes('cursor=');
+            return {
+              items: Array.from({ length: next ? 1 : 6 }, (_, i) => ({
+                request_id: `${next ? 'next' : 'first'}-${i}`,
+                status: 'offered',
+              })),
+              has_more: !next,
+              next_cursor: next ? null : 'next+page',
+            };
+          },
+        };
+      throw new Error(`Unexpected dependency: ${name}`);
+    },
+  });
+  const observers = [];
+  const releases = [];
+  try {
+    // Mount these sequentially after the first response, as a routed page does.
+    for (const options of [
+      hooks.useInbox({ limit: 100 }),
+      hooks.useInbox({ limit: 100 }),
+      hooks.useInbox({ limit: 4 }),
+      hooks.useThreadHistory(),
+    ]) {
+      const observer = new query.InfiniteQueryObserver(client, options);
+      observers.push(observer);
+      releases.push(observer.subscribe(() => {}));
+      await client.fetchInfiniteQuery(options);
+    }
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0], '/messages/inbox?limit=100');
+    cached = observers[0].getCurrentResult().data;
+    assert.equal(hooks.useInbox({ limit: 4 }).data.items.length, 4);
+    assert.equal(hooks.useInbox({ limit: 100 }).data.items.length, 6);
+    await observers.at(-1).fetchNextPage();
+    assert.equal(calls.length, 2);
+    assert.ok(calls[1].includes('cursor=next%2Bpage'));
+    assert.equal(observers[0].getCurrentResult().data.pages.length, 2);
+  } finally {
+    for (const release of releases) release();
+    client.clear();
+  }
+});
+
 test('socket shares subscriptions, invalidates topics, reconnects and stops denied topics', () => {
   const sockets = [];
   const pending = new Map();
@@ -149,8 +221,19 @@ test('socket shares subscriptions, invalidates topics, reconnects and stops deni
   assert.equal(sockets[0].url.href, 'wss://3reco.test/api/live');
   sockets[0].open();
   assert.equal(
+    invalidations.length,
+    0,
+    'first open keeps bootstrap queries fresh'
+  );
+  assert.equal(
     sockets[0].sent.filter((message) => message.type === 'subscribe').length,
     1
+  );
+  sockets[0].message({ type: 'changed', topic: 'stock:user', id: 'row' });
+  assert.equal(
+    invalidations.length,
+    1,
+    'shared observers invalidate once per event'
   );
   releaseFirst();
   assert.equal(
@@ -181,7 +264,10 @@ test('socket shares subscriptions, invalidates topics, reconnects and stops deni
   assert.ok(retry.delay >= 1000 && retry.delay < 1250);
   pending.delete(id);
   retry.callback();
+  invalidations.length = 0;
   sockets[1].open();
+  assert.equal(invalidations.length, 1, 'reconnect recovers missed events');
+  assert.equal(invalidations[0], undefined);
   assert.equal(
     sockets[1].sent.filter((message) => message.type === 'subscribe').length,
     2

@@ -9,7 +9,10 @@ import { DirectionProvider } from './components/ui/direction';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './lib/auth/provider';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  // Live events invalidate resources as they change; nearby mounts share fresh data.
+  defaultOptions: { queries: { staleTime: 30_000 } },
+});
 
 const router = createRouter({ routeTree, defaultErrorComponent: RouteError });
 
