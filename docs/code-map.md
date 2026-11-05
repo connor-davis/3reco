@@ -154,6 +154,20 @@ Never rename a merged migration. Add a new file.
 | Stock ownership, explicit zero price and notification rollback tests | `tests/stock_test.go` |
 | Store profiles, listed inventory summaries and public reviews integration tests | `tests/stores_test.go` |
 
+## Web API client and public statistics
+
+| Job | Owner |
+| --- | --- |
+| Public settled trade totals and top five stores SQL | `internal/stores/stats/stats.go` |
+| Public statistics service | `internal/services/stats/stats.go` |
+| Public `/api/stats` handler | `internal/api/stats/handler.go` |
+| Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
+| Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts` |
+| Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
+| Shared socket, topic subscriptions and cache invalidation | `web/apps/app/src/lib/live/use-live.ts`, `connection.ts` |
+| HTTP error/decimal contracts and socket lifecycle tests | `web/apps/app/tests/api.test.mjs` |
+| Signed-in user context and auth query cache | `web/apps/app/src/lib/auth/`, `src/lib/api/auth.ts` |
+
 ## Convex import (`import-convex`)
 
 | Job | Owner |

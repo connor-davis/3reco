@@ -1,172 +1,162 @@
-import BackButton from '@/components/back-button';
-import Stars from '@/components/reviews/stars';
-import PageHeaderActions from '@/components/page-header-actions';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemHeader,
-  ItemMedia,
-  ItemTitle,
-} from '@/components/ui/item';
-import { Label } from '@/components/ui/label';
-import { useConvexQuery } from '@convex-dev/react-query';
-import { api } from '@convex/_generated/api';
-import { Link, createFileRoute } from '@tanstack/react-router';
-import { BuildingIcon, SearchIcon, StoreIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Activity } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import {
+  Leaf,
+  List,
+  MapIcon,
+  MessageCircle,
+  SearchX,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { CardsSkeleton, DataState } from '@/components/data-state';
+import { SearchBox } from '@/components/filters';
+import { LinkButton } from '@/components/link-button';
+import { ListingCard } from '@/components/listing-card';
+import { PageHeader } from '@/components/page-header';
+import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { formatKg } from '@/lib/format';
+import { community, formatCo2 } from '@/lib/impact';
+import { useMock, useMarketListings } from '@/lib/mock/hooks';
+import { filterListings } from './-components/filter-listings';
+import { MarketMap } from './-components/market-map';
+import {
+  CategoryChips,
+  defaultFilters,
+  SelectFilters,
+} from './-components/market-filters';
 
 export const Route = createFileRoute('/market/')({
-  component: RouteComponent,
+  component: MarketPage,
 });
 
-function SellerCard({
-  seller,
-}: {
-  seller: {
-    _id: string;
-    displayName: string;
-    itemCount: number;
-    materialNames: string[];
-    averageRating: number | null;
-    reviewCount: number;
-  };
-}) {
-  return (
-    <Item
-      variant="backgroundOutline"
-      className="h-full hover:bg-accent/50"
-      render={
-        <Link
-          to="/market/store/$sellerId"
-          params={{ sellerId: seller._id }}
-        />
-      }
-    >
-      <ItemHeader>
-        <div className="flex min-w-0 items-center gap-3">
-          <ItemMedia className="size-10 rounded-full bg-muted">
-            <BuildingIcon className="size-5 text-muted-foreground" />
-          </ItemMedia>
-          <ItemContent className="min-w-0 gap-0.5">
-            <ItemTitle className="w-full">{seller.displayName}</ItemTitle>
-            <ItemDescription className="line-clamp-1">
-              {seller.itemCount} listing{seller.itemCount !== 1 ? 's' : ''}
-            </ItemDescription>
-          </ItemContent>
-        </div>
-        <Stars
-          rating={seller.averageRating}
-          count={seller.reviewCount}
-          size="sm"
-          className="ml-0.5"
-        />
-      </ItemHeader>
-      {seller.materialNames.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {seller.materialNames.slice(0, 4).map((name) => (
-            <span
-              key={name}
-              className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
-            >
-              {name}
-            </span>
-          ))}
-          {seller.materialNames.length > 4 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-              +{seller.materialNames.length - 4} more
-            </span>
-          )}
-        </div>
-      )}
-    </Item>
-  );
-}
+type View = 'list' | 'map';
 
-function RouteComponent() {
-  const sellers = useConvexQuery(api.stock.listSellersWithStock, {});
-  const [search, setSearch] = useState('');
+function MarketPage() {
+  const { role } = useMock();
+  const listings = useMarketListings();
+  const [filters, setFilters] = useState(defaultFilters);
+  const [view, setView] = useState<View>('list');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const filtered = sellers?.filter((seller) => {
-    if (!search) return true;
-    const lower = search.toLowerCase();
-    return (
-      seller.displayName.toLowerCase().includes(lower) ||
-      seller.materialNames.some((n) => n.toLowerCase().includes(lower))
-    );
-  });
-
-  const isLoading = sellers === undefined;
+  const results = filterListings(listings, filters);
 
   return (
-    <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton />
-          <Label className="text-lg">Browse Market</Label>
+    <>
+      <PageHeader
+        title="Find your next material."
+        description="Prices are in R / kg. Bigger lots get lower rates."
+        actions={
+          role === 'business' && <LinkButton to="/cart">Your cart</LinkButton>
+        }
+      />
+      <ImpactStrip />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <SearchBox
+          label="Search materials, stores or suburbs"
+          value={filters.query}
+          onChange={(query) => setFilters({ ...filters, query })}
+          className="w-full sm:w-auto sm:flex-1"
+        />
+        <div className="hidden items-center gap-3 sm:flex">
+          <SelectFilters values={filters} onChange={setFilters} />
         </div>
-        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
-          <PageHeaderActions
-            title="Marketplace"
-            description="Search sellers and materials."
-          >
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Search sellers or materials..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-full"
-              />
-            </div>
-          </PageHeaderActions>
-        </div>
+        <Button
+          variant="outline"
+          className="sm:hidden"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <SlidersHorizontal data-icon="inline-start" />
+          Filters
+        </Button>
+        <ViewToggle view={view} onChange={setView} />
       </div>
-
-      <Activity mode={isLoading ? 'visible' : 'hidden'}>
-        <div className="flex flex-col w-full h-full items-center justify-center">
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon"><StoreIcon /></EmptyMedia>
-              <EmptyTitle>Finding sellers...</EmptyTitle>
-            </EmptyHeader>
-          </Empty>
-        </div>
-      </Activity>
-
-      <Activity mode={isLoading ? 'hidden' : 'visible'}>
-        {filtered && filtered.length === 0 && (
-          <div className="flex flex-col w-full h-full items-center justify-center">
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon"><StoreIcon /></EmptyMedia>
-                <EmptyTitle>{search ? 'No results found' : 'No sellers yet'}</EmptyTitle>
-                <EmptyDescription>
-                  {search
-                    ? `No sellers match "${search}".`
-                    : 'No stock is listed right now.'}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          </div>
-        )}
-        {filtered && filtered.length > 0 && (
-          <div className="grid w-full content-start grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-3 overflow-y-auto pb-2">
-            {filtered.map((seller) => (
-              <SellerCard key={seller._id} seller={seller} />
+      <div className="mt-4">
+        <CategoryChips values={filters} onChange={setFilters} />
+      </div>
+      <p className="mt-6 mb-4 flex justify-between text-sm text-muted-foreground">
+        <span>{results.length} listings from local recyclers</span>
+        <span>Prices in R / kg</span>
+      </p>
+      <DataState
+        isEmpty={results.length === 0}
+        icon={SearchX}
+        emptyTitle="No materials found"
+        emptyText="Try a different search or clear the filters."
+        emptyAction={
+          <Button variant="outline" onClick={() => setFilters(defaultFilters)}>
+            Clear filters
+          </Button>
+        }
+        skeleton={<CardsSkeleton />}
+      >
+        {view === 'map' ? (
+          <MarketMap listings={results} />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {results.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
         )}
-      </Activity>
+      </DataState>
+      <ResponsiveOverlay
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        title="Filters"
+        description="Narrow the materials by place, order and supplier."
+        footer={
+          <Button onClick={() => setFiltersOpen(false)}>Show results</Button>
+        }
+      >
+        <div className="grid gap-4">
+          <SelectFilters values={filters} onChange={setFilters} />
+        </div>
+      </ResponsiveOverlay>
+    </>
+  );
+}
+
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: View;
+  onChange: (view: View) => void;
+}) {
+  return (
+    <ToggleGroup
+      aria-label="Show listings as"
+      variant="outline"
+      value={[view]}
+      onValueChange={(next) => next[0] && onChange(next[0] as View)}
+    >
+      <ToggleGroupItem value="list" aria-label="List">
+        <List />
+        List
+      </ToggleGroupItem>
+      <ToggleGroupItem value="map" aria-label="Map">
+        <MapIcon />
+        Map
+      </ToggleGroupItem>
+    </ToggleGroup>
+  );
+}
+
+/** Fixed community numbers (design 09). They never tick. */
+function ImpactStrip() {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-muted/50 px-4 py-3">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Leaf className="size-4 text-primary" aria-hidden="true" />
+        Community impact so far: {formatKg(community.kgDiverted)} diverted,{' '}
+        {formatCo2(community.co2Kg)} saved
+      </p>
+      <LinkButton to="/messages" variant="ghost" size="sm">
+        <MessageCircle data-icon="inline-start" />A better deal starts with
+        "hello"
+      </LinkButton>
     </div>
   );
 }

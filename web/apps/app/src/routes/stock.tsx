@@ -1,100 +1,217 @@
-import BackButton from '@/components/back-button';
-import ListToggle from '@/components/stock/list-toggle';
-import StockItemContent from '@/components/stock/item-content';
-import PageHeaderActions from '@/components/page-header-actions';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
-import { Item, ItemActions } from '@/components/ui/item';
-import { Label } from '@/components/ui/label';
-import { useConvexQuery } from '@convex-dev/react-query';
-import { api } from '@convex/_generated/api';
-import { createFileRoute } from '@tanstack/react-router';
-import { PackageIcon, SearchIcon } from 'lucide-react';
 import { useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import type { ColumnDef } from '@tanstack/react-table';
+import { PackageOpen, Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Guarded } from '@/components/access-guard';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { DataState, RowsSkeleton } from '@/components/data-state';
+import { DataTable } from '@/components/data-table';
+import { StockDialog } from '@/components/dialogs/stock-dialog';
+import { ChoiceSelect, SearchBox } from '@/components/filters';
+import { IconButton } from '@/components/icon-button';
+import { PageHeader } from '@/components/page-header';
+import { MaterialThumb } from '@/components/visuals';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Switch } from '@/components/ui/switch';
+import { materialById } from '@/lib/data/materials';
+import { formatKg, formatRate } from '@/lib/format';
+import { useMockList } from '@/lib/mock/hooks';
+import type { Listing } from '@/lib/types';
 
 export const Route = createFileRoute('/stock')({
-  component: RouteComponent,
+  component: () => (
+    <Guarded page="stock">
+      <StockPage />
+    </Guarded>
+  ),
 });
 
-function RouteComponent() {
-  const stock = useConvexQuery(api.stock.list, {});
-  const materials = useConvexQuery(api.materials.list, {});
-  const [search, setSearch] = useState('');
+const statusOptions = [
+  { value: 'all', label: 'All stock' },
+  { value: 'listed', label: 'Listed' },
+  { value: 'unlisted', label: 'Unlisted' },
+];
 
-  const materialNames = new Map(materials?.map((m) => [m._id, m.name]) ?? []);
+function StockPage() {
+  const list = useMockList('stock');
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('all');
+  const [editing, setEditing] = useState<Listing | undefined>();
+  const [formOpen, setFormOpen] = useState(false);
+  const [removing, setRemoving] = useState<Listing | null>(null);
 
-  const filtered = stock?.filter((item) => {
-    if (!search) return true;
-    const name = materialNames.get(item.materialId) ?? '';
-    return name.toLowerCase().includes(search.toLowerCase());
+  const shown = list.items.filter((item) => {
+    if (status === 'listed' && !item.listed) return false;
+    if (status === 'unlisted' && item.listed) return false;
+
+    return item.title.toLowerCase().includes(query.toLowerCase());
   });
 
-  return (
-    <div className="flex flex-col w-full h-full gap-3 overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton />
+  function openForm(item?: Listing) {
+    setEditing(item);
+    setFormOpen(true);
+  }
 
-          <Label className="text-lg">Stock</Label>
-        </div>
-        <div className="flex w-full items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:gap-3">
-          <PageHeaderActions
-            title="Stock"
-            description="Find stock by material."
-          >
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Search by material..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-full"
-              />
-            </div>
-          </PageHeaderActions>
-        </div>
+  function toggle(item: Listing, listed: boolean) {
+    list.update(item.id, { listed });
+    toast.success(
+      listed
+        ? 'Stock is now listed in the market.'
+        : 'Stock is no longer listed.'
+    );
+  }
+
+  function actions(item: Listing) {
+    return (
+      <div className="flex gap-1">
+        <IconButton label={`Edit ${item.title}`} onClick={() => openForm(item)}>
+          <Pencil />
+        </IconButton>
+        <IconButton
+          label={`Remove ${item.title}`}
+          onClick={() => setRemoving(item)}
+        >
+          <Trash2 />
+        </IconButton>
       </div>
+    );
+  }
 
-      {!filtered ||
-        (filtered.length === 0 && (
-          <div className="flex flex-col w-full h-full items-center justify-center gap-3">
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <PackageIcon />
-                </EmptyMedia>
-                <EmptyTitle>{search ? 'No results found' : 'No stock yet'}</EmptyTitle>
-                <EmptyDescription>
-                  {search
-                    ? `No stock matches "${search}".`
-                    : 'Stock from collections and purchases will appear here.'}
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent className="flex-row justify-center gap-2"></EmptyContent>
-            </Empty>
-          </div>
-        ))}
+  const listingSwitch = (item: Listing) => (
+    <Field orientation="horizontal" className="w-auto">
+      <Switch
+        id={`listed-${item.id}`}
+        checked={item.listed}
+        onCheckedChange={(checked) => toggle(item, checked)}
+      />
+      <FieldLabel htmlFor={`listed-${item.id}`} className="font-normal">
+        <span className="sr-only">{item.title}: </span>
+        {item.listed ? 'Listed' : 'Unlisted'}
+      </FieldLabel>
+    </Field>
+  );
 
-      {filtered && filtered.length > 0 && (
-        <div className="flex flex-col w-full h-full overflow-y-auto gap-3">
-          {filtered?.map((item) => (
-            <Item variant="backgroundOutline" key={item._id}>
-              <StockItemContent _id={item._id} />
+  const columns: ColumnDef<Listing>[] = [
+    {
+      accessorKey: 'title',
+      header: 'Material',
+      cell: ({ row }) => {
+        const material = materialById(row.original.materialId);
 
-              <ItemActions>
-                <ListToggle _id={item._id} isListed={item.isListed} />
-              </ItemActions>
-            </Item>
-          ))}
-        </div>
-      )}
-    </div>
+        return (
+          <span className="flex items-center gap-3">
+            <MaterialThumb
+              category={material.category}
+              className="size-9 rounded-lg"
+            />
+            <span>
+              <span className="block font-medium">{row.original.title}</span>
+              <span className="text-xs text-muted-foreground">
+                {material.tag}
+              </span>
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: 'availableKg',
+      header: 'Available',
+      cell: ({ row }) => formatKg(row.original.availableKg),
+    },
+    {
+      id: 'price',
+      header: 'Price / kg',
+      enableSorting: false,
+      cell: ({ row }) => formatRate(row.original.priceBreaks[0].pricePerKg),
+    },
+    {
+      id: 'listed',
+      header: 'Market listing',
+      enableSorting: false,
+      cell: ({ row }) => listingSwitch(row.original),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      cell: ({ row }) => actions(row.original),
+    },
+  ];
+
+  return (
+    <>
+      <PageHeader
+        title="Your stock"
+        description="What's in the yard, ready for the next conversation."
+        actions={
+          <Button onClick={() => openForm()}>
+            <Plus data-icon="inline-start" />
+            Add stock
+          </Button>
+        }
+      />
+      <div className="mb-6 flex flex-wrap gap-3">
+        <SearchBox
+          label="Search your materials"
+          value={query}
+          onChange={setQuery}
+        />
+        <ChoiceSelect
+          label="Listing status"
+          value={status}
+          options={statusOptions}
+          onChange={setStatus}
+        />
+      </div>
+      <DataState
+        isEmpty={shown.length === 0}
+        icon={PackageOpen}
+        emptyTitle="No stock here"
+        emptyText="Add what you have and list it for buyers."
+        emptyAction={<Button onClick={() => openForm()}>Add stock</Button>}
+        skeleton={<RowsSkeleton />}
+      >
+        <DataTable
+          columns={columns}
+          data={shown}
+          renderCard={(item) => (
+            <Card size="sm">
+              <CardContent className="space-y-2">
+                <p className="font-medium">{item.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatKg(item.availableKg)} ·{' '}
+                  {formatRate(item.priceBreaks[0].pricePerKg)}
+                </p>
+                {listingSwitch(item)}
+                {actions(item)}
+              </CardContent>
+            </Card>
+          )}
+          footer={
+            <>
+              <span>{shown.length} materials in your stock</span>
+              <span>Listed stock is visible in the market.</span>
+            </>
+          }
+        />
+      </DataState>
+      <StockDialog open={formOpen} onOpenChange={setFormOpen} stock={editing} />
+      <ConfirmDialog
+        open={removing !== null}
+        onOpenChange={(open) => !open && setRemoving(null)}
+        title={`Remove ${removing?.title ?? 'stock'}?`}
+        description="It is taken off the market and out of your stock."
+        confirmLabel="Remove stock"
+        onConfirm={() => {
+          if (removing) list.remove(removing.id);
+          setRemoving(null);
+          toast.success('Stock removed.');
+        }}
+      />
+    </>
   );
 }
