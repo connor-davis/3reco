@@ -36,6 +36,7 @@ import (
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
 	"github.com/connor-davis/3reco/internal/services/realtime"
+	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
 	stocksvc "github.com/connor-davis/3reco/internal/services/stock"
 	storessvc "github.com/connor-davis/3reco/internal/services/stores"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
@@ -237,13 +238,14 @@ func errorHandler(c fiber.Ctx, err error) error {
 }
 
 // background starts the realtime hub and the hourly purge with the app.
-func background(lc fx.Lifecycle, hub *realtime.Hub, a *auth.Service) {
+func background(lc fx.Lifecycle, hub *realtime.Hub, a *auth.Service, requests *requestssvc.Service) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go hub.Run(ctx)
 			go purgeLoop(ctx, a)
+			go offerExpiryLoop(ctx, requests)
 
 			return nil
 		},
@@ -253,6 +255,22 @@ func background(lc fx.Lifecycle, hub *realtime.Hub, a *auth.Service) {
 			return nil
 		},
 	})
+}
+
+func offerExpiryLoop(ctx context.Context, requests *requestssvc.Service) {
+	tick := time.NewTicker(3 * time.Minute)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+			if err := requests.ExpireOffers(ctx); err != nil {
+				slog.Warn("offer expiry failed", "err", err)
+			}
+		}
+	}
 }
 
 func purgeLoop(ctx context.Context, a *auth.Service) {

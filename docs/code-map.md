@@ -24,6 +24,7 @@ line when you add an owner.
 | `0003_realtime.sql` | `notify_change()` and the `realtime` trigger on each live table |
 | `0004_domain_api.sql` | `request_message_reads`, message and market indexes, `notify_change()` for read marks |
 | `0005_files_invoices.sql` | `users.avatar_key`, preserving legacy identity images |
+| `0006_stock_holds.sql` | `stock_holds`, exact held/available SQL functions and hold realtime topics |
 
 Never rename a merged migration. Add a new file.
 
@@ -45,6 +46,9 @@ Never rename a merged migration. Add a new file.
 | Shared SQL: safe display name, SAST effective date, `Party` | `internal/platform/database/sql.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
+| Offer reservation locks, releases and set-based expiry SQL | `internal/stores/requests/holds.go` |
+| The 48-hour offer lifetime and atomic expiry notifications | `internal/services/requests/holds.go` |
+| Stock availability and fenced hold consumption during settlement | `internal/stores/transactions/holds.go` |
 | Transactions: lists, detail, collector sale, direct sale, stock moves, invoice hook | `internal/stores/transactions`, `internal/services/transactions`, `internal/api/transactions` |
 | Authorized multipart receipt upload and streamed receipt/invoice downloads | `internal/api/transactions/receipts.go` |
 | Bounded image sniffing, receipt participation, SHA duplicates, five-file lock and failed-write cleanup | `internal/services/files/receipts.go` |
@@ -63,6 +67,7 @@ Never rename a merged migration. Add a new file.
 | Job | Owner |
 | --- | --- |
 | Which topic a row change goes to | `notify_change()` in `0003_realtime.sql` |
+| Hold changes to market, seller stock and both request participants | `notify_stock_hold()` in `0006_stock_holds.sql` |
 | Listen to Postgres, who may join which topic, fan out events | `internal/services/realtime/hub.go` |
 | `GET /api/live` WebSocket route | `internal/api/sockets/handler.go` |
 
@@ -70,7 +75,7 @@ Never rename a merged migration. Add a new file.
 
 | Job | Owner |
 | --- | --- |
-| Fiber app, shared steps, error handler, fx wiring, listener, hourly purge | `internal/api/server.go` |
+| Fiber app, shared steps, error handler, fx wiring, listener, hourly purge and offer expiry loop | `internal/api/server.go` |
 | The binary: `serve`, `migrate`, `admin create`, `import-convex`, `health`, `version` | `cmd/3reco/main.go` |
 
 ## Tests
@@ -83,6 +88,7 @@ Never rename a merged migration. Add a new file.
 | Invoice authorization, exact decimals, pagination, snapshots, regeneration, rollback and attached Mailpit messages | `tests/invoices_test.go` |
 | Five CSV schemas, role/owner scope, effective date bounds, escaping and formula guard | `tests/exports_test.go` |
 | Code rules: doc comments, file length | `tests/style_test.go` |
+| Offer holds, races, rollback, expiry, stock safeguards, availability and realtime | `tests/stock_holds_test.go` |
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |
 | WebSocket events | `tests/realtime_test.go` |

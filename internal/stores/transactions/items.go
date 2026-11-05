@@ -85,12 +85,17 @@ func (s *Store) MaterialPrice(ctx context.Context, materialID string) (string, b
 // LockStock locks a seller's stock row for one material until the transaction
 // ends, so two sales cannot both spend the same kilos. It returns the row id
 // and weight, and false when the seller has none.
-func (s *Store) LockStock(ctx context.Context, ownerID, materialID string) (string, string, bool, error) {
+func (s *Store) LockStock(
+	ctx context.Context,
+	ownerID, materialID, requestID string,
+) (string, string, bool, error) {
 	var id, weight string
 
 	err := s.db.Q(ctx).QueryRow(ctx, `
 		SELECT id, weight::text FROM stock WHERE owner_id = $1 AND material_id = $2
-		ORDER BY id LIMIT 1 FOR UPDATE`, ownerID, materialID).Scan(&id, &weight)
+		AND ($3='' OR id IN (SELECT stock_id FROM stock_holds
+			WHERE request_id=$3 AND status='active'))
+		ORDER BY id LIMIT 1 FOR UPDATE`, ownerID, materialID, requestID).Scan(&id, &weight)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", "", false, nil
 	}
@@ -106,7 +111,7 @@ func (s *Store) Take(ctx context.Context, stockID, weight string) (bool, error) 
 		UPDATE stock SET weight = weight - $2::numeric,
 			is_listed = CASE WHEN weight - $2::numeric = 0 THEN false ELSE is_listed END,
 			updated_at = now()
-		WHERE id = $1 AND weight >= $2::numeric`, stockID, weight)
+		WHERE id = $1 AND stock_available(id,weight) >= $2::numeric`, stockID, weight)
 
 	return tag.RowsAffected() > 0, err
 }

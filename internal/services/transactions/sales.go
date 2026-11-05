@@ -20,6 +20,9 @@ var (
 	errBuyerInvalid = apperr.BadRequest("The selected business is not available.", nil)
 )
 
+// ErrOfferRanOut tells the buyer to request a fresh reservation from the seller.
+var ErrOfferRanOut = apperr.Conflict("This offer ran out. Ask the seller for a new offer.")
+
 // DirectSale records a business selling stock straight to another business.
 // The seller is always the caller, never something the body says.
 func (s *Service) DirectSale(
@@ -52,7 +55,7 @@ func (s *Service) DirectSale(
 			return errBuyerInvalid
 		}
 
-		id, err = s.settle(ctx, user.ID, buyerID, items, true)
+		id, err = s.settle(ctx, user.ID, buyerID, "", items, true)
 
 		return err
 	})
@@ -65,9 +68,13 @@ func (s *Service) DirectSale(
 // Call it inside the transaction that also marks the request accepted.
 func (s *Service) SettleOffer(
 	ctx context.Context,
-	sellerID, buyerID string,
+	sellerID, buyerID, requestID string,
 	items []SaleItem,
 ) (string, error) {
+	if requestID == "" {
+		return "", ErrOfferRanOut
+	}
+
 	if err := CheckItems(items); err != nil {
 		return "", err
 	}
@@ -77,7 +84,7 @@ func (s *Service) SettleOffer(
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
 		var err error
 
-		id, err = s.settle(ctx, sellerID, buyerID, items, false)
+		id, err = s.settle(ctx, sellerID, buyerID, requestID, items, false)
 
 		return err
 	})
@@ -85,28 +92,14 @@ func (s *Service) SettleOffer(
 	return id, err
 }
 
-// CheckOffer tells a seller early that an offer line cannot work: price under
-// the base price, or more weight than the seller holds. The same checks run
-// again, under a lock, when the offer is accepted.
-func (s *Service) CheckOffer(ctx context.Context, sellerID string, item SaleItem) error {
+// CheckOffer checks offer input and the material base price. The request store
+// reserves the requested listing under a stock lock in the same transaction.
+func (s *Service) CheckOffer(ctx context.Context, item SaleItem) error {
 	if err := CheckItems([]SaleItem{item}); err != nil {
 		return err
 	}
 
-	if err := s.checkBase(ctx, item); err != nil {
-		return err
-	}
-
-	_, held, found, err := s.store.LockStock(ctx, sellerID, item.MaterialID)
-	if err != nil {
-		return err
-	}
-
-	if !found || ratOf(held).Cmp(ratOf(item.Weight)) < 0 {
-		return apperr.BadRequest("Insufficient stock to fulfil this offer.", nil)
-	}
-
-	return nil
+	return s.checkBase(ctx, item)
 }
 
 func ratOf(decimal string) *big.Rat {
@@ -136,7 +129,7 @@ func (s *Service) checkBase(ctx context.Context, item SaleItem) error {
 // must run inside a database transaction: any error rolls every write back.
 func (s *Service) settle(
 	ctx context.Context,
-	sellerID, buyerID string,
+	sellerID, buyerID, requestID string,
 	items []SaleItem,
 	checkBase bool,
 ) (string, error) {
@@ -161,12 +154,36 @@ func (s *Service) settle(
 			}
 		}
 
-		stockID, _, found, err := s.store.LockStock(ctx, sellerID, item.MaterialID)
+		stockID, _, found, err := s.store.LockStock(ctx, sellerID, item.MaterialID, requestID)
 		if err != nil {
 			return "", err
 		}
 
 		if !found {
+			if requestID != "" {
+				return "", ErrOfferRanOut
+			}
+
+			return "", errNoStock
+		}
+
+		if requestID != "" {
+			consumed, err := s.store.ConsumeHold(ctx, requestID, stockID, item.Weight)
+			if err != nil {
+				return "", err
+			}
+
+			if !consumed {
+				return "", ErrOfferRanOut
+			}
+		}
+
+		available, err := s.store.Available(ctx, stockID)
+		if err != nil {
+			return "", err
+		}
+
+		if ratOf(available).Cmp(ratOf(item.Weight)) < 0 {
 			return "", errNoStock
 		}
 

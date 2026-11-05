@@ -13,15 +13,16 @@ import (
 
 // Item is a stock row with its material's safe catalog fields.
 type Item struct {
-	ID           string    `json:"id"`
-	OwnerID      string    `json:"owner_id"`
-	MaterialID   string    `json:"material_id"`
-	MaterialName string    `json:"material_name"`
-	Weight       string    `json:"weight"`
-	Price        string    `json:"price"`
-	BasePrice    string    `json:"base_price"`
-	IsListed     bool      `json:"is_listed"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID              string    `json:"id"`
+	OwnerID         string    `json:"owner_id"`
+	MaterialID      string    `json:"material_id"`
+	MaterialName    string    `json:"material_name"`
+	Weight          string    `json:"weight"`
+	AvailableWeight string    `json:"available_weight"`
+	Price           string    `json:"price"`
+	BasePrice       string    `json:"base_price"`
+	IsListed        bool      `json:"is_listed"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 // Store runs stock SQL.
@@ -31,7 +32,7 @@ type Store struct{ db *database.DB }
 func New(db *database.DB) *Store { return &Store{db: db} }
 
 const columns = `s.id,s.owner_id,s.material_id,m.name,s.weight::text,s.price::text,
-	m.price::text,s.is_listed,s.created_at`
+	m.price::text,s.is_listed,s.created_at,stock_available(s.id,s.weight)::text`
 
 func scan(row pgx.Row, item *Item) error {
 	return row.Scan(
@@ -44,7 +45,16 @@ func scan(row pgx.Row, item *Item) error {
 		&item.BasePrice,
 		&item.IsListed,
 		&item.CreatedAt,
+		&item.AvailableWeight,
 	)
+}
+
+// Held reads current reservations after the caller has locked the stock row.
+func (records *Store) Held(ctx context.Context, id string) (string, error) {
+	var held string
+	err := records.db.Q(ctx).QueryRow(ctx, `SELECT stock_held($1)::text`, id).Scan(&held)
+
+	return held, err
 }
 
 // Find returns a row; lock serializes owner changes and trades.

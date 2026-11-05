@@ -13,7 +13,7 @@ import (
 	store "github.com/connor-davis/3reco/internal/stores/requests"
 )
 
-// MakeOffer lets the seller put weights and prices on a pending request. The
+// MakeOffer lets the seller put weights and prices on an open request. The
 // offer must name at least one material of the request; a bad offer changes
 // nothing.
 func (s *Service) MakeOffer(
@@ -32,11 +32,21 @@ func (s *Service) MakeOffer(
 			return apperr.Forbidden("Only the seller can make an offer.")
 		}
 
-		if r.Status != StatusPending {
-			return apperr.Conflict("An offer can only be made on a pending request.")
+		if r.Status != StatusPending && r.Status != StatusOffered {
+			return apperr.Conflict("An offer can only be made on an open request.")
 		}
 
 		if err := transactions.CheckItems(offer); err != nil {
+			return err
+		}
+
+		// Share settlement's material order; each material's stock is ordered by ID.
+		offer = slices.Clone(offer)
+		slices.SortFunc(offer, func(a, b transactions.SaleItem) int {
+			return strings.Compare(a.MaterialID, b.MaterialID)
+		})
+
+		if err := s.store.ReleaseHolds(ctx, id); err != nil {
 			return err
 		}
 
@@ -84,8 +94,17 @@ func (s *Service) checkOffer(ctx context.Context, r store.Request, offer []trans
 			return apperr.Field("items", "That material is not part of this request.")
 		}
 
-		if err := s.trades.CheckOffer(ctx, r.Seller.ID, line); err != nil {
+		if err := s.trades.CheckOffer(ctx, line); err != nil {
 			return err
+		}
+
+		held, err := s.store.ReserveHold(ctx, r, line.MaterialID, line.Weight, offerHoldLifetime)
+		if err != nil {
+			return err
+		}
+
+		if !held {
+			return apperr.Conflict("Insufficient available stock to fulfil this offer.")
 		}
 	}
 
@@ -108,6 +127,10 @@ func (s *Service) Accept(ctx context.Context, user auth.User, id string) (string
 		}
 
 		if r.Status != StatusOffered {
+			if r.Status == StatusPending {
+				return transactions.ErrOfferRanOut
+			}
+
 			return apperr.Conflict("There is no active offer to accept.")
 		}
 
@@ -122,10 +145,10 @@ func (s *Service) Accept(ctx context.Context, user auth.User, id string) (string
 		}
 
 		if len(lines) == 0 {
-			return apperr.BadRequest("Offer details are missing.", nil)
+			return transactions.ErrOfferRanOut
 		}
 
-		transactionID, err = s.trades.SettleOffer(ctx, r.Seller.ID, r.Buyer.ID, lines)
+		transactionID, err = s.trades.SettleOffer(ctx, r.Seller.ID, r.Buyer.ID, id, lines)
 		if err != nil {
 			return err
 		}
@@ -220,6 +243,14 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 
 		if !slices.Contains(step.from, r.Status) {
 			return apperr.Conflict(step.wrong)
+		}
+
+		if err := s.store.ReleaseHolds(ctx, id); err != nil {
+			return err
+		}
+
+		if err := s.store.ClearOffers(ctx, id); err != nil {
+			return err
 		}
 
 		if err := s.store.SetStatus(ctx, id, step.to); err != nil {

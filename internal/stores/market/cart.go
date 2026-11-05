@@ -24,11 +24,12 @@ type Cart struct {
 func (records *Store) Cart(ctx context.Context, buyer, seller string) (Cart, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT i.stock_id,i.material_id,m.name,s.weight::text,s.price::text
+		`SELECT i.stock_id,i.material_id,m.name,stock_available(s.id,s.weight)::text,s.price::text
 		FROM carts c JOIN cart_items i ON i.cart_id=c.id JOIN stock s ON s.id=i.stock_id
 		JOIN materials m ON m.id=i.material_id JOIN users u ON u.id=c.seller_id
 		WHERE c.buyer_id=$1 AND c.seller_id=$2 AND s.owner_id=c.seller_id
-		AND s.material_id=i.material_id AND s.is_listed AND s.weight>0 AND NOT u.is_removed
+		AND s.material_id=i.material_id AND s.is_listed
+		AND stock_available(s.id,s.weight)>0 AND NOT u.is_removed
 		ORDER BY i.stock_id`,
 		buyer,
 		seller,
@@ -63,7 +64,8 @@ func (records *Store) ValidCartStock(ctx context.Context, seller string, item Ca
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
 		`SELECT s.id FROM stock s JOIN users u ON u.id=s.owner_id
-		WHERE s.id=$1 AND s.material_id=$2 AND s.owner_id=$3 AND s.is_listed AND s.weight>0
+		WHERE s.id=$1 AND s.material_id=$2 AND s.owner_id=$3 AND s.is_listed
+		AND stock_available(s.id,s.weight)>0
 		AND u.role='business' AND NOT u.is_removed FOR SHARE OF s,u`,
 		item.StockID,
 		item.MaterialID,

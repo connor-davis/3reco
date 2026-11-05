@@ -33,11 +33,11 @@ type Filter struct {
 }
 
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
-	s.material_id,m.name,m.carbon_factor::text,m.gw_code,s.weight::text,s.price::text,
+	s.material_id,m.name,m.carbon_factor::text,m.gw_code,stock_available(s.id,s.weight)::text,s.price::text,
 	s.created_at`
 
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
-	JOIN users u ON u.id=s.owner_id WHERE s.is_listed AND s.weight>0
+	JOIN users u ON u.id=s.owner_id WHERE s.is_listed AND stock_available(s.id,s.weight)>0
 	AND NOT u.is_removed AND u.role='business'`
 
 // Listings excludes hidden, empty and removed-seller stock at the SQL boundary.

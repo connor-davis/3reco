@@ -232,7 +232,9 @@ func TestAcceptOfferChecksStockAndLegacyRequest(t *testing.T) {
 		VALUES ($1, 0, $2, NULL, 5, 9)`, legacy, w.material)
 
 	tradeWant(t, "legacy detail", w.buyer.c.Do("GET", "/api/requests/"+legacy, nil), 200)
-	tradeWant(t, "legacy accept", w.buyer.c.Do("POST", "/api/requests/"+legacy+"/accept", nil), 200)
+	tradeWant(t, "legacy accept without hold", w.buyer.c.Do("POST", "/api/requests/"+legacy+"/accept", nil), 409)
+	tradeOffer(t, w.seller, legacy, w.material, "5", "9")
+	tradeWant(t, "legacy renewed accept", w.buyer.c.Do("POST", "/api/requests/"+legacy+"/accept", nil), 200)
 
 	if got := tradeStockWeight(t, w.app, w.seller.id, w.material); got != "95.000000" && got != "95" {
 		t.Errorf("seller stock %s after the legacy accept, want 95", got)

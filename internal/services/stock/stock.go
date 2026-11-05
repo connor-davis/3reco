@@ -144,6 +144,23 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 				item.IsListed = *in.IsListed
 			}
 
+			if in.Weight != nil {
+				amount, err := Decimal(item.Weight, "weight", false)
+				if err != nil {
+					return err
+				}
+
+				held, err := service.store.Held(ctx, id)
+				if err != nil {
+					return err
+				}
+
+				reserved, _ := new(big.Rat).SetString(held)
+				if amount.Cmp(reserved) < 0 {
+					return apperr.Conflict("Some of this stock is held for open offers.")
+				}
+			}
+
 			if err := validate(item); err != nil {
 				return err
 			}
@@ -173,6 +190,16 @@ func (service *Service) Delete(ctx context.Context, id, owner string) error {
 
 			if err != nil {
 				return err
+			}
+
+			held, err := service.store.Held(ctx, id)
+			if err != nil {
+				return err
+			}
+
+			reserved, _ := new(big.Rat).SetString(held)
+			if reserved.Sign() > 0 {
+				return apperr.Conflict("Some of this stock is held for open offers.")
 			}
 
 			return service.store.Delete(ctx, id, owner)

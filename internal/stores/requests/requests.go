@@ -19,11 +19,12 @@ var ErrNotFound = errors.New("request not found")
 // Item is one material of a request, with the seller's offer once there is
 // one. StockID is empty on requests moved over from the old app.
 type Item struct {
-	MaterialID   string  `json:"material_id"`
-	MaterialName string  `json:"material_name"`
-	StockID      *string `json:"stock_id"`
-	OfferWeight  *string `json:"offer_weight"`
-	OfferPrice   *string `json:"offer_price"`
+	MaterialID      string  `json:"material_id"`
+	MaterialName    string  `json:"material_name"`
+	StockID         *string `json:"stock_id"`
+	OfferWeight     *string `json:"offer_weight"`
+	OfferPrice      *string `json:"offer_price"`
+	AvailableWeight *string `json:"available_weight"`
 }
 
 // Request is a buying request as its two sides (and staff) see it.
@@ -181,7 +182,8 @@ func (s *Store) fill(ctx context.Context, list []Request) error {
 	}
 
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT i.request_id, i.material_id, m.name, i.stock_id, i.offer_weight::text, i.offer_price::text
+		SELECT i.request_id, i.material_id, m.name, i.stock_id, i.offer_weight::text, i.offer_price::text,
+			(SELECT stock_available(s.id,s.weight)::text FROM stock s WHERE s.id=i.stock_id)
 		FROM transaction_request_items i JOIN materials m ON m.id = i.material_id
 		WHERE i.request_id = ANY($1) ORDER BY i.request_id, i.position`, ids)
 	if err != nil {
@@ -195,7 +197,7 @@ func (s *Store) fill(ctx context.Context, list []Request) error {
 		var item Item
 
 		err := rows.Scan(&id, &item.MaterialID, &item.MaterialName, &item.StockID,
-			&item.OfferWeight, &item.OfferPrice)
+			&item.OfferWeight, &item.OfferPrice, &item.AvailableWeight)
 		if err != nil {
 			return err
 		}
