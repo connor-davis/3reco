@@ -19,7 +19,8 @@ The whole repo root becomes a Viper-style Go repo. Source of truth: root `AGENTS
   `docs`, `scripts`, `Taskfile.yml`.
 - `3reco/` moves to `web/apps/app`; `3reco/documentation` moves to `web/apps/docs`.
 - `mystuff/` at root, gitignored: `maps/`, `designs/01..10/`.
-- Legacy `api/` and `app/` (first 3REco, Node) are deleted.
+- Legacy `api/` (Express) and `app/` (first 3REco) stay in place as reference
+  material. Never delete or change them (owner, 2026-11-05).
 - Root `AGENTS.md` (from Viper, rewritten), `CLAUDE.md` (`@AGENTS.md`),
   `docs/style-guide.md` added. Ports: API 8180, Postgres 5441, Mailpit 8026, MinIO 9010.
 
@@ -34,7 +35,7 @@ Developers/designers: Sonnet 5.5 / GPT 6.1 Sol, round-robin. All children medium
 |---|------|-------|-----------|
 | T1 | Map Convex backend → `mystuff/maps/backend-map.md` (every table, index, function, auth rule, subscription, file, email, aggregate, migration) | mapper (Haiku) | — |
 | T2 | Map frontend → `mystuff/maps/pages-map.md` (every route, data shown, actions, states, roles) | mapper (Luna) | — |
-| T2b | Restructure root: move `3reco/` → `web/apps/app`, docs → `web/apps/docs`, delete `api/` `app/`, move `mystuff/` to root, fix compose/Dockerfile paths | Orchestrator | T1, T2 |
+| T2b | Restructure root: move `3reco/` → `web/apps/app`, docs → `web/apps/docs`, keep `api/` `app/` untouched, move `mystuff/` to root, fix compose/Dockerfile paths | Orchestrator | T1, T2 |
 | T3 | Design system brief for mockups: tokens from `3reco/src/index.css`, shared rules | Orchestrator | T2 |
 | T4 | 10 interactive HTML mockup sets × every page → `mystuff/designs/NN/` | 10 designers, alternating | T3 |
 | T5 | **CHECKPOINT: owner picks a design** | owner | T4 |
