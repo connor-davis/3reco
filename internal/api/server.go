@@ -41,6 +41,7 @@ var Module = fx.Module("api",
 		New,
 		Listen,
 	),
+	tradeProviders,
 	fx.Invoke(background),
 	fx.Invoke(func(*Listener) {}),
 )
@@ -54,6 +55,7 @@ type routes struct {
 	Auth   *auth.Service
 	AuthH  *authapi.Handler
 	Socket *sockets.Handler
+	Trade  tradeRoutes
 }
 
 // New builds the Fiber app with every route.
@@ -103,6 +105,7 @@ func New(r routes) *fiber.App {
 
 	r.AuthH.Register(api.Group("/auth"))
 	r.Socket.Register(api)
+	r.Trade.register(api)
 
 	// Unknown /api paths get a JSON 404.
 	api.Use(func(c fiber.Ctx) error { return apperr.NotFound("No such API endpoint.") })

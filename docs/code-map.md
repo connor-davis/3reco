@@ -21,6 +21,7 @@ line when you add an owner.
 | `0001_users_auth.sql` | `users`, `sessions`, `auth_tokens`, `rate_counts` |
 | `0002_market.sql` | collectors, materials, stock, transactions and their items and receipts, requests and their items and messages, notifications, carts, reviews |
 | `0003_realtime.sql` | `notify_change()` and the `realtime` trigger on each live table |
+| `0004_domain_api.sql` | `request_message_reads`, message and market indexes, `notify_change()` for read marks |
 
 Never rename a merged migration. Add a new file.
 
@@ -33,6 +34,20 @@ Never rename a merged migration. Add a new file.
 | Sign-up, sign-in, sessions, verify email, reset password, admin create, roles | `internal/services/auth/auth.go` |
 | Session cookie, device cookie, who is calling, `RequireUser`, `RequireRole`, CSRF, rate limit | `internal/api/middleware/middleware.go` |
 | `/api/auth/*` routes | `internal/api/auth/handlers.go` |
+
+## Trade and operations
+
+| Job | Owner |
+| --- | --- |
+| Cursor paging: page shape, cursor, limit | `internal/platform/paging/paging.go` |
+| Shared SQL: safe display name, SAST effective date, `Party` | `internal/platform/database/sql.go` |
+| Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
+| Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
+| Transactions: lists, detail, collector sale, direct sale, stock moves, invoice hook | `internal/stores/transactions`, `internal/services/transactions`, `internal/api/transactions` |
+| Invoice and receipt routes (access check, then 501 until T10) | `internal/api/transactions/receipts.go` |
+| Store reviews, public review lists, admin remove | `internal/stores/reviews`, `internal/services/reviews`, `internal/api/reviews` |
+| Admin users, role change, removal, the three dashboards | `internal/stores/admin`, `internal/services/admin`, `internal/api/admin` |
+| Wiring of the trade area into the server | `internal/api/trade.go` |
 
 ## Realtime
 
@@ -58,3 +73,4 @@ Never rename a merged migration. Add a new file.
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |
 | WebSocket events | `tests/realtime_test.go` |
+| Trade tests: requests, messages, transactions, access, reviews, notifications, admin, dashboards | `tests/*_test.go` named for the area, helpers in `tests/trade_helpers_test.go` |
