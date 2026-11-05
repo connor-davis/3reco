@@ -171,6 +171,12 @@ Add short notes here when something surprises you, under the closest group.
   the repo root. Write `cd web/apps/app && ...` instead.
 - In `checker | tail && gh pr create`, the pipe hides the checker's
   failure. Never pipe the checker; send its output to a file.
+- The live server is `root@3reco` over Tailscale. Use PowerShell's `ssh`:
+  Git Bash's `ssh` has no key for it. Live Convex is self-hosted there
+  (container `3reco-convex-backend-1`, port 3210 on localhost only). To
+  export, make a key with `./generate_admin_key.sh` in that container,
+  tunnel the port, then run `npx convex export` with
+  `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` set.
 
 ### Go, Postgres and the API
 
