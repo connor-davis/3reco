@@ -11,7 +11,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { navFor, tabsFor, type NavLink } from '@/lib/nav';
-import { useMock } from '@/lib/mock/hooks';
+import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
 import { useBadgeCounts } from './use-badge-counts';
 
@@ -31,7 +31,7 @@ const raisedClass =
 
 /** Phone navigation (780px and below). Each role only sees tabs it can open. */
 export function BottomTabs() {
-  const { role } = useMock();
+  const role = useAuth().user?.role ?? null;
   const [moreOpen, setMoreOpen] = useState(false);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -94,7 +94,8 @@ type SheetProps = { open: boolean; onOpenChange: (open: boolean) => void };
 
 /** Every sidebar destination, so nothing is out of reach on a phone. */
 function MoreSheet({ open, onOpenChange }: SheetProps) {
-  const { role } = useMock();
+  const { user } = useAuth();
+  const role = user?.role ?? null;
   const account: NavLink = {
     label: 'My account',
     to: '/profile',
@@ -102,7 +103,7 @@ function MoreSheet({ open, onOpenChange }: SheetProps) {
   };
   const about: NavLink = { label: 'About 3REco', to: '/about', icon: Info };
   const groups = [
-    ...(role === 'signed-out' ? [] : [{ links: [account] }]),
+    ...(user ? [{ links: [account] }] : []),
     ...navFor(role),
     { links: [about] },
   ];

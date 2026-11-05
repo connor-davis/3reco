@@ -17,6 +17,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps['theme']}
       className="toaster group"
+      // The phone top bar is 56px tall; toasts sit below it so its buttons stay clear.
+      offset={{ top: 72 }}
+      mobileOffset={{ top: 72 }}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,

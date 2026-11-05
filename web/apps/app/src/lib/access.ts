@@ -1,4 +1,4 @@
-import type { Role } from '@/lib/types';
+import type { Role } from '@/lib/api/types';
 
 export type PageId =
   | 'dashboard'
@@ -35,8 +35,9 @@ const allowed: Record<PageId, Role[]> = {
   users: ['admin'],
 };
 
-export function canOpen(role: Role, page: PageId): boolean {
-  return allowed[page].includes(role);
+/** A signed-in account can have no role yet (null); it opens nothing restricted. */
+export function canOpen(role: Role | null, page: PageId): boolean {
+  return role !== null && allowed[page].includes(role);
 }
 
 export const roleLabels: Record<Role, string> = {
@@ -44,7 +45,7 @@ export const roleLabels: Record<Role, string> = {
   staff: 'Staff',
   business: 'Business',
   collector: 'Collector',
-  'signed-out': 'Signed out',
 };
 
-export const isStaffRole = (role: Role) => role === 'admin' || role === 'staff';
+export const isStaffRole = (role: string | null | undefined) =>
+  role === 'admin' || role === 'staff';

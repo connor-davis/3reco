@@ -47,7 +47,7 @@ export function OfferDialog({ open, onOpenChange, request }: Props) {
             const stock = data.stock.find(
               (item) => item.materialId === line.materialId
             );
-            const message = quantityError(line.kg, stock);
+            const message = quantityError(line.kg, stock?.availableKg);
 
             if (message) {
               ctx.addIssue({

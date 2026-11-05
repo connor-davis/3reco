@@ -8,8 +8,8 @@ import { ImpactDialog } from '@/components/dialogs/impact-dialog';
 import { AppSidebar } from './app-sidebar';
 import { BottomTabs } from './bottom-tabs';
 import { CommandSearch } from './command-search';
-import { PreviewPill } from './preview-pill';
 import { Topbar } from './topbar';
+import { isAuthPath, isChatPath } from '@/lib/nav';
 
 const chatPad = 'pb-[3.25rem] min-[781px]:pb-0';
 const pagePad = cn(
@@ -26,9 +26,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const bare = pathname.startsWith('/auth/');
+  const bare = isAuthPath(pathname);
   // Chat screens run edge to edge, like a messenger, so they skip the page padding.
-  const chat = /^\/(messages|market\/REQ-)/.test(pathname);
+  const chat = isChatPath(pathname);
 
   return (
     <TooltipProvider>
@@ -61,16 +61,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} />
         </SidebarProvider>
       )}
-      {/* Phones get the compact copy in the top bar; auth pages have no bar. */}
-      <PreviewPill
-        className={cn(
-          'bottom-4 left-4',
-          !bare && 'max-[780px]:hidden',
-          bare && 'max-[780px]:right-3 max-[780px]:left-auto'
-        )}
-      />
       <ImpactDialog />
-      <Toaster position="top-center" mobileOffset={{ top: 72 }} />
+      <Toaster position="top-center" />
     </TooltipProvider>
   );
 }

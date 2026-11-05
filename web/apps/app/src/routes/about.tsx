@@ -36,7 +36,7 @@ function AboutPage() {
           <LinkButton to="/market" size="lg">
             Browse materials
           </LinkButton>
-          <LinkButton to="/auth/sign-up" size="lg" variant="outline">
+          <LinkButton to="/sign-up" size="lg" variant="outline">
             Join the community
           </LinkButton>
         </div>

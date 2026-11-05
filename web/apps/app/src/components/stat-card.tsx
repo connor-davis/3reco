@@ -7,19 +7,26 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMock } from '@/lib/mock/hooks';
 
 type StatCardProps = {
   label: string;
   value: string;
   hint?: string;
   icon?: LucideIcon;
+  isLoading?: boolean;
+  // True when the data failed to load, so no stale number is shown.
+  unavailable?: boolean;
 };
 
-/** One number tile. Shows a skeleton while the page state is "loading". */
-export function StatCard({ label, value, hint, icon: Icon }: StatCardProps) {
-  const { pageState } = useMock();
-
+/** One number tile. Shows a skeleton while loading and a dash if it failed. */
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  isLoading = false,
+  unavailable = false,
+}: StatCardProps) {
   return (
     <Card className="gap-1 bg-muted py-5 ring-0">
       <CardHeader>
@@ -28,13 +35,12 @@ export function StatCard({ label, value, hint, icon: Icon }: StatCardProps) {
           {label}
         </CardDescription>
         <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-          {pageState === 'loading' ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-24" />
-          ) : pageState === 'ready' ? (
-            value
-          ) : (
-            // Empty and error pages must not keep showing real numbers.
+          ) : unavailable ? (
             '—'
+          ) : (
+            value
           )}
         </CardTitle>
       </CardHeader>

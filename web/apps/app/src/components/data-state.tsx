@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { AlertTriangle, type LucideIcon } from 'lucide-react';
-import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,9 +11,18 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMock } from '@/lib/mock/hooks';
+import { ApiError } from '@/lib/api/client';
+
+type QueryLike = {
+  isPending: boolean;
+  isError: boolean;
+  error?: unknown;
+  refetch: () => unknown;
+};
 
 type DataStateProps = {
+  // The TanStack Query result(s) from a lib/api hook. Loading if any is pending.
+  query?: QueryLike | QueryLike[];
   // True when the page has nothing to show once the data is loaded.
   isEmpty?: boolean;
   icon: LucideIcon;
@@ -27,11 +35,11 @@ type DataStateProps = {
 };
 
 /**
- * Every data page wraps its content in this. The Preview control's state
- * (ready, loading, empty, error) decides what shows, so a reviewer can see
- * all four on any page.
+ * Every data page wraps its content in this: loading, then error with a
+ * retry, then empty, then the page.
  */
 export function DataState({
+  query,
   isEmpty = false,
   icon: Icon,
   emptyTitle,
@@ -40,27 +48,31 @@ export function DataState({
   skeleton,
   children,
 }: DataStateProps) {
-  const { pageState, setPageState } = useMock();
+  const queries = query === undefined ? [] : [query].flat();
+  const failed = queries.filter((item) => item.isError);
 
-  if (pageState === 'loading') {
+  if (queries.some((item) => item.isPending)) {
     return <div aria-busy="true">{skeleton ?? <RowsSkeleton />}</div>;
   }
 
-  if (pageState === 'error') {
+  if (failed.length > 0) {
+    const error = failed[0]?.error;
+
     return (
       <Alert variant="destructive">
         <AlertTriangle />
         <AlertTitle>We couldn't load this page</AlertTitle>
         <AlertDescription>
-          <p>Check your connection and try again.</p>
+          <p>
+            {error instanceof ApiError
+              ? error.message
+              : 'Check your connection and try again.'}
+          </p>
           <Button
             className="mt-3"
             size="sm"
             variant="outline"
-            onClick={() => {
-              setPageState('ready');
-              toast.success('Loaded again.');
-            }}
+            onClick={() => failed.forEach((item) => void item.refetch())}
           >
             Try again
           </Button>
@@ -69,7 +81,7 @@ export function DataState({
     );
   }
 
-  if (pageState === 'empty' || isEmpty) {
+  if (isEmpty) {
     return (
       <Empty className="border">
         <EmptyHeader>
