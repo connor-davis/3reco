@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 )
 
+// ponytail: each section is built in memory as one JSON array. That is fine for an
+// account-sized export at today's scale; upgrade by streaming rows section by section.
+//
 // section runs a query that returns the rows to export and returns them as one
 // JSON array. Each query names its columns, so a new column on a table never
 // leaks into an export by accident.

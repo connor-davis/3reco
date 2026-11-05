@@ -352,12 +352,14 @@ func (h *Hub) recheckLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
-			h.recheck(ctx)
+			h.Recheck(ctx)
 		}
 	}
 }
 
-func (h *Hub) recheck(ctx context.Context) {
+// Recheck drops every socket whose session ended and every topic its client may
+// no longer follow. The loop runs it every recheckEvery; tests call it directly.
+func (h *Hub) Recheck(ctx context.Context) {
 	h.mu.Lock()
 
 	type snapshot struct {
@@ -378,19 +380,114 @@ func (h *Hub) recheck(ctx context.Context) {
 
 	h.mu.Unlock()
 
+	if len(all) == 0 {
+		return
+	}
+
+	// One query for every live session and one for every joined request topic,
+	// instead of one per socket and per topic.
+	sessionIDs := make([]string, 0, len(all))
+	requestIDs := []string{}
+
 	for _, s := range all {
-		if _, err := h.auth.SessionByID(ctx, s.c.SessionID); err != nil {
-			// ponytail: a database hiccup also lands here and drops the socket;
-			// the browser reconnects, so it only costs one refetch.
+		sessionIDs = append(sessionIDs, s.c.SessionID)
+
+		for _, topic := range s.topics {
+			if kind, id, _ := strings.Cut(topic, ":"); kind == "request" && id != "" {
+				requestIDs = append(requestIDs, id)
+			}
+		}
+	}
+
+	live, err := h.liveSessions(ctx, sessionIDs)
+	if err != nil {
+		// ponytail: a database hiccup drops every socket, as it did one by one
+		// before; browsers reconnect, so it only costs one refetch each.
+		live = nil
+	}
+
+	parties, err := h.requestParties(ctx, requestIDs)
+	if err != nil {
+		parties = nil
+	}
+
+	for _, s := range all {
+		if _, ok := live[s.c.SessionID]; !ok {
 			h.Leave(s.c)
 
 			continue
 		}
 
 		for _, topic := range s.topics {
-			if err := h.allowed(ctx, s.c, topic); err != nil {
+			if err := h.recheckTopic(ctx, s.c, topic, parties); err != nil {
 				h.Unsubscribe(s.c, topic)
 			}
 		}
 	}
+}
+
+// recheckTopic is allowed, except a request topic is judged from the batch of
+// parties already read, so it costs no query.
+func (h *Hub) recheckTopic(ctx context.Context, c *Client, topic string, parties map[string][2]string) error {
+	kind, id, _ := strings.Cut(topic, ":")
+	if kind != "request" || id == "" || c.Role == auth.RoleAdmin || c.Role == auth.RoleStaff {
+		return h.allowed(ctx, c, topic)
+	}
+
+	if p, ok := parties[id]; ok && (p[0] == c.UserID || p[1] == c.UserID) {
+		return nil
+	}
+
+	return apperr.Forbidden("You cannot follow that.")
+}
+
+// liveSessions returns which of the session ids are unexpired and belong to a
+// user who has not been removed.
+func (h *Hub) liveSessions(ctx context.Context, ids []string) (map[string]struct{}, error) {
+	rows, err := h.db.Pool.Query(ctx, `
+		SELECT s.id FROM sessions s JOIN users u ON u.id = s.user_id
+		WHERE s.id = ANY($1) AND s.expires_at > now() AND NOT u.is_removed`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	live := map[string]struct{}{}
+
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		live[id] = struct{}{}
+	}
+
+	return live, rows.Err()
+}
+
+// requestParties maps each request id to its seller and buyer.
+func (h *Hub) requestParties(ctx context.Context, ids []string) (map[string][2]string, error) {
+	parties := map[string][2]string{}
+	if len(ids) == 0 {
+		return parties, nil
+	}
+
+	rows, err := h.db.Pool.Query(ctx,
+		`SELECT id, seller_id, buyer_id FROM transaction_requests WHERE id = ANY($1)`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, seller, buyer string
+		if err := rows.Scan(&id, &seller, &buyer); err != nil {
+			return nil, err
+		}
+
+		parties[id] = [2]string{seller, buyer}
+	}
+
+	return parties, rows.Err()
 }

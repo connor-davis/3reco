@@ -100,7 +100,8 @@ func (s *Store) Counterparties(
 ) ([]Counterparty, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		WITH tx AS (
-			SELECT t.*, `+database.EffectiveDate("t")+` AS at
+			SELECT t.type, t.buyer_id, t.seller_id, t.total_price,
+				t.collection_day, t.collection_date, t.created_at, `+database.EffectiveDate("t")+` AS at
 			FROM transactions t WHERE `+string(scope)+`
 		)
 		SELECT cp.id, cp.name, count(*), sum(tx.total_price)::text

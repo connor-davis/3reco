@@ -3,6 +3,8 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -201,5 +203,93 @@ func TestLiveSocketAnswersPing(t *testing.T) {
 
 	if ev := sock.next(); ev["type"] != "pong" {
 		t.Fatalf("ping: %v", ev)
+	}
+}
+
+func TestLiveRecheckDropsRemovedUserAndLostRequestAccess(t *testing.T) {
+	w := newTradeWorld(t)
+	other := tradeNewUser(t, w.app, "business")
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	topic := "request:" + id
+	ctx := context.Background()
+
+	buyerSock, _, err := dial(t, w.app, w.buyer.c, testutil.WebOrigin)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sellerSock, _, err := dial(t, w.app, w.seller.c, testutil.WebOrigin)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, sock := range []*socket{buyerSock, sellerSock} {
+		sock.send(map[string]string{"type": "subscribe", "topic": topic})
+		sock.send(map[string]string{"type": "ping"})
+
+		if ev := sock.next(); ev["type"] != "pong" {
+			t.Fatalf("subscription barrier: %v", ev)
+		}
+	}
+
+	touch := `UPDATE transaction_requests SET updated_at = now() WHERE id = $1`
+
+	// Two people who still have access keep their topic through a recheck.
+	w.app.Hub.Recheck(ctx)
+
+	if _, err := w.app.DB.Pool.Exec(ctx, touch, id); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, sock := range []*socket{buyerSock, sellerSock} {
+		if ev := sock.next(); ev["type"] != "changed" || ev["topic"] != topic {
+			t.Fatalf("kept topic: %v", ev)
+		}
+	}
+
+	// The buyer loses access when the request moves to someone else.
+	_, err = w.app.DB.Pool.Exec(ctx, `UPDATE transaction_requests SET buyer_id = $2 WHERE id = $1`, id, other.id)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, sock := range []*socket{buyerSock, sellerSock} {
+		if ev := sock.next(); ev["type"] != "changed" {
+			t.Fatalf("move event: %v", ev)
+		}
+	}
+
+	w.app.Hub.Recheck(ctx)
+
+	if _, err := w.app.DB.Pool.Exec(ctx, touch, id); err != nil {
+		t.Fatal(err)
+	}
+
+	if ev := sellerSock.next(); ev["type"] != "changed" {
+		t.Fatalf("seller kept topic: %v", ev)
+	}
+
+	buyerSock.send(map[string]string{"type": "ping"})
+
+	if ev := buyerSock.next(); ev["type"] != "pong" {
+		t.Fatalf("buyer heard %v after losing the request", ev)
+	}
+
+	// A removed user's socket is closed.
+	if _, err := w.app.DB.Pool.Exec(ctx, `UPDATE users SET is_removed = true WHERE id = $1`, w.seller.id); err != nil {
+		t.Fatal(err)
+	}
+
+	w.app.Hub.Recheck(ctx)
+
+	_ = sellerSock.conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+
+	var ev map[string]any
+
+	err = sellerSock.conn.ReadJSON(&ev)
+
+	var timeout net.Error
+	if err == nil || (errors.As(err, &timeout) && timeout.Timeout()) {
+		t.Fatalf("removed user's socket still open: %v %v", ev, err)
 	}
 }

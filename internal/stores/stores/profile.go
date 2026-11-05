@@ -25,18 +25,26 @@ type Profile struct {
 
 var profileColumns = `u.id,` + database.DisplayName("u") + `,
 	COALESCE(u.image,''),CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar' ELSE COALESCE(u.image,'') END,COALESCE(u.city,''),COALESCE(u.province,''),
-	(SELECT count(*) FROM stock s WHERE s.owner_id=u.id AND s.is_listed AND s.weight>0),
-	ARRAY(SELECT DISTINCT m.name FROM stock s JOIN materials m ON m.id=s.material_id
-	WHERE s.owner_id=u.id AND s.is_listed AND s.weight>0 ORDER BY m.name),
+	COALESCE(st.items,0),COALESCE(st.names,'{}'::text[]),
 	u.created_at`
+
+// profileSelect reads the page of users first, then sums their stock in one grouped pass.
+func profileSelect(page string) string {
+	return `WITH page AS (` + page + `)
+	SELECT ` + profileColumns + ` FROM page u
+	LEFT JOIN (SELECT s.owner_id,count(*) AS items,array_agg(DISTINCT m.name ORDER BY m.name) AS names
+		FROM stock s JOIN materials m ON m.id=s.material_id
+		WHERE s.owner_id = ANY(ARRAY(SELECT id FROM page)) AND s.is_listed AND s.weight>0
+		GROUP BY s.owner_id) st ON st.owner_id=u.id
+	ORDER BY u.created_at DESC,u.id DESC`
+}
 
 // Find reads one active business by its users ID.
 func (records *Store) Find(ctx context.Context, id string) (Profile, error) {
 	var item Profile
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`SELECT `+profileColumns+`
-		FROM users u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed`,
+		profileSelect(`SELECT * FROM users u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed`),
 		id,
 	).Scan(
 		&item.ID,
@@ -57,11 +65,10 @@ func (records *Store) Find(ctx context.Context, id string) (Profile, error) {
 func (records *Store) List(ctx context.Context, search, exclude string, query paging.Query) ([]Profile, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT `+profileColumns+`
-		FROM users u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
+		profileSelect(`SELECT * FROM users u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
 		AND ($2='' OR u.business_name ILIKE '%'||$2||'%' OR u.name ILIKE '%'||$2||'%')
 		AND ($3='' OR (u.created_at,u.id)<($4,$3))
-		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($5,0)`,
+		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($5,0)`),
 		exclude,
 		search,
 		query.ID,

@@ -97,14 +97,12 @@ func (s *Store) Inbox(
 	cur paging.Cursor,
 	limit int,
 ) ([]Thread, error) {
+	// The page is cut first; unread counts are then summed once for its requests.
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT r.id, r.status, o.id, `+database.DisplayName("o")+`,
-			lm.id, lm.sender_id, lm.content, lm.created_at,
-			(SELECT count(*) FROM transaction_request_messages m
-				WHERE m.request_id = r.id AND m.sender_id <> $1 AND NOT EXISTS (
-					SELECT 1 FROM request_message_reads x
-					WHERE x.message_id = m.id AND x.user_id = $1)),
-			COALESCE(lm.created_at, r.created_at) AS activity
+		WITH page AS (
+		SELECT r.id, r.status, o.id AS other_id, `+database.DisplayName("o")+` AS other_name,
+			lm.id AS lm_id, lm.sender_id AS lm_sender, lm.content AS lm_content,
+			lm.created_at AS lm_at, COALESCE(lm.created_at, r.created_at) AS activity
 		FROM transaction_requests r
 		JOIN users o ON o.id = CASE WHEN r.seller_id = $1 THEN r.buyer_id ELSE r.seller_id END
 		LEFT JOIN LATERAL (
@@ -113,7 +111,16 @@ func (s *Store) Inbox(
 		WHERE (r.seller_id = $1 OR r.buyer_id = $1) AND r.status = 'pending'
 			AND ($2::timestamptz IS NULL OR (COALESCE(lm.created_at, r.created_at), r.id) < ($2, $3))
 		ORDER BY activity DESC, r.id DESC
-		LIMIT $4`, userID, cur.At, cur.ID, limit+1)
+		LIMIT $4)
+		SELECT page.id, page.status, page.other_id, page.other_name, page.lm_id, page.lm_sender,
+			page.lm_content, page.lm_at, COALESCE(un.n, 0), page.activity
+		FROM page
+		LEFT JOIN (SELECT m.request_id, count(*) AS n FROM transaction_request_messages m
+			WHERE m.request_id IN (SELECT id FROM page) AND m.sender_id <> $1 AND NOT EXISTS (
+				SELECT 1 FROM request_message_reads x
+				WHERE x.message_id = m.id AND x.user_id = $1)
+			GROUP BY m.request_id) un ON un.request_id = page.id
+		ORDER BY page.activity DESC, page.id DESC`, userID, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err
 	}

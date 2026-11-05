@@ -33,11 +33,15 @@ type Filter struct {
 }
 
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
-	s.material_id,m.name,m.carbon_factor::text,m.gw_code,stock_available(s.id,s.weight)::text,s.price::text,
+	s.material_id,m.name,m.carbon_factor::text,m.gw_code,GREATEST(s.weight-COALESCE(h.held,0),0)::text,s.price::text,
 	s.created_at`
 
+// Held weight is summed once for all stock, not once per row through stock_available().
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
-	JOIN users u ON u.id=s.owner_id WHERE s.is_listed AND stock_available(s.id,s.weight)>0
+	JOIN users u ON u.id=s.owner_id
+	LEFT JOIN (SELECT stock_id,sum(weight) AS held FROM stock_holds
+		WHERE status='active' AND expires_at>clock_timestamp() GROUP BY stock_id) h ON h.stock_id=s.id
+	WHERE s.is_listed AND s.weight-COALESCE(h.held,0)>0
 	AND NOT u.is_removed AND u.role='business'`
 
 // Listings excludes hidden, empty and removed-seller stock at the SQL boundary.

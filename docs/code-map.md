@@ -26,6 +26,7 @@ line when you add an owner.
 | `0005_files_invoices.sql` | `users.avatar_key`, preserving legacy identity images |
 | `0006_stock_holds.sql` | `stock_holds`, exact held/available SQL functions and hold realtime topics |
 | `0007_privacy.sql` | `privacy_notice_acceptances`, `privacy_events`, `transactions.anonymised_at` |
+| `0008_perf_indexes.sql` | Sort-order indexes for market, stock, transactions, requests, messages, notifications and users |
 
 Never rename a merged migration. Add a new file.
 
@@ -81,7 +82,7 @@ Never rename a merged migration. Add a new file.
 
 | Job | Owner |
 | --- | --- |
-| Fiber app, shared steps, error handler, fx wiring, listener, hourly purge and offer expiry loop | `internal/api/server.go` |
+| Fiber app, shared steps (incl. `/api` compression, skipped for the socket and streams), error handler, fx wiring, listener, hourly purge and offer expiry loop | `internal/api/server.go` |
 | The binary: `serve`, `migrate`, `admin create`, `import-convex`, `health`, `version` | `cmd/3reco/main.go` |
 
 ## Tests
