@@ -47,6 +47,7 @@ func TestRequestOfferAcceptFlow(t *testing.T) {
 
 	res := w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil)
 	tradeWant(t, "accept", res, 200)
+	tradeWant(t, "seller confirms", w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 
 	txID, _ := res.Body["transaction_id"].(string)
 	if txID == "" {
@@ -145,7 +146,7 @@ func TestRequestDetailLeak(t *testing.T) {
 	offer := map[string]any{"items": []map[string]any{tradeLine(w.material, "1", "9")}}
 	tradeWant(t, "outsider offer", outsider.c.Do("POST", path+"/offer", offer), 404)
 	tradeWant(t, "anonymous offer", anon.Do("POST", path+"/offer", offer), 401)
-	tradeWant(t, "buyer offer", w.buyer.c.Do("POST", path+"/offer", offer), 403)
+	tradeWant(t, "buyer offer", w.buyer.c.Do("POST", path+"/offer", offer), 200)
 
 	// Lists only hold the caller's own requests.
 	for _, list := range []string{"/api/requests/incoming", "/api/requests/outgoing"} {
@@ -201,7 +202,8 @@ func TestAcceptOfferChecksStockAndLegacyRequest(t *testing.T) {
 	// The seller sells most of it elsewhere before the buyer accepts.
 	tradeExec(t, w.app, `UPDATE stock SET weight = 10 WHERE id = $1`, w.stock)
 
-	res := w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil)
+	tradeWant(t, "first confirmation", w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+	res := w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil)
 	if res.Status < 400 || res.Status >= 500 {
 		t.Fatalf("accept without stock: %d, want a 4xx: %s", res.Status, res.Raw)
 	}
@@ -210,8 +212,8 @@ func TestAcceptOfferChecksStockAndLegacyRequest(t *testing.T) {
 		t.Errorf("status %s after a failed accept, want offered", got)
 	}
 
-	if n := tradeText(t, w.app, `SELECT count(*)::text FROM transactions`); n != "0" {
-		t.Errorf("%s transactions after a failed accept, want 0", n)
+	if n := tradeText(t, w.app, `SELECT count(*)::text FROM transactions`); n != "1" {
+		t.Errorf("%s transactions after a failed settlement, want 1 pending", n)
 	}
 
 	// An old single-item request has no stock id on its item.
@@ -235,6 +237,7 @@ func TestAcceptOfferChecksStockAndLegacyRequest(t *testing.T) {
 	tradeWant(t, "legacy accept without hold", w.buyer.c.Do("POST", "/api/requests/"+legacy+"/accept", nil), 409)
 	tradeOffer(t, w.seller, legacy, w.material, "5", "9")
 	tradeWant(t, "legacy renewed accept", w.buyer.c.Do("POST", "/api/requests/"+legacy+"/accept", nil), 200)
+	tradeWant(t, "legacy seller confirms", w.seller.c.Do("POST", "/api/requests/"+legacy+"/accept", nil), 200)
 
 	if got := tradeStockWeight(t, w.app, w.seller.id, w.material); got != "95.000000" && got != "95" {
 		t.Errorf("seller stock %s after the legacy accept, want 95", got)

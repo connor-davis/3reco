@@ -13,7 +13,7 @@ type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
 const requestStatuses = {
   pending: { label: 'Pending', variant: 'secondary' },
   offered: { label: 'Offer sent', variant: 'secondary' },
-  accepted: { label: 'Accepted', variant: 'default' },
+  accepted: { label: 'Complete', variant: 'default' },
   rejected: { label: 'Rejected', variant: 'destructive' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
 } satisfies Record<RequestStatus, { label: string; variant: BadgeVariant }>;

@@ -24,7 +24,7 @@ func (s *Service) ExpireOffers(ctx context.Context) error {
 					userID,
 					notifications.RequestCancelled,
 					"Offer ran out",
-					"This offer ran out. The seller can make a new offer.",
+					"The stock hold ran out. Either side can make a new offer if stock is available.",
 					"/market/"+r.ID,
 				)
 				if err != nil {

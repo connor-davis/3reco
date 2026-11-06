@@ -16,6 +16,12 @@ export function DealAside({ request }: { request: TradeRequest }) {
         {request.items.map((item, index) => (
           <li key={`${item.material_id}-${index}`} className="space-y-1">
             <p className="font-medium">{item.material_name}</p>
+            {item.requested_weight && (
+              <p className="text-muted-foreground">
+                Requested {formatKg(item.requested_weight)} at{' '}
+                {formatRate(item.requested_price ?? '0')}
+              </p>
+            )}
             {item.offer_weight !== null && (
               <p>
                 {formatKg(item.offer_weight)} at{' '}

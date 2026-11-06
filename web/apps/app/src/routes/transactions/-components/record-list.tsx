@@ -5,6 +5,8 @@ import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { TransactionDialog } from '@/components/dialogs/record-dialogs';
+import { LinkButton } from '@/components/link-button';
+import { ChipGroup } from '@/components/filters';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
 import { PageHeader } from '@/components/page-header';
 import { StatCard, StatGrid } from '@/components/stat-card';
@@ -75,7 +77,7 @@ function titleOf(row: Transaction) {
   const names = row.items.map((item) => item.material_name);
   const more = names.length > 2 ? ` +${names.length - 2} more` : '';
 
-  return `${names.slice(0, 2).join(', ')}${more} · ${formatKg(weightOf(row) / 1000)}`;
+  return `${names.slice(0, 2).join(', ')}${more} Â· ${formatKg(weightOf(row) / 1000)}`;
 }
 
 /** The shared record list: filters, optional stats, rows and the detail dialog. */
@@ -91,6 +93,7 @@ export function RecordList({
   stats = false,
   readOnly = false,
 }: Props) {
+  const [status, setStatus] = useState('complete');
   const [query, setQuery] = useState('');
   const [range, setRange] = useState<DateRange | undefined>();
   const [type, setType] = useState('all');
@@ -100,6 +103,7 @@ export function RecordList({
   // The server does the searching, so the filters ride along with every page.
   const q = useDebounced(query.trim());
   const filters = {
+    status: collectionsOnly ? 'complete' : status,
     q,
     // Collections are always c2b; the server filters, not this page.
     type: collectionsOnly ? 'c2b' : type === 'all' ? undefined : type,
@@ -116,7 +120,7 @@ export function RecordList({
   const caption = !filtered
     ? 'All time'
     : range?.from && !q && type === 'all'
-      ? `${format(range.from, 'dd MMM')} � ${format(range.to ?? range.from, 'dd MMM yyyy')}`
+      ? `${format(range.from, 'dd MMM')} – ${format(range.to ?? range.from, 'dd MMM yyyy')}`
       : 'Matching your filters';
 
   function exportCsv() {
@@ -137,6 +141,17 @@ export function RecordList({
   return (
     <>
       <PageHeader title={title} description={description} actions={actions} />
+      {!collectionsOnly && (
+        <ChipGroup
+          label="Transaction status"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: 'complete', label: 'Complete' },
+            { value: 'pending', label: 'Pending' },
+          ]}
+        />
+      )}
       {stats && (
         <div className="mb-8">
           <StatGrid threeUp>
@@ -178,7 +193,7 @@ export function RecordList({
           <DateRangePicker
             value={range}
             onChange={setRange}
-            placeholder="From � to date"
+            placeholder="From – to date"
             align="start"
           />
           {typeFilter && (
@@ -189,7 +204,7 @@ export function RecordList({
               onChange={setType}
             />
           )}
-          {exportKind && !readOnly && (
+          {exportKind && !readOnly && status === 'complete' && (
             <>
               <ChoiceSelect
                 label="Export format"
@@ -228,12 +243,12 @@ export function RecordList({
               <ItemContent className="min-w-48">
                 <ItemTitle>{titleOf(row)}</ItemTitle>
                 <ItemDescription>
-                  {row.seller.name} → {row.buyer.name}
+                  {row.seller.name} â†’ {row.buyer.name}
                 </ItemDescription>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(dayOf(row))} · {row.invoice_number}
+                  {formatDate(dayOf(row))} Â· {row.invoice_number}
                   {row.items.length === 1 &&
-                    ` · ${formatRate(row.items[0].price)}`}
+                    ` Â· ${formatRate(row.items[0].price)}`}
                 </p>
               </ItemContent>
               <ItemActions className="flex-wrap">
@@ -243,14 +258,24 @@ export function RecordList({
                 <span className="w-28 text-right font-semibold tabular-nums">
                   {formatRand(toCents(row.total_price))}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setOpen(row)}
-                >
-                  Details
-                  {!readOnly && ` (${row.receipts.length} receipts)`}
-                </Button>
+                {row.status === 'pending' && row.request_id ? (
+                  <LinkButton
+                    to="/messages/$requestId"
+                    params={{ requestId: row.request_id }}
+                    variant="outline"
+                  >
+                    View request
+                  </LinkButton>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOpen(row)}
+                  >
+                    Details
+                    {!readOnly && ` (${row.receipts.length} receipts)`}
+                  </Button>
+                )}
               </ItemActions>
             </Item>
           ))}

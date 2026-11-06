@@ -63,7 +63,7 @@ func (s *Store) Days(
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		WITH tx AS (
 			SELECT t.id, t.total_price, `+database.EffectiveDate("t")+` AS at
-			FROM transactions t WHERE `+string(scope)+`
+			FROM transactions t WHERE t.status='complete' AND `+string(scope)+`
 		)
 		SELECT to_char(tx.at AT TIME ZONE 'Africa/Johannesburg', 'YYYY-MM-DD') AS day,
 			count(*), sum(tx.total_price)::text,
@@ -109,7 +109,7 @@ func (s *Store) Counterparties(
 		WITH tx AS (
 			SELECT t.type, t.buyer_id, t.seller_id, t.total_price,
 				t.collection_day, t.collection_date, t.created_at, `+database.EffectiveDate("t")+` AS at
-			FROM transactions t WHERE `+string(scope)+`
+			FROM transactions t WHERE t.status='complete' AND `+string(scope)+`
 		)
 		SELECT cp.id, cp.name, count(*), sum(tx.total_price)::text
 		FROM tx
@@ -179,7 +179,7 @@ func (s *Store) TypeTotals(ctx context.Context, from, to time.Time) ([]TypeTotal
 		LEFT JOIN LATERAL (
 			SELECT sum(i.weight) AS w FROM transaction_items i WHERE i.transaction_id = t.id
 		) x ON true
-		WHERE `+database.EffectiveDate("t")+` >= $1 AND `+database.EffectiveDate("t")+` < $2
+		WHERE t.status='complete' AND `+database.EffectiveDate("t")+` >= $1 AND `+database.EffectiveDate("t")+` < $2
 		GROUP BY t.type ORDER BY t.type`, from, to)
 	if err != nil {
 		return nil, err

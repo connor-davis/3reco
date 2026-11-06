@@ -20,8 +20,8 @@ func TestStoresAndPublicReviews(t *testing.T) {
 	reviewID := database.NewID()
 	_, err := app.DB.Pool.Exec(
 		context.Background(),
-		`INSERT INTO transactions(id,seller_id,buyer_id,type,total_price)
-		VALUES($1,$2,$3,'b2b',10)`,
+		`INSERT INTO transactions(id,seller_id,buyer_id,type,total_price,status)
+		VALUES($1,$2,$3,'b2b',10, 'complete')`,
 		transactionID,
 		sellerID,
 		buyerID,

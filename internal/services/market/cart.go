@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/services/transactions"
 	store "github.com/connor-davis/3reco/internal/stores/market"
 )
 
@@ -53,6 +54,13 @@ func (service *Service) SaveCart(ctx context.Context, buyer, seller string, item
 			}
 
 			for i, item := range items {
+				line := transactions.SaleItem{
+					MaterialID: item.MaterialID, Weight: item.Weight, Price: "0",
+				}
+				if err := transactions.CheckItems([]transactions.SaleItem{line}); err != nil {
+					return err
+				}
+
 				if i > 0 && items[i-1].StockID == item.StockID {
 					return apperr.Field("items", "Duplicate stock.")
 				}

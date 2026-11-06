@@ -65,8 +65,12 @@ function OfferForm({
     defaultValues: {
       items: request.items.map((item) => ({
         material_id: item.material_id,
-        weight: item.offer_weight ?? item.available_weight ?? '',
-        price: item.offer_price ?? '',
+        weight:
+          item.offer_weight ??
+          item.requested_weight ??
+          item.available_weight ??
+          '',
+        price: item.offer_price ?? item.requested_price ?? '',
       })),
     },
   });

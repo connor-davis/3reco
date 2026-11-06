@@ -94,7 +94,7 @@ func (s *Store) Average(ctx context.Context, sellerID string) (Summary, error) {
 func (s *Store) Reviewable(ctx context.Context, buyerID, sellerID string) ([]Reviewable, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT t.id, t.total_price::text, t.created_at FROM transactions t
-		WHERE t.buyer_id = $1 AND t.seller_id = $2 AND t.type = 'b2b'
+		WHERE t.status='complete' AND t.buyer_id = $1 AND t.seller_id = $2 AND t.type = 'b2b'
 			AND NOT EXISTS (SELECT 1 FROM store_reviews r WHERE r.transaction_id = t.id)
 		ORDER BY t.created_at DESC, t.id DESC`, buyerID, sellerID)
 	if err != nil {
@@ -122,7 +122,7 @@ func (s *Store) Trade(ctx context.Context, transactionID string) (Trade, bool, e
 	var t Trade
 
 	err := s.db.Q(ctx).QueryRow(ctx,
-		`SELECT buyer_id, seller_id, type FROM transactions WHERE id = $1`,
+		`SELECT buyer_id, seller_id, type FROM transactions WHERE status='complete' AND id = $1`,
 		transactionID).Scan(&t.BuyerID, &t.SellerID, &t.Type)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return t, false, nil

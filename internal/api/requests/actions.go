@@ -23,7 +23,20 @@ func (h *Handler) offer(c fiber.Ctx) error {
 }
 
 func (h *Handler) accept(c fiber.Ctx) error {
-	id, err := h.svc.Accept(c.Context(), caller(c), c.Params("id"))
+	var version []int
+	if len(c.Body()) > 0 {
+		var in struct {
+			OfferVersion int `json:"offer_version"`
+		}
+
+		if err := bind(c, &in); err != nil {
+			return err
+		}
+
+		version = append(version, in.OfferVersion)
+	}
+
+	id, err := h.svc.Accept(c.Context(), caller(c), c.Params("id"), version...)
 	if err != nil {
 		return err
 	}

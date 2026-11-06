@@ -18,7 +18,7 @@ func TestCartOwnershipAndValidation(t *testing.T) {
 	stockID := domainStock(t, seller, material, true)
 	hidden := domainStock(t, seller, material, false)
 	path := "/api/cart?seller_id=" + sellerID
-	body := map[string]any{"items": []map[string]any{{"stock_id": stockID, "material_id": material}}}
+	body := map[string]any{"items": []map[string]any{{"stock_id": stockID, "material_id": material, "weight": "2.5"}}}
 
 	for _, method := range []string{"GET", "PUT", "DELETE"} {
 		status(t, anonymous.Do(method, path, body), 401)
@@ -38,7 +38,7 @@ func TestCartOwnershipAndValidation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(cart.Items) != 1 || cart.Items[0].StockID != stockID || cart.Items[0].Weight != "10.125" ||
+	if len(cart.Items) != 1 || cart.Items[0].StockID != stockID || cart.Items[0].Weight != "2.5" ||
 		cart.Items[0].Price != "3.1234567890123456789" {
 		t.Fatalf("cart: %s", result.Raw)
 	}
@@ -55,8 +55,8 @@ func TestCartOwnershipAndValidation(t *testing.T) {
 	}
 	status(t, other.Do("DELETE", path, nil), 200)
 
-	for _, item := range []map[string]any{{"stock_id": hidden, "material_id": material},
-		{"stock_id": stockID, "material_id": "wrong"}} {
+	for _, item := range []map[string]any{{"stock_id": hidden, "material_id": material, "weight": "2.5"},
+		{"stock_id": stockID, "material_id": "wrong", "weight": "1"}} {
 		status(t, buyer.Do("PUT", path, map[string]any{"items": []map[string]any{item}}), 404)
 	}
 	status(
@@ -65,7 +65,7 @@ func TestCartOwnershipAndValidation(t *testing.T) {
 			"PUT",
 			path,
 			map[string]any{"items": []map[string]any{
-				{"stock_id": stockID, "material_id": material}, {"stock_id": stockID, "material_id": material},
+				{"stock_id": stockID, "material_id": material, "weight": "2.5"}, {"stock_id": stockID, "material_id": material, "weight": "2.5"},
 			}},
 		),
 		400,

@@ -55,36 +55,7 @@ func (s *Service) DirectSale(
 			return errBuyerInvalid
 		}
 
-		id, err = s.settle(ctx, user.ID, buyerID, "", items, true)
-
-		return err
-	})
-
-	return id, err
-}
-
-// SettleOffer turns an accepted offer into a transaction. The price was
-// agreed in the offer, so it is not checked against the base price again.
-// Call it inside the transaction that also marks the request accepted.
-func (s *Service) SettleOffer(
-	ctx context.Context,
-	sellerID, buyerID, requestID string,
-	items []SaleItem,
-) (string, error) {
-	if requestID == "" {
-		return "", ErrOfferRanOut
-	}
-
-	if err := CheckItems(items); err != nil {
-		return "", err
-	}
-
-	var id string
-
-	err := s.db.InTx(ctx, func(ctx context.Context) error {
-		var err error
-
-		id, err = s.settle(ctx, sellerID, buyerID, requestID, items, false)
+		id, err = s.settle(ctx, user.ID, buyerID, "", items, true, "")
 
 		return err
 	})
@@ -132,6 +103,7 @@ func (s *Service) settle(
 	sellerID, buyerID, requestID string,
 	items []SaleItem,
 	checkBase bool,
+	pendingID string,
 ) (string, error) {
 	// Rows are locked in material order, so two sales that share materials
 	// cannot wait on each other for ever.
@@ -140,11 +112,19 @@ func (s *Service) settle(
 
 	id := database.NewID()
 
-	err := s.store.Insert(ctx, store.NewTransaction{
-		ID: id, SellerID: sellerID, BuyerID: buyerID, Type: "b2b",
-	})
-	if err != nil {
-		return "", err
+	if pendingID != "" {
+		id = pendingID
+	}
+
+	var err error
+	if pendingID == "" {
+		err = s.store.Insert(ctx, store.NewTransaction{
+			ID: id, SellerID: sellerID, BuyerID: buyerID, Type: "b2b", Status: "complete",
+		})
+		if err != nil {
+			return "", err
+		}
+
 	}
 
 	for position, item := range sorted {
@@ -201,8 +181,16 @@ func (s *Service) settle(
 			return "", err
 		}
 
-		err = s.store.InsertItem(ctx, id, position, item.MaterialID, item.Weight, item.Price)
-		if err != nil {
+		if pendingID == "" {
+			err = s.store.InsertItem(ctx, id, position, item.MaterialID, item.Weight, item.Price)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	if pendingID != "" {
+		if err := s.store.Complete(ctx, id); err != nil {
 			return "", err
 		}
 	}
@@ -299,7 +287,7 @@ func (s *Service) collect(ctx context.Context, buyerID string, in CollectionInpu
 	id := database.NewID()
 
 	err = s.store.Insert(ctx, store.NewTransaction{
-		ID: id, SellerID: in.CollectorID, BuyerID: buyerID, Type: "c2b",
+		ID: id, SellerID: in.CollectorID, BuyerID: buyerID, Type: "c2b", Status: "complete",
 		CollectionDay: in.CollectionDay, CollectionDate: in.CollectionDate,
 	})
 	if err != nil {
@@ -322,8 +310,7 @@ func (s *Service) collect(ctx context.Context, buyerID string, in CollectionInpu
 			return "", err
 		}
 
-		err = s.store.InsertItem(ctx, id, position, item.MaterialID, item.Weight, item.Price)
-		if err != nil {
+		if err := s.store.InsertItem(ctx, id, position, item.MaterialID, item.Weight, item.Price); err != nil {
 			return "", err
 		}
 	}

@@ -30,7 +30,7 @@ func (s *Store) LockActive(ctx context.Context, id string) (bool, error) {
 func (s *Store) Trades(ctx context.Context, userID string) ([]string, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT id FROM transactions
-		WHERE anonymised_at IS NULL AND (buyer_id = $1 OR (type = 'b2b' AND seller_id = $1))`, userID)
+		WHERE status='complete' AND anonymised_at IS NULL AND (buyer_id = $1 OR (type = 'b2b' AND seller_id = $1))`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (s *Store) Trades(ctx context.Context, userID string) ([]string, error) {
 // requests and their messages stay as history.
 func (s *Store) CancelOpenRequests(ctx context.Context, userID string) ([]Cancelled, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		UPDATE transaction_requests SET status = 'cancelled', updated_at = now()
+		UPDATE transaction_requests SET status = 'cancelled', offer_by=NULL, buyer_confirmed_version=NULL, seller_confirmed_version=NULL, updated_at = now()
 		WHERE (buyer_id = $1 OR seller_id = $1) AND status IN ('pending', 'offered')
 		RETURNING id, CASE WHEN buyer_id = $1 THEN seller_id ELSE buyer_id END, buyer_id = $1`,
 		userID)
@@ -86,6 +86,11 @@ func (s *Store) CancelOpenRequests(ctx context.Context, userID string) ([]Cancel
 	ids := make([]string, len(out))
 	for i, c := range out {
 		ids[i] = c.RequestID
+	}
+
+	_, err = s.db.Q(ctx).Exec(ctx, `UPDATE transactions SET status='cancelled' WHERE request_id=ANY($1) AND status='pending'`, ids)
+	if err != nil {
+		return nil, err
 	}
 
 	_, err = s.db.Q(ctx).Exec(ctx, `

@@ -13,7 +13,7 @@ import (
 // ListFilter is the raw search a list request carries: text, a trade type and
 // an inclusive YYYY-MM-DD day range in South African time.
 type ListFilter struct {
-	Q, Type, From, To string
+	Q, Type, From, To, Status string
 }
 
 // sast is South African time; it has no daylight saving.
@@ -21,7 +21,11 @@ var sast = time.FixedZone("SAST", 2*60*60)
 
 // parse checks the type and the days, so a bad value is a 400.
 func (f ListFilter) parse() (store.Filter, error) {
-	out := store.Filter{Like: paging.SearchPattern(f.Q), Type: f.Type}
+	out := store.Filter{Like: paging.SearchPattern(f.Q), Type: f.Type, Status: f.Status}
+
+	if f.Status != "" && f.Status != "complete" && f.Status != "pending" {
+		return out, apperr.BadRequest("Use complete or pending for status.", nil)
+	}
 
 	if f.Type != "" && f.Type != "b2b" && f.Type != "c2b" {
 		return out, apperr.BadRequest("Use b2b or c2b for type.", nil)

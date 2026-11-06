@@ -252,6 +252,10 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 		return nil, "", err
 	}
 
+	if trade.Status != "complete" {
+		return nil, "", apperr.NotFound("Invoice not found.")
+	}
+
 	document, err := s.store.Document(ctx, id)
 	if err != nil {
 		return nil, "", err

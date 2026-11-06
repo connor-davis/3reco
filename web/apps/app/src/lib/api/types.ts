@@ -185,6 +185,8 @@ export interface RequestItem {
   material_id: string;
   material_name: string;
   stock_id: string | null;
+  requested_weight: Decimal | null;
+  requested_price: Decimal | null;
   offer_weight: Decimal | null;
   offer_price: Decimal | null;
   available_weight: Decimal | null;
@@ -194,13 +196,17 @@ export interface TradeRequest {
   seller: Party;
   buyer: Party;
   status: RequestStatus;
+  offer_by: string | null;
+  offer_version: number;
+  buyer_confirmed_version: number | null;
+  seller_confirmed_version: number | null;
   items: RequestItem[];
   created_at: string;
   updated_at: string;
 }
 export interface RequestInput {
   seller_id: string;
-  items: { material_id: string; stock_id: string }[];
+  items: { material_id: string; stock_id: string; weight: Decimal }[];
 }
 export interface SaleItem {
   material_id: string;
@@ -243,6 +249,8 @@ export interface TransactionTotals {
   value: string;
 }
 export interface Transaction {
+  status: 'pending' | 'complete' | 'cancelled';
+  request_id: string | null;
   id: string;
   type: 'c2b' | 'b2b';
   seller: Party;

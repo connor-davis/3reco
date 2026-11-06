@@ -202,5 +202,9 @@ func (s *Service) Participant(
 		return store.Transaction{}, errNotFound
 	}
 
+	if t.Status != "complete" {
+		return store.Transaction{}, apperr.Conflict("Receipts are available once the deal is complete.")
+	}
+
 	return t, nil
 }

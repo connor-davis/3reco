@@ -43,6 +43,8 @@ type Receipt struct {
 type Transaction struct {
 	ID             string         `json:"id"`
 	Type           string         `json:"type"`
+	Status         string         `json:"status"`
+	RequestID      *string        `json:"request_id"`
 	Seller         database.Party `json:"seller"`
 	Buyer          database.Party `json:"buyer"`
 	TotalPrice     string         `json:"total_price"`
@@ -91,7 +93,7 @@ var selectTransaction = `
 	SELECT t.id, t.type, t.seller_id,
 		COALESCE(c.name, ` + database.DisplayName("s") + `), t.buyer_id, ` + database.DisplayName("b") + `,
 		t.total_price::text, t.collection_day::text, t.collection_date,
-		` + database.EffectiveDate("t") + `, t.created_at` + fromJoins
+		` + database.EffectiveDate("t") + `, t.created_at, t.status, t.request_id` + fromJoins
 
 // fromJoins is the table list every transaction query shares, so a filter can
 // name buyer (b), seller (s) and collector (c) the same way everywhere.
@@ -104,6 +106,7 @@ const fromJoins = `
 // Filter narrows a list. Every field is optional. Like is a paging.SearchPattern;
 // From is inclusive and To exclusive, both on the effective day.
 type Filter struct {
+	Status   string
 	Like     string
 	Type     string
 	From, To *time.Time
@@ -120,6 +123,7 @@ var filterSQL = `
 		OR EXISTS (SELECT 1 FROM transaction_items i JOIN materials m ON m.id = i.material_id
 			WHERE i.transaction_id = t.id AND m.name ILIKE $2))
 	AND ($3 = '' OR t.type = $3)
+	AND t.status=COALESCE(NULLIF($6,''),'complete')
 	AND ($4::timestamptz IS NULL OR ` + database.EffectiveDate("t") + ` >= $4)
 	AND ($5::timestamptz IS NULL OR ` + database.EffectiveDate("t") + ` < $5)`
 
@@ -144,7 +148,7 @@ func (s *Store) Totals(
 		WITH f AS (SELECT t.id, t.total_price`+fromJoins+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`)
 		SELECT count(*), COALESCE(sum(f.total_price), 0)::text,
 			COALESCE((SELECT sum(i.weight) FROM transaction_items i JOIN f ON f.id = i.transaction_id), 0)::text
-		FROM f`, userID, f.Like, f.Type, f.From, f.To).Scan(&out.Count, &out.Value, &out.Weight)
+		FROM f`, userID, f.Like, f.Type, f.From, f.To, "complete").Scan(&out.Count, &out.Value, &out.Weight)
 
 	return out, err
 }
@@ -153,7 +157,7 @@ func scan(row pgx.Row) (Transaction, error) {
 	var t Transaction
 
 	err := row.Scan(&t.ID, &t.Type, &t.Seller.ID, &t.Seller.Name, &t.Buyer.ID, &t.Buyer.Name,
-		&t.TotalPrice, &t.CollectionDay, &t.CollectionDate, &t.EffectiveAt, &t.CreatedAt)
+		&t.TotalPrice, &t.CollectionDay, &t.CollectionDate, &t.EffectiveAt, &t.CreatedAt, &t.Status, &t.RequestID)
 	if err != nil {
 		return t, err
 	}
@@ -195,9 +199,9 @@ func (s *Store) List(
 	limit int,
 ) ([]Transaction, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, selectTransaction+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`
-		AND ($6::timestamptz IS NULL OR (t.created_at, t.id) < ($6, $7))
+		AND ($7::timestamptz IS NULL OR (t.created_at, t.id) < ($7, $8))
 		ORDER BY t.created_at DESC, t.id DESC
-		LIMIT $8`, userID, f.Like, f.Type, f.From, f.To, cur.At, cur.ID, limit+1)
+		LIMIT $9`, userID, f.Like, f.Type, f.From, f.To, f.Status, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err
 	}

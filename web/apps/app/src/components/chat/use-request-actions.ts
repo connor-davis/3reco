@@ -27,7 +27,13 @@ export function useStartChat() {
     try {
       const result = await create.mutateAsync({
         seller_id: listing.seller_id,
-        items: [{ material_id: listing.material_id, stock_id: listing.id }],
+        items: [
+          {
+            material_id: listing.material_id,
+            stock_id: listing.id,
+            weight: listing.weight,
+          },
+        ],
       });
       await navigate({
         to: '/messages/$requestId',
@@ -85,7 +91,9 @@ export function useRequestActions(request: TradeRequest) {
     send: (content: string) => run(() => send.mutateAsync({ content })),
     accept: () =>
       run(async () => {
-        const result = await accept.mutateAsync();
+        const result = await accept.mutateAsync({
+          offer_version: request.offer_version,
+        });
         setTransactionId(result.transaction_id);
       }),
     decline: () => run(() => decline.mutateAsync()),

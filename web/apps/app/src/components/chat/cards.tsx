@@ -26,8 +26,13 @@ export function OfferCard({
   onDecline: () => void;
   disabled: boolean;
 }) {
+  const { user } = useAuth();
+  const ownConfirmed =
+    user?.id === request.buyer.id
+      ? request.buyer_confirmed_version === request.offer_version
+      : request.seller_confirmed_version === request.offer_version;
   return (
-    <Card size="sm" className="max-w-sm">
+    <Card size="sm" className="max-w-sm pt-0">
       <CardHeader className="bg-accent py-3">
         <CardTitle>
           Offer · {request.items.length}{' '}
@@ -63,17 +68,47 @@ export function OfferCard({
           </span>
         </p>
         <p className="text-muted-foreground">
-          Stock is reserved for 48 hours from the offer. An expired offer needs
-          to be renewed by the seller.
+          Stock is reserved for 48 hours from this offer. Both sides must
+          confirm before stock moves and an invoice is made.
         </p>
+        <ul aria-label="Offer confirmations" className="space-y-1">
+          <li>
+            Buyer:{' '}
+            {request.buyer_confirmed_version === request.offer_version
+              ? 'Confirmed'
+              : 'Not confirmed'}
+          </li>
+          <li>
+            Seller:{' '}
+            {request.seller_confirmed_version === request.offer_version
+              ? 'Confirmed'
+              : 'Not confirmed'}
+          </li>
+        </ul>
+        {(request.buyer_confirmed_version === request.offer_version ||
+          request.seller_confirmed_version === request.offer_version) && (
+          <p role="status">
+            {ownConfirmed ? (
+              <>
+                Waiting for{' '}
+                {user?.id === request.buyer.id
+                  ? request.seller.name
+                  : request.buyer.name}{' '}
+                to confirm.
+              </>
+            ) : (
+              'They accepted this offer. Please confirm to complete the deal.'
+            )}
+          </p>
+        )}
       </CardContent>
       {canRespond && (
         <CardFooter className="gap-3">
           <Button disabled={disabled} onClick={onAccept}>
-            Accept
+            Confirm
           </Button>
           <Button variant="outline" disabled={disabled} onClick={onDecline}>
-            Decline
+            Reject offer
           </Button>
         </CardFooter>
       )}
@@ -93,7 +128,7 @@ export function InvoiceCard({
   return (
     <Card size="sm" className="max-w-sm">
       <CardHeader>
-        <CardTitle>Offer accepted</CardTitle>
+        <CardTitle>Complete</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <p>Total {formatRand(requestTotal(request))}</p>

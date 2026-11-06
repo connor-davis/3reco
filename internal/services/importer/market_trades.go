@@ -68,6 +68,7 @@ func (p *planner) planTransactions() {
 		p.receipts(r)
 		p.invoice(r, out)
 
+		out["status"] = "complete"
 		p.rows["transactions"] = append(p.rows["transactions"], out)
 	}
 }
@@ -245,6 +246,10 @@ func (p *planner) planRequests() {
 		}
 
 		p.requestParties[r.id] = [2]string{seller, buyer}
+		if str(out["status"]) == "offered" {
+			out["offer_by"], out["offer_version"] = seller, int32(1)
+		}
+
 		p.rows["transaction_requests"] = append(p.rows["transaction_requests"], out)
 		p.requestItems(r)
 	}

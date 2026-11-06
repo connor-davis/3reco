@@ -134,6 +134,10 @@ func TestImportCountsAndIdsKept(t *testing.T) {
 		"store_reviews": 1,
 	}
 
+	if got := tradeText(t, app, `SELECT count(*)::text FROM transactions WHERE status<>'complete'`); got != "0" {
+		t.Fatalf("imported %s transactions without complete status", got)
+	}
+
 	for _, count := range report.Tables {
 		if count.Source != want[count.Table] || count.Loaded != want[count.Table] {
 			t.Errorf("%s: source %d, loaded %d, want %d", count.Table, count.Source,

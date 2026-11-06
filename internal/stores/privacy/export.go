@@ -37,7 +37,7 @@ var exportQueries = []struct{ name, sql string }{
 			'content', m.content, 'created_at', m.created_at) ORDER BY m.created_at), '[]'::jsonb)
 			FROM transaction_request_messages m WHERE m.request_id = r.id) AS messages
 		FROM transaction_requests r WHERE r.buyer_id = $1 OR r.seller_id = $1 ORDER BY r.created_at`},
-	{"transactions", `SELECT t.id, t.type, t.seller_id, t.buyer_id, t.total_price, t.collection_day,
+	{"transactions", `SELECT t.id, t.type, t.status, t.request_id, t.offer_version, t.seller_id, t.buyer_id, t.total_price, t.collection_day,
 		t.collection_date, t.created_at, t.anonymised_at,
 		(SELECT COALESCE(jsonb_agg(jsonb_build_object('material_id', i.material_id,
 			'weight', i.weight, 'price', i.price) ORDER BY i.position), '[]'::jsonb)
@@ -55,7 +55,7 @@ var exportQueries = []struct{ name, sql string }{
 	{"receipt_files", `SELECT id, transaction_id, object_key, file_name, content_type, size, uploaded_at
 		FROM transaction_receipts WHERE uploaded_by = $1 ORDER BY uploaded_at`},
 	{"invoice_files", `SELECT id AS transaction_id, invoice_key FROM transactions
-		WHERE invoice_key IS NOT NULL AND (buyer_id = $1 OR (type = 'b2b' AND seller_id = $1))
+		WHERE status='complete' AND invoice_key IS NOT NULL AND (buyer_id = $1 OR (type = 'b2b' AND seller_id = $1))
 		ORDER BY created_at`},
 }
 

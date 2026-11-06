@@ -34,9 +34,9 @@ func (records *Store) Summary(ctx context.Context) (Summary, error) {
 	err := records.db.Q(ctx).QueryRow(ctx, `
 		SELECT COALESCE(sum(ti.weight),0)::text,
 			COALESCE(sum(ti.weight*m.carbon_factor),0)::text,
-			(SELECT count(*) FROM transactions)
+			(SELECT count(*) FROM transactions WHERE status='complete')
 		FROM transaction_items ti JOIN transactions t ON t.id=ti.transaction_id
-		JOIN materials m ON m.id=ti.material_id`).Scan(
+		JOIN materials m ON m.id=ti.material_id WHERE t.status='complete'`).Scan(
 		&result.TotalKG,
 		&result.CO2KG,
 		&result.Deals,
@@ -52,6 +52,7 @@ func (records *Store) Summary(ctx context.Context) (Summary, error) {
 		FROM transactions t JOIN transaction_items ti ON ti.transaction_id=t.id
 		JOIN users u ON u.role='business' AND NOT u.is_removed
 			AND u.id = CASE WHEN t.type='b2b' THEN t.seller_id ELSE t.buyer_id END
+		WHERE t.status='complete'
 		GROUP BY u.id,u.business_name
 		ORDER BY sum(ti.weight) DESC,u.id ASC LIMIT 5`)
 	if err != nil {
