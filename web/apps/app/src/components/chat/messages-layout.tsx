@@ -40,7 +40,7 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
       )}
     </DataState>
   ) : (
-    <Empty className="h-full rounded-none bg-chat">
+    <Empty className="h-full rounded-none bg-background">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <MessageSquare />
@@ -56,7 +56,7 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
     <>
       {isMobile ? (
         <div className="h-[calc(100dvh-6.75rem)] min-h-[32rem] overflow-hidden">
-          {requestId ? thread : <div className="h-full bg-card">{inbox}</div>}
+          {requestId ? thread : <div className="h-full bg-background">{inbox}</div>}
         </div>
       ) : (
         <div className="h-[calc(100dvh-3.5rem)] min-h-[32rem]">
@@ -69,7 +69,7 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
               defaultSize={showAside ? '25%' : '30%'}
               minSize={260}
               maxSize="32%"
-              className="min-h-0 bg-card"
+              className="min-h-0 bg-background"
             >
               {inbox}
             </ResizablePanel>
@@ -90,7 +90,7 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
                   defaultSize="27%"
                   minSize={240}
                   maxSize="28%"
-                  className="min-h-0 bg-card"
+                  className="min-h-0 bg-background"
                 >
                   <aside className="h-full overflow-y-auto p-6">
                     <DealAside request={active.data} />

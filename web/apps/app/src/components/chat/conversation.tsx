@@ -101,8 +101,8 @@ export function Conversation({ request }: { request: TradeRequest }) {
   }, [viewer, newestIncoming, hasNextPage, markRead]);
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-chat">
-      <header className="flex min-h-20 items-center gap-3 border-b bg-card px-4 py-3 sm:px-6">
+    <section className="flex h-full min-h-0 flex-col bg-background">
+      <header className="flex min-h-20 items-center gap-3 border-b bg-background px-4 py-3 sm:px-6">
         <Link
           to="/messages"
           aria-label="Back to messages"
@@ -123,7 +123,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
           <Info />
         </IconButton>
       </header>
-      <div className="space-y-3 border-b bg-card px-4 py-3 sm:px-6">
+      <div className="space-y-3 border-b bg-background px-4 py-3 sm:px-6">
         <DealStepper status={request.status} />
         {canAct && (
           <div className="flex flex-wrap gap-2">
@@ -220,7 +220,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
           <div ref={bottom} />
         </div>
       </ScrollArea>
-      <footer className="space-y-3 border-t bg-card px-4 py-4 sm:px-6">
+      <footer className="space-y-3 border-t bg-background px-4 py-4 sm:px-6">
         {actions.error && (
           <p role="alert" className="text-sm text-destructive">
             {actions.error}
