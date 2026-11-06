@@ -122,9 +122,10 @@ export function PersonalForm({ profile, onSaved, wizard }: Props) {
     resolver: zodResolver(personalSchema),
     defaultValues: {
       // Older accounts only have a full name; split it to save typing.
-      first_name: profile.first_name || profile.name.split(' ')[0] || '',
+      first_name:
+        profile.first_name || (profile.name ?? '').split(' ')[0] || '',
       last_name:
-        profile.last_name || profile.name.split(' ').slice(1).join(' '),
+        profile.last_name || (profile.name ?? '').split(' ').slice(1).join(' '),
       phone: profile.phone,
       id_number: '',
     },
