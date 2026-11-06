@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </SidebarProvider>
       )}
-      <Toaster position="bottom-center" />
+      <Toaster position="top-center" />
     </TooltipProvider>
   );
 }

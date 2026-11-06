@@ -25,9 +25,9 @@ function SignInPage() {
   type Values = z.infer<typeof schema>;
 
   const navigate = useNavigate();
-  // The live socket sends people here with ?reason=ended when access is gone.
-  const ended =
-    new URLSearchParams(window.location.search).get('reason') === 'ended';
+  // The live socket names why access ended so people know what happened.
+  const reason = new URLSearchParams(window.location.search).get('reason');
+  const ended = reason === 'ended';
   const signIn = useSignIn();
   const [failure, setFailure] = useState<string | null>(null);
   const [unverified, setUnverified] = useState<string | null>(null);
@@ -66,12 +66,17 @@ function SignInPage() {
       feedback={
         failure
           ? { tone: 'error', text: failure }
-          : ended
+          : reason === 'removed'
             ? {
                 tone: 'info',
-                text: 'You were signed out because your account changed.',
+                text: 'This account was removed. Contact 3REco if this is a mistake.',
               }
-            : null
+            : ended
+              ? {
+                  tone: 'info',
+                  text: 'You were signed out because your account changed.',
+                }
+              : null
       }
       footer={
         <>

@@ -23,6 +23,7 @@ import {
 } from '@/lib/format';
 import { messageText } from '@/components/chat/helpers';
 import { ImpactChart } from './impact-chart';
+import { useAuth } from '@/lib/auth/use-auth';
 
 export function Panel({
   title,
@@ -116,6 +117,7 @@ export function QuickLinks({
 }
 
 function RecentThreads() {
+  const { user } = useAuth();
   const query = useInbox({ limit: 4 });
   return (
     <Panel title="Recent conversations">
@@ -124,13 +126,17 @@ function RecentThreads() {
         isEmpty={query.data?.items.length === 0}
         icon={MessageCircle}
         emptyTitle="No conversations yet"
-        emptyText="Ask a seller about a listing to start one."
+        emptyText={
+          user?.role === 'staff'
+            ? 'Staff do not take part in trade chats.'
+            : 'Ask a seller about a listing to start one.'
+        }
       >
         <ul className="divide-y">
           {query.data?.items.map((thread) => (
             <li key={thread.request_id} className="py-3">
               <LinkButton
-                className="min-h-11"
+                className="min-h-11 px-0 text-foreground"
                 to={'/messages/' + thread.request_id}
                 variant="link"
               >
