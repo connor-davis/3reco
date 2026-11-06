@@ -1,28 +1,37 @@
-import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { ChevronDown, BookOpen, Server, Users, Zap, Code, HelpCircle, Terminal } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import {
+  ChevronDown,
+  BookOpen,
+  Server,
+  Users,
+  Zap,
+  Code,
+  HelpCircle,
+  Terminal,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarProps {
-  open?: boolean
-  onClose?: () => void
+  open?: boolean;
+  onClose?: () => void;
 }
 
 interface NavItem {
-  label: string
-  to: string
+  label: string;
+  to: string;
 }
 
 interface NavGroup {
-  label: string
-  icon: React.ReactNode
-  items: NavItem[]
+  label: string;
+  icon: React.ReactNode;
+  items: NavItem[];
 }
 
 interface SidebarGroupProps {
-  group: NavGroup
-  onNavClick?: () => void
+  group: NavGroup;
+  onNavClick?: () => void;
 }
 
 const navGroups: NavGroup[] = [
@@ -101,36 +110,40 @@ const navGroups: NavGroup[] = [
       { label: 'Transaction Requests', to: '/docs/api/transaction-requests' },
     ],
   },
-]
+];
 
 function SidebarGroup({ group, onNavClick }: SidebarGroupProps) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(true);
 
   return (
     <div className="mb-1">
       <button
-        onClick={() => setOpen(o => !o)}
-        className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         {group.icon}
         <span className="flex-1 text-left">{group.label}</span>
         <ChevronDown
           size={13}
-          className={cn('transition-transform duration-200', open ? '' : '-rotate-90')}
+          className={cn(
+            'transition-transform duration-200',
+            open ? '' : '-rotate-90'
+          )}
         />
       </button>
 
       {open && (
         <div className="mt-0.5 space-y-0.5 pb-1">
-          {group.items.map(item => (
+          {group.items.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               onClick={onNavClick}
-              className="block rounded-xl px-3.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+              className="flex min-h-8 items-center rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground max-[780px]:min-h-11"
               activeProps={{
                 className:
-                  'block rounded-xl px-3.5 py-2 text-sm bg-accent text-accent-foreground font-medium',
+                  'bg-sidebar-accent text-sidebar-accent-foreground font-medium',
               }}
             >
               {item.label}
@@ -139,25 +152,46 @@ function SidebarGroup({ group, onNavClick }: SidebarGroupProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   return (
     <aside
+      id="docs-navigation"
+      aria-label="Documentation navigation"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onClose?.();
+      }}
       className={cn(
-        'fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 border-r bg-sidebar z-40 transition-transform duration-300',
-        'lg:translate-x-0',
-        open ? 'translate-x-0' : '-translate-x-full',
+        'fixed top-14 left-0 z-40 h-[calc(100svh-3.5rem)] w-60 border-r border-sidebar-border bg-sidebar transition-transform duration-200 motion-reduce:transition-none min-[781px]:top-0 min-[781px]:h-svh',
+        'min-[781px]:translate-x-0',
+        open
+          ? 'translate-x-0'
+          : 'invisible -translate-x-full min-[781px]:visible'
       )}
     >
-      <ScrollArea className="h-full">
-        <nav className="space-y-2 px-3 py-5">
-          {navGroups.map(group => (
-            <SidebarGroup key={group.label} group={group} onNavClick={onClose} />
+      <Link
+        to="/"
+        className="hidden h-14 items-center gap-2 px-4 text-lg font-semibold min-[781px]:flex"
+      >
+        <span
+          className="size-2.5 shrink-0 rounded-full bg-primary"
+          aria-hidden="true"
+        />
+        <span>3REco Docs</span>
+      </Link>
+      <ScrollArea className="h-full min-[781px]:h-[calc(100svh-3.5rem)]">
+        <nav className="space-y-2 p-2">
+          {navGroups.map((group) => (
+            <SidebarGroup
+              key={group.label}
+              group={group}
+              onNavClick={onClose}
+            />
           ))}
         </nav>
       </ScrollArea>
     </aside>
-  )
+  );
 }

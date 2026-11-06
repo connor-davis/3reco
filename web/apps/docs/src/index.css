@@ -1,59 +1,53 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import '@fontsource-variable/montserrat';
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-sidebar: var(--sidebar);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
+@custom-variant dark (&:is(.dark *));
 
+/*
+ * Brand green is oklch(0.648 0.2 131.684). White text on it is only about
+ * 2.9:1, which fails AA for normal text, so --primary-foreground is a dark
+ * green-black (about 6:1). Green never carries small text on its own.
+ */
 :root {
-  --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
-  --primary: hsl(183, 55%, 35%);
-  --primary-foreground: hsl(0, 0%, 100%);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.648 0.2 131.684);
+  --primary-hover: oklch(0.69 0.2 131.684);
+  --primary-foreground: oklch(0.18 0.04 131);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: hsl(183, 55%, 92%);
-  --accent-foreground: hsl(183, 55%, 25%);
-  --destructive: oklch(0.577 0.245 27.325);
+  --muted-foreground: oklch(0.5 0.016 285.938);
+  --accent: oklch(0.955 0.04 131);
+  --accent-foreground: oklch(0.25 0.06 131);
+  --destructive: oklch(0.42 0.23 27.325);
+  /* Small link text needs 4.5:1; the exact brand green only reaches 3:1 on white. */
+  --link: oklch(0.46 0.14 131.684);
   --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: hsl(183, 55%, 35%);
-  --sidebar: oklch(0.985 0 0);
-
-  /* Syntax highlight - light */
-  --hljs-fg: #24292e;
-  --hljs-comment: #6a737d;
-  --hljs-string: #032f62;
-  --hljs-keyword: #d73a49;
-  --hljs-number: #005cc5;
-  --hljs-type: #6f42c1;
-  --hljs-function: #6f42c1;
-  --hljs-attr: #005cc5;
-  --hljs-variable: #e36209;
+  --input: oklch(0.55 0.004 286.32);
+  --ring: oklch(0.648 0.2 131.684);
+  --chart-1: oklch(0.871 0.15 131);
+  --chart-2: oklch(0.76 0.19 131);
+  --chart-3: oklch(0.648 0.2 131.684);
+  --chart-4: oklch(0.53 0.16 131);
+  --chart-5: oklch(0.43 0.12 131);
+  --radius: 0.625rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.648 0.2 131.684);
+  --sidebar-primary-foreground: oklch(0.18 0.04 131);
+  --sidebar-accent: oklch(0.955 0.04 131);
+  --sidebar-accent-foreground: oklch(0.25 0.06 131);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.648 0.2 131.684);
+  --chat: oklch(0.962 0.035 131.684);
+  --outgoing: oklch(0.93 0.06 131.684);
+  --map-land: oklch(0.96 0.015 131);
+  --map-water: oklch(0.92 0.004 286);
 }
 
 .dark {
@@ -61,76 +55,179 @@
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
   --card-foreground: oklch(0.985 0 0);
-  --primary: hsl(183, 55%, 45%);
-  --primary-foreground: hsl(0, 0%, 100%);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.648 0.2 131.684);
+  --primary-foreground: oklch(0.18 0.04 131);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: hsl(183, 40%, 22%);
-  --accent-foreground: hsl(183, 55%, 85%);
-  --destructive: oklch(0.704 0.191 22.216);
+  --muted-foreground: oklch(0.75 0.015 286.067);
+  --accent: oklch(0.32 0.06 131);
+  --accent-foreground: oklch(0.96 0.04 131);
+  --destructive: oklch(0.86 0.15 22.216);
+  --link: oklch(0.768 0.2 130.85);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: hsl(183, 55%, 45%);
-  --sidebar: oklch(0.21 0.006 285.885);
-
-  /* Syntax highlight - dark */
-  --hljs-fg: #e1e4e8;
-  --hljs-comment: #8b949e;
-  --hljs-string: #9ecbff;
-  --hljs-keyword: #f97583;
-  --hljs-number: #79b8ff;
-  --hljs-type: #b392f0;
-  --hljs-function: #b392f0;
-  --hljs-attr: #79b8ff;
-  --hljs-variable: #ffab70;
+  --input: oklch(0.65 0.004 286.32);
+  --ring: oklch(0.768 0.233 130.85);
+  --sidebar: oklch(0.141 0.005 285.823);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.768 0.233 130.85);
+  --sidebar-primary-foreground: oklch(0.18 0.04 131);
+  --sidebar-accent: oklch(0.32 0.06 131);
+  --sidebar-accent-foreground: oklch(0.96 0.04 131);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.768 0.233 130.85);
+  --chat: oklch(0.2 0.025 131.684);
+  --outgoing: oklch(0.29 0.055 131.684);
+  --map-land: oklch(0.24 0.02 131);
+  --map-water: oklch(0.27 0.006 285);
 }
 
-*,
-*::before,
-*::after {
-  border-color: var(--border);
-  box-sizing: border-box;
+@theme inline {
+  --font-sans: 'Montserrat Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-link: var(--link);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-chat: var(--chat);
+  --color-outgoing: var(--outgoing);
+  --color-map-land: var(--map-land);
+  --color-map-water: var(--map-water);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  button:not(:disabled):not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+}
+
+/* Code colours follow the same accessible foreground pairs as the app. */
+:root {
+  --hljs-fg: var(--card-foreground);
+  --hljs-comment: var(--muted-foreground);
+  --hljs-string: var(--link);
+  --hljs-keyword: var(--destructive);
+  --hljs-number: var(--link);
+  --hljs-type: var(--card-foreground);
+  --hljs-function: var(--link);
+  --hljs-attr: var(--link);
+  --hljs-variable: var(--card-foreground);
 }
 
 html {
-  font-family: system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.docs-prose {
+  overflow-wrap: anywhere;
+}
+.docs-prose pre {
+  overflow-wrap: normal;
+}
+.docs-prose img {
+  max-width: 100%;
 }
 
-body {
-  margin: 0;
-  background-color: var(--background);
-  color: var(--foreground);
+.hljs {
+  color: var(--hljs-fg);
+  background: transparent;
 }
-
-/* Syntax highlighting */
-.hljs { color: var(--hljs-fg); background: transparent; }
 .hljs-comment,
-.hljs-quote { color: var(--hljs-comment); font-style: italic; }
+.hljs-quote,
+.hljs-meta {
+  color: var(--hljs-comment);
+  font-style: italic;
+}
 .hljs-keyword,
 .hljs-selector-tag,
-.hljs-tag { color: var(--hljs-keyword); font-weight: 600; }
+.hljs-tag {
+  color: var(--hljs-keyword);
+  font-weight: 600;
+}
 .hljs-string,
 .hljs-template-string,
-.hljs-template-tag { color: var(--hljs-string); }
+.hljs-template-tag {
+  color: var(--hljs-string);
+}
 .hljs-number,
-.hljs-literal { color: var(--hljs-number); }
+.hljs-literal {
+  color: var(--hljs-number);
+}
 .hljs-type,
 .hljs-class .hljs-title,
 .hljs-title.class_,
-.hljs-built_in { color: var(--hljs-type); }
+.hljs-built_in {
+  color: var(--hljs-type);
+}
 .hljs-function .hljs-title,
-.hljs-title.function_ { color: var(--hljs-function); }
+.hljs-title.function_ {
+  color: var(--hljs-function);
+}
 .hljs-attr,
 .hljs-selector-attr,
-.hljs-selector-pseudo { color: var(--hljs-attr); }
+.hljs-selector-pseudo {
+  color: var(--hljs-attr);
+}
 .hljs-variable,
-.hljs-params { color: var(--hljs-variable); }
+.hljs-params {
+  color: var(--hljs-variable);
+}
 .hljs-operator,
-.hljs-punctuation { color: var(--hljs-fg); }
-.hljs-meta { color: var(--hljs-comment); }
-.hljs-emphasis { font-style: italic; }
-.hljs-strong { font-weight: bold; }
+.hljs-punctuation {
+  color: var(--hljs-fg);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: bold;
+}
