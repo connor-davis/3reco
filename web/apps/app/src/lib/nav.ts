@@ -66,6 +66,11 @@ export function navFor(role: Role | null): NavGroup[] {
           links: [
             ...staffWorkspace,
             { label: 'User management', to: '/admin/users', icon: Users },
+            {
+              label: 'All conversations',
+              to: '/admin/chats',
+              icon: MessageSquare,
+            },
           ],
         },
       ];

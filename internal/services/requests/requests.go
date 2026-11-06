@@ -68,10 +68,36 @@ func (s *Service) load(
 	}
 
 	if r.Seller.ID != user.ID && r.Buyer.ID != user.ID {
+		// An admin may read any chat but never act on one.
+		if auth.HasRole(user, auth.RoleAdmin) {
+			return store.Request{}, errAdminReadOnly
+		}
+
 		return store.Request{}, errNotFound
 	}
 
 	return r, nil
+}
+
+var errAdminReadOnly = apperr.Forbidden("You are viewing this chat as an admin. Admins cannot act on it.")
+
+// loadForRead is load for reading only: an admin may also read a request they
+// take no part in.
+func (s *Service) loadForRead(
+	ctx context.Context,
+	user auth.User,
+	id string,
+) (store.Request, error) {
+	if !auth.HasRole(user, auth.RoleAdmin) {
+		return s.load(ctx, user, id, false)
+	}
+
+	r, err := s.store.Get(ctx, id, false)
+	if errors.Is(err, store.ErrNotFound) {
+		return r, errNotFound
+	}
+
+	return r, err
 }
 
 // Get returns a request to its two sides, and to admin and staff.

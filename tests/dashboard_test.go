@@ -229,3 +229,36 @@ func TestCollectorDashboardOwnTradesOnly(t *testing.T) {
 		t.Errorf("collector_linked %v, want true", body["collector_linked"])
 	}
 }
+
+func TestAdminDashboardSplitsByType(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	staff := tradeNewUser(t, w.app, "staff")
+
+	tradeSale(t, w.seller, w.buyer, w.material, "20", "8")
+
+	collector := tradeCollector(t, w.app, w.buyer, "+27800000092")
+	res := w.buyer.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(collector, "", tradeLine(w.material, "3.5", "2")))
+	tradeWant(t, "collection", res, 200)
+
+	for _, u := range []tradeUser{admin, staff} {
+		body := tradeDash(t, u, "/api/admin/dashboard")
+		rows, _ := body["by_type"].([]any)
+
+		got := map[string]float64{}
+		for _, r := range rows {
+			row, _ := r.(map[string]any)
+			got[row["type"].(string)], _ = row["count"].(float64)
+		}
+
+		if got["b2b"] < 1 || got["c2b"] < 1 {
+			t.Errorf("by_type %v, want at least one b2b and one c2b", got)
+		}
+	}
+
+	// A business dashboard carries no platform-wide split.
+	if _, has := tradeDash(t, w.buyer, "/api/dashboard/business")["by_type"]; has {
+		t.Error("business dashboard exposes by_type")
+	}
+}

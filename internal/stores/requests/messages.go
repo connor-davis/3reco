@@ -153,3 +153,69 @@ func (s *Store) Inbox(
 
 	return out, rows.Err()
 }
+
+// AdminThread is one row of the admin list of every conversation: both sides
+// and the newest message, with no unread count because an admin reads for
+// nobody.
+type AdminThread struct {
+	RequestID     string         `json:"request_id"`
+	Status        string         `json:"status"`
+	Buyer         database.Party `json:"buyer"`
+	Seller        database.Party `json:"seller"`
+	LatestMessage *Message       `json:"latest_message"`
+	ActivityAt    time.Time      `json:"activity_at"`
+}
+
+// AllThreads returns up to limit+1 requests of any status, most recent
+// activity first, with both sides and the newest message. Callers must have
+// checked the user is an admin.
+func (s *Store) AllThreads(
+	ctx context.Context,
+	cur paging.Cursor,
+	limit int,
+) ([]AdminThread, error) {
+	rows, err := s.db.Q(ctx).Query(ctx, `
+		SELECT r.id, r.status, b.id, `+database.DisplayName("b")+`,
+			sl.id, `+database.DisplayName("sl")+`,
+			lm.id, lm.sender_id, lm.content, lm.created_at,
+			COALESCE(lm.created_at, r.created_at) AS activity
+		FROM transaction_requests r
+		JOIN users b ON b.id = r.buyer_id
+		JOIN users sl ON sl.id = r.seller_id
+		LEFT JOIN LATERAL (
+			SELECT id, sender_id, content, created_at FROM transaction_request_messages
+			WHERE request_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) lm ON true
+		WHERE ($1::timestamptz IS NULL OR (COALESCE(lm.created_at, r.created_at), r.id) < ($1, $2))
+		ORDER BY activity DESC, r.id DESC
+		LIMIT $3`, cur.At, cur.ID, limit+1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AdminThread
+
+	for rows.Next() {
+		var t AdminThread
+
+		var lastID, lastSender, lastContent *string
+
+		var lastAt *time.Time
+
+		err := rows.Scan(&t.RequestID, &t.Status, &t.Buyer.ID, &t.Buyer.Name,
+			&t.Seller.ID, &t.Seller.Name, &lastID, &lastSender, &lastContent, &lastAt, &t.ActivityAt)
+		if err != nil {
+			return nil, err
+		}
+
+		if lastID != nil {
+			t.LatestMessage = &Message{
+				ID: *lastID, SenderID: *lastSender, Content: *lastContent, CreatedAt: *lastAt,
+			}
+		}
+
+		out = append(out, t)
+	}
+
+	return out, rows.Err()
+}

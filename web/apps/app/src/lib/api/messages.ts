@@ -52,6 +52,36 @@ export function useThreadHistory() {
   return query;
 }
 
+// Admin only: every conversation on 3REco, newest first. It follows each
+// listed chat too, because a new message only pings its own request topic.
+export function useAllThreads() {
+  const { user } = useAuth();
+  const query = useInfiniteQuery({
+    queryKey: ['messages', 'all', user?.id],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam, signal }) =>
+      api<Page<T.AdminThread>>(
+        `/messages/all${queryString({ cursor: pageParam, limit: 100 })}`,
+        { signal }
+      ),
+    getNextPageParam: (page) =>
+      page.has_more ? (page.next_cursor ?? undefined) : undefined,
+    enabled: user?.role === 'admin',
+  });
+  useLiveTopics(
+    user?.role === 'admin'
+      ? [
+          'admin:requests',
+          ...(query.data?.pages.flatMap((page) =>
+            page.items.map((thread) => `request:${thread.request_id}`)
+          ) ?? []),
+        ]
+      : [],
+    [['messages', 'all']]
+  );
+  return query;
+}
+
 export function useMessages(id: string, params: Paging = {}) {
   return useResource<Page<T.Message>>(
     ['messages', id, params],

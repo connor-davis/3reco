@@ -30,6 +30,8 @@ const NoticePrivacy = `We keep the details you give us: your name, email, phone,
 
 ID and bank numbers are stored encrypted. Other people see them only where a trade needs it, and masked unless they are the business that recorded the collector.
 
+3REco admins can read chats between users to resolve disputes and keep the marketplace safe.
+
 We use your details to run your account, match you with trades, send notices about your activity and keep trade records the law requires.
 
 You can download everything we hold about you, or delete your account, from your profile. Trade records are kept for a limited time after deletion.

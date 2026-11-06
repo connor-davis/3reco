@@ -14,7 +14,8 @@ export type PageId =
   | 'outgoing'
   | 'cart'
   | 'profile'
-  | 'users';
+  | 'users'
+  | 'chats';
 
 // Pages that are not listed here (market, store, listing, about, auth) are
 // open to everyone, signed in or not. The old app's permissions decide this.
@@ -33,6 +34,7 @@ const allowed: Record<PageId, Role[]> = {
   cart: ['business'],
   profile: ['admin', 'staff', 'business', 'collector'],
   users: ['admin'],
+  chats: ['admin'],
 };
 
 /** A signed-in account can have no role yet (null); it opens nothing restricted. */

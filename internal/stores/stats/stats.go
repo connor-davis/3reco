@@ -28,7 +28,7 @@ type Store struct{ db *database.DB }
 // New builds the aggregate store.
 func New(db *database.DB) *Store { return &Store{db: db} }
 
-// Summary reads totals and the five leading active business sellers.
+// Summary reads totals and the five active businesses that traded the most kg.
 func (records *Store) Summary(ctx context.Context) (Summary, error) {
 	result := Summary{TopStores: []TopStore{}}
 	err := records.db.Q(ctx).QueryRow(ctx, `
@@ -45,11 +45,14 @@ func (records *Store) Summary(ctx context.Context) (Summary, error) {
 		return result, err
 	}
 
+	// A business earns kg as the seller of a b2b trade and as the buyer of a
+	// collection (c2b).
 	rows, err := records.db.Q(ctx).Query(ctx, `
 		SELECT u.id, COALESCE(u.business_name,''), sum(ti.weight)::text
 		FROM transactions t JOIN transaction_items ti ON ti.transaction_id=t.id
-		JOIN users u ON u.id=t.seller_id AND u.role='business' AND NOT u.is_removed
-		WHERE t.type='b2b' GROUP BY u.id,u.business_name
+		JOIN users u ON u.role='business' AND NOT u.is_removed
+			AND u.id = CASE WHEN t.type='b2b' THEN t.seller_id ELSE t.buyer_id END
+		GROUP BY u.id,u.business_name
 		ORDER BY sum(ti.weight) DESC,u.id ASC LIMIT 5`)
 	if err != nil {
 		return result, err

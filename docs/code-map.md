@@ -55,6 +55,9 @@ Never rename a merged migration. Add a new file.
 | Privacy tests: ciphertext at rest, mask and full view, export, delete, retention, notice, audit | `tests/privacy_test.go`, `tests/privacy_rights_test.go`, `tests/fieldcrypt_test.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
+| Admin read-only view of every chat: the all-conversations list and the read-only rule | `internal/stores/requests/messages.go` (`AllThreads`), `internal/services/requests` (`loadForRead`, `AllThreads`), `GET /api/messages/all` |
+| The admin All conversations page | `web/apps/app/src/routes/admin/chats.tsx` |
+| Admin chat tests (read, list, no write, no read receipts, live) | `tests/admin_chat_test.go` |
 | Offer reservation locks, releases and set-based expiry SQL | `internal/stores/requests/holds.go` |
 | The 48-hour offer lifetime and atomic expiry notifications | `internal/services/requests/holds.go` |
 | Stock availability and fenced hold consumption during settlement | `internal/stores/transactions/holds.go` |
