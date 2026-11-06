@@ -94,12 +94,8 @@ test('the R / kg field sits on a row wide enough for what was typed', () => {
   assert.match(dialog, /TriangleAlert/);
 });
 
-test('phones group in threes and the collector list starts A to Z', () => {
+test('phones group in threes', () => {
   assert.equal(format.formatPhone('+27835550404'), '+27 83 555 0404');
   assert.equal(format.formatPhone('0835550404'), '083 555 0404');
   assert.equal(format.formatPhone('abc'), 'abc');
-  assert.match(
-    source('../src/routes/collectors.tsx'),
-    /initialSort=\{\[\{ id: 'name'/
-  );
 });

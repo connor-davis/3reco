@@ -37,7 +37,12 @@ func (handler *Handler) directory(c fiber.Ctx, selection bool) error {
 		limit = "200"
 	}
 
-	query, err := paging.Parse(c.Query("cursor"), limit, false)
+	query, err := paging.Parse("", limit, false)
+	if err != nil {
+		return err
+	}
+
+	after, err := svc.ParseCursor(c.Query("cursor"))
 	if err != nil {
 		return err
 	}
@@ -49,7 +54,7 @@ func (handler *Handler) directory(c fiber.Ctx, selection bool) error {
 	query.Like = paging.SearchPattern(c.Query("q"))
 
 	user, _ := middleware.CurrentUser(c)
-	items, err := handler.svc.List(c.Context(), user, query, selection)
+	items, err := handler.svc.List(c.Context(), user, query, after, selection)
 	if err != nil {
 		return err
 	}

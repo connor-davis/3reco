@@ -2,6 +2,8 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/connor-davis/3reco/tests/testutil"
@@ -69,4 +71,68 @@ func TestRound3CollectorSelectionSortedByName(t *testing.T) {
 	if len(names) != 3 || names[0] != "amy" || names[1] != "Mo" || names[2] != "Zed" {
 		t.Fatalf("not A to Z: %v", names)
 	}
+}
+
+func TestRound3CollectorsPageAToZAcrossPages(t *testing.T) {
+	app := testutil.Server(t)
+	user, _ := domainUser(t, app, "business")
+
+	names := []string{"Zed", "amy", "Mo", "Bea", "bea", "Cy", "Al"}
+	for i, name := range names {
+		body := collectorBody("")
+		body["name"] = name
+		body["email"] = fmt.Sprintf("p%d@example.test", i)
+		status(t, user.Do("POST", "/api/collectors", body), 200)
+	}
+
+	walk := func(path string) (got []string, pages int) {
+		cursor := ""
+		seen := map[string]bool{}
+
+		for {
+			url := path + "limit=2"
+			if cursor != "" {
+				url += "&cursor=" + cursor
+			}
+
+			result := status(t, user.Do("GET", url, nil), 200)
+			pages++
+
+			for _, row := range pageItems(t, result) {
+				id := row["id"].(string)
+				if seen[id] {
+					t.Fatalf("repeated row %v", row["name"])
+				}
+
+				seen[id] = true
+				got = append(got, row["name"].(string))
+			}
+
+			next, _ := result.Body["next_cursor"].(string)
+			if next == "" {
+				return got, pages
+			}
+
+			cursor = next
+		}
+	}
+
+	got, pages := walk("/api/collectors?")
+	if pages != 4 || len(got) != 7 {
+		t.Fatalf("pages %d rows %v", pages, got)
+	}
+
+	for i := 1; i < len(got); i++ {
+		if strings.ToLower(got[i-1]) > strings.ToLower(got[i]) {
+			t.Fatalf("not A to Z: %v", got)
+		}
+	}
+
+	// Search narrows before the page is cut, and the order holds.
+	found, _ := walk("/api/collectors?q=bea&")
+	if len(found) != 2 {
+		t.Fatalf("search rows: %v", found)
+	}
+
+	status(t, user.Do("GET", "/api/collectors?cursor=!!", nil), 400)
 }

@@ -205,8 +205,6 @@ function CollectorsPage() {
         <DataTable
           columns={columns}
           data={shown}
-          // A to Z within the page; the server pages newest first.
-          initialSort={[{ id: 'name', desc: false }]}
           renderCard={(collector) => (
             <Card size="sm">
               <CardContent className="space-y-2">

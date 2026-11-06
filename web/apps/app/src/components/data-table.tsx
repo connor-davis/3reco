@@ -37,8 +37,6 @@ type DataTableProps<T> = {
   // On phones every row becomes one card (map section 8.4).
   renderCard: (row: T) => ReactNode;
   footer?: ReactNode;
-  // How the rows are ordered until a heading is clicked.
-  initialSort?: SortingState;
 };
 
 /**
@@ -50,10 +48,9 @@ export function DataTable<T>({
   data,
   renderCard,
   footer,
-  initialSort = [],
 }: DataTableProps<T>) {
   const compact = useIsCompact();
-  const [sorting, setSorting] = useState<SortingState>(initialSort);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
     data,
