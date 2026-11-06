@@ -40,11 +40,11 @@ func (records *Store) Stats(ctx context.Context, item Collector) (Stats, error) 
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
 		`SELECT
-		COALESCE((SELECT sum(total_price) FROM transactions WHERE seller_id=$1 AND type='c2b'),0)::text,
-		(SELECT count(*) FROM transactions WHERE seller_id=$1 AND type='c2b'),
+		COALESCE((SELECT sum(total_price) FROM transactions WHERE status='complete' AND seller_id=$1 AND type='c2b'),0)::text,
+		(SELECT count(*) FROM transactions WHERE status='complete' AND seller_id=$1 AND type='c2b'),
 		COALESCE(sum(i.weight),0)::text,COALESCE(sum(i.weight*m.carbon_factor),0)::text
 		FROM transactions t JOIN transaction_items i ON i.transaction_id=t.id
-		JOIN materials m ON m.id=i.material_id WHERE t.seller_id=$1 AND t.type='c2b'`,
+		JOIN materials m ON m.id=i.material_id WHERE t.status='complete' AND t.seller_id=$1 AND t.type='c2b'`,
 		item.ID,
 	).Scan(
 		&result.Totals.TotalRevenue,
@@ -65,7 +65,7 @@ func (records *Store) Stats(ctx context.Context, item Collector) (Stats, error) 
 		COALESCE((SELECT sum(weight) FROM transaction_items WHERE transaction_id=t.id),0)::text,
 		t.total_price::text,CASE WHEN u.is_removed THEN 'Unknown' ELSE
 		`+database.DisplayName("u")+` END
-		FROM transactions t JOIN users u ON u.id=t.buyer_id WHERE t.seller_id=$1 AND t.type='c2b'
+		FROM transactions t JOIN users u ON u.id=t.buyer_id WHERE t.status='complete' AND t.seller_id=$1 AND t.type='c2b'
 		ORDER BY t.created_at DESC,t.id DESC LIMIT 5`,
 		item.ID,
 	)

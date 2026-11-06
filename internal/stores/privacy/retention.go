@@ -35,7 +35,7 @@ func (s *Store) AnonymiseTrades(ctx context.Context, years int) ([]string, error
 		UPDATE transactions t
 		SET collector_snapshot = NULL, invoice_key = NULL, anonymised_at = now()
 		FROM (SELECT id, invoice_key FROM transactions
-			WHERE anonymised_at IS NULL AND created_at < now() - make_interval(years => $1)
+			WHERE status='complete' AND anonymised_at IS NULL AND created_at < now() - make_interval(years => $1)
 			FOR UPDATE) old
 		WHERE t.id = old.id
 		RETURNING COALESCE(old.invoice_key, '')`, years)

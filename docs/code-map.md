@@ -32,6 +32,7 @@ line when you add an owner.
 | `0011_chat_activity.sql` | Indexed inbox activity and message broadcasts to both participants and `admin:requests` |
 | `0012_guest_role.sql` | Every user has a role: backfills no-role users to `guest`, adds `guest` to the role check, default `guest`, NOT NULL |
 | `0013_collector_optional_phone.sql` | Allows absent collector phones as NULL |
+| `0015_market_flow.sql` | Cart quantities, requested terms, versioned offers, dual confirmation and retained transaction status |
 
 Never rename a merged migration. Add a new file.
 
@@ -61,6 +62,8 @@ Never rename a merged migration. Add a new file.
 | Privacy tests: ciphertext at rest, mask and full view, export, delete, retention, notice, audit | `tests/privacy_test.go`, `tests/privacy_rights_test.go`, `tests/fieldcrypt_test.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
+| Offer author/version, confirmation resets and live-hold fence | `internal/stores/requests/confirmations.go` |
+| Pending trade creation and completion of the same retained row | `internal/services/transactions/pending.go`, `internal/stores/transactions/pending.go` |
 | Admin read-only view of every chat: the all-conversations list and the read-only rule | `internal/stores/requests/messages.go` (`AllThreads`), `internal/services/requests` (`loadForRead`, `AllThreads`), `GET /api/messages/all` |
 | Unified participant/admin inbox, server search, infinite scroll and recent-first chat history | `web/apps/app/src/components/chat/{inbox,conversation}.tsx`, `web/apps/app/src/lib/api/messages.ts` |
 | Admin chat tests (read, list, no write, no read receipts, live) | `tests/admin_chat_test.go` |
@@ -108,6 +111,7 @@ Never rename a merged migration. Add a new file.
 | Five CSV schemas, role/owner scope, effective date bounds, escaping and formula guard | `tests/exports_test.go` |
 | Code rules: doc comments, file length | `tests/style_test.go` |
 | Offer holds, races, rollback, expiry, stock safeguards, availability and realtime | `tests/stock_holds_test.go` |
+| Request terms, dual confirmation, pending isolation, counter/cancellation, privacy and migration backfill | `tests/market_flow_test.go` |
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |
 | WebSocket events | `tests/realtime_test.go` |

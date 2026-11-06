@@ -22,6 +22,8 @@ type Item struct {
 	MaterialID      string  `json:"material_id"`
 	MaterialName    string  `json:"material_name"`
 	StockID         *string `json:"stock_id"`
+	RequestedWeight *string `json:"requested_weight"`
+	RequestedPrice  *string `json:"requested_price"`
 	OfferWeight     *string `json:"offer_weight"`
 	OfferPrice      *string `json:"offer_price"`
 	AvailableWeight *string `json:"available_weight"`
@@ -29,17 +31,21 @@ type Item struct {
 
 // Request is a buying request as its two sides (and staff) see it.
 type Request struct {
-	ID        string         `json:"id"`
-	Seller    database.Party `json:"seller"`
-	Buyer     database.Party `json:"buyer"`
-	Status    string         `json:"status"`
-	Items     []Item         `json:"items"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	ID                     string         `json:"id"`
+	Seller                 database.Party `json:"seller"`
+	Buyer                  database.Party `json:"buyer"`
+	Status                 string         `json:"status"`
+	OfferBy                *string        `json:"offer_by"`
+	OfferVersion           int            `json:"offer_version"`
+	BuyerConfirmedVersion  *int           `json:"buyer_confirmed_version"`
+	SellerConfirmedVersion *int           `json:"seller_confirmed_version"`
+	Items                  []Item         `json:"items"`
+	CreatedAt              time.Time      `json:"created_at"`
+	UpdatedAt              time.Time      `json:"updated_at"`
 }
 
 // NewItem is a requested stock row.
-type NewItem struct{ MaterialID, StockID string }
+type NewItem struct{ MaterialID, StockID, Weight string }
 
 // Store runs the request SQL.
 type Store struct{ db *database.DB }
@@ -49,7 +55,8 @@ func New(db *database.DB) *Store { return &Store{db: db} }
 
 var selectRequest = `
 	SELECT r.id, r.seller_id, ` + database.DisplayName("s") + `, r.buyer_id, ` + database.DisplayName("b") + `,
-		r.status, r.created_at, r.updated_at
+		r.status, r.created_at, r.updated_at, r.offer_by, r.offer_version,
+		r.buyer_confirmed_version, r.seller_confirmed_version
 	FROM transaction_requests r
 	JOIN users s ON s.id = r.seller_id
 	JOIN users b ON b.id = r.buyer_id`
@@ -57,8 +64,20 @@ var selectRequest = `
 func scan(row pgx.Row) (Request, error) {
 	var r Request
 
-	err := row.Scan(&r.ID, &r.Seller.ID, &r.Seller.Name, &r.Buyer.ID, &r.Buyer.Name,
-		&r.Status, &r.CreatedAt, &r.UpdatedAt)
+	err := row.Scan(
+		&r.ID,
+		&r.Seller.ID,
+		&r.Seller.Name,
+		&r.Buyer.ID,
+		&r.Buyer.Name,
+		&r.Status,
+		&r.CreatedAt,
+		&r.UpdatedAt,
+		&r.OfferBy,
+		&r.OfferVersion,
+		&r.BuyerConfirmedVersion,
+		&r.SellerConfirmedVersion,
+	)
 	r.Items = []Item{}
 
 	return r, err
@@ -76,9 +95,17 @@ func (s *Store) Insert(ctx context.Context, id, sellerID, buyerID string, items 
 	}
 
 	for position, item := range items {
-		_, err := q.Exec(ctx, `
-			INSERT INTO transaction_request_items (request_id, position, material_id, stock_id)
-			VALUES ($1, $2, $3, $4)`, id, position, item.MaterialID, item.StockID)
+		_, err := q.Exec(
+			ctx,
+			`INSERT INTO transaction_request_items
+			(request_id, position, material_id, stock_id, requested_weight, requested_price)
+			SELECT $1, $2, $3, s.id, $5::numeric, s.price FROM stock s WHERE s.id=$4`,
+			id,
+			position,
+			item.MaterialID,
+			item.StockID,
+			item.Weight,
+		)
 		if err != nil {
 			return err
 		}
@@ -182,8 +209,12 @@ func (s *Store) fill(ctx context.Context, list []Request) error {
 	}
 
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT i.request_id, i.material_id, m.name, i.stock_id, i.offer_weight::text, i.offer_price::text,
-			(SELECT stock_available(s.id,s.weight)::text FROM stock s WHERE s.id=i.stock_id)
+		SELECT i.request_id, i.material_id, m.name, i.stock_id, i.offer_weight::text,
+			i.offer_price::text, i.requested_weight::text, i.requested_price::text,
+			(SELECT (stock_available(s.id,s.weight)+COALESCE((SELECT sum(h.weight)
+				FROM stock_holds h WHERE h.request_id=i.request_id AND h.stock_id=s.id
+				AND h.status='active' AND h.expires_at>clock_timestamp()),0))::text
+			FROM stock s WHERE s.id=i.stock_id)
 		FROM transaction_request_items i JOIN materials m ON m.id = i.material_id
 		WHERE i.request_id = ANY($1) ORDER BY i.request_id, i.position`, ids)
 	if err != nil {
@@ -197,7 +228,7 @@ func (s *Store) fill(ctx context.Context, list []Request) error {
 		var item Item
 
 		err := rows.Scan(&id, &item.MaterialID, &item.MaterialName, &item.StockID,
-			&item.OfferWeight, &item.OfferPrice, &item.AvailableWeight)
+			&item.OfferWeight, &item.OfferPrice, &item.RequestedWeight, &item.RequestedPrice, &item.AvailableWeight)
 		if err != nil {
 			return err
 		}

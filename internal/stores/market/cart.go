@@ -24,7 +24,7 @@ type Cart struct {
 func (records *Store) Cart(ctx context.Context, buyer, seller string) (Cart, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT i.stock_id,i.material_id,m.name,stock_available(s.id,s.weight)::text,s.price::text
+		`SELECT i.stock_id,i.material_id,m.name,i.weight::text,s.price::text
 		FROM carts c JOIN cart_items i ON i.cart_id=c.id JOIN stock s ON s.id=i.stock_id
 		JOIN materials m ON m.id=i.material_id JOIN users u ON u.id=c.seller_id
 		WHERE c.buyer_id=$1 AND c.seller_id=$2 AND s.owner_id=c.seller_id
@@ -101,10 +101,11 @@ func (records *Store) ReplaceCart(ctx context.Context, buyer, seller string, ite
 	for _, item := range items {
 		_, err := records.db.Q(ctx).Exec(
 			ctx,
-			`INSERT INTO cart_items(cart_id,stock_id,material_id) VALUES($1,$2,$3)`,
+			`INSERT INTO cart_items(cart_id,stock_id,material_id,weight) VALUES($1,$2,$3,$4::numeric)`,
 			id,
 			item.StockID,
 			item.MaterialID,
+			item.Weight,
 		)
 		if err != nil {
 			return err

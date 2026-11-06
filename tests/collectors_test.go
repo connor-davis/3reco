@@ -297,8 +297,8 @@ func TestCollectorStatsPhoneLeak(t *testing.T) {
 	transactionID := database.NewID()
 	_, err := app.DB.Pool.Exec(
 		context.Background(),
-		`INSERT INTO transactions(id,seller_id,buyer_id,type,total_price)
-		VALUES($1,$2,$3,'c2b',10.123456789)`,
+		`INSERT INTO transactions(id,seller_id,buyer_id,type,total_price,status)
+		VALUES($1,$2,$3,'c2b',10.123456789, 'complete')`,
 		transactionID,
 		id,
 		businessID,

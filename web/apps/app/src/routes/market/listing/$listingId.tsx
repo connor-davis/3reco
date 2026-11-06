@@ -162,7 +162,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
             name="weight"
             label="Quantity (kg)"
             counter={weightCounter(listing.weight)}
-            description="Use a draft quantity to estimate the total. The cart saves the material; the seller sets the final quantity in an offer."
+            description="Your cart keeps this quantity. You can change it before sending your request."
           />
           <p>
             Estimated total{' '}

@@ -81,7 +81,7 @@ func (s *Store) ReserveHold(
 func (s *Store) ExpireOffers(ctx context.Context) ([]Request, error) {
 	candidates, err := s.db.Q(ctx).Query(ctx, `
 		SELECT r.id FROM transaction_requests r
-		WHERE r.status='offered' AND EXISTS (
+		WHERE r.status IN ('pending','offered') AND EXISTS (
 			SELECT 1 FROM stock_holds h WHERE h.request_id=r.id
 			AND h.status='active' AND h.expires_at<=clock_timestamp())
 		ORDER BY r.id LIMIT 100 FOR UPDATE OF r SKIP LOCKED`)
@@ -117,17 +117,20 @@ func (s *Store) ExpireOffers(ctx context.Context) ([]Request, error) {
 		`
 		WITH expired AS MATERIALIZED (
 			SELECT r.id FROM transaction_requests r
-			WHERE r.id=ANY($1) AND r.status='offered' AND EXISTS (
+			WHERE r.id=ANY($1) AND r.status IN ('pending','offered') AND EXISTS (
 				SELECT 1 FROM stock_holds h WHERE h.request_id=r.id
 				AND h.status='active' AND h.expires_at<=clock_timestamp())
 		), released AS (
 			UPDATE stock_holds SET status='released', released_at=clock_timestamp()
 			WHERE request_id IN (SELECT id FROM expired) AND status='active'
+		), cancelled AS (
+			UPDATE transactions SET status='cancelled'
+			WHERE request_id IN (SELECT id FROM expired) AND status='pending'
 		), cleared AS (
 			UPDATE transaction_request_items SET offer_weight=NULL, offer_price=NULL
 			WHERE request_id IN (SELECT id FROM expired)
 		)
-		UPDATE transaction_requests SET status='pending', updated_at=clock_timestamp()
+		UPDATE transaction_requests SET status='pending', offer_by=NULL, buyer_confirmed_version=NULL, seller_confirmed_version=NULL, updated_at=clock_timestamp()
 		WHERE id IN (SELECT id FROM expired) RETURNING id, seller_id, buyer_id`,
 		ids,
 	)

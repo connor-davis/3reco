@@ -174,7 +174,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
         </IconButton>
       </header>
       <div className="space-y-3 border-b bg-background px-4 py-3 sm:px-6">
-        <DealStepper status={request.status} />
+        <DealStepper request={request} />
         {canAct && (
           <div className="flex flex-wrap gap-2">
             {canMakeOffer(request, user?.id) && (
@@ -182,10 +182,10 @@ export function Conversation({ request }: { request: TradeRequest }) {
                 disabled={actions.isPending}
                 onClick={() => setOfferOpen(true)}
               >
-                {request.status === 'offered' ? 'Change offer' : 'Make offer'}
+                {request.status === 'offered' ? 'Counter offer' : 'Make offer'}
               </Button>
             )}
-            {seller && request.status === 'offered' && (
+            {request.offer_by === user?.id && request.status === 'offered' && (
               <Button
                 variant="outline"
                 disabled={actions.isPending}
@@ -287,7 +287,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
               request={request}
               canRespond={canAct && canRespond(request, user?.id)}
               onAccept={() => void actions.accept()}
-              onDecline={() => void actions.decline()}
+              onDecline={() => setConfirm('reject')}
               disabled={actions.isPending}
             />
           )}
@@ -313,7 +313,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
             </Button>
           </p>
         )}
-        {canAct && request.status === 'pending' ? (
+        {canAct ? (
           <form
             className="flex items-end gap-3"
             noValidate
@@ -344,9 +344,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
               ? 'You are viewing this chat as an admin.'
               : isClosed(request)
                 ? 'This request is closed.'
-                : request.status === 'offered'
-                  ? 'Respond to or withdraw the offer to continue messaging.'
-                  : 'Read only'}
+                : 'Read only'}
           </p>
         )}
       </footer>

@@ -127,8 +127,8 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 	}
 
 	emptyID := database.NewID()
-	tradeExec(t, w.app, `INSERT INTO transactions (id,seller_id,buyer_id,type,total_price)
-		VALUES ($1,$2,$3,'b2b',0)`, emptyID, w.seller.id, w.buyer.id)
+	tradeExec(t, w.app, `INSERT INTO transactions (id,seller_id,buyer_id,type,total_price,status)
+		VALUES ($1,$2,$3,'b2b',0, 'complete')`, emptyID, w.seller.id, w.buyer.id)
 	rows = csvRows(t, w.seller.c, "/api/exports/sales?itemised=true")
 	found := false
 	for _, row := range rows[1:] {

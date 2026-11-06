@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/connor-davis/3reco/internal/services/profile"
+	store "github.com/connor-davis/3reco/internal/stores/importer"
 )
 
 var notificationTypes = []string{
@@ -170,6 +171,7 @@ func (p *planner) cartItems(r *row, fields []field) {
 		child := r.child("cart_items", "items", i, item)
 		out := without(child.build(fields))
 		out["cart_id"] = r.id
+		out["weight"] = store.Typed{Type: "numeric", Text: "1"}
 
 		if seenStock[str(item["stockId"])] {
 			p.rep.note("cart items dropped (the same stock twice in one cart)")

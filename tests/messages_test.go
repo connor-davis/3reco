@@ -95,7 +95,7 @@ func TestRequestOfferedInbox(t *testing.T) {
 		}
 
 		// Offers remain visible, but messaging stays paused until the offer is resolved.
-		tradeWant(t, "offered chat paused", tradeSay(t, party, id, "hello?"), 409)
+		tradeWant(t, "offered chat open", tradeSay(t, party, id, "hello?"), 200)
 	}
 
 	inbox := outsider.c.Do("GET", "/api/messages/inbox", nil)

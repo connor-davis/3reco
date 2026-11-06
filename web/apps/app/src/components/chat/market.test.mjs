@@ -42,10 +42,17 @@ const request = {
 
 test('request actions use participant IDs and only API states', () => {
   assert.equal(helpers.canMakeOffer(request, 'seller'), true);
-  assert.equal(helpers.canMakeOffer(request, 'buyer'), false);
+  assert.equal(helpers.canMakeOffer(request, 'buyer'), true);
   assert.equal(helpers.canMakeOffer(request, 'outsider'), false);
   assert.equal(helpers.canRespond(request, 'buyer'), false);
-  const offered = { ...request, status: 'offered' };
+  const offered = {
+    ...request,
+    status: 'offered',
+    offer_by: 'seller',
+    offer_version: 1,
+    buyer_confirmed_version: null,
+    seller_confirmed_version: null,
+  };
   assert.equal(helpers.canRespond(offered, 'buyer'), true);
   assert.equal(helpers.canRespond(offered, 'seller'), false);
   for (const status of ['accepted', 'rejected', 'cancelled']) {
@@ -181,9 +188,13 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
   ];
   let effects = [];
   let refIndex = 0;
-  const scrolled = [];
+  const viewport = { scrollHeight: 1000, scrollTop: 0, clientHeight: 300 };
   const refs = [
-    { current: { scrollIntoView: (options) => scrolled.push(options.block) } },
+    { current: viewport },
+    { current: null },
+    { current: null },
+    { current: undefined },
+    { current: true },
     { current: null },
   ];
   const component = new Proxy({}, { get: (_, name) => name });
@@ -191,6 +202,8 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
     'react/jsx-runtime': jsx,
     react: {
       useEffect: (effect) => effects.push(effect),
+      useLayoutEffect: (effect) => effects.push(effect),
+      useCallback: (callback) => callback,
       useRef: () => refs[refIndex++],
       useState: (value) => [value, () => {}],
     },
@@ -282,7 +295,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
     log.props.children.at(-1).props.children[0].props.children,
     'Newest sent message'
   );
-  assert.equal(scrolled.join(','), 'end,end');
+  assert.equal(viewport.scrollTop, 1000);
 });
 
 test('expired offers keep the API conflict message and refresh the request', async () => {

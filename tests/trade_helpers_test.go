@@ -104,7 +104,7 @@ func tradeRequest(t *testing.T, buyer, seller tradeUser, stockID string) string 
 
 	res := buyer.c.Do("POST", "/api/requests", map[string]any{
 		"seller_id": seller.id,
-		"items":     []map[string]any{{"stock_id": stockID}},
+		"items":     []map[string]any{{"stock_id": stockID, "weight": "1"}},
 	})
 	if res.Status != http.StatusOK {
 		t.Fatalf("create request: %d %s", res.Status, res.Raw)

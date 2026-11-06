@@ -344,5 +344,5 @@ func TestPrivacyDeleteReleasesTheSellersHold(t *testing.T) {
 
 	holdDecimal(t, listing(), "100")
 	holdCount(t, w, "active", "0")
-	holdCount(t, w, "released", "1")
+	holdCount(t, w, "released", "2")
 }

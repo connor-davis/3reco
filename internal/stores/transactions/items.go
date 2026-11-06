@@ -13,6 +13,9 @@ type NewTransaction struct {
 	ID             string
 	SellerID       string
 	BuyerID        string
+	Status         string
+	RequestID      *string
+	OfferVersion   *int
 	Type           string
 	CollectionDay  *string
 	CollectionDate *time.Time
@@ -21,11 +24,22 @@ type NewTransaction struct {
 // Insert writes a transaction with a zero total; SetTotal fills it in once the
 // items are written, so the total always comes from the stored rows.
 func (s *Store) Insert(ctx context.Context, n NewTransaction) error {
-	_, err := s.db.Q(ctx).Exec(ctx, `
-		INSERT INTO transactions
-			(id, seller_id, buyer_id, type, total_price, collection_day, collection_date)
-		VALUES ($1, $2, $3, $4, 0, $5::date, $6)`,
-		n.ID, n.SellerID, n.BuyerID, n.Type, n.CollectionDay, n.CollectionDate)
+	_, err := s.db.Q(ctx).Exec(
+		ctx,
+		`INSERT INTO transactions
+		(id, seller_id, buyer_id, type, total_price, collection_day, collection_date,
+		status, request_id, offer_version)
+		VALUES ($1, $2, $3, $4, 0, $5::date, $6, $7, $8, $9)`,
+		n.ID,
+		n.SellerID,
+		n.BuyerID,
+		n.Type,
+		n.CollectionDay,
+		n.CollectionDate,
+		n.Status,
+		n.RequestID,
+		n.OfferVersion,
+	)
 
 	return err
 }

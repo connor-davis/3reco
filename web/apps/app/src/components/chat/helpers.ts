@@ -18,11 +18,33 @@ export function isClosed(request: TradeRequest): boolean {
 }
 
 export function canMakeOffer(request: TradeRequest, userId?: string): boolean {
-  return request.seller.id === userId && !isClosed(request);
+  const participant =
+    request.seller.id === userId || request.buyer.id === userId;
+  return (
+    participant &&
+    !isClosed(request) &&
+    (request.status === 'pending' || request.offer_by !== userId)
+  );
 }
 
 export function canRespond(request: TradeRequest, userId?: string): boolean {
-  return request.buyer.id === userId && request.status === 'offered';
+  if (
+    request.status !== 'offered' ||
+    (request.seller.id !== userId && request.buyer.id !== userId)
+  )
+    return false;
+  const confirmed =
+    userId === request.buyer.id
+      ? request.buyer_confirmed_version
+      : request.seller_confirmed_version;
+  const otherConfirmed =
+    userId === request.buyer.id
+      ? request.seller_confirmed_version
+      : request.buyer_confirmed_version;
+  return (
+    confirmed !== request.offer_version &&
+    (request.offer_by !== userId || otherConfirmed === request.offer_version)
+  );
 }
 
 export function orderedMessages(messages: Message[]): Message[] {

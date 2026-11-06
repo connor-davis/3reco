@@ -120,8 +120,8 @@ func tradeOldSale(
 
 	tradeExec(t, app, `
 		INSERT INTO transactions
-			(id, seller_id, buyer_id, type, total_price, collection_date, collection_day, created_at)
-		VALUES ($1, $2, $3, 'c2b', 60, $4::timestamptz, $5::date, $6::timestamptz)`,
+			(id, seller_id, buyer_id, type, total_price, collection_date, collection_day, created_at, status)
+		VALUES ($1, $2, $3, 'c2b', 60, $4::timestamptz, $5::date, $6::timestamptz, 'complete')`,
 		id, collector, buyer.id, collectionDate, collectionDay, createdAt)
 	tradeExec(t, app, `
 		INSERT INTO transaction_items (transaction_id, position, material_id, weight, price)

@@ -13,7 +13,7 @@ import (
 	store "github.com/connor-davis/3reco/internal/stores/requests"
 )
 
-// MakeOffer lets the seller put weights and prices on an open request. The
+// MakeOffer lets either participant put weights and prices on an open request. The
 // offer must name at least one material of the request; a bad offer changes
 // nothing.
 func (s *Service) MakeOffer(
@@ -28,8 +28,8 @@ func (s *Service) MakeOffer(
 			return err
 		}
 
-		if r.Seller.ID != user.ID {
-			return apperr.Forbidden("Only the seller can make an offer.")
+		if r.Status == StatusOffered && r.OfferBy != nil && *r.OfferBy == user.ID {
+			return apperr.Forbidden("Wait for the other side to respond, or withdraw your offer.")
 		}
 
 		if r.Status != StatusPending && r.Status != StatusOffered {
@@ -54,6 +54,10 @@ func (s *Service) MakeOffer(
 			return err
 		}
 
+		if err := s.store.ResetConfirmation(ctx, id); err != nil {
+			return err
+		}
+
 		if err := s.store.ClearOffers(ctx, id); err != nil {
 			return err
 		}
@@ -64,7 +68,7 @@ func (s *Service) MakeOffer(
 			}
 		}
 
-		if err := s.store.SetStatus(ctx, id, StatusOffered); err != nil {
+		if err := s.store.StartOffer(ctx, id, user.ID); err != nil {
 			return err
 		}
 
@@ -73,10 +77,14 @@ func (s *Service) MakeOffer(
 			name = fmt.Sprintf("%d materials", len(offer))
 		}
 
-		body := fmt.Sprintf("The seller has made an offer on your %s. "+
-			"Review and accept to complete the trade.", name)
+		body := fmt.Sprintf("A new offer was made for %s. Review the terms and confirm or counter.", name)
 
-		return s.notes.Notify(ctx, r.Buyer.ID, notifications.RequestAccepted,
+		other := r.Buyer.ID
+		if user.ID == other {
+			other = r.Seller.ID
+		}
+
+		return s.notes.Notify(ctx, other, notifications.RequestAccepted,
 			"Offer received!", body, "/market/"+id)
 	})
 }
@@ -111,9 +119,14 @@ func (s *Service) checkOffer(ctx context.Context, r store.Request, offer []trans
 	return nil
 }
 
-// Accept lets the buyer take the seller's offer: stock moves, a transaction is
-// written and the request is closed, all in one go or not at all.
-func (s *Service) Accept(ctx context.Context, user auth.User, id string) (string, error) {
+// Accept confirms the current version. The recipient confirms first; settlement
+// happens only when the offer maker also confirms, under the same request lock.
+func (s *Service) Accept(
+	ctx context.Context,
+	user auth.User,
+	id string,
+	version ...int,
+) (string, error) {
 	var transactionID string
 
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
@@ -122,16 +135,20 @@ func (s *Service) Accept(ctx context.Context, user auth.User, id string) (string
 			return err
 		}
 
-		if r.Buyer.ID != user.ID {
-			return apperr.Forbidden("Only the buyer can accept an offer.")
-		}
-
 		if r.Status != StatusOffered {
 			if r.Status == StatusPending {
 				return transactions.ErrOfferRanOut
 			}
 
 			return apperr.Conflict("There is no active offer to accept.")
+		}
+
+		if len(version) > 0 && version[0] != r.OfferVersion {
+			return apperr.Conflict("The offer changed. Review the latest terms before confirming.")
+		}
+
+		if r.OfferBy == nil {
+			return transactions.ErrOfferRanOut
 		}
 
 		var lines []transactions.SaleItem
@@ -148,7 +165,54 @@ func (s *Service) Accept(ctx context.Context, user auth.User, id string) (string
 			return transactions.ErrOfferRanOut
 		}
 
-		transactionID, err = s.trades.SettleOffer(ctx, r.Seller.ID, r.Buyer.ID, id, lines)
+		buyerConfirmed := r.BuyerConfirmedVersion != nil && *r.BuyerConfirmedVersion == r.OfferVersion
+		sellerConfirmed := r.SellerConfirmedVersion != nil && *r.SellerConfirmedVersion == r.OfferVersion
+		if (user.ID == r.Buyer.ID && buyerConfirmed) || (user.ID == r.Seller.ID && sellerConfirmed) {
+			return apperr.Conflict("You already confirmed this offer.")
+		}
+		if !buyerConfirmed && !sellerConfirmed && (r.OfferBy == nil || *r.OfferBy == user.ID) {
+			return apperr.Forbidden("The other side must accept your offer first.")
+		}
+
+		live, err := s.store.LiveHolds(ctx, id, len(lines))
+		if err != nil {
+			return err
+		}
+		if !live {
+			return transactions.ErrOfferRanOut
+		}
+		if err := s.store.Confirm(ctx, r, user.ID); err != nil {
+			return err
+		}
+
+		other := r.Seller.ID
+		if user.ID == other {
+			other = r.Buyer.ID
+		}
+		if !buyerConfirmed && !sellerConfirmed {
+			transactionID, err = s.trades.BeginOffer(ctx, r.Seller.ID, r.Buyer.ID, id, r.OfferVersion, lines)
+			if err != nil {
+				return err
+			}
+
+			return s.notes.Notify(
+				ctx,
+				other,
+				notifications.RequestAccepted,
+				"Please confirm the offer",
+				"They accepted this offer. Please confirm to complete the deal.",
+				"/market/"+id,
+			)
+		}
+
+		transactionID, err = s.trades.CompleteOffer(
+			ctx,
+			r.Seller.ID,
+			r.Buyer.ID,
+			id,
+			r.OfferVersion,
+			lines,
+		)
 		if err != nil {
 			return err
 		}
@@ -165,7 +229,7 @@ func (s *Service) Accept(ctx context.Context, user auth.User, id string) (string
 		body := fmt.Sprintf("Your offer for %s has been accepted. "+
 			"The transaction is complete.", name)
 
-		return s.notes.Notify(ctx, r.Seller.ID, notifications.RequestAccepted,
+		return s.notes.Notify(ctx, other, notifications.RequestAccepted,
 			"Offer accepted!", body, "/market/"+id)
 	})
 
@@ -198,7 +262,7 @@ var moves = map[string]move{
 		actor: "seller", from: []string{StatusOffered}, to: StatusPending,
 		denied: "Only the seller can withdraw an offer.", wrong: "There is no active offer to withdraw.",
 		kind: notifications.RequestCancelled, title: "Offer withdrawn",
-		body: "The seller withdrew their offer for %s. Negotiation continues.",
+		body: "The offer for %s was withdrawn. Negotiation continues.",
 		link: "/market/{id}",
 	},
 	"reject": {
@@ -206,7 +270,7 @@ var moves = map[string]move{
 		denied: "Only the seller can reject this request.",
 		wrong:  "This request cannot be rejected in its current state.",
 		kind:   notifications.RequestRejected, title: "Request rejected",
-		body: "Your request for %s was not accepted.", link: "/market/outgoing",
+		body: "The request for %s was rejected.", link: "/market/{id}",
 	},
 	"cancel": {
 		actor: "buyer", from: []string{StatusPending, StatusOffered}, to: StatusCancelled,
@@ -237,6 +301,26 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 			actor, other = r.Buyer, r.Seller
 		}
 
+		if action == "decline" && r.OfferBy != nil && *r.OfferBy == user.ID {
+			return apperr.Forbidden("Only the other side can decline your offer.")
+		}
+
+		if action == "withdraw" && r.OfferBy != nil && *r.OfferBy == user.ID {
+			actor.ID = user.ID
+			other = r.Buyer
+			if user.ID == r.Buyer.ID {
+				other = r.Seller
+			}
+		} else if action == "withdraw" {
+			return apperr.Forbidden("Only the offer maker can withdraw it.")
+		}
+		if (action == "reject" || action == "decline") && r.Status == StatusOffered && r.OfferBy != nil && *r.OfferBy != user.ID {
+			actor.ID = user.ID
+			other = r.Buyer
+			if user.ID == r.Buyer.ID {
+				other = r.Seller
+			}
+		}
 		if actor.ID != user.ID {
 			return apperr.Forbidden(step.denied)
 		}
@@ -246,6 +330,10 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 		}
 
 		if err := s.store.ReleaseHolds(ctx, id); err != nil {
+			return err
+		}
+
+		if err := s.store.ResetConfirmation(ctx, id); err != nil {
 			return err
 		}
 

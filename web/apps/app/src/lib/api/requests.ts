@@ -36,7 +36,7 @@ export function useOffer(id: string) {
   );
 }
 export function useAcceptRequest(id: string) {
-  return useWrite<void, T.TransactionCreated>(
+  return useWrite<{ offer_version: number }, T.TransactionCreated>(
     `/requests/${idPath(id)}/accept`,
     'POST',
     [

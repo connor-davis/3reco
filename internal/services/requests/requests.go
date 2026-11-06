@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
@@ -167,6 +169,7 @@ func (s *Service) page(
 type CreateItem struct {
 	MaterialID string `json:"material_id"`
 	StockID    string `json:"stock_id"`
+	Weight     string `json:"weight"`
 }
 
 // CreateInput is a new request: who sells, and which of their stock rows.
@@ -211,10 +214,40 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 			return err
 		}
 
-		body := fmt.Sprintf("Someone is interested in your %s.", summary(r.Items))
+		slices.SortFunc(r.Items, func(a, b store.Item) int {
+			return strings.Compare(a.MaterialID, b.MaterialID)
+		})
+
+		var terms []string
+		for _, item := range r.Items {
+			held, err := s.store.ReserveHold(
+				ctx,
+				r,
+				item.MaterialID,
+				*item.RequestedWeight,
+				offerHoldLifetime,
+			)
+			if err != nil {
+				return err
+			}
+
+			if !held {
+				return apperr.Conflict("Insufficient available stock for this request.")
+			}
+
+			term := fmt.Sprintf(
+				"%s: %s kg at R%s/kg",
+				item.MaterialName,
+				*item.RequestedWeight,
+				*item.RequestedPrice,
+			)
+			terms = append(terms, term)
+		}
+
+		body := strings.Join(terms, "; ")
 
 		return s.notes.Notify(ctx, in.SellerID, notifications.RequestReceived,
-			"New request received", body, "/market/incoming")
+			"New request received", body, "/market/"+id)
 	})
 	if err != nil {
 		return "", err
@@ -253,19 +286,17 @@ func (s *Service) checkListed(ctx context.Context, in CreateInput) ([]store.NewI
 		}
 
 		seenStock[item.StockID], seenMaterial[material] = true, true
-		items = append(items, store.NewItem{MaterialID: material, StockID: item.StockID})
+		line := transactions.SaleItem{MaterialID: material, Weight: item.Weight, Price: "0"}
+		if err := transactions.CheckItems([]transactions.SaleItem{line}); err != nil {
+			return nil, err
+		}
+
+		items = append(items, store.NewItem{
+			MaterialID: material, StockID: item.StockID, Weight: item.Weight,
+		})
 	}
 
 	return items, nil
-}
-
-// summary names what a request is about: the material, or a count.
-func summary(items []store.Item) string {
-	if len(items) == 1 {
-		return items[0].MaterialName
-	}
-
-	return fmt.Sprintf("%d materials", len(items))
 }
 
 // firstName is the material the old app named in its messages.

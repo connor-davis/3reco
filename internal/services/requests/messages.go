@@ -71,7 +71,7 @@ func (s *Service) Send(
 			return err
 		}
 
-		if r.Status != StatusPending {
+		if r.Status != StatusPending && r.Status != StatusOffered {
 			return apperr.Conflict("Cannot send messages on a closed request.")
 		}
 

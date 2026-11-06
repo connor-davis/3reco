@@ -80,7 +80,10 @@ func (h *Handler) list(kind string) fiber.Handler {
 }
 
 func filterOf(c fiber.Ctx) svc.ListFilter {
-	return svc.ListFilter{Q: c.Query("q"), Type: c.Query("type"), From: c.Query("from"), To: c.Query("to")}
+	return svc.ListFilter{
+		Status: c.Query("status"), Q: c.Query("q"), Type: c.Query("type"),
+		From: c.Query("from"), To: c.Query("to"),
+	}
 }
 
 // totals sums the whole filtered list of one kind (mine, purchases, sales).

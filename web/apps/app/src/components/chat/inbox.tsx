@@ -71,7 +71,7 @@ export function Inbox({
   ].sort((a, b) => b.activity_at.localeCompare(a.activity_at));
 
   return (
-    <div className="flex h-full flex-col gap-4 px-5 pt-6">
+    <div className="flex h-full min-w-0 flex-col gap-4 px-5 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Messages</h1>
         {!admin && (
@@ -101,7 +101,10 @@ export function Inbox({
           { value: 'offers', label: 'Offers' },
         ]}
       />
-      <div ref={scroll} className="min-h-0 flex-1 overflow-y-auto pb-4">
+      <div
+        ref={scroll}
+        className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto pb-4"
+      >
         <DataState
           query={{ ...query, isError: query.isLoadingError }}
           isEmpty={!threads.length}
@@ -118,7 +121,7 @@ export function Inbox({
           }
           skeleton={<RowsSkeleton rows={6} />}
         >
-          <ul className="-mx-3 space-y-1 px-2">
+          <ul className="min-w-0 space-y-1 px-1">
             {threads.map((thread) => (
               <li key={thread.request_id}>
                 <Link

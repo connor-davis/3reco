@@ -70,6 +70,10 @@ func (s *Store) Document(ctx context.Context, id string) (Document, error) {
 		return out, err
 	}
 
+	if trade.Status != "complete" {
+		return out, ErrNotFound
+	}
+
 	var sellerJSON, buyerJSON []byte
 	var anonymised bool
 	err = s.db.Q(ctx).QueryRow(ctx, `SELECT COALESCE(t.invoice_key,''),t.anonymised_at IS NOT NULL,
@@ -135,7 +139,7 @@ func (s *Store) open(contact *Contact) error {
 func (s *Store) LockInvoice(ctx context.Context, id string) (string, error) {
 	var key string
 	err := s.db.Q(ctx).QueryRow(ctx,
-		`SELECT COALESCE(invoice_key,'') FROM transactions WHERE id=$1 FOR UPDATE`, id).Scan(&key)
+		`SELECT COALESCE(invoice_key,'') FROM transactions WHERE id=$1 AND status='complete' FOR UPDATE`, id).Scan(&key)
 
 	return key, err
 }
@@ -159,7 +163,7 @@ func (s *Store) ExportIDs(
 	var lastID string
 	for {
 		rows, err := s.db.Q(ctx).Query(ctx, `SELECT t.id,t.created_at FROM transactions t
-			WHERE (`+scopeSQL[scope]+`) AND ($2='' OR t.type=$2)
+			WHERE t.status='complete' AND (`+scopeSQL[scope]+`) AND ($2='' OR t.type=$2)
 			AND ($3::timestamptz IS NULL OR `+database.EffectiveDate("t")+` >= $3)
 			AND ($4::timestamptz IS NULL OR `+database.EffectiveDate("t")+` <= $4)
 			AND ($5::timestamptz IS NULL OR (t.created_at,t.id)<($5,$6))

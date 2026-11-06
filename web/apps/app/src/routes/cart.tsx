@@ -56,7 +56,7 @@ function CartPage() {
     <>
       <PageHeader
         title="Your cart"
-        description="Choose a store to open its saved cart. The seller sets the final weights and prices in an offer."
+        description="Choose a store to open its saved cart. Review quantities before sending your request."
         actions={
           <LinkButton to="/market" variant="outline">
             Keep browsing
@@ -232,9 +232,10 @@ function CartForm({
         sent.current = (
           await create.mutateAsync({
             seller_id: sellerId,
-            items: clean.map(({ material_id, stock_id }) => ({
+            items: clean.map(({ material_id, stock_id, weight }) => ({
               material_id,
               stock_id,
+              weight,
             })),
           })
         ).id;
@@ -286,8 +287,8 @@ function CartForm({
       </CardHeader>
       <CardContent>
         <p className="mb-4 text-sm text-muted-foreground">
-          Quantities below are draft estimates for this visit. The cart saves
-          materials; the seller sets final quantities in an offer.
+          Your cart keeps these quantities. Sending your request reserves the
+          stock for 48 hours while you agree on the deal.
         </p>
         <form
           id="cart-form"

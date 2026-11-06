@@ -43,7 +43,7 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
 	cartPath := "/api/cart?seller_id=" + w.seller.id
 	status(t, w.buyer.c.Do("PUT", cartPath, map[string]any{
-		"items": []map[string]any{{"stock_id": w.stock, "material_id": w.material}},
+		"items": []map[string]any{{"stock_id": w.stock, "material_id": w.material, "weight": "2.5"}},
 	}), 200)
 
 	tradeOffer(t, w.seller, id, w.material, "40.125", "9")
@@ -59,7 +59,7 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	listing := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200)
 	holdDecimal(t, listing.Body["weight"], "59.875")
 	cart := status(t, w.buyer.c.Do("GET", cartPath, nil), 200)
-	holdDecimal(t, tradeItems(cart)[0].(map[string]any)["weight"], "59.875")
+	holdDecimal(t, tradeItems(cart)[0].(map[string]any)["weight"], "2.5")
 
 	stock := status(t, w.seller.c.Do("GET", "/api/stock/"+w.stock, nil), 200)
 	holdDecimal(t, stock.Body["weight"], "100")
@@ -68,7 +68,7 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	list := pageItems(t, status(t, w.seller.c.Do("GET", "/api/stock", nil), 200))
 	holdDecimal(t, list[0]["available_weight"], "59.875")
 	request := status(t, w.buyer.c.Do("GET", "/api/requests/"+id, nil), 200)
-	holdDecimal(t, tradeItems(request)[0].(map[string]any)["available_weight"], "59.875")
+	holdDecimal(t, tradeItems(request)[0].(map[string]any)["available_weight"], "100")
 
 	// A separate buyer's hold must survive this acceptance.
 	other := tradeNewUser(t, w.app, "business")
@@ -85,6 +85,7 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 409)
+	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	holdCount(t, w, "consumed", "1")
 	holdCount(t, w, "active", "1")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "59.875")
@@ -105,7 +106,7 @@ func TestStockHoldsRacingOffers(t *testing.T) {
 		go func() {
 			<-start
 			results <- w.seller.c.Do("POST", "/api/requests/"+id+"/offer", map[string]any{
-				"items": []map[string]any{tradeLine(w.material, "100", "9")},
+				"items": []map[string]any{tradeLine(w.material, "99", "9")},
 			})
 		}()
 	}
@@ -128,7 +129,7 @@ func TestStockHoldsRacingOffers(t *testing.T) {
 		t.Fatalf("success=%d conflict=%d", success, conflict)
 	}
 
-	holdCount(t, w, "active", "1")
+	holdCount(t, w, "active", "2")
 }
 
 func TestStockHoldsMultiItemRollback(t *testing.T) {
@@ -137,7 +138,7 @@ func TestStockHoldsMultiItemRollback(t *testing.T) {
 	stock := tradeStock(t, w.app, w.seller.id, material, "10", "8")
 	result := status(t, w.buyer.c.Do("POST", "/api/requests", map[string]any{
 		"seller_id": w.seller.id,
-		"items":     []map[string]any{{"stock_id": w.stock}, {"stock_id": stock}},
+		"items":     []map[string]any{{"stock_id": w.stock, "weight": "1"}, {"stock_id": stock, "weight": "1"}},
 	}), 200)
 	id := result.Body["id"].(string)
 	path := "/api/requests/" + id + "/offer"
@@ -152,7 +153,7 @@ func TestStockHoldsMultiItemRollback(t *testing.T) {
 
 	// The invalid line sorts last, after the first line acquired its hold.
 	status(t, w.seller.c.Do("POST", path, map[string]any{"items": badLines}), 409)
-	holdCount(t, w, "active", "0")
+	holdCount(t, w, "active", "2")
 	if got := tradeText(t, w.app, `SELECT status FROM transaction_requests WHERE id=$1`, id); got != "pending" {
 		t.Fatalf("failed offer status: %s", got)
 	}
@@ -162,10 +163,10 @@ func TestStockHoldsMultiItemRollback(t *testing.T) {
 	}}), 200)
 	holdCount(t, w, "active", "2")
 
-	// A failed edit preserves the whole previous offer and both reservations.
-	status(t, w.seller.c.Do("POST", path, map[string]any{"items": badLines}), 409)
+	// A failed counter preserves the whole previous offer and both reservations.
+	status(t, w.buyer.c.Do("POST", path, map[string]any{"items": badLines}), 409)
 	holdCount(t, w, "active", "2")
-	holdCount(t, w, "released", "0")
+	holdCount(t, w, "released", "2")
 	holdDecimal(t, tradeText(t, w.app, `SELECT sum(weight)::text FROM stock_holds
 		WHERE request_id=$1 AND status='active'`, id), "70")
 }
@@ -176,9 +177,10 @@ func TestStockHoldsReleaseAndReplace(t *testing.T) {
 			w := newTradeWorld(t)
 			id := tradeRequest(t, w.buyer, w.seller, w.stock)
 			tradeOffer(t, w.seller, id, w.material, "90", "9")
+			tradeOffer(t, w.buyer, id, w.material, "20", "9")
 			tradeOffer(t, w.seller, id, w.material, "20", "9")
 			holdCount(t, w, "active", "1")
-			holdCount(t, w, "released", "1")
+			holdCount(t, w, "released", "3")
 			holdDecimal(t, status(t, w.seller.c.Do("GET", "/api/stock/"+w.stock, nil), 200).
 				Body["available_weight"], "80")
 
@@ -227,7 +229,7 @@ func TestStockHoldsExpiry(t *testing.T) {
 		}
 	}
 
-	holdCount(t, w, "released", "1")
+	holdCount(t, w, "released", "2")
 	if got := tradeText(t, w.app, `SELECT status FROM transaction_requests WHERE id=$1`, id); got != "pending" {
 		t.Fatalf("expiry status: %s", got)
 	}
@@ -299,6 +301,7 @@ func TestStockHoldsProtectEditsAndDirectSales(t *testing.T) {
 
 	holdCount(t, w, "active", "1")
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	holdCount(t, w, "consumed", "1")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "0")
 }
@@ -310,16 +313,17 @@ func TestStockHoldsAcceptRollback(t *testing.T) {
 	tradeExec(t, w.app, `ALTER TABLE notifications ADD CONSTRAINT fail_accept_note
 		CHECK (title<>'Offer accepted!')`)
 
-	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 500)
+	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 500)
 	holdCount(t, w, "active", "1")
 	holdCount(t, w, "consumed", "0")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "100")
-	if got := tradeText(t, w.app, `SELECT count(*)::text FROM transactions`); got != "0" {
-		t.Fatalf("failed acceptance left transactions: %s", got)
+	if got := tradeText(t, w.app, `SELECT count(*)::text FROM transactions`); got != "1" {
+		t.Fatalf("failed settlement should retain one pending transaction: %s", got)
 	}
 
 	tradeExec(t, w.app, `ALTER TABLE notifications DROP CONSTRAINT fail_accept_note`)
-	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	holdCount(t, w, "consumed", "1")
 }
 
@@ -361,7 +365,7 @@ func TestStockHoldsExpirySkipsLocksAndRollsBack(t *testing.T) {
 	}
 
 	holdCount(t, w, "active", "1")
-	holdCount(t, w, "released", "0")
+	holdCount(t, w, "released", "1")
 	if got := tradeText(t, w.app, `SELECT status FROM transaction_requests WHERE id=$1`, id); got != "offered" {
 		t.Fatalf("failed expiry changed status: %s", got)
 	}
@@ -373,7 +377,7 @@ func TestStockHoldsExpirySkipsLocksAndRollsBack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	holdCount(t, w, "released", "1")
+	holdCount(t, w, "released", "2")
 }
 
 func TestStockHoldsRealtime(t *testing.T) {
