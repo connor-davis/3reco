@@ -214,12 +214,20 @@ export interface SaleItem {
   price: Decimal;
 }
 export interface Message {
+  system: boolean;
   id: string;
   sender_id: string;
   content: string;
   created_at: string;
 }
 export interface Thread {
+  buyer: Party;
+  seller: Party;
+  offer_by: string | null;
+  offer_version: number;
+  buyer_confirmed_version: number | null;
+  seller_confirmed_version: number | null;
+
   request_id: string;
   status: RequestStatus;
   other: Party;
@@ -228,10 +236,14 @@ export interface Thread {
   activity_at: string;
 }
 export interface AdminThread {
-  request_id: string;
-  status: RequestStatus;
   buyer: Party;
   seller: Party;
+  offer_by: string | null;
+  offer_version: number;
+  buyer_confirmed_version: number | null;
+  seller_confirmed_version: number | null;
+  request_id: string;
+  status: RequestStatus;
   latest_message: Message | null;
   activity_at: string;
 }

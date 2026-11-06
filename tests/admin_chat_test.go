@@ -18,8 +18,8 @@ func TestAdminReadsAnyChatButChangesNothing(t *testing.T) {
 	read := admin.c.Do("GET", path+"/messages", nil)
 	tradeWant(t, "admin reads chat", read, 200)
 
-	if n := len(tradeItems(read)); n != 1 {
-		t.Fatalf("admin sees %d messages, want 1: %s", n, read.Raw)
+	if n := len(tradeItems(read)); n != 2 {
+		t.Fatalf("admin sees %d messages, want 2: %s", n, read.Raw)
 	}
 
 	tradeWant(t, "admin reads request", admin.c.Do("GET", path, nil), 200)
@@ -46,8 +46,8 @@ func TestAdminReadsAnyChatButChangesNothing(t *testing.T) {
 	rows := tradeItems(w.seller.c.Do("GET", "/api/messages/inbox", nil))
 	row, _ := rows[0].(map[string]any)
 
-	if row["unread_count"] != float64(1) {
-		t.Errorf("seller unread %v, want 1", row["unread_count"])
+	if row["unread_count"] != float64(2) {
+		t.Errorf("seller unread %v, want 2", row["unread_count"])
 	}
 
 	if n := len(tradeItems(admin.c.Do("GET", "/api/messages/inbox", nil))); n != 0 {

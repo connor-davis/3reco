@@ -250,7 +250,11 @@ export function Conversation({ request }: { request: TradeRequest }) {
           </div>
           <DataState
             query={{ ...history, isError: history.isLoadingError }}
-            isEmpty={!messages.length}
+            isEmpty={
+              !messages.length &&
+              request.status !== 'offered' &&
+              request.status !== 'accepted'
+            }
             icon={MessageSquare}
             emptyTitle="Start the conversation"
             emptyText="Ask about the material and agree on the details."
@@ -261,27 +265,38 @@ export function Conversation({ request }: { request: TradeRequest }) {
               aria-label={`Conversation with ${other.name}`}
               className="space-y-4"
             >
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    'w-fit max-w-[min(85%,75ch)] rounded-2xl px-4 py-3 text-sm shadow-xs',
-                    message.sender_id === user?.id
-                      ? 'ml-auto bg-outgoing'
-                      : 'bg-card'
-                  )}
-                >
-                  <p className="break-words whitespace-pre-wrap">
+              {messages.map((message) =>
+                message.system ? (
+                  <p
+                    key={message.id}
+                    aria-label="System event"
+                    className="py-2 text-center text-sm text-muted-foreground"
+                  >
+                    <span className="font-medium">System · </span>
                     {message.content}
                   </p>
-                  <time
-                    dateTime={message.created_at}
-                    className="mt-1 block text-right text-xs text-muted-foreground"
+                ) : (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      'w-fit max-w-[min(85%,75ch)] rounded-2xl px-4 py-3 text-sm shadow-xs',
+                      message.sender_id === user?.id
+                        ? 'ml-auto bg-outgoing'
+                        : 'bg-card'
+                    )}
                   >
-                    {formatTime(message.created_at)}
-                  </time>
-                </div>
-              ))}
+                    <p className="break-words whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                    <time
+                      dateTime={message.created_at}
+                      className="mt-1 block text-right text-xs text-muted-foreground"
+                    >
+                      {formatTime(message.created_at)}
+                    </time>
+                  </div>
+                )
+              )}
             </div>
           </DataState>
           {request.status === 'offered' && (

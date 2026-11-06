@@ -18,12 +18,12 @@ export function useReviewSummary(sellerId: string) {
     !!sellerId
   );
 }
-export function useReviewable(sellerId: string) {
+export function useReviewable(sellerId: string, enabled = true) {
   return useResource<{ items: (T.Reviewable & { summary: string })[] }>(
     ['reviews', 'reviewable', sellerId],
     `/reviews/reviewable${queryString({ seller_id: sellerId })}`,
     true,
-    !!sellerId
+    !!sellerId && enabled
   );
 }
 export function useCreateReview(transactionId: string) {

@@ -90,6 +90,7 @@ test('messages append by actual time, deduplicate page overlap and retain input 
 function messageHooks(api, live = []) {
   return load('../../lib/api/messages.ts', {
     './resource': { idPath: encodeURIComponent },
+    '../access': { canOpen: () => true },
     './paging': {
       queryString(values) {
         const query = new URLSearchParams();
@@ -194,6 +195,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
   ];
   const component = new Proxy({}, { get: (_, name) => name });
   const deps = {
+    sonner: { toast: { success: () => {} } },
     'react/jsx-runtime': jsx,
     react: {
       useEffect: (effect) => effects.push(effect),

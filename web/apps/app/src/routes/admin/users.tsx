@@ -274,13 +274,11 @@ const privacyKinds: Record<string, string> = {
   admin_full_view: 'Full identifier viewed',
 };
 
-/** A name and role, with the raw id tucked underneath for support. */
+/** Privacy event rows identify people by name and role. */
 function PartyCell({
-  id,
   name,
   role,
 }: {
-  id: string;
   name: string | null;
   role: string | null;
 }) {
@@ -292,7 +290,6 @@ function PartyCell({
           <span className="font-normal text-muted-foreground"> · {role}</span>
         )}
       </span>
-      <span className="text-xs break-all text-muted-foreground">ID {id}</span>
     </span>
   );
 }
@@ -311,7 +308,6 @@ function PrivacyEvents() {
       header: 'Done by',
       cell: ({ row }) => (
         <PartyCell
-          id={row.original.actor_id}
           name={row.original.actor_name}
           role={row.original.actor_role}
         />
@@ -323,7 +319,6 @@ function PrivacyEvents() {
       cell: ({ row }) =>
         row.original.subject_id ? (
           <PartyCell
-            id={row.original.subject_id}
             name={row.original.subject_name}
             role={row.original.subject_role}
           />
@@ -359,14 +354,9 @@ function PrivacyEvents() {
                 <p className="font-medium">
                   {privacyKinds[event.kind] ?? event.kind}
                 </p>
-                <PartyCell
-                  id={event.actor_id}
-                  name={event.actor_name}
-                  role={event.actor_role}
-                />
+                <PartyCell name={event.actor_name} role={event.actor_role} />
                 {event.subject_id ? (
                   <PartyCell
-                    id={event.subject_id}
                     name={event.subject_name}
                     role={event.subject_role}
                   />

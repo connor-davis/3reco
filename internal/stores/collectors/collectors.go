@@ -103,18 +103,20 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 }
 
 // List retains the legacy managed directory; services redact each row by scope.
-func (records *Store) List(ctx context.Context, query paging.Query) ([]Collector, error) {
+func (records *Store) List(ctx context.Context, query paging.Query, phone string) ([]Collector, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT `+columns+` FROM collectors
  WHERE ($1='' OR (created_at,id)<($2,$1))
- AND ($4='' OR name ILIKE $4 OR email ILIKE $4 OR phone ILIKE $4 OR normalized_phone ILIKE $4
- OR city ILIKE $4 OR province ILIKE $4)
+ AND (($5 <> '' AND normalized_phone = $5) OR ($5 = '' AND
+ ($4='' OR name ILIKE $4 OR email ILIKE $4 OR phone ILIKE $4 OR normalized_phone ILIKE $4
+ OR city ILIKE $4 OR province ILIKE $4)))
  ORDER BY created_at DESC,id DESC LIMIT NULLIF($3,0)`,
 		query.ID,
 		query.At,
 		query.Size(),
 		query.Like,
+		phone,
 	)
 	if err != nil {
 		return nil, err

@@ -365,6 +365,7 @@ test('Message store chooses available stock for the quantity dialog without crea
         }),
       },
       '@/lib/api/reviews': {
+        useReviewable: () => ({ data: { items: [] }, isSuccess: true }),
         useReviews: () => ({ data: { items: [] } }),
         useReviewSummary: () => ({ data: { count: 0, average: null } }),
         useDeleteReview: () => ({}),

@@ -1,5 +1,5 @@
 import { lineCents } from '@/lib/format';
-import type { TradeRequest, Message } from '@/lib/api/types';
+import type { TradeRequest, Message, Thread } from '@/lib/api/types';
 
 export function requestLabel(request: TradeRequest, userId?: string): string {
   if (request.status !== 'offered') return request.status;
@@ -17,6 +17,26 @@ export function requestLabel(request: TradeRequest, userId?: string): string {
     return 'Waiting for the other party to confirm';
   if (other === request.offer_version) return 'Waiting for you to confirm';
   return request.offer_by === userId ? 'Offer sent' : 'Offer received';
+}
+
+export function threadSummary(thread: Thread): string {
+  if (thread.status === 'cancelled' || thread.status === 'rejected')
+    return 'Closed';
+  if (thread.status === 'accepted') return 'Complete';
+  if (thread.status !== 'offered') return 'Awaiting offer';
+  const author =
+    thread.offer_by === thread.buyer.id
+      ? thread.buyer.name
+      : thread.seller.name;
+  const waiting = [
+    thread.buyer_confirmed_version !== thread.offer_version
+      ? `${thread.buyer.name} (buyer)`
+      : null,
+    thread.seller_confirmed_version !== thread.offer_version
+      ? `${thread.seller.name} (seller)`
+      : null,
+  ].filter(Boolean);
+  return `Offer by ${author} · ${waiting.length ? `Waiting for ${waiting.join(' and ')} to confirm` : 'Both sides confirmed'}`;
 }
 
 export function counterpartyOf(request: TradeRequest, userId?: string) {

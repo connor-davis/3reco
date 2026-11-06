@@ -25,8 +25,8 @@ func TestRequestMessagesSendReadAndInbox(t *testing.T) {
 	list := w.seller.c.Do("GET", "/api/requests/"+id+"/messages", nil)
 	items := tradeItems(list)
 
-	if len(items) != 2 {
-		t.Fatalf("messages: %d, want 2: %s", len(items), list.Raw)
+	if len(items) != 3 {
+		t.Fatalf("messages: %d, want 3 including the request event: %s", len(items), list.Raw)
 	}
 
 	first, _ := items[0].(map[string]any)
@@ -34,7 +34,7 @@ func TestRequestMessagesSendReadAndInbox(t *testing.T) {
 		t.Errorf("first message %v, want the newest seller message", first)
 	}
 
-	// The seller sees one unread message; reading clears it.
+	// The seller sees the request event and buyer message; reading clears both.
 	inbox := w.seller.c.Do("GET", "/api/messages/inbox", nil)
 
 	rows := tradeItems(inbox)
@@ -43,8 +43,8 @@ func TestRequestMessagesSendReadAndInbox(t *testing.T) {
 	}
 
 	row, _ := rows[0].(map[string]any)
-	if row["unread_count"] != float64(1) || row["request_id"] != id {
-		t.Errorf("inbox row %v, want 1 unread on %s", row, id)
+	if row["unread_count"] != float64(2) || row["request_id"] != id {
+		t.Errorf("inbox row %v, want 2 unread on %s", row, id)
 	}
 
 	tradeWant(t, "mark read", w.seller.c.Do("POST", "/api/requests/"+id+"/messages/read", nil), 200)
@@ -139,8 +139,8 @@ func TestRequestMessagesLeak(t *testing.T) {
 		}
 	}
 
-	if n := tradeText(t, w.app, `SELECT count(*)::text FROM transaction_request_messages`); n != "1" {
-		t.Errorf("%s messages stored, want only the buyer's 1", n)
+	if n := tradeText(t, w.app, `SELECT count(*)::text FROM transaction_request_messages`); n != "2" {
+		t.Errorf("%s messages stored, want the request event and buyer's message", n)
 	}
 }
 
@@ -157,4 +157,58 @@ func TestRequestMessageRealtime(t *testing.T) {
 	// Wait for the event first, then check that the stranger heard nothing.
 	socks[0].hear("request", id)
 	socks[1].quiet("outsider")
+}
+
+func TestFreshRequestSystemEventAndOfferInbox(t *testing.T) {
+	w := newTradeWorld(t)
+	outsider := tradeNewUser(t, w.app, "business")
+	tradeExec(t, w.app, `UPDATE users SET business_name='Greenline' WHERE id=$1`, w.buyer.id)
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	path := "/api/requests/" + id + "/messages"
+
+	items := tradeItems(w.seller.c.Do("GET", path, nil))
+	if len(items) != 1 {
+		t.Fatalf("fresh request messages: %v", items)
+	}
+
+	event := items[0].(map[string]any)
+	if event["system"] != true || !strings.HasPrefix(event["content"].(string), "Greenline requested ") {
+		t.Fatalf("request was not a named system event: %v", event)
+	}
+
+	for _, party := range []tradeUser{w.buyer, w.seller} {
+		row := tradeItems(party.c.Do("GET", "/api/messages/inbox", nil))[0].(map[string]any)
+		want := float64(0)
+		if party.id == w.seller.id {
+			want = 1
+		}
+
+		if row["unread_count"] != want || row["latest_message"].(map[string]any)["system"] != true {
+			t.Fatalf("fresh inbox for %s: %v", party.id, row)
+		}
+	}
+
+	tradeWant(t, "outsider event read", outsider.c.Do("GET", path, nil), 404)
+	tradeWant(t, "outsider event receipt", outsider.c.Do("POST", path+"/read", nil), 404)
+	tradeWant(t, "read event", w.seller.c.Do("POST", path+"/read", nil), 200)
+	row := tradeItems(w.seller.c.Do("GET", "/api/messages/inbox", nil))[0].(map[string]any)
+	if row["unread_count"] != float64(0) {
+		t.Fatalf("read event still unread: %v", row)
+	}
+
+	// A caller cannot disguise a typed message as a system event.
+	tradeWant(t, "typed message", w.buyer.c.Do("POST", path,
+		map[string]any{"content": "hello", "system": true}), 200)
+	latest := tradeItems(w.seller.c.Do("GET", path, nil))[0].(map[string]any)
+	if latest["system"] != false {
+		t.Fatalf("caller forged system event: %v", latest)
+	}
+
+	tradeOffer(t, w.seller, id, w.material, "40", "9")
+	tradeWant(t, "buyer confirms", w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+	row = tradeItems(w.seller.c.Do("GET", "/api/messages/inbox", nil))[0].(map[string]any)
+	if row["offer_by"] != w.seller.id || row["buyer_confirmed_version"] != row["offer_version"] ||
+		row["seller_confirmed_version"] == row["offer_version"] {
+		t.Fatalf("missing inbox offer/confirmation state: %v", row)
+	}
 }

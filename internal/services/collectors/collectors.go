@@ -146,7 +146,14 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		return nil, apperr.Forbidden("You cannot manage collectors.")
 	}
 
-	items, err := service.store.List(ctx, query)
+	// Only phone-shaped searches are normalized; names and partial searches stay unchanged.
+	phone := ""
+	raw := strings.Trim(query.Like, "%")
+	if strings.Trim(raw, "+0123456789 ()-") == "" {
+		phone, _ = profile.Phone(raw)
+	}
+
+	items, err := service.store.List(ctx, query, phone)
 	if err != nil {
 		return nil, err
 	}

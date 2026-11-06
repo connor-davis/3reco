@@ -12,6 +12,7 @@ import { useThreadHistory } from '@/lib/api/messages';
 import { useAuth } from '@/lib/auth/use-auth';
 import { formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { threadSummary } from './helpers';
 
 export function Inbox({
   activeId,
@@ -161,9 +162,13 @@ export function Inbox({
                       </time>
                     </span>
                     <span className="block truncate text-sm text-muted-foreground">
+                      {thread.latest_message?.system && 'System · '}
                       {thread.latest_message?.content ?? 'New request'}
                     </span>
                     <StatusBadge status={thread.status} />
+                    <span className="block text-xs text-muted-foreground">
+                      {threadSummary(thread)}
+                    </span>
                   </span>
                   {thread.unread_count > 0 && (
                     <Badge aria-label={`${thread.unread_count} unread`}>
@@ -198,11 +203,14 @@ export function Inbox({
             Load more
           </Button>
         )}
-        {query.isSuccess && !query.hasNextPage && threads.length > 0 && (
-          <p className="py-4 text-center text-xs text-muted-foreground">
-            You're up to date.
-          </p>
-        )}
+        {query.isSuccess &&
+          !query.hasNextPage &&
+          threads.length > 0 &&
+          !threads.some((thread) => thread.unread_count > 0) && (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              End of list.
+            </p>
+          )}
       </div>
       <p className="-mx-5 border-t px-5 py-4 text-center text-xs text-muted-foreground">
         {admin
