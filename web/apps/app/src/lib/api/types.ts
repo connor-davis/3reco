@@ -1,6 +1,6 @@
 // Decimal values remain exact text throughout the client.
 export type Decimal = string;
-export type Role = 'admin' | 'staff' | 'business' | 'collector';
+export type Role = 'guest' | 'admin' | 'staff' | 'business' | 'collector';
 export type RequestStatus =
   'pending' | 'offered' | 'accepted' | 'rejected' | 'cancelled';
 export interface Ok {

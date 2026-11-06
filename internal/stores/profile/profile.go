@@ -5,6 +5,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
@@ -221,4 +223,22 @@ func (records *Store) Directory(ctx context.Context, query paging.Query) ([]Publ
 	}
 
 	return items, rows.Err()
+}
+
+// Finish marks the profile complete and, when role is not empty, gives a guest
+// that role. It changes nothing for anyone who is not a guest.
+func (records *Store) Finish(ctx context.Context, id, role string) error {
+	tag, err := records.db.Q(ctx).Exec(ctx, `
+		UPDATE users SET role = COALESCE(NULLIF($2, ''), role), profile_complete = true,
+			updated_at = now()
+		WHERE id = $1 AND NOT is_removed AND ($2 = '' OR role = 'guest')`, id, role)
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
 }

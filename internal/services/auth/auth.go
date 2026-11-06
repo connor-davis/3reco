@@ -37,6 +37,7 @@ const (
 
 // Roles a user can have.
 const (
+	RoleGuest     = "guest"
 	RoleAdmin     = "admin"
 	RoleStaff     = "staff"
 	RoleBusiness  = "business"
@@ -103,6 +104,7 @@ func (s *Service) SignUp(ctx context.Context, name, email, password, noticeVersi
 		var err error
 		user, err = s.store.CreateUser(ctx, store.NewUser{
 			Name: name, Email: email, PasswordHash: hash, NoticeVersion: noticeVersion,
+			Role: RoleGuest,
 		})
 
 		return err

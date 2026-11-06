@@ -64,7 +64,7 @@ type NewUser struct {
 	Name         string
 	Email        string
 	PasswordHash string
-	Role         string // empty for an ordinary sign-up
+	Role         string // empty is stored as guest
 	Verified     bool
 	// NoticeVersion is the privacy notice the person accepted; empty for
 	// accounts made by `admin create`.
@@ -89,7 +89,7 @@ func (s *Store) CreateUser(ctx context.Context, in NewUser) (User, error) {
 	_, err := s.db.Q(ctx).Exec(ctx, `
 		INSERT INTO users (id, email, email_verified, email_verified_at, password_hash, name, role,
 			agreed_to_terms)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'guest'), $8)`,
 		id, strings.ToLower(in.Email), in.Verified, verifiedAt, in.PasswordHash, in.Name, role,
 		in.NoticeVersion != "")
 	if _, dup := database.IsUnique(err); dup {

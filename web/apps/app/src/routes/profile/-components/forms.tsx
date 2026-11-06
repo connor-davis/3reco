@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/client';
 import { useUpdateProfile } from '@/lib/api/profile';
 import type { Profile } from '@/lib/api/types';
+import { tidyName } from '@/lib/names';
 import {
   bankSchema,
   businessSchema,
@@ -24,15 +25,22 @@ import {
   type PersonalValues,
 } from './schemas';
 
-type Props = { profile: Profile; onSaved?: () => void | Promise<void> };
+type Props = {
+  profile: Profile;
+  onSaved?: () => void | Promise<void>;
+  // In the setup pages: a Continue button, with no cancel and no toast.
+  wizard?: boolean;
+};
 
 function FormShell<T extends FieldValues>({
   form,
   onSave,
+  wizard,
   children,
 }: {
   form: UseFormReturn<T>;
   onSave: (values: T) => Promise<unknown>;
+  wizard?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -53,7 +61,7 @@ function FormShell<T extends FieldValues>({
               ])
             ) as T
           );
-          toast.success('Changes saved.');
+          if (!wizard) toast.success('Changes saved.');
         } catch (error) {
           if (error instanceof ApiError) {
             for (const [name, message] of Object.entries(error.fields ?? {})) {
@@ -81,34 +89,43 @@ function FormShell<T extends FieldValues>({
         </p>
       )}
       <div className="flex gap-2">
+        {!wizard && (
+          <Button
+            className="min-h-11"
+            type="button"
+            variant="outline"
+            disabled={form.formState.isSubmitting}
+            onClick={() => form.reset()}
+          >
+            Cancel changes
+          </Button>
+        )}
         <Button
-          className="min-h-11"
-          type="button"
-          variant="outline"
-          disabled={form.formState.isSubmitting}
-          onClick={() => form.reset()}
-        >
-          Cancel changes
-        </Button>
-        <Button
-          className="min-h-11"
+          className={wizard ? 'min-h-11 w-full' : 'min-h-11'}
           type="submit"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? 'Saving…' : 'Save changes'}
+          {form.formState.isSubmitting
+            ? 'Saving…'
+            : wizard
+              ? 'Continue'
+              : 'Save changes'}
         </Button>
       </div>
     </form>
   );
 }
 
-export function PersonalForm({ profile, onSaved }: Props) {
+export function PersonalForm({ profile, onSaved, wizard }: Props) {
   const save = useUpdateProfile();
   const form = useForm<PersonalValues>({
     resolver: zodResolver(personalSchema),
     defaultValues: {
-      first_name: profile.first_name,
-      last_name: profile.last_name,
+      // Older accounts only have a full name; split it to save typing.
+      first_name:
+        profile.first_name || (profile.name ?? '').split(' ')[0] || '',
+      last_name:
+        profile.last_name || (profile.name ?? '').split(' ').slice(1).join(' '),
       phone: profile.phone,
       id_number: '',
     },
@@ -116,10 +133,15 @@ export function PersonalForm({ profile, onSaved }: Props) {
   return (
     <FormShell
       form={form}
+      wizard={wizard}
       onSave={async ({ id_number, ...values }) => {
+        const first_name = tidyName(values.first_name);
+        const last_name = tidyName(values.last_name);
         await save.mutateAsync({
           ...values,
-          name: values.first_name + ' ' + values.last_name,
+          first_name,
+          last_name,
+          name: first_name + ' ' + last_name,
           ...(id_number ? { id_number } : {}),
         });
         await onSaved?.();
@@ -129,12 +151,14 @@ export function PersonalForm({ profile, onSaved }: Props) {
         control={form.control}
         name="first_name"
         label="First name"
+        personName
         autoComplete="given-name"
       />
       <TextField
         control={form.control}
         name="last_name"
         label="Last name"
+        personName
         autoComplete="family-name"
       />
       <TextField
@@ -159,7 +183,7 @@ export function PersonalForm({ profile, onSaved }: Props) {
   );
 }
 
-export function BusinessForm({ profile, onSaved }: Props) {
+export function BusinessForm({ profile, onSaved, wizard }: Props) {
   const save = useUpdateProfile();
   const form = useForm<BusinessValues>({
     resolver: zodResolver(businessSchema),
@@ -171,6 +195,7 @@ export function BusinessForm({ profile, onSaved }: Props) {
   return (
     <FormShell
       form={form}
+      wizard={wizard}
       onSave={async (values) => {
         await save.mutateAsync(values);
         await onSaved?.();
@@ -190,7 +215,7 @@ export function BusinessForm({ profile, onSaved }: Props) {
   );
 }
 
-export function PayoutForm({ profile, onSaved }: Props) {
+export function PayoutForm({ profile, onSaved, wizard }: Props) {
   const save = useUpdateProfile();
   const form = useForm<BankValues>({
     resolver: zodResolver(bankSchema),
@@ -206,6 +231,7 @@ export function PayoutForm({ profile, onSaved }: Props) {
   return (
     <FormShell
       form={form}
+      wizard={wizard}
       onSave={async ({ bank_account_number, ...values }) => {
         if (!bank_account_number && !profile.bank_account_number)
           throw new Error('Enter an account number.');
@@ -252,7 +278,7 @@ export function PayoutForm({ profile, onSaved }: Props) {
   );
 }
 
-export function LocationForm({ profile, onSaved }: Props) {
+export function LocationForm({ profile, onSaved, wizard }: Props) {
   const save = useUpdateProfile();
   const form = useForm<LocationValues>({
     resolver: zodResolver(locationSchema),
@@ -269,6 +295,7 @@ export function LocationForm({ profile, onSaved }: Props) {
   return (
     <FormShell
       form={form}
+      wizard={wizard}
       onSave={async ({ area_code, ...values }) => {
         await save.mutateAsync({ ...values, area_code: Number(area_code) });
         await onSaved?.();

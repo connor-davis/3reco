@@ -173,6 +173,9 @@ func New(r routes) *fiber.App {
 	// Every /api request may carry a cookie; this loads who it belongs to, once.
 	api.Use(middleware.Authenticate(r.Auth, cfg))
 
+	// A guest cannot use anything but their own profile until setup is done.
+	api.Use(middleware.RequireSetup)
+
 	r.AuthH.Register(api.Group("/auth"))
 	r.Socket.Register(api)
 	r.Trade.register(api)

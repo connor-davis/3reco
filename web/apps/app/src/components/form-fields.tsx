@@ -6,6 +6,7 @@ import {
   type FieldValues,
   type Path,
 } from 'react-hook-form';
+import { tidyName } from '@/lib/names';
 import type { CounterProps } from '@/lib/quantity';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -99,13 +100,15 @@ function FieldFrame({
 type TextFieldProps<T extends FieldValues> = FieldProps<T> &
   Omit<ComponentProps<typeof Input>, 'name' | 'value' | 'onChange' | 'onBlur'>;
 
+/** `personName` fixes ALL CAPS or all lower case when the person leaves the field. */
 export function TextField<T extends FieldValues>({
   control,
   name,
   label,
   description,
+  personName,
   ...inputProps
-}: TextFieldProps<T>) {
+}: TextFieldProps<T> & { personName?: boolean }) {
   const ids = useFieldIds();
 
   return (
@@ -119,7 +122,17 @@ export function TextField<T extends FieldValues>({
           description={description}
           state={fieldState}
         >
-          {(aria) => <Input {...field} {...aria} {...inputProps} />}
+          {(aria) => (
+            <Input
+              {...field}
+              {...aria}
+              {...inputProps}
+              onBlur={() => {
+                if (personName) field.onChange(tidyName(field.value));
+                field.onBlur();
+              }}
+            />
+          )}
         </FieldFrame>
       )}
     />

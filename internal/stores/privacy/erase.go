@@ -136,7 +136,7 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) (string, error)
 			name = 'Removed account', business_name = 'Removed account',
 			email = NULL, email_verified = false, email_verified_at = NULL,
 			password_hash = NULL, image = NULL, avatar_key = NULL, phone = NULL,
-			normalized_phone = NULL, role = NULL, profile_complete = false,
+			normalized_phone = NULL, role = 'guest', profile_complete = false,
 			first_name = NULL, last_name = NULL,
 			id_number = NULL, business_registration_number = NULL,
 			bank_account_holder_name = NULL, bank_name = NULL, bank_account_number = NULL,

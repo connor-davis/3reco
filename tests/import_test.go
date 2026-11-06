@@ -189,8 +189,8 @@ func TestImportOldPasswordSignsIn(t *testing.T) {
 		t.Errorf("auth-only login: %d %s", res.Status, res.Raw)
 	}
 
-	if got := tradeText(t, app, `SELECT coalesce(role,'none') || profile_complete::text
-		FROM users WHERE id = $1`, fxAuthOnly); got != "nonefalse" {
+	if got := tradeText(t, app, `SELECT role || profile_complete::text
+		FROM users WHERE id = $1`, fxAuthOnly); got != "guestfalse" {
 		t.Errorf("auth-only user: %s", got)
 	}
 }

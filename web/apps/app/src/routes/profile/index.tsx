@@ -4,7 +4,7 @@ import { UserRound } from 'lucide-react';
 import { Guarded } from '@/components/access-guard';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { AvatarDialog } from '@/components/dialogs/avatar-dialog';
-import { ProfileWizard } from '@/components/dialogs/profile-wizard';
+import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { isStaffRole } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useProfile } from '@/lib/api/profile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,7 +40,6 @@ export const Route = createFileRoute('/profile/')({
 function ProfilePage() {
   const { user } = useAuth();
   const role = user?.role;
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
 
   const query = useProfile();
@@ -52,13 +52,9 @@ function ProfilePage() {
         title="Your profile"
         description="Keep your details up to date so trades run smoothly."
         actions={
-          <Button
-            className="min-h-11"
-            variant="outline"
-            onClick={() => setWizardOpen(true)}
-          >
-            Finish your profile
-          </Button>
+          user && !user.profileComplete && !isStaffRole(role) ? (
+            <LinkButton to="/setup">Finish setup</LinkButton>
+          ) : undefined
         }
       />
       <DataState
@@ -67,11 +63,7 @@ function ProfilePage() {
         icon={UserRound}
         emptyTitle="Your profile is not set up yet"
         emptyText="Add your details so people can trade with you."
-        emptyAction={
-          <Button className="min-h-11" onClick={() => setWizardOpen(true)}>
-            Finish your profile
-          </Button>
-        }
+        emptyAction={<LinkButton to="/setup">Finish setup</LinkButton>}
         skeleton={<RowsSkeleton rows={4} />}
       >
         <Tabs defaultValue="personal" className="gap-6">
@@ -152,7 +144,6 @@ function ProfilePage() {
           </TabsContent>
         </Tabs>
       </DataState>
-      <ProfileWizard open={wizardOpen} onOpenChange={setWizardOpen} />
       <AvatarDialog
         open={avatarOpen}
         onOpenChange={setAvatarOpen}

@@ -8,6 +8,7 @@ import { CheckboxField, TextField } from '@/components/form-fields';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useSignUp } from '@/lib/api/auth';
+import { tidyName } from '@/lib/names';
 import { showApiError } from '@/lib/form-errors';
 
 export const Route = createFileRoute('/sign-up')({
@@ -41,7 +42,12 @@ function SignUpPage() {
     setFailure(null);
 
     signUp.mutate(
-      { name, email, password, accepted_terms_version: TERMS_VERSION },
+      {
+        name: tidyName(name),
+        email,
+        password,
+        accepted_terms_version: TERMS_VERSION,
+      },
       {
         // The API answers the same for a new and an existing email.
         onSuccess: () => navigate({ to: '/verify-email', search: { email } }),
@@ -72,6 +78,7 @@ function SignUpPage() {
           control={control}
           name="name"
           label="Full name"
+          personName
           autoComplete="name"
         />
         <TextField

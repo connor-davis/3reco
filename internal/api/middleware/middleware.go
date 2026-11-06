@@ -208,3 +208,38 @@ func RateLimit(svc *auth.Service, name string, limit int) fiber.Handler {
 		return c.Next()
 	}
 }
+
+// guestPaths are the only /api paths a guest may use before setup is done:
+// sign-out and sessions, their own profile and setup, the privacy notice and
+// their own data rights.
+var guestPaths = []string{
+	"/api/health", "/api/auth/", "/api/profile",
+	"/api/privacy/notice", "/api/privacy/export", "/api/privacy/delete",
+}
+
+// RequireSetup keeps a signed-in guest (no role yet) inside guestPaths. Anyone
+// else, and anyone not signed in, passes untouched.
+func RequireSetup(c fiber.Ctx) error {
+	user, ok := CurrentUser(c)
+	if !ok || (user.Role != nil && *user.Role != auth.RoleGuest) {
+		return c.Next()
+	}
+
+	path := c.Path()
+	for _, allowed := range guestPaths {
+		if strings.HasPrefix(path, allowed) {
+			return c.Next()
+		}
+	}
+
+	// A guest still sees their own avatar in the page header.
+	if c.Method() == fiber.MethodGet && path == "/api/users/"+user.ID+"/avatar" {
+		return c.Next()
+	}
+
+	return &apperr.Error{
+		Status:  fiber.StatusForbidden,
+		Code:    "setup_required",
+		Message: "Finish your setup first.",
+	}
+}

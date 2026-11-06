@@ -43,20 +43,22 @@ export function Guarded({ page, children }: GuardedProps) {
         <EmptyTitle>
           {!user
             ? 'Sign in to keep going.'
-            : role
-              ? 'This page is in another workspace.'
-              : 'Your account has no role yet.'}
+            : role === 'guest'
+              ? 'Finish your setup first.'
+              : 'This page is in another workspace.'}
         </EmptyTitle>
         <EmptyDescription>
           {!user
             ? 'Browsing is open to everyone. Everything else needs an account.'
-            : role
-              ? `You're signed in as ${roleLabels[role].toLowerCase()}. This page belongs to a different role.`
-              : 'An admin has to give your account a role before you can open this page.'}
+            : role === 'guest'
+              ? 'Tell us how you will use 3REco and fill in your details. It takes a few minutes.'
+              : `You're signed in as ${roleLabels[role!].toLowerCase()}. This page belongs to a different role.`}
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        {user ? (
+        {role === 'guest' ? (
+          <LinkButton to="/setup">Finish setup</LinkButton>
+        ) : user ? (
           <LinkButton to="/">Go to the dashboard</LinkButton>
         ) : (
           <LinkButton to="/sign-in">Sign in</LinkButton>

@@ -24,6 +24,7 @@ func (handler *Handler) Register(router fiber.Router) {
 	router.Get("/profile/optional", handler.optional)
 	router.Get("/profile", middleware.RequireUser, handler.find)
 	router.Patch("/profile", middleware.RequireUser, handler.update)
+	router.Post("/profile/setup", middleware.RequireUser, handler.setup)
 	router.Post("/profile/avatar", middleware.RequireUser, handler.uploadAvatar)
 	router.Delete("/profile/avatar", middleware.RequireUser, handler.deleteAvatar)
 	router.Get("/users/:id/avatar", handler.avatar)
@@ -96,6 +97,22 @@ func (handler *Handler) update(c fiber.Ctx) error {
 
 	user, _ := middleware.CurrentUser(c)
 	if err := handler.svc.Update(c.Context(), user.ID, in); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"ok": true})
+}
+
+func (handler *Handler) setup(c fiber.Ctx) error {
+	var in struct {
+		Role string `json:"role"`
+	}
+	if err := c.Bind().JSON(&in); err != nil {
+		return apperr.BadRequest("Send the account type you chose.", nil)
+	}
+
+	user, _ := middleware.CurrentUser(c)
+	if err := handler.svc.Setup(c.Context(), user.ID, in.Role); err != nil {
 		return err
 	}
 
