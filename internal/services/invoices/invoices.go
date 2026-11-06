@@ -256,7 +256,7 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 	return nil
 }
 
-// Download checks read access and rebuilds a missing invoice without sending mail.
+// Download checks read access and renders the invoice for the reader without sending mail.
 func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.ReadCloser, string, error) {
 	trade, err := s.trades.Detail(ctx, user, id)
 	if err != nil {
@@ -276,58 +276,40 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 		return nil, "", apperr.NotFound("That invoice is no longer kept.")
 	}
 
-	if trade.Type == "c2b" {
-		projected, err := s.Project(ctx, user, document)
-		if err != nil {
-			return nil, "", err
-		}
-		if auth.HasRole(user, auth.RoleAdmin) &&
-			(projected.Seller.Account != "" || projected.Seller.PaymentID != "") {
-			if err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView); err != nil {
-				return nil, "", err
-			}
-		}
-		data, err := pdf.Render(Compose(projected))
-		if err != nil {
-			return nil, "", err
-		}
-
-		return io.NopCloser(bytes.NewReader(data)), trade.InvoiceNumber, nil
-	}
-
-	// The PDF shows the seller's full account number: an admin read is audited.
-	if auth.HasRole(user, "admin") && document.Seller.Account != "" {
-		err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView)
-		if err != nil {
-			return nil, "", err
-		}
-	}
-
-	if document.InvoiceKey != "" {
-		reader, err := s.objects.Get(ctx, document.InvoiceKey)
-		if err == nil {
-			return reader, trade.InvoiceNumber, nil
-		}
-	}
-
-	if err := s.Generate(ctx, id, false); err != nil {
+	// Every read renders for its own reader: a cached PDF holds one reader's bank
+	// details, so it must never be handed to someone with less access.
+	projected, err := s.Project(ctx, user, document)
+	if err != nil {
 		return nil, "", err
 	}
-
-	document, err = s.store.Document(ctx, id)
+	if auth.HasRole(user, auth.RoleAdmin) &&
+		(projected.Seller.Account != "" || projected.Seller.PaymentID != "") {
+		subject := trade.Seller.ID
+		if err := s.audit.Record(ctx, user.ID, subject, privacy.KindAdminFullView); err != nil {
+			return nil, "", err
+		}
+	}
+	data, err := pdf.Render(Compose(projected))
 	if err != nil {
 		return nil, "", err
 	}
 
-	reader, err := s.objects.Get(ctx, document.InvoiceKey)
-
-	return reader, trade.InvoiceNumber, err
+	return io.NopCloser(bytes.NewReader(data)), trade.InvoiceNumber, nil
 }
 
-// Project masks frozen collector identifiers using the collector service's
-// current access check. Trade participation alone does not grant payout access.
+// Project masks the seller's bank details for readers who may not see them.
+// Business invoices show them to the seller, the buyer on that trade and admins
+// (the buyer needs them to pay). Collector invoices follow the collector
+// service's access check, where trade participation alone is not enough.
 func (s *Service) Project(ctx context.Context, user auth.User, document store.Document) (store.Document, error) {
 	if document.Trade.Type != "c2b" {
+		trade := document.Trade
+		if user.ID == trade.Seller.ID || user.ID == trade.Buyer.ID || auth.HasRole(user, auth.RoleAdmin) {
+			return document, nil
+		}
+		document.Seller.Account = crypt.Mask(document.Seller.Account)
+		document.Seller.Branch = crypt.Mask(document.Seller.Branch)
+
 		return document, nil
 	}
 

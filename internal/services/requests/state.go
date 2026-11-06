@@ -36,7 +36,7 @@ func (s *Service) MakeOffer(
 			return apperr.Conflict("An offer can only be made on an open request.")
 		}
 
-		if err := transactions.CheckItems(offer); err != nil {
+		if err := transactions.CheckPricedItems(offer); err != nil {
 			return err
 		}
 
@@ -247,6 +247,7 @@ type move struct {
 	kind   string
 	title  string
 	body   string // %s is the material name
+	event  string // the chat line; %s is who acted
 	link   string // {id} is the request id
 }
 
@@ -255,29 +256,33 @@ var moves = map[string]move{
 		actor: "buyer", from: []string{StatusOffered}, to: StatusPending,
 		denied: "Only the buyer can decline an offer.", wrong: "There is no active offer to decline.",
 		kind: notifications.RequestRejected, title: "Offer declined",
-		body: "The buyer declined your offer for %s. You can make a new offer or reject the request.",
-		link: "/market/{id}",
+		body:  "The buyer declined your offer for %s. You can make a new offer or reject the request.",
+		event: "%s declined the offer.",
+		link:  "/market/{id}",
 	},
 	"withdraw": {
 		actor: "seller", from: []string{StatusOffered}, to: StatusPending,
 		denied: "Only the seller can withdraw an offer.", wrong: "There is no active offer to withdraw.",
 		kind: notifications.RequestCancelled, title: "Offer withdrawn",
-		body: "The offer for %s was withdrawn. Negotiation continues.",
-		link: "/market/{id}",
+		body:  "The offer for %s was withdrawn. Negotiation continues.",
+		event: "%s withdrew the offer.",
+		link:  "/market/{id}",
 	},
 	"reject": {
 		actor: "seller", from: []string{StatusPending, StatusOffered}, to: StatusRejected,
 		denied: "Only the seller can reject this request.",
 		wrong:  "This request cannot be rejected in its current state.",
 		kind:   notifications.RequestRejected, title: "Request rejected",
-		body: "The request for %s was rejected.", link: "/market/{id}",
+		body: "The request for %s was rejected.", event: "%s rejected this request.",
+		link: "/market/{id}",
 	},
 	"cancel": {
 		actor: "buyer", from: []string{StatusPending, StatusOffered}, to: StatusCancelled,
 		denied: "Only the buyer can cancel this request.",
 		wrong:  "This request cannot be cancelled in its current state.",
 		kind:   notifications.RequestCancelled, title: "Request cancelled",
-		body: "A buyer cancelled their request for %s.", link: "/market/incoming",
+		body: "A buyer cancelled their request for %s.", event: "%s cancelled this request.",
+		link: "/market/incoming",
 	},
 }
 
@@ -342,6 +347,16 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 		}
 
 		if err := s.store.SetStatus(ctx, id, step.to); err != nil {
+			return err
+		}
+
+		// The chat keeps a record of who ended the request, for both sides.
+		name := r.Seller.Name
+		if user.ID == r.Buyer.ID {
+			name = r.Buyer.Name
+		}
+		event := fmt.Sprintf(step.event, name)
+		if err := s.store.InsertRequestEvent(ctx, id, user.ID, event); err != nil {
 			return err
 		}
 

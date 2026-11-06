@@ -80,7 +80,7 @@ function CollectorsPage() {
   // Admin and staff see everyone's collectors, so the page is not "yours".
   const directory = isStaffRole(user?.role);
   const [query, setQuery] = useState('');
-  const pager = usePager(50, { q: useDebounced(query.trim()) });
+  const pager = usePager(50, { q: useDebounced(query.trim(), 150) });
   const list = useCollectors(pager.params);
   const [editing, setEditing] = useState<Collector | undefined>();
   const [formOpen, setFormOpen] = useState(false);

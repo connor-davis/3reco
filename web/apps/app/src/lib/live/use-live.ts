@@ -17,8 +17,8 @@ export function useLiveEvents() {
 
   useEffect(() => {
     if (!userId || !live) return;
-    const connection = new LiveConnection(client, () => {
-      void endSession(client, 'ended');
+    const connection = new LiveConnection(client, (reason) => {
+      void endSession(client, reason);
     });
     connection.start();
     return () => connection.stop();

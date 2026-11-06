@@ -221,6 +221,16 @@ func (h *Handler) sessions(c fiber.Ctx) error {
 		return err
 	}
 
+	// The device cookie can miss the session that is signed in right now; the
+	// person should still see it.
+	known := false
+	for _, sess := range list {
+		known = known || sess.ID == current.ID
+	}
+	if current.ID != "" && !known {
+		list = append([]svc.Session{current}, list...)
+	}
+
 	out := make([]device, 0, len(list))
 
 	for _, sess := range list {
