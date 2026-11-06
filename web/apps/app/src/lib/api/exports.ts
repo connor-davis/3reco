@@ -6,6 +6,9 @@ export interface ExportFilters {
   from?: string;
   to?: string;
   itemised?: boolean;
+  type?: string;
+  role?: string;
+  q?: string;
 }
 export type ExportKind =
   'users' | 'transactions' | 'collections' | 'purchases' | 'sales';

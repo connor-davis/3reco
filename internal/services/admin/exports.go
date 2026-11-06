@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
-	"github.com/connor-davis/3reco/internal/platform/crypt"
+	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/platform/pdf"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/invoices"
@@ -41,6 +43,7 @@ type Export struct {
 func (s *Service) PrepareExport(
 	user auth.User,
 	kind, rawFrom, rawTo, rawItemised string,
+	tradeFilter, role, search string,
 ) (Export, error) {
 	var empty Export
 	scope, owner, tradeType := tstore.ScopeAll, user.ID, ""
@@ -103,16 +106,24 @@ func (s *Service) PrepareExport(
 	}
 
 	itemised := rawItemised == "true"
+	if tradeFilter != "" && tradeFilter != "b2b" && tradeFilter != "c2b" {
+		return empty, apperr.Field("type", "Use b2b or c2b for type.")
+	}
+	if tradeType != "" && tradeFilter != "" && tradeType != tradeFilter {
+		return empty, apperr.Field("type", "Collections must use c2b.")
+	}
+	if tradeFilter != "" {
+		tradeType = tradeFilter
+	}
+	if role != "" && !slices.Contains(roles, role) {
+		return empty, apperr.Field("role", "Choose a valid account role.")
+	}
 
-	// Only an admin or a business reading their own purchases sees full
-	// account numbers in a CSV; staff get the masked form.
-	mask := !auth.HasRole(user, auth.RoleAdmin, auth.RoleBusiness)
-	adminView := auth.HasRole(user, auth.RoleAdmin)
 	return Export{Filename: kind + ".csv", Write: func(ctx context.Context, output io.Writer) error {
 		writer := csv.NewWriter(output)
 		write := func(cells []string) error {
 			for i, cell := range cells {
-				if strings.HasPrefix(cell, "=") || strings.HasPrefix(cell, "+") ||
+				if strings.HasPrefix(cell, "=") || (strings.HasPrefix(cell, "+") && !csvPhone.MatchString(cell)) ||
 					strings.HasPrefix(cell, "-") || strings.HasPrefix(cell, "@") {
 					cells[i] = "'" + cell
 				}
@@ -131,7 +142,7 @@ func (s *Service) PrepareExport(
 				return err
 			}
 
-			return s.store.ExportUsers(ctx, write)
+			return s.store.ExportUsers(ctx, role, paging.SearchPattern(search), write)
 		}
 
 		header := append([]string{}, transactionColumns[:6]...)
@@ -153,24 +164,22 @@ func (s *Service) PrepareExport(
 		}
 
 		audited := false
-
 		return s.trades.ExportIDs(ctx, scope, owner, tradeType, from, to, func(id string) error {
 			document, err := s.trades.Document(ctx, id)
 			if err != nil {
 				return err
 			}
 
-			seller := &document.Seller
-			if mask {
-				seller.Account, seller.PaymentID = crypt.Mask(seller.Account), crypt.Mask(seller.PaymentID)
-			} else if adminView && !audited && document.Trade.Type == "c2b" &&
-				(seller.Account != "" || seller.PaymentID != "") {
-				// One audit line per export: an admin read full payout details.
-				audited = true
-
+			document, err = s.invoices.Project(ctx, user, document)
+			if err != nil {
+				return err
+			}
+			if !audited && auth.HasRole(user, auth.RoleAdmin) && document.Trade.Type == "c2b" &&
+				(document.Seller.Account != "" || document.Seller.PaymentID != "") {
 				if err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView); err != nil {
 					return err
 				}
+				audited = true
 			}
 
 			for _, row := range exportRows(document, itemised) {
@@ -184,6 +193,8 @@ func (s *Service) PrepareExport(
 	}}, nil
 }
 
+var csvPhone = regexp.MustCompile(`^\+[0-9]{7,15}$`)
+
 func exportRows(document tstore.Document, itemised bool) [][]string {
 	trade, seller, buyer := document.Trade, document.Seller, document.Buyer
 	invoice := invoices.Compose(document)
@@ -192,8 +203,9 @@ func exportRows(document tstore.Document, itemised bool) [][]string {
 		day = *trade.CollectionDay
 	}
 
-	prefix := []string{trade.ID, invoice.Type, trade.EffectiveAt.In(sast).Format("02/01/2006"),
-		trade.CreatedAt.In(sast).Format("02/01/2006 15:04"), day, strconv.Itoa(len(trade.Items))}
+	// Calendar dates are ISO 8601; recorded instants include seconds and the SAST offset.
+	prefix := []string{trade.ID, invoice.Type, trade.EffectiveAt.In(sast).Format(time.DateOnly),
+		trade.CreatedAt.In(sast).Format(time.RFC3339), day, strconv.Itoa(len(trade.Items))}
 	weight := new(big.Rat)
 	var materials []string
 	for i, line := range trade.Items {
@@ -210,6 +222,9 @@ func exportRows(document tstore.Document, itemised bool) [][]string {
 	method, payout := "", ""
 	if trade.Type == "c2b" {
 		method, payout = invoices.Payment(seller)
+		if method == "" {
+			payout = ""
+		}
 	}
 
 	suffix := []string{weight.FloatString(2), pdf.Decimal(trade.TotalPrice), invoices.Name(seller),

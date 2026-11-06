@@ -19,16 +19,16 @@ type SaleItem struct {
 
 const maxItems = 100
 
-// Up to 12 digits before the point and 6 after: far more than a scrap yard
+// Up to 12 digits before the point and 2 after: far more than a scrap yard
 // needs, and small enough that no sum can overflow a Postgres numeric.
-var decimalPattern = regexp.MustCompile(`^\d{1,12}(\.\d{1,6})?$`)
+var decimalPattern = regexp.MustCompile(`^\d{1,12}(\.\d{1,2})?$`)
 
 // A price is money, so it stops at cents; that keeps every line total exact
 // to the cent after one rounding.
 var pricePattern = regexp.MustCompile(`^\d{1,12}(\.\d{1,2})?$`)
 
 func parseDecimal(field, raw string) (*big.Rat, error) {
-	pattern, message := decimalPattern, "Enter a number such as 12.5."
+	pattern, message := decimalPattern, "Enter a weight with up to 2 decimals, such as 12.50."
 	if field == "price" {
 		pattern, message = pricePattern, "Enter a price with up to 2 decimals, such as 12.50."
 	}

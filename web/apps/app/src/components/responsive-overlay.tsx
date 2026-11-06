@@ -1,6 +1,5 @@
-import { lazy, Suspense, useState, type ReactNode } from 'react';
-
-const OverlayBody = lazy(() => import('./responsive-overlay-body'));
+import { useState, type ReactNode } from 'react';
+import OverlayBody from './responsive-overlay-body';
 
 export type ResponsiveOverlayProps = {
   open: boolean;
@@ -14,16 +13,12 @@ export type ResponsiveOverlayProps = {
   locked?: boolean;
 };
 
-/** Load the dialog and drawer implementations only when an overlay is first opened. */
+/** Open immediately, including on a first click before any other dialog was used. */
 export function ResponsiveOverlay(props: ResponsiveOverlayProps) {
   const [loaded, setLoaded] = useState(props.open);
   if (props.open && !loaded) setLoaded(true);
   if (!props.open && !loaded) return null;
 
   // Keep the implementation mounted after closing for focus restoration and exit motion.
-  return (
-    <Suspense fallback={null}>
-      <OverlayBody {...props} />
-    </Suspense>
-  );
+  return <OverlayBody {...props} />;
 }

@@ -86,7 +86,7 @@ func domainStock(t *testing.T, client *testutil.Client, material string, listed 
 			"POST",
 			"/api/stock",
 			map[string]any{
-				"material_id": material, "weight": "10.125", "price": "3.12",
+				"material_id": material, "weight": "10.12", "price": "3.12",
 			},
 		),
 		200,

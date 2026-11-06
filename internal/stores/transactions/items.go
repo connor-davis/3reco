@@ -131,10 +131,10 @@ func (s *Store) Take(ctx context.Context, stockID, weight string) (bool, error) 
 	return tag.RowsAffected() > 0, err
 }
 
-// Give adds weight to the owner's stock of a material, at the price paid, or
-// starts an unlisted row. The advisory lock keeps two sales to the same buyer
+// Give adds weight without changing the owner's asking price, or starts an
+// unlisted row at the material base price. The advisory lock keeps two sales to the same buyer
 // from each starting a row.
-func (s *Store) Give(ctx context.Context, ownerID, materialID, weight, price, newID string) error {
+func (s *Store) Give(ctx context.Context, ownerID, materialID, weight, newID string) error {
 	q := s.db.Q(ctx)
 
 	_, err := q.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2))`, ownerID, materialID)
@@ -143,17 +143,17 @@ func (s *Store) Give(ctx context.Context, ownerID, materialID, weight, price, ne
 	}
 
 	tag, err := q.Exec(ctx, `
-		UPDATE stock SET weight = weight + $3::numeric, price = $4::numeric, updated_at = now()
+		UPDATE stock SET weight = weight + $3::numeric, updated_at = now()
 		WHERE id = (SELECT id FROM stock WHERE owner_id = $1 AND material_id = $2
-			ORDER BY id LIMIT 1)`, ownerID, materialID, weight, price)
+			ORDER BY id LIMIT 1)`, ownerID, materialID, weight)
 	if err != nil || tag.RowsAffected() > 0 {
 		return err
 	}
 
 	_, err = q.Exec(ctx, `
 		INSERT INTO stock (id, owner_id, material_id, weight, price, is_listed)
-		VALUES ($1, $2, $3, $4::numeric, $5::numeric, false)`,
-		newID, ownerID, materialID, weight, price)
+		SELECT $1, $2, id, $4::numeric, price, false FROM materials WHERE id=$3`,
+		newID, ownerID, materialID, weight)
 
 	return err
 }

@@ -118,7 +118,7 @@ func TestStockUpdateZeroPrice(t *testing.T) {
 	status(t, owner.Do("PATCH", "/api/stock/"+id, map[string]any{"is_listed": true}), 200)
 	status(t, owner.Do("PATCH", "/api/stock/"+id, map[string]any{"is_listed": true}), 200)
 	result := status(t, owner.Do("GET", "/api/stock/"+id, nil), 200)
-	if result.Body["price"] != "3.12" || result.Body["weight"] != "10.125" {
+	if result.Body["price"] != "3.12" || result.Body["weight"] != "10.12" {
 		t.Fatalf("omitted fields changed: %s", result.Raw)
 	}
 

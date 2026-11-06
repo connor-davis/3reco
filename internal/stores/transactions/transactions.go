@@ -148,7 +148,7 @@ func (s *Store) Totals(
 		WITH f AS (SELECT t.id, t.total_price`+fromJoins+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`)
 		SELECT count(*), COALESCE(sum(f.total_price), 0)::text,
 			COALESCE((SELECT sum(i.weight) FROM transaction_items i JOIN f ON f.id = i.transaction_id), 0)::text
-		FROM f`, userID, f.Like, f.Type, f.From, f.To, "complete").Scan(&out.Count, &out.Value, &out.Weight)
+		FROM f`, userID, f.Like, f.Type, f.From, f.To, f.Status).Scan(&out.Count, &out.Value, &out.Weight)
 
 	return out, err
 }
@@ -199,8 +199,9 @@ func (s *Store) List(
 	limit int,
 ) ([]Transaction, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, selectTransaction+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`
-		AND ($7::timestamptz IS NULL OR (t.created_at, t.id) < ($7, $8))
-		ORDER BY t.created_at DESC, t.id DESC
+		AND ($7::timestamptz IS NULL OR (`+database.EffectiveDate("t")+`, t.created_at, t.id) <
+			($7, (SELECT created_at FROM transactions WHERE id=$8), $8))
+		ORDER BY `+database.EffectiveDate("t")+` DESC, t.created_at DESC, t.id DESC
 		LIMIT $9`, userID, f.Like, f.Type, f.From, f.To, f.Status, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err

@@ -157,19 +157,32 @@ function StorePage() {
                 )}
               </DataState>
               {user?.role === 'business' && user.id !== sellerId && (
-                <Button
-                  variant="outline"
-                  onClick={() => setReviewOpen(true)}
-                  disabled={
-                    eligible.isPending ||
-                    eligible.isError ||
-                    !eligible.data?.items.length
-                  }
-                >
-                  {eligible.isSuccess && !eligible.data.items.length
-                    ? 'You have reviewed all eligible trades.'
-                    : 'Leave a review'}
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setReviewOpen(true)}
+                    disabled={
+                      eligible.isPending ||
+                      eligible.isError ||
+                      !eligible.data?.items.length
+                    }
+                  >
+                    {eligible.isSuccess && !eligible.data.items.length
+                      ? 'You have reviewed all eligible trades.'
+                      : 'Leave a review'}
+                  </Button>
+                  {eligible.isError && (
+                    <p role="alert" className="text-sm text-destructive">
+                      Could not check completed trades.{' '}
+                      <Button
+                        variant="link"
+                        onClick={() => void eligible.refetch()}
+                      >
+                        Try again
+                      </Button>
+                    </p>
+                  )}
+                </>
               )}
               <DataState
                 query={reviews}

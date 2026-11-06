@@ -38,16 +38,16 @@ func marketExpire(t *testing.T, w tradeWorld, id string) {
 
 func TestMarketRequestTermsAndHolds(t *testing.T) {
 	w := newTradeWorld(t)
-	id := marketRequest(t, w, "12.125")
+	id := marketRequest(t, w, "12.12")
 	path := "/api/requests/" + id
 	request := status(t, w.seller.c.Do("GET", path, nil), 200)
 	line := tradeItems(request)[0].(map[string]any)
-	holdDecimal(t, line["requested_weight"], "12.125")
+	holdDecimal(t, line["requested_weight"], "12.12")
 	holdDecimal(t, line["requested_price"], "8")
 	holdCount(t, w, "active", "1")
 
 	body := tradeText(t, w.app, `SELECT body FROM notifications WHERE user_id=$1 AND type='request_received'`, w.seller.id)
-	for _, term := range []string{"Glass", "12.125", "R8/kg"} {
+	for _, term := range []string{"Glass", "12.12", "R8/kg"} {
 		if !strings.Contains(body, term) {
 			t.Errorf("notification %q lacks %q", body, term)
 		}
@@ -75,7 +75,7 @@ func TestMarketDualConfirmationAndReaders(t *testing.T) {
 	w := newTradeWorld(t)
 	stranger := tradeNewUser(t, w.app, "business")
 	admin := tradeNewUser(t, w.app, "admin")
-	id := marketRequest(t, w, "12.125")
+	id := marketRequest(t, w, "12.12")
 	path := "/api/requests/" + id
 	tradeOffer(t, w.seller, id, w.material, "10.25", "9.5")
 	status(t, w.seller.c.Do("POST", path+"/accept", nil), 403)

@@ -46,7 +46,7 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 		"items": []map[string]any{{"stock_id": w.stock, "material_id": w.material, "weight": "2.5"}},
 	}), 200)
 
-	tradeOffer(t, w.seller, id, w.material, "40.125", "9")
+	tradeOffer(t, w.seller, id, w.material, "40.12", "9")
 	holdCount(t, w, "active", "1")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "100")
 	ttl := tradeText(t, w.app, `SELECT (expires_at-created_at BETWEEN
@@ -57,23 +57,23 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	}
 
 	listing := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200)
-	holdDecimal(t, listing.Body["weight"], "59.875")
+	holdDecimal(t, listing.Body["weight"], "59.88")
 	cart := status(t, w.buyer.c.Do("GET", cartPath, nil), 200)
 	holdDecimal(t, tradeItems(cart)[0].(map[string]any)["weight"], "2.5")
 
 	stock := status(t, w.seller.c.Do("GET", "/api/stock/"+w.stock, nil), 200)
 	holdDecimal(t, stock.Body["weight"], "100")
-	holdDecimal(t, stock.Body["available_weight"], "59.875")
+	holdDecimal(t, stock.Body["available_weight"], "59.88")
 
 	list := pageItems(t, status(t, w.seller.c.Do("GET", "/api/stock", nil), 200))
-	holdDecimal(t, list[0]["available_weight"], "59.875")
+	holdDecimal(t, list[0]["available_weight"], "59.88")
 	request := status(t, w.buyer.c.Do("GET", "/api/requests/"+id, nil), 200)
 	holdDecimal(t, tradeItems(request)[0].(map[string]any)["available_weight"], "100")
 
 	// A separate buyer's hold must survive this acceptance.
 	other := tradeNewUser(t, w.app, "business")
 	otherID := tradeRequest(t, other, w.seller, w.stock)
-	tradeOffer(t, w.seller, otherID, w.material, "59.875", "9")
+	tradeOffer(t, w.seller, otherID, w.material, "59.88", "9")
 	reserved := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200)
 	holdDecimal(t, reserved.Body["weight"], "0")
 	holdDecimal(t, reserved.Body["held_weight"], "100")
@@ -90,8 +90,8 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	holdCount(t, w, "consumed", "1")
 	holdCount(t, w, "active", "1")
-	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "59.875")
-	holdDecimal(t, tradeStockWeight(t, w.app, w.buyer.id, w.material), "40.125")
+	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "59.88")
+	holdDecimal(t, tradeStockWeight(t, w.app, w.buyer.id, w.material), "40.12")
 }
 
 func TestStockHoldsRacingOffers(t *testing.T) {

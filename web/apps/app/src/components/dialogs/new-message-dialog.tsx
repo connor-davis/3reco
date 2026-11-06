@@ -27,8 +27,10 @@ export function NewMessageDialog({
   open,
   onOpenChange,
   listing,
+  initialWeight = '',
 }: {
   listing?: Listing;
+  initialWeight?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -40,7 +42,11 @@ export function NewMessageDialog({
       description="Choose a quantity to send a request. Sending it reserves that weight for 48 hours."
     >
       {open && (
-        <NewMessageForm listing={listing} onDone={() => onOpenChange(false)} />
+        <NewMessageForm
+          listing={listing}
+          initialWeight={initialWeight}
+          onDone={() => onOpenChange(false)}
+        />
       )}
     </ResponsiveOverlay>
   );
@@ -49,9 +55,11 @@ export function NewMessageDialog({
 function NewMessageForm({
   onDone,
   listing,
+  initialWeight = '',
 }: {
   onDone: () => void;
   listing?: Listing;
+  initialWeight: string;
 }) {
   const [search, setSearch] = useState('');
   const [cursor, setCursor] = useState<string>();
@@ -60,7 +68,7 @@ function NewMessageForm({
   const navigate = useNavigate();
   const form = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { listingId: listing?.id ?? '', weight: '' },
+    defaultValues: { listingId: listing?.id ?? '', weight: initialWeight },
   });
 
   const selected =

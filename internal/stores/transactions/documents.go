@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
+	auth "github.com/connor-davis/3reco/internal/stores/auth"
 )
 
 // Contact is the private profile projection used only for invoices and authorized exports.
@@ -37,6 +38,7 @@ type Document struct {
 	Seller     Contact
 	Buyer      Contact
 	InvoiceKey string
+	BuyerUser  auth.User
 	// Anonymised is true once the retention job removed the parties' details.
 	Anonymised bool
 }
@@ -84,15 +86,16 @@ func (s *Store) Document(ctx context.Context, id string) (Document, error) {
 			THEN to_jsonb(trunc((value#>>'{}')::numeric)::int) ELSE value END)
 		FROM jsonb_each(COALESCE(t.collector_snapshot,'{}'::jsonb))
 		WHERE value <> 'null'::jsonb AND value <> '""'::jsonb),'{}'::jsonb) END,
-		`+userContact("b")+` FROM transactions t JOIN users b ON b.id=t.buyer_id
+		`+userContact("b")+`, b.role FROM transactions t JOIN users b ON b.id=t.buyer_id
 		LEFT JOIN users s ON t.type='b2b' AND s.id=t.seller_id
 		LEFT JOIN collectors c ON t.type='c2b' AND c.id=t.seller_id WHERE t.id=$1`, id).Scan(
-		&out.InvoiceKey, &anonymised, &sellerJSON, &buyerJSON)
+		&out.InvoiceKey, &anonymised, &sellerJSON, &buyerJSON, &out.BuyerUser.Role)
 	if err != nil {
 		return out, err
 	}
 
 	out.Trade = trade
+	out.BuyerUser.ID = trade.Buyer.ID
 
 	// After the retention period the parties' details are gone for good.
 	if anonymised {
@@ -160,14 +163,16 @@ func (s *Store) ExportIDs(
 	visit func(string) error,
 ) error {
 	var before *time.Time
+	var recorded *time.Time
 	var lastID string
 	for {
-		rows, err := s.db.Q(ctx).Query(ctx, `SELECT t.id,t.created_at FROM transactions t
+		rows, err := s.db.Q(ctx).Query(ctx, `SELECT t.id,`+database.EffectiveDate("t")+`,t.created_at FROM transactions t
 			WHERE t.status='complete' AND (`+scopeSQL[scope]+`) AND ($2='' OR t.type=$2)
 			AND ($3::timestamptz IS NULL OR `+database.EffectiveDate("t")+` >= $3)
 			AND ($4::timestamptz IS NULL OR `+database.EffectiveDate("t")+` <= $4)
-			AND ($5::timestamptz IS NULL OR (t.created_at,t.id)<($5,$6))
-			ORDER BY t.created_at DESC,t.id DESC LIMIT 100`, owner, kind, from, to, before, lastID)
+			AND ($5::timestamptz IS NULL OR (`+database.EffectiveDate("t")+`,t.created_at,t.id)<($5,$7::timestamptz,$6))
+			ORDER BY `+database.EffectiveDate("t")+` DESC,t.created_at DESC,t.id DESC LIMIT 100`,
+			owner, kind, from, to, before, lastID, recorded)
 		if err != nil {
 			return err
 		}
@@ -175,15 +180,15 @@ func (s *Store) ExportIDs(
 		var ids []string
 		for rows.Next() {
 			var id string
-			var created time.Time
-			if err := rows.Scan(&id, &created); err != nil {
+			var effective, created time.Time
+			if err := rows.Scan(&id, &effective, &created); err != nil {
 				rows.Close()
 
 				return err
 			}
 
 			ids = append(ids, id)
-			before, lastID = &created, id
+			before, recorded, lastID = &effective, &created, id
 		}
 		rows.Close()
 		if err := rows.Err(); err != nil {
