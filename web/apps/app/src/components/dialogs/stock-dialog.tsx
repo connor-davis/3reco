@@ -73,7 +73,14 @@ export function StockDialog({ open, onOpenChange, stock }: Props) {
           price,
           is_listed: values.is_listed,
         });
-        toast.success('Stock updated.');
+        // Say what changed about the market when the switch moved.
+        toast.success(
+          values.is_listed === stock.is_listed
+            ? 'Stock updated.'
+            : values.is_listed
+              ? 'Stock is now listed in the market.'
+              : 'Stock is no longer listed.'
+        );
       } else {
         await create.mutateAsync({ ...values, weight, price });
         toast.success('Stock added.');

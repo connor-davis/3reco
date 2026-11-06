@@ -3,9 +3,10 @@ package collectors
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"net/http"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -141,7 +142,7 @@ func hasIdentifier(item store.Collector) bool {
 }
 
 // List keeps the legacy directory while gating private fields on every row.
-func (service *Service) List(ctx context.Context, user auth.User, query paging.Query, selection bool) (any, error) {
+func (service *Service) List(ctx context.Context, user auth.User, query paging.Query, after *store.After, selection bool) (any, error) {
 	if !auth.HasRole(user, "admin", "staff", "business") {
 		return nil, apperr.Forbidden("You cannot manage collectors.")
 	}
@@ -153,7 +154,7 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		phone, _ = profile.Phone(raw)
 	}
 
-	items, err := service.store.List(ctx, query, phone)
+	items, err := service.store.List(ctx, query, after, phone)
 	if err != nil {
 		return nil, err
 	}
@@ -186,13 +187,33 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		return items, nil
 	}
 
-	return paging.Build(
-		items,
-		query.Limit,
-		func(item store.Collector) (time.Time, string) {
-			return item.CreatedAt, item.ID
-		},
-	), nil
+	page := paging.Page[store.Collector]{Items: items}
+	if len(items) > query.Limit {
+		page.Items = items[:query.Limit]
+		page.HasMore = true
+
+		last := page.Items[query.Limit-1]
+		next := base64.RawURLEncoding.EncodeToString([]byte(last.ID + "|" + last.Name))
+		page.NextCursor = &next
+	}
+
+	return page, nil
+}
+
+// ParseCursor reads a cursor List handed out earlier. Empty means the start.
+// The id comes first because it has no "|", so a name may hold one.
+func ParseCursor(raw string) (*store.After, error) {
+	if raw == "" {
+		return nil, nil
+	}
+
+	decoded, err := base64.RawURLEncoding.DecodeString(raw)
+	id, name, found := strings.Cut(string(decoded), "|")
+	if err != nil || !found || id == "" {
+		return nil, apperr.BadRequest("The page cursor is not valid.", nil)
+	}
+
+	return &store.After{Name: name, ID: id}, nil
 }
 
 // Save scopes changes to the creator business or staff and validates the merged record.
@@ -311,6 +332,24 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 
 				if conflict {
 					return apperr.Conflict("That phone number belongs to a business.")
+				}
+			}
+
+			// ponytail: a check, not a unique index, because old data may hold
+			// duplicates. Two saves at the very same moment could both pass.
+			if item.Email != "" {
+				conflict, err := service.store.EmailConflict(ctx, item.Email, item.CreatedByBusinessID, id)
+				if err != nil {
+					return err
+				}
+
+				if conflict {
+					return &apperr.Error{
+						Status:  http.StatusConflict,
+						Code:    "conflict",
+						Message: "You already have a collector with that email.",
+						Data:    map[string]string{"email": "You already have a collector with that email."},
+					}
 				}
 			}
 

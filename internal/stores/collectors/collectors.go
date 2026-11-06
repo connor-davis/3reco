@@ -102,18 +102,29 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 	return item, err
 }
 
-// List retains the legacy managed directory; services redact each row by scope.
-func (records *Store) List(ctx context.Context, query paging.Query, phone string) ([]Collector, error) {
+// After is the keyset position of the A to Z list: the last name and id seen.
+// A nil *After means "from the start".
+type After struct{ Name, ID string }
+
+// List retains the legacy managed directory, A to Z by name then id, so a
+// cursor over (lower(name), id) never skips or repeats a row. Search runs in
+// SQL before LIMIT. Services redact each row by scope.
+func (records *Store) List(ctx context.Context, query paging.Query, after *After, phone string) ([]Collector, error) {
+	var name, id *string
+	if after != nil {
+		name, id = &after.Name, &after.ID
+	}
+
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT `+columns+` FROM collectors
- WHERE ($1='' OR (created_at,id)<($2,$1))
+ WHERE ($1::text IS NULL OR (lower(name),id)>(lower($1::text),$2::text))
  AND (($5 <> '' AND normalized_phone = $5) OR ($5 = '' AND
  ($4='' OR name ILIKE $4 OR email ILIKE $4 OR phone ILIKE $4 OR normalized_phone ILIKE $4
  OR city ILIKE $4 OR province ILIKE $4)))
- ORDER BY created_at DESC,id DESC LIMIT NULLIF($3,0)`,
-		query.ID,
-		query.At,
+ ORDER BY lower(name),id LIMIT NULLIF($3,0)`,
+		name,
+		id,
 		query.Size(),
 		query.Like,
 		phone,
@@ -210,6 +221,24 @@ func (records *Store) PhoneConflict(ctx context.Context, phone string) (bool, er
  regexp_replace(COALESCE(phone,''),'[^0-9]','','g')=substring($1 from 2) OR
  regexp_replace(COALESCE(phone,''),'[^0-9]','','g')='0'||substring($1 from 4)))`,
 		phone,
+	).Scan(
+		&exists,
+	)
+
+	return exists, err
+}
+
+// EmailConflict tells whether another collector of the same creating business
+// (or of no business, for staff-made ones) already has this email, ignoring case.
+func (records *Store) EmailConflict(ctx context.Context, email string, business *string, except string) (bool, error) {
+	var exists bool
+	err := records.db.Q(ctx).QueryRow(
+		ctx,
+		`SELECT EXISTS(SELECT 1 FROM collectors WHERE lower(email)=lower($1) AND id<>$2
+ AND created_by_business_id IS NOT DISTINCT FROM $3::text)`,
+		email,
+		except,
+		business,
 	).Scan(
 		&exists,
 	)

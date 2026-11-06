@@ -210,6 +210,10 @@ Never rename a merged migration. Add a new file.
 | No collection date after today (Africa/Johannesburg) | `parseDay`, `checkCollectionDate` in `internal/services/transactions/parse.go`, `today()` in `web/apps/app/src/lib/format.ts`, tests in `tests/qa_round2_collections_test.go` |
 | File names a person chose keep their case (`CleanName`); `SafeName` still lowercases | `internal/platform/storage/storage.go` |
 | QA round 2 job A web tests (collections, trade, stock, market, copy) | `web/apps/app/tests/qa-round2-{collections,trade,stock,market,copy}.test.mjs` |
+| One kg rule (thousands spaces, 2 decimals at most) and one CO₂e line built on it; phone grouping | `formatKgNumber`, `formatKg`, `formatPhone` in `web/apps/app/src/lib/format.ts`, `formatCo2` in `src/lib/impact.ts` |
+| "[removed]" marker shown as "Message removed"; staff see "You can't open this chat" with no retry | `messageText` in `src/components/chat/helpers.ts`, `ChatBlocked` in `src/components/chat/messages-layout.tsx` |
+| Collector email unique per business, case-insensitive (service check, no index) | `EmailConflict` in `internal/stores/collectors/collectors.go`, `Save` in `internal/services/collectors/collectors.go` |
+| QA round 3 job B tests | `tests/qa_round3_collectors_test.go`, `web/apps/app/tests/qa-round3-shell.test.mjs` |
 | Role gate per page, role labels, role nav and phone tabs | `web/apps/app/src/lib/access.ts`, `src/components/access-guard.tsx`, `src/lib/nav.ts` |
 
 ## Web app serving and deployment

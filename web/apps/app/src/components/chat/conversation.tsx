@@ -35,6 +35,7 @@ import {
   isClosed,
   orderedMessages,
   requestLabel,
+  messageText,
 } from './helpers';
 import { useRequestActions } from './use-request-actions';
 
@@ -273,7 +274,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
                     className="py-2 text-center text-sm text-muted-foreground"
                   >
                     <span className="font-medium">System · </span>
-                    {message.content}
+                    {messageText(message.content)}
                   </p>
                 ) : (
                   <div
@@ -286,7 +287,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
                     )}
                   >
                     <p className="break-words whitespace-pre-wrap">
-                      {message.content}
+                      {messageText(message.content)}
                     </p>
                     <time
                       dateTime={message.created_at}

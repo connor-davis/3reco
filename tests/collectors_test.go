@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -53,8 +54,10 @@ func TestCollectorOptionalContacts(t *testing.T) {
 	}
 
 	// Both phone-less records must coexist, not merely save after a deletion.
-	for range 2 {
-		status(t, creator.Do("POST", "/api/collectors", collectorBody("")), 200)
+	for i := range 2 {
+		body := collectorBody("")
+		body["email"] = fmt.Sprintf("phoneless%d@example.test", i)
+		status(t, creator.Do("POST", "/api/collectors", body), 200)
 	}
 
 	body := collectorBody(domainPhone())
@@ -236,7 +239,9 @@ func TestCollectorPatchPreservesOmittedFields(t *testing.T) {
 	status(t, creator.Do("POST", "/api/collectors", collectorBody("123")), 400)
 
 	// Business phone conflicts include legacy user rows without normalized_phone.
-	status(t, creator.Do("POST", "/api/collectors", collectorBody("0837654321")), 200)
+	legacy := collectorBody("0837654321")
+	legacy["email"] = "legacy@example.test"
+	status(t, creator.Do("POST", "/api/collectors", legacy), 200)
 	_, err := app.DB.Pool.Exec(
 		context.Background(),
 		`UPDATE users SET phone='084 765 4321',

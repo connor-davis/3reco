@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, TriangleAlert } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -18,6 +18,7 @@ import { useCollectorSelection } from '@/lib/api/collectors';
 import { useMaterials } from '@/lib/api/materials';
 import { useCreateCollection } from '@/lib/api/transactions';
 import {
+  formatPhone,
   formatRand,
   formatRate,
   lineCents,
@@ -145,7 +146,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             label="Collector"
             options={(collectors.data ?? []).map((item) => ({
               value: item.id,
-              label: `${item.name} · ${item.phone || item.email || ''}`,
+              label: `${item.name} · ${item.phone ? formatPhone(item.phone) : item.email || ''}`,
             }))}
           />
           <TextField
@@ -159,17 +160,20 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
         {fields.map((field, index) => (
           <div
             key={field.id}
-            className="grid items-start gap-3 sm:grid-cols-[1fr_11rem_12rem_auto]"
+            className="grid items-start gap-3 sm:grid-cols-[1fr_1fr_auto]"
           >
-            <SelectField
-              control={control}
-              name={`lines.${index}.material_id`}
-              label="Material"
-              options={sorted.map((item) => ({
-                value: item.id,
-                label: item.name,
-              }))}
-            />
+            {/* Own row: the number fields need the width to show what was typed. */}
+            <div className="sm:col-span-3">
+              <SelectField
+                control={control}
+                name={`lines.${index}.material_id`}
+                label="Material"
+                options={sorted.map((item) => ({
+                  value: item.id,
+                  label: item.name,
+                }))}
+              />
+            </div>
             <DecimalField
               control={control}
               name={`lines.${index}.weight`}
@@ -193,13 +197,24 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
           </div>
         ))}
         {lines.map((item, index) => {
-          const base = sorted.find((m) => m.id === item.material_id)?.price;
+          const material = sorted.find((m) => m.id === item.material_id);
+          const base = material?.price;
           const cents = toCents(item.price || '0');
 
-          return base && cents > 0 && cents < toCents(base) ? (
-            <p key={index} className="text-sm text-muted-foreground">
-              Line {index + 1} is below the base price of {formatRate(base)}.
-              You can still save.
+          return material && base && cents > 0 && cents < toCents(base) ? (
+            <p
+              key={index}
+              role="status"
+              className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+            >
+              <TriangleAlert
+                className="mt-0.5 size-4 shrink-0"
+                aria-hidden="true"
+              />
+              <span>
+                {material.name} is below the base price of {formatRate(base)}.
+                You can still save.
+              </span>
             </p>
           ) : null;
         })}
