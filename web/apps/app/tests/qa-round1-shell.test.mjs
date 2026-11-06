@@ -154,7 +154,7 @@ test('F27: a ended session closes the socket for good and signs out', () => {
   assert.match(conn, /event\.code === sessionEndedCode/);
   assert.match(
     text('../src/lib/live/use-live.ts'),
-    /endSession\(client, 'ended'\)/
+    /endSession\(client, reason\)/
   );
   assert.match(text('../src/routes/sign-in.tsx'), /reason/);
 });

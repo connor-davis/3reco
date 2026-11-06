@@ -24,7 +24,8 @@ const schema = z.object({
           .regex(
             /^\d+(\.\d{1,2})?$/,
             'Enter a price in R, with up to 2 decimals.'
-          ),
+          )
+          .refine((value) => Number(value) > 0, 'Enter a price above R 0.00.'),
       })
     )
     .min(1),
@@ -63,6 +64,8 @@ function OfferForm({
   const offer = useOffer(request.id);
   const form = useForm({
     resolver: zodResolver(schema),
+    // Check as the person types, so a bad price shows at once.
+    mode: 'onChange',
     defaultValues: {
       items: request.items.map((item) => ({
         material_id: item.material_id,
@@ -114,7 +117,7 @@ function OfferForm({
           <legend className="mb-2 font-medium">
             {request.items[index].material_name}
           </legend>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             <DecimalField
               control={form.control}
               name={`items.${index}.weight`}
@@ -138,8 +141,11 @@ function OfferForm({
           {form.formState.errors.root.message}
         </p>
       )}
-      <Button type="submit" disabled={offer.isPending}>
-        Send offer
+      <Button
+        type="submit"
+        disabled={offer.isPending || !form.formState.isValid}
+      >
+        {request.status === 'offered' ? 'Send counter offer' : 'Send offer'}
       </Button>
     </form>
   );

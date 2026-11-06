@@ -113,6 +113,10 @@ func (h *Handler) write(conn *websocket.Conn, client *realtime.Client) {
 			if client.Revoked() {
 				code, reason = realtime.CloseSessionEnded, "session-ended"
 			}
+			// Same code, so old pages still sign out; new pages tell the person why.
+			if client.Removed() {
+				reason = "account-removed"
+			}
 
 			_ = conn.WriteControl(websocket.CloseMessage,
 				websocket.FormatCloseMessage(code, reason),

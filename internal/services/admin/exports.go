@@ -176,7 +176,8 @@ func (s *Service) PrepareExport(
 			}
 			if !audited && auth.HasRole(user, auth.RoleAdmin) && document.Trade.Type == "c2b" &&
 				(document.Seller.Account != "" || document.Seller.PaymentID != "") {
-				if err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView); err != nil {
+				subject := document.Trade.Seller.ID
+				if err := s.audit.Record(ctx, user.ID, subject, privacy.KindAdminFullView); err != nil {
 					return err
 				}
 				audited = true

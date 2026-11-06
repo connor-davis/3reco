@@ -23,7 +23,7 @@ import {
 } from '@/lib/api/admin';
 import { useExport } from '@/lib/api/exports';
 import type { Role, AdminUser, PrivacyEvent } from '@/lib/api/types';
-import { formatDate, plural } from '@/lib/format';
+import { formatDate, formatDateTime, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/admin/users')({
   component: () => (
@@ -331,7 +331,7 @@ function PrivacyEvents() {
     {
       accessorKey: 'created_at',
       header: 'Date',
-      cell: ({ row }) => formatDate(row.original.created_at),
+      cell: ({ row }) => formatDateTime(row.original.created_at),
     },
   ];
   return (
@@ -365,7 +365,7 @@ function PrivacyEvents() {
                 ) : (
                   <p>No individual subject</p>
                 )}
-                <p>{formatDate(event.created_at)}</p>
+                <p>{formatDateTime(event.created_at)}</p>
               </CardContent>
             </Card>
           )}

@@ -22,7 +22,10 @@ export async function replaceSession(
 }
 
 /** Drops the signed-in person and every private cache, then shows sign-in. */
-export async function endSession(client: QueryClient, reason?: 'ended') {
+export async function endSession(
+  client: QueryClient,
+  reason?: 'ended' | 'removed'
+) {
   await replaceSession(client, null);
 
   if (!window.location.pathname.endsWith('/sign-in'))

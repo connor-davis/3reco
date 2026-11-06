@@ -6,10 +6,14 @@ import (
 )
 
 // ExportUsers streams allowlisted active account columns without payout fields.
+// Business columns stay blank for other roles, as on screen: leftover data from an
+// old role is not exported (D2).
 func (s *Store) ExportUsers(ctx context.Context, role, like string, visit func([]string) error) error {
 	rows, err := s.db.Q(ctx).Query(ctx, `SELECT COALESCE(email,''),COALESCE(role,''),
-		COALESCE(first_name,''),COALESCE(last_name,''),COALESCE(business_name,''),
-		COALESCE(business_registration_number,''),COALESCE(phone,''),COALESCE(street_address,''),
+		COALESCE(first_name,''),COALESCE(last_name,''),
+		CASE WHEN role='business' THEN COALESCE(business_name,'') ELSE '' END,
+		CASE WHEN role='business' THEN COALESCE(business_registration_number,'') ELSE '' END,
+		COALESCE(phone,''),COALESCE(street_address,''),
 		COALESCE(city,''),COALESCE(area_code::text,''),COALESCE(province,''),created_at
 		FROM users u WHERE NOT is_removed AND ($1='' OR role=$1)
 		AND ($2='' OR name ILIKE $2 OR email ILIKE $2 OR business_name ILIKE $2

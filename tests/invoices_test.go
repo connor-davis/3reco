@@ -92,7 +92,7 @@ func TestInvoiceNumberStable(t *testing.T) {
 	staff := tradeNewUser(t, w.app, "staff")
 	admin := tradeNewUser(t, w.app, "admin")
 	stranger := tradeNewUser(t, w.app, "business")
-	for _, client := range []*testutil.Client{w.buyer.c, w.seller.c, staff.c, admin.c} {
+	for _, client := range []*testutil.Client{w.buyer.c, w.seller.c, admin.c} {
 		got := client.Do("GET", path, nil)
 		tradeWant(t, "invoice reader", got, 200)
 		for _, text := range []string{"%PDF", number, "Invoice Holder", "123456789", "9.99", "3REco"} {
@@ -100,6 +100,11 @@ func TestInvoiceNumberStable(t *testing.T) {
 				t.Errorf("invoice lacks %q", text)
 			}
 		}
+	}
+	// Staff read a masked account: the full number is for the two parties and admins.
+	staffPDF := status(t, staff.c.Do("GET", path, nil), 200)
+	if bytes.Contains(staffPDF.Raw, []byte("123456789")) || !bytes.Contains(staffPDF.Raw, []byte("******6789")) {
+		t.Error("staff invoice must show the masked account")
 	}
 	tradeWant(t, "invoice stranger", stranger.c.Do("GET", path, nil), 404)
 	tradeWant(t, "invoice anonymous", w.app.NewClient(t).Do("GET", path, nil), 401)

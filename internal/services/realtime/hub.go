@@ -46,6 +46,7 @@ type Client struct {
 	once   sync.Once
 
 	revoked atomic.Bool // set when the sign-in ended, so the close code says so
+	removed atomic.Bool // set when the account was erased, so the close reason says so
 }
 
 // Send is the stream of encoded events for the socket writer.
@@ -56,6 +57,9 @@ func (c *Client) Closed() <-chan struct{} { return c.closed }
 
 // Revoked reports whether the hub dropped the client because the sign-in ended.
 func (c *Client) Revoked() bool { return c.revoked.Load() }
+
+// Removed reports whether the hub dropped the client because the account was erased.
+func (c *Client) Removed() bool { return c.removed.Load() }
 
 // Hub fans database changes out to clients.
 type Hub struct {
@@ -118,6 +122,7 @@ func (h *Hub) DisconnectUser(userID string) {
 
 	for c := range h.byUser[userID] {
 		c.revoked.Store(true)
+		c.removed.Store(true)
 		h.dropLocked(c)
 	}
 }

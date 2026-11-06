@@ -213,10 +213,10 @@ func TestPrivacyEventsAreAdminOnly(t *testing.T) {
 	status(t, creator.c.Do("POST", "/api/transactions/collections",
 		tradeCollection(collector, "", tradeLine(w.material, "2", "3.25"))), 200)
 
-	before := len(privacyKinds(t, admin, ""))
+	before := len(privacyKinds(t, admin, collector))
 	csvRows(t, admin.c, "/api/admin/exports/transactions")
 
-	if len(privacyKinds(t, admin, "")) != before+1 {
+	if len(privacyKinds(t, admin, collector)) != before+1 {
 		t.Error("the admin CSV with full payout details was not logged")
 	}
 
@@ -224,7 +224,7 @@ func TestPrivacyEventsAreAdminOnly(t *testing.T) {
 	csvRows(t, staff.c, "/api/admin/exports/transactions")
 	csvRows(t, creator.c, "/api/exports/collections")
 
-	if len(privacyKinds(t, admin, "")) != before+1 {
+	if len(privacyKinds(t, admin, collector)) != before+1 {
 		t.Error("only an admin full view should be logged")
 	}
 }

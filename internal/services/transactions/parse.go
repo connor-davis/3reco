@@ -87,6 +87,23 @@ func CheckItems(items []SaleItem) error {
 	return nil
 }
 
+// CheckPricedItems is CheckItems for lines that carry a real price, such as an
+// offer: a price of zero is refused too. Request and cart lines have no price
+// yet, so they use CheckItems.
+func CheckPricedItems(items []SaleItem) error {
+	if err := CheckItems(items); err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		if price, _ := new(big.Rat).SetString(item.Price); price.Sign() <= 0 {
+			return apperr.Field("price", "Enter a price above R 0.00.")
+		}
+	}
+
+	return nil
+}
+
 // parseDay checks a YYYY-MM-DD collection day is a real calendar date.
 func parseDay(raw string) error {
 	day, err := time.Parse("2006-01-02", raw)

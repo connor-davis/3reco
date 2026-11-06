@@ -105,6 +105,11 @@ export function formatDate(iso: string): string {
   return dateFormat.format(new Date(iso));
 }
 
+/** Prints an ISO time as "5 Nov 2026, 10:42" in South African time. */
+export function formatDateTime(iso: string): string {
+  return `${formatDate(iso)}, ${formatTime(iso)}`;
+}
+
 /** Prints an ISO time as "10:42" in South African time. */
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-ZA', {
