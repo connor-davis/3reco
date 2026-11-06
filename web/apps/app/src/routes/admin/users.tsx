@@ -242,7 +242,7 @@ function UsersPage() {
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
         title={'Remove ' + (removing?.name ?? 'user') + '?'}
-        description="They lose access straight away. Their completed trade records are anonymised."
+        description="They lose access straight away. Their trade records stay because they must be kept by law. Their personal details are removed from those records."
         confirmLabel="Remove user"
         typedName={removing?.email ?? removing?.name}
         onConfirm={() => {
@@ -278,7 +278,7 @@ function PrivacyEvents() {
     {
       accessorKey: 'subject_id',
       header: 'Subject ID',
-      cell: ({ row }) => row.original.subject_id ?? 'Removed account',
+      cell: ({ row }) => row.original.subject_id ?? 'No individual subject',
     },
     {
       accessorKey: 'created_at',
@@ -309,7 +309,7 @@ function PrivacyEvents() {
                   {privacyKinds[event.kind] ?? event.kind}
                 </p>
                 <p>Actor: {event.actor_id}</p>
-                <p>Subject: {event.subject_id ?? 'Removed account'}</p>
+                <p>Subject: {event.subject_id ?? 'No individual subject'}</p>
                 <p>{formatDate(event.created_at)}</p>
               </CardContent>
             </Card>

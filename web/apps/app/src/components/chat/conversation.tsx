@@ -155,7 +155,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
                 <div
                   key={message.id}
                   className={cn(
-                    'max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-xs',
+                    'w-fit max-w-[min(85%,75ch)] rounded-2xl px-4 py-3 text-sm shadow-xs',
                     message.sender_id === user?.id
                       ? 'ml-auto bg-outgoing'
                       : 'bg-card'

@@ -187,7 +187,7 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
       title={collector ? 'Edit collector' : 'Add collector'}
       description={
         collector
-          ? 'Change this collector’s contact and payout details. Saved account numbers show only their last digits.'
+          ? 'Update this collector’s contact and payout details.'
           : 'Add someone you buy from, with how to reach and pay them.'
       }
       footer={

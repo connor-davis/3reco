@@ -7,6 +7,7 @@ import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useListings } from '@/lib/api/listings';
 import { useStats } from '@/lib/api/stats';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -41,6 +42,7 @@ function MarketPage() {
         icon={Leaf}
         emptyTitle="Community impact"
         emptyText="Completed trades appear here."
+        skeleton={<Skeleton className="h-[46px] rounded-2xl" />}
       >
         {stats.data && (
           <p className="rounded-2xl border bg-muted/50 px-4 py-3 text-sm">

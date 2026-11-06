@@ -92,7 +92,7 @@ func TestInvoiceNumberStable(t *testing.T) {
 	for _, client := range []*testutil.Client{w.buyer.c, w.seller.c, staff.c, admin.c} {
 		got := client.Do("GET", path, nil)
 		tradeWant(t, "invoice reader", got, 200)
-		for _, text := range []string{"%PDF", number, "Invoice Holder", "123456789", "10.03", "3rEco"} {
+		for _, text := range []string{"%PDF", number, "Invoice Holder", "123456789", "10.03", "3REco"} {
 			if !bytes.Contains(got.Raw, []byte(text)) {
 				t.Errorf("invoice lacks %q", text)
 			}
@@ -214,7 +214,7 @@ func TestInvoicePaginationAndExactDecimals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"%PDF", "1234ABCD", "1000000000000000000.00", "5 November 2026"} {
+	for _, text := range []string{"%PDF", "3REco", "1234ABCD", "1 000 000 000 000 000 000.00", "1.005", "5 November 2026"} {
 		if !bytes.Contains(data, []byte(text)) {
 			t.Errorf("PDF lacks %s", text)
 		}

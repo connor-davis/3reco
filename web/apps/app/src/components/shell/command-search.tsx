@@ -70,7 +70,12 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
         onValueChange={setText}
       />
       <CommandList>
-        <CommandEmpty>No results</CommandEmpty>
+        {!needle && <CommandEmpty>No results</CommandEmpty>}
+        {needle && q !== text.trim() && (
+          <p role="status" className="p-4 text-sm text-muted-foreground">
+            Searching…
+          </p>
+        )}
         {pages.length > 0 && (
           <CommandGroup heading="Pages">
             {pages.map((page) => (
@@ -85,7 +90,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
             ))}
           </CommandGroup>
         )}
-        {open && q && <SearchResults q={q} go={go} />}
+        {open && q && q === text.trim() && <SearchResults q={q} go={go} />}
       </CommandList>
     </CommandDialog>
   );
@@ -95,9 +100,32 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
 function SearchResults({ q, go }: { q: string; go: (to: string) => void }) {
   const listings = useListings({ q, limit: 8 });
   const stores = useStores({ q, limit: 8 });
+  const failed = [listings, stores].filter((query) => query.isError);
+  const loading = listings.isPending || stores.isPending;
 
   return (
     <>
+      {loading && (
+        <p role="status" className="p-4 text-sm text-muted-foreground">
+          Searching…
+        </p>
+      )}
+      {failed.length > 0 && (
+        <CommandGroup heading="Search unavailable">
+          <p role="alert" className="px-3 py-2 text-sm text-destructive">
+            We couldn’t search all materials and stores. Try again.
+          </p>
+          <CommandItem
+            value="retry-search"
+            onSelect={() => failed.forEach((query) => void query.refetch())}
+          >
+            Try search again
+          </CommandItem>
+        </CommandGroup>
+      )}
+      {!loading && failed.length === 0 && (
+        <CommandEmpty>No results</CommandEmpty>
+      )}
       {listings.data && listings.data.items.length > 0 && (
         <CommandGroup heading="Listings">
           {listings.data.items.map((listing) => (

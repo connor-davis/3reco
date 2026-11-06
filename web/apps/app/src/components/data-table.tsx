@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   type Row,
+  type RowData,
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
@@ -19,6 +20,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useIsCompact } from '@/hooks/use-mobile';
+
+declare module '@tanstack/react-table' {
+  // Numeric columns keep the same edge in both their heading and cells.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    align?: 'left' | 'right';
+  }
+}
 
 type DataTableProps<T> = {
   columns: ColumnDef<T>[];
@@ -67,10 +76,18 @@ export function DataTable<T>({
               {table.getHeaderGroups().map((group) => (
                 <TableRow key={group.id}>
                   {group.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      className={
+                        header.column.columnDef.meta?.align === 'right'
+                          ? 'text-right tabular-nums'
+                          : undefined
+                      }
+                    >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
                         <SortButton
                           direction={header.column.getIsSorted()}
+                          align={header.column.columnDef.meta?.align}
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           {flexRender(
@@ -93,7 +110,14 @@ export function DataTable<T>({
               {rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={
+                        cell.column.columnDef.meta?.align === 'right'
+                          ? 'text-right whitespace-nowrap tabular-nums'
+                          : undefined
+                      }
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -116,12 +140,13 @@ export function DataTable<T>({
 }
 
 type SortButtonProps = {
+  align?: 'left' | 'right';
   direction: false | 'asc' | 'desc';
   onClick?: (event: unknown) => void;
   children: ReactNode;
 };
 
-function SortButton({ direction, onClick, children }: SortButtonProps) {
+function SortButton({ direction, onClick, children, align }: SortButtonProps) {
   const Icon =
     direction === 'asc'
       ? ArrowUp
@@ -130,7 +155,12 @@ function SortButton({ direction, onClick, children }: SortButtonProps) {
         : ChevronsUpDown;
 
   return (
-    <Button variant="ghost" size="sm" className="-ml-3" onClick={onClick}>
+    <Button
+      variant="ghost"
+      size="sm"
+      className={align === 'right' ? '-mr-3' : '-ml-3'}
+      onClick={onClick}
+    >
       {children}
       <Icon data-icon="inline-end" aria-hidden="true" />
     </Button>

@@ -52,7 +52,7 @@ function ResetPasswordPage() {
   }
 
   const problem = !token
-    ? 'This reset link is missing its token. Request a fresh email.'
+    ? 'This reset link is incomplete. Request a new email.'
     : failure;
 
   return (

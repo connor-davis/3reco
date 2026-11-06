@@ -85,12 +85,14 @@ function MaterialsPage() {
     {
       accessorKey: 'carbon_factor',
       header: 'Carbon factor (kg CO₂ / kg)',
+      meta: { align: 'right' },
       enableSorting: false,
     },
     { accessorKey: 'gw_code', header: 'GW code', enableSorting: false },
     {
       accessorKey: 'price',
       header: 'Base price',
+      meta: { align: 'right' },
       cell: ({ row }) => formatRate(row.original.price),
     },
     {
@@ -163,7 +165,7 @@ function MaterialsPage() {
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
         title={`Remove ${removing?.name ?? 'material'}?`}
-        description="It leaves the catalogue. A material that is in use cannot be removed."
+        description="It leaves the catalogue. Materials used in past trades or stock cannot be deleted. Past trades stay."
         confirmLabel="Remove material"
         onConfirm={() => {
           if (removing) {

@@ -6,8 +6,17 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import type { RequestStatus } from '@/lib/api/types';
 
 type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
+
+const requestStatuses = {
+  pending: { label: 'Pending', variant: 'secondary' },
+  offered: { label: 'Offer sent', variant: 'secondary' },
+  accepted: { label: 'Accepted', variant: 'default' },
+  rejected: { label: 'Rejected', variant: 'destructive' },
+  cancelled: { label: 'Cancelled', variant: 'destructive' },
+} satisfies Record<RequestStatus, { label: string; variant: BadgeVariant }>;
 
 const statusVariant: Record<string, BadgeVariant> = {
   Paid: 'default',
@@ -33,7 +42,10 @@ const dotColour: Record<BadgeVariant, string> = {
 
 /** One dot and word for every deal, payment and profile status (design 05). */
 export function StatusBadge({ status }: { status: string }) {
-  const variant = statusVariant[status] ?? 'outline';
+  const requestStatus = Object.hasOwn(requestStatuses, status)
+    ? requestStatuses[status as RequestStatus]
+    : undefined;
+  const variant = requestStatus?.variant ?? statusVariant[status] ?? 'outline';
 
   return (
     <Badge
@@ -44,7 +56,7 @@ export function StatusBadge({ status }: { status: string }) {
         className={cn('size-2 rounded-full', dotColour[variant])}
         aria-hidden="true"
       />
-      {status}
+      {requestStatus?.label ?? status}
     </Badge>
   );
 }
