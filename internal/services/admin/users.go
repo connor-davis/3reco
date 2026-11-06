@@ -55,6 +55,7 @@ func (s *Service) Users(
 	user auth.User,
 	cursor string,
 	limit int,
+	search, role string,
 ) (paging.Page[store.User], error) {
 	var empty paging.Page[store.User]
 
@@ -62,12 +63,16 @@ func (s *Service) Users(
 		return empty, err
 	}
 
+	if role != "" && !slices.Contains(roles, role) {
+		return empty, apperr.BadRequest("Pick admin, staff, business or collector.", nil)
+	}
+
 	cur, err := paging.ParseCursor(cursor)
 	if err != nil {
 		return empty, err
 	}
 
-	rows, err := s.store.Users(ctx, cur, limit)
+	rows, err := s.store.Users(ctx, cur, limit, paging.SearchPattern(search), role)
 	if err != nil {
 		return empty, err
 	}

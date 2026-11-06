@@ -15,6 +15,20 @@ export function useTransactions(
     true
   );
 }
+/** Count, kg and value of a whole filtered list, not just one page of it. */
+export function useTransactionTotals(
+  kind: 'mine' | 'purchases' | 'sales' = 'mine',
+  filters: Omit<Paging, 'cursor' | 'limit'> = {},
+  enabled = true
+) {
+  return useResource<T.TransactionTotals>(
+    ['transactions', 'totals', kind, filters],
+    `/transactions/totals${queryString({ kind, ...filters })}`,
+    ['transactions:me'],
+    true,
+    enabled
+  );
+}
 export function useTransaction(id: string) {
   return useResource<T.Transaction>(
     ['transactions', id],

@@ -236,6 +236,12 @@ export interface Receipt {
   size: number;
   uploaded_at: string;
 }
+/** Totals over a whole filtered transaction list. Weight is kg; value is rand. */
+export interface TransactionTotals {
+  count: number;
+  weight: string;
+  value: string;
+}
 export interface Transaction {
   id: string;
   type: 'c2b' | 'b2b';

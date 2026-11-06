@@ -33,9 +33,18 @@ type Input struct {
 	IsListed   *bool   `json:"is_listed"`
 }
 
-// List reads only the caller's stock.
-func (service *Service) List(ctx context.Context, owner string, query paging.Query) (any, error) {
-	items, err := service.store.List(ctx, owner, query)
+// List reads only the caller's stock. listed is "", "listed" or "unlisted".
+func (service *Service) List(
+	ctx context.Context,
+	owner string,
+	query paging.Query,
+	listed string,
+) (any, error) {
+	if listed != "" && listed != "listed" && listed != "unlisted" {
+		return nil, apperr.BadRequest("Use listed or unlisted for status.", nil)
+	}
+
+	items, err := service.store.List(ctx, owner, query, listed)
 	if err != nil {
 		return nil, err
 	}

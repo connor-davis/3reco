@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,8 +22,9 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { useExport, type ExportKind } from '@/lib/api/exports';
-import { useTransactions } from '@/lib/api/transactions';
+import { useTransactions, useTransactionTotals } from '@/lib/api/transactions';
 import type { Transaction } from '@/lib/api/types';
+import { useDebounced } from '@/lib/use-debounced';
 import {
   formatDate,
   formatKg,
@@ -31,6 +33,8 @@ import {
   toCents,
   toGrams,
 } from '@/lib/format';
+
+const day = (date: Date) => format(date, 'yyyy-MM-dd');
 
 type Props = {
   title: string;
@@ -87,39 +91,33 @@ export function RecordList({
   stats = false,
   readOnly = false,
 }: Props) {
-  const pager = usePager();
-  const list = useTransactions(kind, pager.params);
-  const download = useExport(exportKind ?? 'transactions');
   const [query, setQuery] = useState('');
   const [range, setRange] = useState<DateRange | undefined>();
   const [type, setType] = useState('all');
   const [csv, setCsv] = useState('transaction');
   const [open, setOpen] = useState<Transaction | null>(null);
 
-  const rows = (list.data?.items ?? []).filter(
-    (row) => !collectionsOnly || row.type === 'c2b'
-  );
-  const shown = rows.filter((row) => {
-    if (type !== 'all' && row.type !== type) return false;
+  // The server does the searching, so the filters ride along with every page.
+  const q = useDebounced(query.trim());
+  const filters = {
+    q,
+    // Collections are always c2b; the server filters, not this page.
+    type: collectionsOnly ? 'c2b' : type === 'all' ? undefined : type,
+    from: range?.from && day(range.from),
+    to: range?.to && day(range.to),
+  };
+  const pager = usePager(50, filters);
+  const list = useTransactions(kind, pager.params);
+  const totals = useTransactionTotals(kind, filters, stats);
+  const download = useExport(exportKind ?? 'transactions');
 
-    const day = new Date(dayOf(row));
-    if (range?.from && day < range.from) return false;
-    const end = range?.to && new Date(range.to);
-    end?.setHours(23, 59, 59, 999);
-    if (end && day > end) return false;
-
-    const text = `${row.id} ${row.invoice_number} ${row.seller.name} ${row.buyer.name} ${row.items
-      .map((item) => item.material_name)
-      .join(' ')}`;
-
-    return text.toLowerCase().includes(query.toLowerCase());
-  });
-
-  const totalCents = shown.reduce(
-    (sum, row) => sum + toCents(row.total_price),
-    0
-  );
-  const totalGrams = shown.reduce((sum, row) => sum + weightOf(row), 0);
+  const shown = list.data?.items ?? [];
+  const filtered = !!(q || range?.from || (!collectionsOnly && type !== 'all'));
+  const caption = !filtered
+    ? 'All time'
+    : range?.from && !q && type === 'all'
+      ? `${format(range.from, 'dd MMM')} – ${format(range.to ?? range.from, 'dd MMM yyyy')}`
+      : 'Matching your filters';
 
   function exportCsv() {
     // The export routes want full timestamps, covering the whole last day.
@@ -140,70 +138,87 @@ export function RecordList({
     <>
       <PageHeader title={title} description={description} actions={actions} />
       {stats && (
-        <div className="mb-6">
-          <StatGrid>
+        <div className="mb-8">
+          <StatGrid threeUp>
             <StatCard
               label="Collection value"
-              value={formatRand(totalCents)}
+              value={formatRand(toCents(totals.data?.value ?? '0'))}
+              hint={caption}
               icon={Receipt}
+              isLoading={totals.isLoading}
+              unavailable={totals.isError}
             />
             <StatCard
               label="Material weight"
-              value={formatKg(totalGrams / 1000)}
+              value={formatKg(totals.data?.weight ?? '0')}
+              hint={caption}
               icon={Boxes}
+              isLoading={totals.isLoading}
+              unavailable={totals.isError}
             />
             <StatCard
               label="Collections"
-              value={String(shown.length)}
+              value={String(totals.data?.count ?? 0)}
+              hint={caption}
               icon={FileText}
+              isLoading={totals.isLoading}
+              unavailable={totals.isError}
             />
           </StatGrid>
         </div>
       )}
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <SearchBox label="Search records" value={query} onChange={setQuery} />
-        <DateRangePicker
-          value={range}
-          onChange={setRange}
-          placeholder="From â€“ to date"
-          align="start"
+        <SearchBox
+          label="Search records"
+          value={query}
+          onChange={setQuery}
+          className="min-w-60 flex-1 sm:max-w-none"
         />
-        {typeFilter && (
-          <ChoiceSelect
-            label="Transaction type"
-            value={type}
-            options={typeOptions}
-            onChange={setType}
+        <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
+          <DateRangePicker
+            value={range}
+            onChange={setRange}
+            placeholder="From – to date"
+            align="start"
           />
-        )}
-        {exportKind && !readOnly && (
-          <>
+          {typeFilter && (
             <ChoiceSelect
-              label="Export format"
-              value={csv}
-              options={csvOptions}
-              onChange={setCsv}
+              label="Transaction type"
+              value={type}
+              options={typeOptions}
+              onChange={setType}
             />
-            <Button
-              variant="outline"
-              disabled={download.isPending}
-              onClick={exportCsv}
-            >
-              <Download data-icon="inline-start" />
-              Export
-            </Button>
-          </>
-        )}
+          )}
+          {exportKind && !readOnly && (
+            <>
+              <ChoiceSelect
+                label="Export format"
+                value={csv}
+                options={csvOptions}
+                onChange={setCsv}
+              />
+              <Button
+                variant="outline"
+                className="h-11"
+                disabled={download.isPending}
+                onClick={exportCsv}
+              >
+                <Download data-icon="inline-start" />
+                Export
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       <DataState
         query={list}
         isEmpty={shown.length === 0}
         icon={Receipt}
-        emptyTitle={rows.length === 0 ? emptyTitle : 'No matching records'}
+        emptyTitle={filtered ? 'No matching records' : emptyTitle}
         emptyText={
-          rows.length === 0
-            ? 'They appear here once a deal is recorded.'
-            : 'Try other dates or words.'
+          filtered
+            ? 'Try other dates or words.'
+            : 'They appear here once a deal is recorded.'
         }
         skeleton={<RowsSkeleton />}
       >

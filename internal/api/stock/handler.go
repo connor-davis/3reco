@@ -40,8 +40,10 @@ func (handler *Handler) list(c fiber.Ctx) error {
 		return err
 	}
 
+	query.Like = paging.SearchPattern(c.Query("q"))
+
 	user, _ := middleware.CurrentUser(c)
-	items, err := handler.svc.List(c.Context(), user.ID, query)
+	items, err := handler.svc.List(c.Context(), user.ID, query, c.Query("status"))
 	if err != nil {
 		return err
 	}

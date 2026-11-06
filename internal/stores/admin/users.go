@@ -28,15 +28,25 @@ type Store struct{ db *database.DB }
 // New builds the store.
 func New(db *database.DB) *Store { return &Store{db: db} }
 
-// Users returns up to limit+1 users who are not removed, newest first.
-func (s *Store) Users(ctx context.Context, cur paging.Cursor, limit int) ([]User, error) {
+// Users returns up to limit+1 users who are not removed, newest first. like is
+// a search pattern over name, email and business name (never the sealed ID or
+// bank numbers); role is an exact match. Both are optional.
+func (s *Store) Users(
+	ctx context.Context,
+	cur paging.Cursor,
+	limit int,
+	like, role string,
+) ([]User, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT u.id, `+database.DisplayName("u")+`, u.email, u.role, u.profile_complete, u.created_at
 		FROM users u
 		WHERE NOT u.is_removed
 			AND ($1::timestamptz IS NULL OR (u.created_at, u.id) < ($1, $2))
+			AND ($4 = '' OR u.name ILIKE $4 OR u.email ILIKE $4 OR u.business_name ILIKE $4
+				OR concat_ws(' ', u.first_name, u.last_name) ILIKE $4)
+			AND ($5 = '' OR u.role = $5)
 		ORDER BY u.created_at DESC, u.id DESC
-		LIMIT $3`, cur.At, cur.ID, limit+1)
+		LIMIT $3`, cur.At, cur.ID, limit+1, like, role)
 	if err != nil {
 		return nil, err
 	}

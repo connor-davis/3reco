@@ -15,6 +15,8 @@ func (handler *Handler) list(c fiber.Ctx) error {
 		return err
 	}
 
+	query.Like = paging.SearchPattern(c.Query("q"))
+
 	items, err := handler.svc.List(c.Context(), query)
 	if err != nil {
 		return err

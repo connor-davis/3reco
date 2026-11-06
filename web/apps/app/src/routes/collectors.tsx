@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Plus, Trash2, Users } from 'lucide-react';
@@ -74,20 +75,16 @@ function RemoveCollector({ collector, onClose }: RemoveProps) {
 
 function CollectorsPage() {
   const { user } = useAuth();
-  const pager = usePager();
-  const list = useCollectors(pager.params);
   const [query, setQuery] = useState('');
+  const pager = usePager(50, { q: useDebounced(query.trim()) });
+  const list = useCollectors(pager.params);
   const [editing, setEditing] = useState<Collector | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [removing, setRemoving] = useState<Collector | null>(null);
 
   // Only admin and staff may remove a collector. Businesses add and edit.
   const canRemove = user?.role === 'admin' || user?.role === 'staff';
-  const shown = (list.data?.items ?? []).filter((collector) =>
-    `${collector.name} ${collector.phone ?? ''}`
-      .toLowerCase()
-      .includes(query.toLowerCase())
-  );
+  const shown = list.data?.items ?? [];
 
   function openForm(collector?: Collector) {
     setEditing(collector);

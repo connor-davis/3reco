@@ -45,7 +45,7 @@ func caller(c fiber.Ctx) auth.User {
 
 func (h *Handler) users(c fiber.Ctx) error {
 	page, err := h.svc.Users(c.Context(), caller(c), c.Query("cursor"),
-		paging.Limit(c.Query("limit")))
+		paging.Limit(c.Query("limit")), c.Query("q"), c.Query("role"))
 	if err != nil {
 		return err
 	}

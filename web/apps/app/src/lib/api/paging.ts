@@ -3,9 +3,16 @@ export interface Page<T> {
   next_cursor: string | null;
   has_more: boolean;
 }
+/** Cursor paging plus the optional search and filters every list shares. */
 export interface Paging {
   cursor?: string;
   limit?: number;
+  q?: string;
+  type?: string;
+  status?: string;
+  role?: string;
+  from?: string;
+  to?: string;
 }
 
 export function queryString(values: object = {}) {

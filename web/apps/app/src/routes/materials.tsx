@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Boxes, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -31,18 +32,16 @@ export const Route = createFileRoute('/materials')({
 
 function MaterialsPage() {
   const { user } = useAuth();
-  const pager = usePager(100);
+  const [query, setQuery] = useState('');
+  const pager = usePager(100, { q: useDebounced(query.trim()) });
   const list = useMaterials(pager.params);
   const remove = useDeleteMaterial();
-  const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Material | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [removing, setRemoving] = useState<Material | null>(null);
 
   const isAdmin = user?.role === 'admin';
-  const shown = (list.data?.items ?? []).filter((material) =>
-    material.name.toLowerCase().includes(query.toLowerCase())
-  );
+  const shown = list.data?.items ?? [];
 
   function openForm(material?: Material) {
     setEditing(material);

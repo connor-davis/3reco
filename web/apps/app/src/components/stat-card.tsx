@@ -53,10 +53,25 @@ export function StatCard({
   );
 }
 
-/** A responsive row of stat tiles: 1 column to 479px, then 2, then 4. */
-export function StatGrid({ children }: { children: React.ReactNode }) {
+/**
+ * A responsive row of stat tiles: 1 column to 479px, then 2, then 4. With
+ * `threeUp` (three tiles) it is 1 column, then 3 equal ones from 1024px.
+ */
+export function StatGrid({
+  children,
+  threeUp = false,
+}: {
+  children: React.ReactNode;
+  threeUp?: boolean;
+}) {
   return (
-    <div className="grid gap-4 min-[480px]:grid-cols-2 xl:grid-cols-4">
+    <div
+      className={
+        threeUp
+          ? 'grid gap-4 lg:grid-cols-3'
+          : 'grid gap-4 min-[480px]:grid-cols-2 xl:grid-cols-4'
+      }
+    >
       {children}
     </div>
   );
