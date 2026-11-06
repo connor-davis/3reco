@@ -14,6 +14,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MaterialsRouteImport } from './routes/materials'
@@ -61,6 +62,11 @@ const SignUpRoute = SignUpRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/setup'
     | '/sign-in'
     | '/sign-up'
     | '/stock'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/setup'
     | '/sign-in'
     | '/sign-up'
     | '/stock'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/setup'
     | '/sign-in'
     | '/sign-up'
     | '/stock'
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   MaterialsRoute: typeof MaterialsRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SetupRoute: typeof SetupRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   StockRoute: typeof StockRoute
@@ -429,6 +442,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -605,6 +625,7 @@ const rootRouteChildren: RootRouteChildren = {
   MaterialsRoute: MaterialsRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SetupRoute: SetupRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   StockRoute: StockRoute,

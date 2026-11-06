@@ -28,6 +28,14 @@ export function useCollectorUsers(params: Paging = {}) {
     true
   );
 }
+/** Finishes setup. A guest sends the role they chose; others send nothing. */
+export function useFinishSetup() {
+  return useWrite<{ role?: 'collector' | 'business' }, T.Ok>(
+    '/profile/setup',
+    'POST',
+    [['profile'], ['auth'], ['stores'], ['users']]
+  );
+}
 export function useUpdateProfile() {
   return useWrite<T.ProfileInput, T.Ok>('/profile', 'PATCH', [
     ['profile'],

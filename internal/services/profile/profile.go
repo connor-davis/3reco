@@ -182,6 +182,10 @@ func (service *Service) Update(ctx context.Context, id string, in Input) error {
 				item.AgreedToTerms = *in.AgreedToTerms
 			}
 
+			if item.Role == "guest" && in.ProfileComplete != nil && *in.ProfileComplete {
+				return apperr.BadRequest("Finish your setup to complete your profile.", nil)
+			}
+
 			if item.Name == "" {
 				return apperr.Field("name", "Enter your name.")
 			}

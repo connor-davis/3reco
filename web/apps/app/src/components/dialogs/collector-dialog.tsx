@@ -1,3 +1,4 @@
+import { tidyName } from '@/lib/names';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
@@ -135,6 +136,7 @@ function toInput(values: Values): CollectorInput {
 
   return {
     ...rest,
+    name: tidyName(values.name),
     area_code: Number(area_code),
     bank_account_holder_name: bank ? values.bank_account_holder_name : '',
     bank_name: bank ? values.bank_name : '',
@@ -204,7 +206,7 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
         className="grid gap-4 sm:grid-cols-2"
         noValidate
       >
-        <TextField control={control} name="name" label="Full name" />
+        <TextField control={control} name="name" label="Full name" personName />
         <TextField control={control} name="email" label="Email" type="email" />
         <TextField control={control} name="phone" label="Phone" type="tel" />
         <TextField

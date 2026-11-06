@@ -18,7 +18,7 @@ import (
 )
 
 // Roles an admin may hand out.
-var roles = []string{auth.RoleAdmin, auth.RoleStaff, auth.RoleBusiness, auth.RoleCollector}
+var roles = []string{auth.RoleGuest, auth.RoleAdmin, auth.RoleStaff, auth.RoleBusiness, auth.RoleCollector}
 
 // Service is the admin rules. The routes check the caller's role, and the
 // methods that change data check it again.
@@ -85,7 +85,7 @@ func (s *Service) SetRole(ctx context.Context, user auth.User, id, role string) 
 	}
 
 	if !slices.Contains(roles, role) {
-		return apperr.Field("role", "Pick admin, staff, business or collector.")
+		return apperr.Field("role", "Pick guest, admin, staff, business or collector.")
 	}
 
 	if id == user.ID {

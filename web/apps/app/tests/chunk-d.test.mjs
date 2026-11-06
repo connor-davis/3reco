@@ -59,6 +59,8 @@ function load(relative, overrides = {}) {
           return { cn: (...classes) => classes.filter(Boolean).join(' ') };
         if (name === '@/lib/format')
           return read(new URL('../src/lib/format.ts', import.meta.url));
+        if (name === '@/lib/names')
+          return read(new URL('../src/lib/names.ts', import.meta.url));
         if (name === '@/lib/api/client') return { ApiError: Error };
         if (name.startsWith('@/components/') || name === 'recharts') return ui;
         if (name.startsWith('.'))

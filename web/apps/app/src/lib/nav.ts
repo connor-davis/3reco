@@ -48,6 +48,8 @@ const browse: NavLink = {
   icon: Search,
 };
 
+const setup: NavLink = { label: 'Finish setup', to: '/setup', icon: UserPlus };
+
 const staffWorkspace: NavLink[] = [
   { label: 'Collections', to: '/collections', icon: ClipboardList },
   { label: 'Collectors', to: '/collectors', icon: Users },
@@ -114,6 +116,8 @@ export function navFor(role: Role | null): NavGroup[] {
       ];
     case 'collector':
       return [{ links: [dashboard, browse] }];
+    case 'guest':
+      return [{ links: [setup] }];
     default:
       return [
         {
@@ -176,6 +180,11 @@ export function tabsFor(role: Role | null): Tab[] {
         },
         account,
       ];
+    case 'guest':
+      return [
+        { label: 'Setup', to: '/setup', icon: UserPlus, raised: true },
+        account,
+      ];
     default:
       return [
         search,
@@ -197,6 +206,7 @@ export const authPaths = [
   '/verify-email',
   '/forgot-password',
   '/reset-password',
+  '/setup',
 ];
 
 export const isAuthPath = (pathname: string) => authPaths.includes(pathname);

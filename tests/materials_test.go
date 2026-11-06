@@ -9,7 +9,7 @@ import (
 func TestMaterialsAdminOnly(t *testing.T) {
 	app := testutil.Server(t)
 	admin, _ := domainUser(t, app, "admin")
-	member, _ := domainUser(t, app, "")
+	member, _ := domainUser(t, app, "collector")
 	staff, _ := domainUser(t, app, "staff")
 	anonymous := app.NewClient(t)
 	body := map[string]any{"name": "Copper", "price": "2.1234567890123456789", "carbon_factor": "2.25", "gw_code": "GW1"}

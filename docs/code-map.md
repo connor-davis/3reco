@@ -29,6 +29,7 @@ line when you add an owner.
 | `0008_perf_indexes.sql` | Sort-order indexes for market, stock, transactions, requests, messages, notifications and users |
 | `0009_quiet_read_receipts.sql` | Drops the `realtime` trigger on `request_message_reads` |
 | `0010_keep_transactions.sql` | Blocks DELETE and TRUNCATE on `transactions`, `transaction_items` and `transaction_receipts` (trade records are kept; personal details go by UPDATE) |
+| `0011_guest_role.sql` | Every user has a role: backfills no-role users to `guest`, adds `guest` to the role check, default `guest`, NOT NULL |
 
 Never rename a merged migration. Add a new file.
 
@@ -41,6 +42,8 @@ Never rename a merged migration. Add a new file.
 | Sign-up, sign-in, sessions, verify email, reset password, admin create, roles | `internal/services/auth/auth.go` |
 | Session cookie, device cookie, who is calling, `RequireUser`, `RequireRole`, CSRF, rate limit | `internal/api/middleware/middleware.go` |
 | `/api/auth/*` routes | `internal/api/auth/handlers.go` |
+| Guest gate: a signed-in guest may only use their own account, profile, setup and privacy notice (`RequireSetup`, `guestPaths`) | `internal/api/middleware/middleware.go`, registered in `internal/api/server.go` |
+| Guest and setup tests (403 on every gated area, setup rules) | `tests/guest_test.go` |
 
 ## Trade and operations
 
@@ -120,6 +123,7 @@ Never rename a merged migration. Add a new file.
 | Catalog reads and administrator mutation handlers | `internal/api/materials/catalog.go` |
 | Material catalog route registration | `internal/api/materials/handler.go` |
 | Private profile edits and safe account directory handlers | `internal/api/profile/handler.go` |
+| Finish setup: a guest picks collector or business once, required fields checked | `internal/services/profile/setup.go`, `Finish` in `internal/stores/profile/profile.go`, `POST /api/profile/setup` |
 | Caller avatar upload/delete and public image stream with cache headers | `internal/api/profile/avatar.go` |
 | Avatar byte validation, caller-only replacement and after-commit object removal | `internal/services/profile/avatar.go` |
 | Active avatar reference reads, row locks and updates | `internal/stores/profile/avatar.go` |
@@ -176,6 +180,10 @@ Never rename a merged migration. Add a new file.
 | Signed-in user context and auth query cache | `web/apps/app/src/lib/auth/`, `src/lib/api/auth.ts` |
 | API error to form field errors | `web/apps/app/src/lib/form-errors.ts` |
 | Auth page layout (sign-in, sign-up, verify, reset) | `web/apps/app/src/components/auth-shell.tsx`, routes `src/routes/{sign-in,sign-up,verify-email,forgot-password,reset-password}.tsx` |
+| Full-page setup (`/setup`): choose collector or business, then the forms in `routes/profile/-components/forms.tsx` | `web/apps/app/src/routes/setup.tsx` |
+| Who must finish setup (guest, or unfinished collector/business) and the redirect | `web/apps/app/src/lib/setup.ts`, `src/components/setup-gate.tsx` (wraps the outlet in `routes/__root.tsx`), tests in `tests/setup.test.mjs` |
+| Tidy a person's name (ALL CAPS / all lower only); used on first/last name, sign-up and collector name | `web/apps/app/src/lib/names.ts` (`personName` prop of `TextField`), tests in `tests/names.test.mjs` |
+| Role gate per page, role labels, role nav and phone tabs | `web/apps/app/src/lib/access.ts`, `src/components/access-guard.tsx`, `src/lib/nav.ts` |
 
 ## Web app serving and deployment
 

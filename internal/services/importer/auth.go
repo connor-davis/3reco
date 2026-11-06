@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	roles     = []string{"admin", "staff", "business", "collector"}
+	roles     = []string{"guest", "admin", "staff", "business", "collector"}
 	provinces = []string{
 		"Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
 		"Mpumalanga", "Northern Cape", "North West", "Western Cape",

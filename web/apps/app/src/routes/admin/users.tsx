@@ -32,7 +32,7 @@ export const Route = createFileRoute('/admin/users')({
   ),
 });
 
-const roleOptions = ['business', 'collector', 'staff', 'admin'];
+const roleOptions = ['guest', 'business', 'collector', 'staff', 'admin'];
 const filterOptions = [{ value: 'all', label: 'All roles' }, ...roleOptions];
 
 function AdminPage() {

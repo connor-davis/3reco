@@ -32,17 +32,18 @@ const allowed: Record<PageId, Role[]> = {
   incoming: ['business'],
   outgoing: ['business'],
   cart: ['business'],
-  profile: ['admin', 'staff', 'business', 'collector'],
+  profile: ['guest', 'admin', 'staff', 'business', 'collector'],
   users: ['admin'],
   chats: ['admin'],
 };
 
-/** A signed-in account can have no role yet (null); it opens nothing restricted. */
+/** A guest (no role yet) opens nothing but their profile and the setup. */
 export function canOpen(role: Role | null, page: PageId): boolean {
   return role !== null && allowed[page].includes(role);
 }
 
 export const roleLabels: Record<Role, string> = {
+  guest: 'Guest',
   admin: 'Admin',
   staff: 'Staff',
   business: 'Business',

@@ -25,7 +25,7 @@ func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client,
 	var id string
 	err := app.DB.Pool.QueryRow(
 		context.Background(),
-		`UPDATE users SET role=NULLIF($2,''),
+		`UPDATE users SET role=COALESCE(NULLIF($2,''),'guest'),
 		phone=$3,id_number=$4,bank_account_number=$5,
 		bank_account_holder_name='Private Holder',bank_name='Private Bank',bank_branch_code='123456',
 		bank_account_type='Savings',

@@ -43,6 +43,7 @@ const subtitles = {
   collector: 'Collector account',
   admin: 'Admin workspace',
   staff: 'Staff workspace',
+  guest: 'New account',
 } as const;
 
 export function AppSidebar() {

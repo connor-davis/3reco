@@ -81,6 +81,7 @@ func TestLiveEventsReachOnlyTheAllowedClient(t *testing.T) {
 	signIn(t, b, emailB, goodPassword)
 
 	idA, idB := userID(t, a), userID(t, b)
+	tradeExec(t, app, `UPDATE users SET role = 'business' WHERE id = ANY($1)`, []string{idA, idB})
 	topicA := "notifications:" + idA
 
 	sockA, _, err := dial(t, app, a, testutil.WebOrigin)
@@ -175,6 +176,7 @@ func TestLiveHandshakeIsChecked(t *testing.T) {
 	}
 
 	signIn(t, c, signUp(t, app, c, true), goodPassword)
+	tradeExec(t, app, `UPDATE users SET role = 'business' WHERE id = $1`, userID(t, c))
 
 	// A signed-in browser on another site: refused with 403.
 	if _, resp, err := dial(t, app, c, "https://evil.example"); err == nil || resp == nil || resp.StatusCode != 403 {
@@ -198,6 +200,7 @@ func TestLiveSocketAnswersPing(t *testing.T) {
 
 	email := signUp(t, app, c, true)
 	signIn(t, c, email, goodPassword)
+	tradeExec(t, app, `UPDATE users SET role = 'business' WHERE id = $1`, userID(t, c))
 
 	sock, _, err := dial(t, app, c, testutil.WebOrigin)
 	if err != nil {
