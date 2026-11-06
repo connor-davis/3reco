@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Info, LoaderCircle, MessageSquare } from 'lucide-react';
 import { StatusBadge } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
@@ -13,7 +19,6 @@ import { OfferDialog } from '@/components/dialogs/offer-dialog';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useMessageHistory, useReadMessages } from '@/lib/api/messages';
 import type { TradeRequest } from '@/lib/api/types';
@@ -63,42 +68,87 @@ export function Conversation({ request }: { request: TradeRequest }) {
   const seller = request.seller.id === user?.id;
   const participant = seller || request.buyer.id === user?.id;
   // An admin may read any chat, but never writes or acts in one.
-  const viewer = user?.role === 'admin' && !participant;
+  const viewer = user?.role === 'admin';
   const canAct = user?.role === 'business' && participant && !isClosed(request);
   const messages = orderedMessages(
     history.data?.pages.flatMap((page) => page.items) ?? []
   );
   const newest = messages.at(-1)?.id;
-  const newestIncoming = messages
-    .filter((message) => message.sender_id !== user?.id)
-    .at(-1)?.id;
-  const bottom = useRef<HTMLDivElement>(null);
+  const scroll = useRef<HTMLDivElement>(null);
+  const older = useRef<HTMLDivElement>(null);
+  const prepend = useRef<{ height: number; top: number } | null>(null);
+  const lastNewest = useRef<string | undefined>(undefined);
+  const atBottom = useRef(true);
   const lastRead = useRef<string | null>(null);
-  const { fetchNextPage, hasNextPage, isFetching, isFetchNextPageError } =
-    history;
+  const {
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchNextPageError,
+    isFetchingNextPage,
+  } = history;
 
-  // Cursors run oldest first. Reach the tail before enabling the composer.
-  useEffect(() => {
-    if (hasNextPage && !isFetching && !isFetchNextPageError)
-      void fetchNextPage();
-  }, [fetchNextPage, hasNextPage, isFetching, isFetchNextPageError]);
+  const loadOlder = useCallback(() => {
+    const viewport = scroll.current;
+    if (!viewport || !hasNextPage || isFetching) return;
+    prepend.current = {
+      height: viewport.scrollHeight,
+      top: viewport.scrollTop,
+    };
+    void fetchNextPage().then((result) => {
+      if (result.isFetchNextPageError) prepend.current = null;
+    });
+  }, [fetchNextPage, hasNextPage, isFetching]);
+
+  useLayoutEffect(() => {
+    const viewport = scroll.current;
+    if (!viewport || !newest) return;
+    if (prepend.current) {
+      viewport.scrollTop =
+        prepend.current.top + viewport.scrollHeight - prepend.current.height;
+      prepend.current = null;
+    } else if (
+      !lastNewest.current ||
+      (newest !== lastNewest.current && atBottom.current)
+    ) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
+    lastNewest.current = newest;
+  }, [newest, messages.length]);
 
   useEffect(() => {
-    if (!hasNextPage) bottom.current?.scrollIntoView({ block: 'end' });
-  }, [newest, hasNextPage, request.status]);
+    const viewport = scroll.current;
+    if (
+      !viewport ||
+      !older.current ||
+      !hasNextPage ||
+      isFetching ||
+      isFetchNextPageError ||
+      typeof IntersectionObserver === 'undefined'
+    )
+      return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (
+          entry.isIntersecting &&
+          viewport.scrollHeight > viewport.clientHeight
+        )
+          loadOlder();
+      },
+      { root: viewport, rootMargin: '100px 0px 0px 0px' }
+    );
+    observer.observe(older.current);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetching, isFetchNextPageError, loadOlder]);
 
   const markRead = read.mutate;
   useEffect(() => {
-    if (
-      viewer ||
-      !newestIncoming ||
-      hasNextPage ||
-      lastRead.current === newestIncoming
-    )
-      return;
-    lastRead.current = newestIncoming;
+    // Opening the recent page marks the request read, even if every recent
+    // line was ours. Loading older pages must not send another receipt.
+    if (viewer || !newest || lastRead.current === newest) return;
+    lastRead.current = newest;
     markRead();
-  }, [viewer, newestIncoming, hasNextPage, markRead]);
+  }, [viewer, newest, markRead]);
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
@@ -154,10 +204,50 @@ export function Conversation({ request }: { request: TradeRequest }) {
           </div>
         )}
       </div>
-      <ScrollArea className="min-h-0 flex-1">
+      <div
+        ref={scroll}
+        className="min-h-0 flex-1 overflow-y-auto [overflow-anchor:none]"
+        onScroll={() => {
+          const viewport = scroll.current;
+          if (viewport)
+            atBottom.current =
+              viewport.scrollHeight -
+                viewport.scrollTop -
+                viewport.clientHeight <
+              100;
+        }}
+      >
         <div className="space-y-4 px-4 py-6 sm:px-6">
+          <div ref={older}>
+            {hasNextPage && (
+              <Button
+                variant="outline"
+                disabled={isFetching}
+                onClick={loadOlder}
+              >
+                Load older messages
+              </Button>
+            )}
+            {isFetchingNextPage && (
+              <p
+                role="status"
+                className="flex items-center gap-2 text-sm text-muted-foreground"
+              >
+                <LoaderCircle className="size-4 animate-spin" /> Loading older
+                messages…
+              </p>
+            )}
+            {isFetchNextPageError && (
+              <p role="alert">Could not load older messages. Try again.</p>
+            )}
+            {history.isSuccess && !hasNextPage && messages.length > 0 && (
+              <p className="text-center text-xs text-muted-foreground">
+                Beginning of conversation
+              </p>
+            )}
+          </div>
           <DataState
-            query={history}
+            query={{ ...history, isError: history.isLoadingError }}
             isEmpty={!messages.length}
             icon={MessageSquare}
             emptyTitle="Start the conversation"
@@ -192,16 +282,6 @@ export function Conversation({ request }: { request: TradeRequest }) {
               ))}
             </div>
           </DataState>
-          {hasNextPage && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Loading the latest messages…
-            </p>
-          )}
-          {isFetchNextPageError && (
-            <Button variant="outline" onClick={() => void fetchNextPage()}>
-              Try loading messages again
-            </Button>
-          )}
           {request.status === 'offered' && (
             <OfferCard
               request={request}
@@ -217,9 +297,8 @@ export function Conversation({ request }: { request: TradeRequest }) {
               transactionId={actions.transactionId}
             />
           )}
-          <div ref={bottom} />
         </div>
-      </ScrollArea>
+      </div>
       <footer className="space-y-3 border-t bg-background px-4 py-4 sm:px-6">
         {actions.error && (
           <p role="alert" className="text-sm text-destructive">
@@ -253,10 +332,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
             <Button
               type="submit"
               disabled={
-                actions.isPending ||
-                history.isPending ||
-                history.isError ||
-                !!hasNextPage
+                actions.isPending || history.isPending || history.isLoadingError
               }
             >
               Send

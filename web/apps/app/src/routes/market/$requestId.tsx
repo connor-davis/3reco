@@ -1,18 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { Guarded } from '@/components/access-guard';
-import { MessagesLayout } from '@/components/chat/messages-layout';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-// The deal room: the same screen as /messages with one request open.
+// Old notifications and links still reach the single Messages chat reader.
 export const Route = createFileRoute('/market/$requestId')({
-  component: RequestPage,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: '/messages/$requestId',
+      params: { requestId: params.requestId },
+      replace: true,
+    });
+  },
 });
-
-function RequestPage() {
-  const { requestId } = Route.useParams();
-
-  return (
-    <Guarded page="messages">
-      <MessagesLayout requestId={requestId} />
-    </Guarded>
-  );
-}

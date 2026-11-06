@@ -158,7 +158,7 @@ test('inbox badges, preview and list share one cold read and retain cursor pagin
       await client.fetchInfiniteQuery(options);
     }
     assert.equal(calls.length, 1);
-    assert.equal(calls[0], '/messages/inbox?limit=100');
+    assert.equal(calls[0], '/messages/inbox?limit=30&q=&filter=all');
     cached = observers[0].getCurrentResult().data;
     assert.equal(hooks.useInbox({ limit: 4 }).data.items.length, 4);
     assert.equal(hooks.useInbox({ limit: 100 }).data.items.length, 6);
@@ -170,6 +170,59 @@ test('inbox badges, preview and list share one cold read and retain cursor pagin
     for (const release of releases) release();
     client.clear();
   }
+});
+
+test('admin inbox searches on the server and uses one topic regardless of loaded rows', async () => {
+  const subscriptions = [];
+  const paths = [];
+  const thread = {
+    request_id: 'chat',
+    buyer: { id: 'buyer', name: 'Buyer' },
+    seller: { id: 'seller', name: 'Seller' },
+  };
+  const hooks = load('../src/lib/api/messages.ts', {
+    require: (name) => {
+      if (name === '@tanstack/react-query')
+        return {
+          useInfiniteQuery: (options) => ({
+            ...options,
+            data: { pages: [{ items: Array(1000).fill(thread) }] },
+          }),
+        };
+      if (name === '../auth/use-auth')
+        return { useAuth: () => ({ user: { id: 'admin', role: 'admin' } }) };
+      if (name === '../live/use-live')
+        return { useLiveTopics: (topics) => subscriptions.push(topics) };
+      if (name === './resource') return { idPath: encodeURIComponent };
+      if (name === './paging')
+        return {
+          queryString: (params) =>
+            '?' +
+            new URLSearchParams(
+              Object.entries(params).filter(([, v]) => v !== undefined)
+            ),
+        };
+      if (name === './client')
+        return {
+          api: async (path) => {
+            paths.push(path);
+            return { items: [thread], has_more: true, next_cursor: 'older' };
+          },
+        };
+      throw new Error(`Unexpected dependency: ${name}`);
+    },
+  });
+  const options = hooks.useThreadHistory('glass', 'offers');
+  const page = await options.queryFn({ pageParam: undefined });
+  assert.equal(paths[0], '/messages/all?limit=30&q=glass&filter=offers');
+  assert.equal(page.items[0].other.name, 'Buyer ↔ Seller');
+  assert.equal(page.items[0].unread_count, 0);
+  assert.equal(subscriptions[0].length, 1);
+  assert.equal(subscriptions[0][0], 'admin:requests');
+  assert.notEqual(
+    JSON.stringify(options.queryKey),
+    JSON.stringify(hooks.useThreadHistory('paper', 'all').queryKey)
+  );
 });
 
 test('socket shares subscriptions, invalidates topics, reconnects and stops denied topics', () => {

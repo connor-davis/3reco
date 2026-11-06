@@ -17,7 +17,7 @@ export function useRequest(id: string) {
   return useResource<T.TradeRequest>(
     ['requests', id],
     `/requests/${idPath(id)}`,
-    [`request:${id}`],
+    id ? [`request:${id}`] : [],
     true,
     !!id
   );

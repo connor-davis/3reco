@@ -30,8 +30,8 @@ func TestRequestMessagesSendReadAndInbox(t *testing.T) {
 	}
 
 	first, _ := items[0].(map[string]any)
-	if first["content"] != "Is this still here?" || first["sender_id"] != w.buyer.id {
-		t.Errorf("first message %v, want the trimmed buyer message", first)
+	if first["content"] != "Yes it is" || first["sender_id"] != w.seller.id {
+		t.Errorf("first message %v, want the newest seller message", first)
 	}
 
 	// The seller sees one unread message; reading clears it.
