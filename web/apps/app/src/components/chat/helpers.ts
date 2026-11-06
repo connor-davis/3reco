@@ -19,15 +19,14 @@ export function requestLabel(request: TradeRequest, userId?: string): string {
       ? request.seller_confirmed_version
       : request.buyer_confirmed_version;
   if (own === request.offer_version)
-    return 'Waiting for the other party to confirm';
+    return `Waiting for ${counterpartyOf(request, userId).name} to confirm`;
   if (other === request.offer_version) return 'Waiting for you to confirm';
   return request.offer_by === userId ? 'Offer sent' : 'Offer received';
 }
 
 export function threadSummary(thread: Thread): string {
-  if (thread.status === 'cancelled' || thread.status === 'rejected')
-    return 'Closed';
-  if (thread.status === 'accepted') return 'Complete';
+  if (['accepted', 'cancelled', 'rejected'].includes(thread.status))
+    return `${thread.buyer.name} and ${thread.seller.name}`;
   if (thread.status !== 'offered') return 'Awaiting offer';
   const author =
     thread.offer_by === thread.buyer.id

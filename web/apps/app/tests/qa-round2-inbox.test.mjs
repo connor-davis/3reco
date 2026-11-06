@@ -17,10 +17,13 @@ const thread = {
 
 test('G19: closed inbox rows and every offer confirmation state', () => {
   for (const status of ['cancelled', 'rejected'])
-    assert.equal(helpers.threadSummary({ ...thread, status }), 'Closed');
+    assert.equal(
+      helpers.threadSummary({ ...thread, status }),
+      'Greenline and Metro'
+    );
   assert.equal(
     helpers.threadSummary({ ...thread, status: 'accepted' }),
-    'Complete'
+    'Greenline and Metro'
   );
   assert.match(
     helpers.threadSummary(thread),

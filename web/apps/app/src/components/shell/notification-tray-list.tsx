@@ -67,11 +67,9 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
           isEmpty={shown.length === 0}
           icon={Bell}
           emptyTitle={
-            tab === 'unread'
-              ? 'No unread notifications on this page'
-              : 'No notifications on this page'
+            tab === 'unread' ? 'No unread notifications.' : 'No notifications.'
           }
-          emptyText="There are no notifications on this page."
+          emptyText="New updates will appear here."
         >
           <ul className="space-y-1 p-2">
             {shown.map((notice) => (
@@ -165,33 +163,35 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
           </div>
         )}
       </div>
-      <div className="flex justify-between border-t p-2">
-        <Button
-          className="min-h-11"
-          variant="ghost"
-          disabled={pending}
-          onClick={() =>
-            readAll.mutate(undefined, {
-              onSuccess: () =>
-                toast.success('All notifications marked as read.'),
-            })
-          }
-        >
-          Mark all read
-        </Button>
-        <Button
-          className="min-h-11"
-          variant="ghost"
-          disabled={pending}
-          onClick={() =>
-            dismissAll.mutate(undefined, {
-              onSuccess: () => toast.success('Notifications cleared.'),
-            })
-          }
-        >
-          Dismiss all
-        </Button>
-      </div>
+      {shown.length > 0 && (
+        <div className="flex justify-between border-t p-2">
+          <Button
+            className="min-h-11"
+            variant="ghost"
+            disabled={pending}
+            onClick={() =>
+              readAll.mutate(undefined, {
+                onSuccess: () =>
+                  toast.success('All notifications marked as read.'),
+              })
+            }
+          >
+            Mark all read
+          </Button>
+          <Button
+            className="min-h-11"
+            variant="ghost"
+            disabled={pending}
+            onClick={() =>
+              dismissAll.mutate(undefined, {
+                onSuccess: () => toast.success('Notifications cleared.'),
+              })
+            }
+          >
+            Dismiss all
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -19,13 +19,13 @@ const schema = z.object({
   name: z.string().min(2, 'Enter the material name.'),
   carbon_factor: z
     .string()
-    .refine((value) => decimal.test(value.trim()), 'Use a plain number.')
+    .refine((value) => decimal.test(value.trim()), 'Use a number like 1.5.')
     // Not toCents: it cuts after 2 places, so 0.000001 would read as zero.
     .refine((value) => /[1-9]/.test(value), 'Enter the kg CO₂ saved per kg.'),
   gw_code: z.string().min(3, 'Enter the GW code, for example GW-PET-01.'),
   price: z
     .string()
-    .refine((value) => decimal.test(value.trim()), 'Use a plain number.')
+    .refine((value) => decimal.test(value.trim()), 'Use a number like 1.5.')
     .refine((value) => toCents(value) > 0, 'Enter a price above R 0.00.'),
 });
 

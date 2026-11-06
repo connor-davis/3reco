@@ -214,11 +214,13 @@ export function Inbox({
             </p>
           )}
       </div>
-      <p className="-mx-5 border-t px-5 py-4 text-center text-xs text-muted-foreground">
-        {admin
-          ? "You can read every chat. You can't send messages in chats you're not part of."
-          : 'Only you, the other side and 3REco admins can read these chats.'}
-      </p>
+      {!staff && (
+        <p className="-mx-5 border-t px-5 py-4 text-center text-xs text-muted-foreground">
+          {admin
+            ? "You can read every chat. You can't send messages in chats you're not part of."
+            : 'Only you, the other side and 3REco admins can read these chats.'}
+        </p>
+      )}
     </div>
   );
 }

@@ -177,7 +177,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
         </IconButton>
       </header>
       <div className="space-y-3 border-b bg-background px-4 py-3 sm:px-6">
-        <DealStepper request={request} />
+        {!isClosed(request) && <DealStepper request={request} />}
         {canAct && (
           <div className="flex flex-wrap gap-2">
             {canMakeOffer(request, user?.id) && (
@@ -379,7 +379,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
         open={infoOpen}
         onOpenChange={setInfoOpen}
         title="Request details"
-        description={request.id}
+        description={`Request ${request.id.slice(-8).toUpperCase()}`}
       >
         <DealAside request={request} />
       </ResponsiveOverlay>
@@ -392,7 +392,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
         description={
           confirm === 'withdraw'
             ? 'The reserved stock will be released and negotiation can continue.'
-            : 'The other party will be notified.'
+            : `${other.name} will be notified.`
         }
         confirmLabel={confirm ? confirmText[confirm].label : 'Confirm'}
         onConfirm={() => {

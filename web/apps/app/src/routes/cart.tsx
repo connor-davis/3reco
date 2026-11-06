@@ -409,7 +409,7 @@ function CartLine({
               to="/market/listing/$listingId"
               params={{ listingId: stockId }}
               variant="link"
-              className="px-0"
+              className="px-0 text-foreground"
             >
               {listing.data.material_name}
             </LinkButton>

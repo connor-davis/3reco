@@ -37,7 +37,7 @@ function ListingPage() {
   const query = useListing(listingId);
   return (
     <>
-      <LinkButton to="/market" variant="ghost" className="mb-6">
+      <LinkButton to="/market" variant="ghost" className="mb-6 px-0">
         Back to browse
       </LinkButton>
       <DataState
@@ -101,6 +101,8 @@ function ListingDetail({ listing }: { listing: Listing }) {
   const navigate = useNavigate();
   const schema = z.object({
     weight: z.string().superRefine((value, ctx) => {
+      // An empty field has no error to explain yet; the cart action stays disabled.
+      if (!value.trim()) return;
       const message = quantityError(value, listing.weight);
       if (message) ctx.addIssue({ code: 'custom', message });
     }),
@@ -164,7 +166,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
             ? 'Fully reserved'
             : `${formatKg(listing.weight)} available`}
         </p>
-        {listing.gw_code && (
+        {own && listing.gw_code && (
           <p className="text-sm text-muted-foreground">
             Material code: {listing.gw_code}
           </p>
@@ -183,7 +185,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 counter={weightCounter(listing.weight)}
                 description="Your cart keeps this quantity. You can change it before sending your request."
               />
-              {problem && !form.formState.errors.weight && (
+              {weight.trim() && problem && !form.formState.errors.weight && (
                 <p role="alert" className="text-sm text-destructive">
                   {problem}
                 </p>
@@ -191,9 +193,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
               <p>
                 Estimated total{' '}
                 <strong className="tabular-nums">
-                  {problem
-                    ? 'Enter a valid quantity'
-                    : formatRand(lineCents(listing.price, weight))}
+                  {problem ? '-' : formatRand(lineCents(listing.price, weight))}
                 </strong>
               </p>
             </>

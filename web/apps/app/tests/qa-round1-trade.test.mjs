@@ -72,7 +72,7 @@ test('offer status follows the author and both confirmation versions', () => {
   );
   assert.equal(
     helpers.requestLabel(confirmed, 'seller'),
-    'Waiting for the other party to confirm'
+    'Waiting for Buyer to confirm'
   );
   assert.equal(
     helpers.requestLabel({ ...request, seller_confirmed_version: 1 }, 'buyer'),

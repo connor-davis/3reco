@@ -13,7 +13,6 @@ export function DealAside({ request }: { request: TradeRequest }) {
     <div className="space-y-6 text-sm">
       <div className="flex flex-wrap justify-between gap-2">
         <StatusBadge status={requestLabel(request, user?.id)} />
-        <span className="break-all text-muted-foreground">{request.id}</span>
       </div>
       <ul className="space-y-3 rounded-xl border p-4">
         {request.items.map((item, index) => (

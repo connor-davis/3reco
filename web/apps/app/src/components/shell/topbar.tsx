@@ -45,7 +45,7 @@ function titleFor(pathname: string): string {
     return second === 'sales' ? 'Sales' : 'Purchases';
   }
 
-  return titles[first] ?? 'Workspace';
+  return titles[first] ?? 'Page not found';
 }
 
 type TopbarProps = { onSearch: () => void };
@@ -65,8 +65,12 @@ export function Topbar({ onSearch }: TopbarProps) {
     >
       <Breadcrumb className="hidden sm:block">
         <BreadcrumbList>
-          <BreadcrumbItem>Workspace</BreadcrumbItem>
-          <BreadcrumbSeparator />
+          {titleFor(pathname) !== 'Page not found' && (
+            <>
+              <BreadcrumbItem>Workspace</BreadcrumbItem>
+              <BreadcrumbSeparator />
+            </>
+          )}
           <BreadcrumbItem>
             <BreadcrumbPage>{titleFor(pathname)}</BreadcrumbPage>
           </BreadcrumbItem>

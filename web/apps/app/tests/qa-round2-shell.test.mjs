@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { source } from './qa-round2-loader.mjs';
 
-test('G17/G20: toasts sit below content; role selection promises no total', () => {
+test('G17/G20: toasts stay above the composer; role selection promises no total', () => {
   assert.match(
     source('components/shell/app-shell.tsx'),
-    /position="bottom-center"/
+    /position="top-center"/
   );
   const setup = source('routes/setup.tsx');
   assert.match(setup, /step === 'type' \?\s*\(\s*'Step 1'/);
