@@ -97,3 +97,8 @@ export function initials(name: string): string {
     .map((word) => word[0]?.toUpperCase())
     .join('');
 }
+
+/** "1 trade", "2 trades", "0 trades". Pass the plural when it is not just +s. */
+export function plural(count: number, one: string, many = `${one}s`): string {
+  return `${count} ${count === 1 ? one : many}`;
+}

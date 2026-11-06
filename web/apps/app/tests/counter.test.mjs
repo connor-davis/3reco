@@ -66,3 +66,11 @@ test('accepts a comma and huge values exactly', () => {
     '1000000000000.99'
   );
 });
+
+test('counts read as plain English', () => {
+  assert.equal(format.plural(0, 'trade'), '0 trades');
+  assert.equal(format.plural(1, 'trade'), '1 trade');
+  assert.equal(format.plural(2, 'review'), '2 reviews');
+  assert.equal(format.plural(1, 'delivery', 'deliveries'), '1 delivery');
+  assert.equal(format.plural(3, 'delivery', 'deliveries'), '3 deliveries');
+});
