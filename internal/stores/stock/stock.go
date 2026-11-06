@@ -70,18 +70,27 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Item, err
 	return item, err
 }
 
-// List returns owner stock in stable order.
-func (records *Store) List(ctx context.Context, owner string, query paging.Query) ([]Item, error) {
+// List returns owner stock in stable order. listed is "", "listed" or "unlisted".
+func (records *Store) List(
+	ctx context.Context,
+	owner string,
+	query paging.Query,
+	listed string,
+) ([]Item, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT `+columns+`
 		FROM stock s JOIN materials m ON m.id=s.material_id
 		WHERE s.owner_id=$1 AND ($2='' OR (s.created_at,s.id)<($3,$2))
+		AND ($5='' OR m.name ILIKE $5)
+		AND ($6='' OR s.is_listed=($6='listed'))
 		ORDER BY s.created_at DESC,s.id DESC LIMIT NULLIF($4,0)`,
 		owner,
 		query.ID,
 		query.At,
 		query.Size(),
+		query.Like,
+		listed,
 	)
 	if err != nil {
 		return nil, err

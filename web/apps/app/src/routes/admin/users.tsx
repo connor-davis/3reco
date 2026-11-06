@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Download, Trash2, Users, ShieldCheck } from 'lucide-react';
@@ -86,19 +87,25 @@ function RoleSelect({ user }: { user: AdminUser }) {
 
 function UsersPage() {
   const [cursor, setCursor] = useState<string | undefined>();
-  const list = useAdminUsers({ cursor, limit: 50 });
-  const remove = useDeleteUser();
-  const download = useExport('users');
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('all');
+  const q = useDebounced(search.trim());
+  // A cursor was handed out for one search, so a new search starts at page one.
+  const [seen, setSeen] = useState({ q, role });
+  if (seen.q !== q || seen.role !== role) {
+    setSeen({ q, role });
+    setCursor(undefined);
+  }
+  const list = useAdminUsers({
+    cursor: seen.q === q && seen.role === role ? cursor : undefined,
+    limit: 50,
+    q,
+    role: role === 'all' ? undefined : role,
+  });
+  const remove = useDeleteUser();
+  const download = useExport('users');
   const [removing, setRemoving] = useState<AdminUser | null>(null);
-  const shown = (list.data?.items ?? []).filter(
-    (user) =>
-      (role === 'all' || user.role === role) &&
-      (user.name + ' ' + (user.email ?? ''))
-        .toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  const shown = list.data?.items ?? [];
 
   function removeButton(user: AdminUser) {
     return (
@@ -162,7 +169,7 @@ function UsersPage() {
     <div className="space-y-6 pt-4">
       <div className="flex flex-wrap gap-3">
         <SearchBox
-          label="Search names or emails on this page"
+          label="Search names or emails"
           value={search}
           onChange={setSearch}
         />
@@ -217,7 +224,7 @@ function UsersPage() {
       </DataState>
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm text-muted-foreground">
-          {shown.length} users shown on this page
+          {shown.length} users shown
         </span>
         {cursor && (
           <Button

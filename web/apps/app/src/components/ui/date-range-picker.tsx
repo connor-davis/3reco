@@ -50,7 +50,7 @@ export function DateRangePicker({
               <Button
                 variant="outline"
                 className={cn(
-                  'h-9 gap-2 text-sm font-normal',
+                  'h-11 gap-2 text-sm font-normal',
                   fullWidth && 'w-full justify-start'
                 )}
                 {...props}

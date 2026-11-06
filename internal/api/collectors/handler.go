@@ -46,6 +46,8 @@ func (handler *Handler) directory(c fiber.Ctx, selection bool) error {
 		query.Limit = 200
 	}
 
+	query.Like = paging.SearchPattern(c.Query("q"))
+
 	user, _ := middleware.CurrentUser(c)
 	items, err := handler.svc.List(c.Context(), user, query, selection)
 	if err != nil {

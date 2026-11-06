@@ -91,11 +91,63 @@ var selectTransaction = `
 	SELECT t.id, t.type, t.seller_id,
 		COALESCE(c.name, ` + database.DisplayName("s") + `), t.buyer_id, ` + database.DisplayName("b") + `,
 		t.total_price::text, t.collection_day::text, t.collection_date,
-		` + database.EffectiveDate("t") + `, t.created_at
+		` + database.EffectiveDate("t") + `, t.created_at` + fromJoins
+
+// fromJoins is the table list every transaction query shares, so a filter can
+// name buyer (b), seller (s) and collector (c) the same way everywhere.
+const fromJoins = `
 	FROM transactions t
 	JOIN users b ON b.id = t.buyer_id
 	LEFT JOIN users s ON t.type = 'b2b' AND s.id = t.seller_id
 	LEFT JOIN collectors c ON t.type = 'c2b' AND c.id = t.seller_id`
+
+// Filter narrows a list. Every field is optional. Like is a paging.SearchPattern;
+// From is inclusive and To exclusive, both on the effective day.
+type Filter struct {
+	Like     string
+	Type     string
+	From, To *time.Time
+}
+
+// filterSQL is the shared WHERE tail for $2..$5 (Like, Type, From, To). It
+// only ever narrows the scope clause it follows.
+// ponytail: substring ILIKE scans the caller's scoped rows; upgrade path is a
+// pg_trgm index on the names if a scope grows large.
+var filterSQL = `
+	AND ($2 = '' OR t.id ILIKE $2
+		OR ` + database.DisplayName("b") + ` ILIKE $2
+		OR COALESCE(c.name, ` + database.DisplayName("s") + `) ILIKE $2
+		OR EXISTS (SELECT 1 FROM transaction_items i JOIN materials m ON m.id = i.material_id
+			WHERE i.transaction_id = t.id AND m.name ILIKE $2))
+	AND ($3 = '' OR t.type = $3)
+	AND ($4::timestamptz IS NULL OR ` + database.EffectiveDate("t") + ` >= $4)
+	AND ($5::timestamptz IS NULL OR ` + database.EffectiveDate("t") + ` < $5)`
+
+// Totals sums a whole filtered list, not one page of it. Weight and Value are
+// exact decimal strings.
+type Totals struct {
+	Count  int    `json:"count"`
+	Weight string `json:"weight"`
+	Value  string `json:"value"`
+}
+
+// Totals counts and sums every transaction in scope that matches filter.
+func (s *Store) Totals(
+	ctx context.Context,
+	scope Scope,
+	userID string,
+	f Filter,
+) (Totals, error) {
+	var out Totals
+
+	err := s.db.Q(ctx).QueryRow(ctx, `
+		WITH f AS (SELECT t.id, t.total_price`+fromJoins+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`)
+		SELECT count(*), COALESCE(sum(f.total_price), 0)::text,
+			COALESCE((SELECT sum(i.weight) FROM transaction_items i JOIN f ON f.id = i.transaction_id), 0)::text
+		FROM f`, userID, f.Like, f.Type, f.From, f.To).Scan(&out.Count, &out.Value, &out.Weight)
+
+	return out, err
+}
 
 func scan(row pgx.Row) (Transaction, error) {
 	var t Transaction
@@ -138,13 +190,14 @@ func (s *Store) List(
 	ctx context.Context,
 	scope Scope,
 	userID string,
+	f Filter,
 	cur paging.Cursor,
 	limit int,
 ) ([]Transaction, error) {
-	rows, err := s.db.Q(ctx).Query(ctx, selectTransaction+` WHERE (`+scopeSQL[scope]+`)
-		AND ($2::timestamptz IS NULL OR (t.created_at, t.id) < ($2, $3))
+	rows, err := s.db.Q(ctx).Query(ctx, selectTransaction+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`
+		AND ($6::timestamptz IS NULL OR (t.created_at, t.id) < ($6, $7))
 		ORDER BY t.created_at DESC, t.id DESC
-		LIMIT $4`, userID, cur.At, cur.ID, limit+1)
+		LIMIT $8`, userID, f.Like, f.Type, f.From, f.To, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err
 	}

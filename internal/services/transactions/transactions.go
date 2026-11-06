@@ -61,10 +61,16 @@ func (s *Service) List(
 	user auth.User,
 	kind, cursor string,
 	limit int,
+	in ListFilter,
 ) (paging.Page[store.Transaction], error) {
 	var empty paging.Page[store.Transaction]
 
 	cur, err := paging.ParseCursor(cursor)
+	if err != nil {
+		return empty, err
+	}
+
+	filter, err := in.parse()
 	if err != nil {
 		return empty, err
 	}
@@ -79,7 +85,7 @@ func (s *Service) List(
 		return paging.Build([]store.Transaction{}, limit, nil), nil
 	}
 
-	rows, err := s.store.List(ctx, scope, owner, cur, limit)
+	rows, err := s.store.List(ctx, scope, owner, filter, cur, limit)
 	if err != nil {
 		return empty, err
 	}

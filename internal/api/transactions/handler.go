@@ -35,6 +35,7 @@ func (h *Handler) Register(api fiber.Router) {
 	r.Get("/", h.list(svc.KindMine))
 	r.Get("/purchases", h.list(svc.KindPurchases))
 	r.Get("/sales", h.list(svc.KindSales))
+	r.Get("/totals", h.totals)
 	r.Post("/collections", h.collection)
 	r.Post("/sales", h.sale)
 
@@ -69,13 +70,32 @@ func (h *Handler) list(kind string) fiber.Handler {
 			cursor, limit = "", allLimit
 		}
 
-		page, err := h.svc.List(c.Context(), caller(c), kind, cursor, limit)
+		page, err := h.svc.List(c.Context(), caller(c), kind, cursor, limit, filterOf(c))
 		if err != nil {
 			return err
 		}
 
 		return c.JSON(page)
 	}
+}
+
+func filterOf(c fiber.Ctx) svc.ListFilter {
+	return svc.ListFilter{Q: c.Query("q"), Type: c.Query("type"), From: c.Query("from"), To: c.Query("to")}
+}
+
+// totals sums the whole filtered list of one kind (mine, purchases, sales).
+func (h *Handler) totals(c fiber.Ctx) error {
+	kind := c.Query("kind", svc.KindMine)
+	if kind != svc.KindMine && kind != svc.KindPurchases && kind != svc.KindSales {
+		return apperr.BadRequest("Use mine, purchases or sales for kind.", nil)
+	}
+
+	out, err := h.svc.Totals(c.Context(), caller(c), kind, filterOf(c))
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(out)
 }
 
 func (h *Handler) get(c fiber.Ctx) error {

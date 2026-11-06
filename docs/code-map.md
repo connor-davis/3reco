@@ -46,7 +46,8 @@ Never rename a merged migration. Add a new file.
 
 | Job | Owner |
 | --- | --- |
-| Cursor paging: page shape, cursor, limit | `internal/platform/paging/paging.go` |
+| Cursor paging: page shape, cursor, limit, list search pattern | `internal/platform/paging/paging.go` |
+| Transaction list filters (q, type, days) and totals | `internal/services/transactions/filter.go`, `internal/stores/transactions/transactions.go` |
 | Shared SQL: safe display name, SAST effective date, `Party` | `internal/platform/database/sql.go` |
 | Encrypting ID and bank fields (AES-256-GCM, `v1:` prefix) and the `******1234` mask | `internal/platform/crypt/crypt.go` |
 | Notice version and retention periods (the one place to change them) | `internal/platform/config/privacy.go` |
@@ -164,7 +165,7 @@ Never rename a merged migration. Add a new file.
 | Public statistics service | `internal/services/stats/stats.go` |
 | Public `/api/stats` handler | `internal/api/stats/handler.go` |
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
-| Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts` |
+| Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; page reset on filter change `src/components/transactions/pager-state.ts` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
 | Shared socket, topic subscriptions and cache invalidation | `web/apps/app/src/lib/live/use-live.ts`, `connection.ts` |
 | HTTP error/decimal contracts and socket lifecycle tests | `web/apps/app/tests/api.test.mjs` |

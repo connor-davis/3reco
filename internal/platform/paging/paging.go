@@ -35,10 +35,32 @@ type Cursor struct {
 }
 
 // Query combines a cursor and page size, including the owner-scoped all mode.
+// Like is the optional search pattern from SearchPattern; empty means no search.
 type Query struct {
 	Cursor
 	Limit int
 	All   bool
+	Like  string
+}
+
+// maxSearch caps a search text so one request cannot ship a huge pattern.
+const maxSearch = 100
+
+// SearchPattern turns what a person typed into an ILIKE "contains" pattern
+// (empty stays empty). Its % and _ are escaped, so they match themselves.
+// ponytail: ILIKE '%q%' scans the rows the caller may already see, which is fine
+// while lists are small. Upgrade path: a pg_trgm GIN index on the searched columns.
+func SearchPattern(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+
+	if runes := []rune(raw); len(runes) > maxSearch {
+		raw = string(runes[:maxSearch])
+	}
+
+	return "%" + strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(raw) + "%"
 }
 
 // Parse applies the shared cursor and limit rules to a list request.

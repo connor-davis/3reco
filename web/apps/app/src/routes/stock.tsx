@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { PackageOpen, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -91,21 +92,19 @@ function Weights({ item }: { item: StockItem }) {
 }
 
 function StockPage() {
-  const pager = usePager();
-  const stock = useStock(pager.params);
-  const remove = useDeleteStock();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
+  const pager = usePager(50, {
+    q: useDebounced(query.trim()),
+    status: status === 'all' ? undefined : status,
+  });
+  const stock = useStock(pager.params);
+  const remove = useDeleteStock();
   const [editing, setEditing] = useState<StockItem | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [removing, setRemoving] = useState<StockItem | null>(null);
 
-  const shown = (stock.data?.items ?? []).filter((item) => {
-    if (status === 'listed' && !item.is_listed) return false;
-    if (status === 'unlisted' && item.is_listed) return false;
-
-    return item.material_name.toLowerCase().includes(query.toLowerCase());
-  });
+  const shown = stock.data?.items ?? [];
 
   function openForm(item?: StockItem) {
     setEditing(item);

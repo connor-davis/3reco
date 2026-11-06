@@ -108,10 +108,13 @@ func (records *Store) List(ctx context.Context, query paging.Query) ([]Collector
 		ctx,
 		`SELECT `+columns+` FROM collectors
  WHERE ($1='' OR (created_at,id)<($2,$1))
+ AND ($4='' OR name ILIKE $4 OR email ILIKE $4 OR phone ILIKE $4 OR normalized_phone ILIKE $4
+ OR city ILIKE $4 OR province ILIKE $4)
  ORDER BY created_at DESC,id DESC LIMIT NULLIF($3,0)`,
 		query.ID,
 		query.At,
 		query.Size(),
+		query.Like,
 	)
 	if err != nil {
 		return nil, err
