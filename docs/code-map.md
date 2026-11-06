@@ -21,10 +21,10 @@ line when you add an owner.
 | --- | --- |
 | `0001_users_auth.sql` | `users`, `sessions`, `auth_tokens`, `rate_counts` |
 | `0002_market.sql` | collectors, materials, stock, transactions and their items and receipts, requests and their items and messages, notifications, carts, reviews |
-| `0003_realtime.sql` | `notify_change()` and the `realtime` trigger on each live table |
+| `0003_realtime.sql` | First `notify_change()` and the `realtime` trigger on each live table (topic based, replaced by 0014) |
 | `0004_domain_api.sql` | `request_message_reads`, message and market indexes, `notify_change()` for read marks |
 | `0005_files_invoices.sql` | `users.avatar_key`, preserving legacy identity images |
-| `0006_stock_holds.sql` | `stock_holds`, exact held/available SQL functions and hold realtime topics |
+| `0006_stock_holds.sql` | `stock_holds`, exact held/available SQL functions and hold realtime events |
 | `0007_privacy.sql` | `privacy_notice_acceptances`, `privacy_events`, `transactions.anonymised_at` |
 | `0008_perf_indexes.sql` | Sort-order indexes for market, stock, transactions, requests, messages, notifications and users |
 | `0009_quiet_read_receipts.sql` | Drops the `realtime` trigger on `request_message_reads` |
@@ -32,6 +32,7 @@ line when you add an owner.
 | `0011_chat_activity.sql` | Indexed inbox activity and message broadcasts to both participants and `admin:requests` |
 | `0012_guest_role.sql` | Every user has a role: backfills no-role users to `guest`, adds `guest` to the role check, default `guest`, NOT NULL |
 | `0013_collector_optional_phone.sql` | Allows absent collector phones as NULL |
+| `0014_realtime_recipients.sql` | `notify_change()` and `notify_stock_hold()` send kind, id, op and recipients; `realtime` triggers on collectors, store_reviews and transaction_receipts; narrower users trigger |
 
 Never rename a merged migration. Add a new file.
 
@@ -85,9 +86,11 @@ Never rename a merged migration. Add a new file.
 
 | Job | Owner |
 | --- | --- |
-| Which topic a row change goes to | `notify_change()` in `0003_realtime.sql` |
-| Hold changes to market, seller stock and both request participants | `notify_stock_hold()` in `0006_stock_holds.sql` |
-| Listen to Postgres, who may join which topic, fan out events | `internal/services/realtime/hub.go` |
+| Who hears a row change (user ids or an audience word, never row data) | `notify_change()` and `notify_stock_hold()` in `0014_realtime_recipients.sql` |
+| Open sockets, indexed by user and role | `internal/services/realtime/hub.go` |
+| Listen to Postgres | `internal/services/realtime/listen.go` |
+| Turn a NOTIFY into one encoded event for its recipients | `internal/services/realtime/routing.go` |
+| Every 30 s drop dead sessions and guests, refresh roles | `internal/services/realtime/recheck.go` |
 | `GET /api/live` WebSocket route | `internal/api/sockets/handler.go` |
 
 ## Server
@@ -110,7 +113,8 @@ Never rename a merged migration. Add a new file.
 | Offer holds, races, rollback, expiry, stock safeguards, availability and realtime | `tests/stock_holds_test.go` |
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |
-| WebSocket events | `tests/realtime_test.go` |
+| WebSocket handshake, ping, recheck | `tests/realtime_test.go` |
+| Who hears each kind of change | `tests/realtime_routing_test.go` |
 | Trade tests: requests, messages, transactions, access, reviews, notifications, admin, dashboards | `tests/*_test.go` named for the area, helpers in `tests/trade_helpers_test.go` |
 
 ## Catalog, stores and profiles
@@ -177,7 +181,7 @@ Never rename a merged migration. Add a new file.
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
 | Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; page reset on filter change `src/components/transactions/pager-state.ts` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
-| Shared socket, topic subscriptions and cache invalidation | `web/apps/app/src/lib/live/use-live.ts`, `connection.ts` |
+| One socket per tab and cache invalidation by `{kind, id}` | `web/apps/app/src/lib/live/use-live.ts`, `connection.ts` |
 | HTTP error/decimal contracts and socket lifecycle tests | `web/apps/app/tests/api.test.mjs` |
 | Deferred desktop dialog / phone drawer implementation | `web/apps/app/src/components/responsive-overlay-body.tsx` (loaded by `responsive-overlay.tsx`) |
 | Deferred notification list, paging and actions | `web/apps/app/src/components/shell/notification-tray-list.tsx` (bell in `notification-tray.tsx`) |

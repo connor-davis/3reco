@@ -1,7 +1,6 @@
 import { useResource, useWrite, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
-import { useLiveTopics } from '../live/use-live';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/use-auth';
 import { api } from './client';
@@ -9,7 +8,6 @@ import { api } from './client';
 // Start with recent messages; the next cursor reaches older history on demand.
 export function useMessageHistory(id: string) {
   const { user } = useAuth();
-  useLiveTopics(id ? [`request:${id}`] : [], [['messages', 'history', id]]);
   return useInfiniteQuery({
     queryKey: ['messages', 'history', id, user?.id],
     initialPageParam: undefined as string | undefined,
@@ -52,10 +50,6 @@ export function useThreadHistory(q = '', filter = 'all') {
       page.has_more ? (page.next_cursor ?? undefined) : undefined,
     enabled: !!user,
   });
-  useLiveTopics(
-    user ? [admin ? 'admin:requests' : `requests:${user.id}`] : [],
-    [['messages', 'inbox']]
-  );
   return query;
 }
 
@@ -63,7 +57,6 @@ export function useMessages(id: string, params: Paging = {}) {
   return useResource<Page<T.Message>>(
     ['messages', id, params],
     `/requests/${idPath(id)}/messages${queryString(params)}`,
-    [`request:${id}`],
     true,
     !!id
   );

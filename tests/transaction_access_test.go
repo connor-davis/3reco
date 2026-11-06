@@ -35,3 +35,29 @@ func TestTransactionAccess(t *testing.T) {
 		tradeWant(t, "anonymous adds "+p, anon.Do("POST", p, map[string]any{}), 401)
 	}
 }
+
+// The collector user of a collector sale can open the row their list shows;
+// another collector cannot.
+func TestCollectorUserReadsOwnSale(t *testing.T) {
+	w := newTradeWorld(t)
+	mine := tradeNewUser(t, w.app, "collector")
+	other := tradeNewUser(t, w.app, "collector")
+	collector := tradeCollector(t, w.app, w.buyer, mine.phone)
+
+	res := w.buyer.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(collector, "", tradeLine(w.material, "10", "6")))
+	tradeWant(t, "collection", res, 200)
+
+	id := res.Body["transaction_id"].(string)
+
+	list := mine.c.Do("GET", "/api/transactions/sales", nil)
+	tradeWant(t, "own sales list", list, 200)
+
+	if n := len(tradeItems(list)); n != 1 {
+		t.Fatalf("own sales list has %d rows, want 1: %s", n, list.Raw)
+	}
+
+	tradeWant(t, "own collector sale", mine.c.Do("GET", "/api/transactions/"+id, nil), 200)
+	tradeWant(t, "another collector", other.c.Do("GET", "/api/transactions/"+id, nil), 404)
+	tradeWant(t, "a stranger business", w.seller.c.Do("GET", "/api/transactions/"+id, nil), 404)
+}

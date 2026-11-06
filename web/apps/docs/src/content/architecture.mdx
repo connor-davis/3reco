@@ -31,7 +31,7 @@ Every route checks who is calling and what they own, and has a test that tries t
 
 ## Realtime
 
-Postgres triggers send a `NOTIFY` on every change to a live table. The realtime service listens, and pushes a small `changed` event (a topic and an id, never row data) to every WebSocket client allowed on that topic. The client refetches what is on screen. A client may only join topics it owns, for example `notifications:<its own user id>`.
+Postgres triggers send a `NOTIFY` on every change to a live table. The realtime service listens, and pushes a small `changed` event (a `kind` and an `id`, never row data) to the sockets of the people who may see that change. Each trigger names the user ids, or an audience (`all`, `staff`, `admin`). The page chooses nothing: it opens one socket and refetches what is on screen. Roles are rechecked every 30 s.
 
 ## Money and weight
 

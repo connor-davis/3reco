@@ -2,11 +2,11 @@ package tests
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
-	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -64,106 +64,119 @@ func (s *socket) next() map[string]any {
 	return ev
 }
 
+// hear waits for the "changed" event with this kind and id. Other events the
+// same write caused may come first; they are skipped. The wanted event must
+// hold exactly the keys type, kind and id, so no row data rides along.
+func (s *socket) hear(kind, id string) {
+	s.t.Helper()
+
+	for range 20 {
+		ev := s.next()
+		if ev["type"] != "changed" || ev["kind"] != kind || ev["id"] != id {
+			continue
+		}
+
+		keys := 0
+
+		for _, key := range []string{"type", "kind", "id"} {
+			if _, ok := ev[key]; ok {
+				keys++
+			}
+		}
+
+		if len(ev) != 3 || keys != 3 {
+			s.t.Fatalf("event keys %v, want exactly type, kind and id", ev)
+		}
+
+		return
+	}
+
+	s.t.Fatalf("never heard changed %s %s", kind, id)
+}
+
+// quiet proves nothing is waiting on the socket: the next frame is the answer
+// to a ping sent now. Call it only after the wanted listener heard its event,
+// which means the hub already routed this change to everyone.
+func (s *socket) quiet(who string) {
+	s.t.Helper()
+
+	s.send(map[string]string{"type": "ping"})
+
+	if ev := s.next(); ev["type"] != "pong" {
+		s.t.Fatalf("%s heard %v, want silence", who, ev)
+	}
+}
+
+// markers numbers the sync points so two never look alike.
+var markers atomic.Int64
+
+// settle clears events still in flight from earlier writes. NOTIFYs reach the
+// hub in commit order, so once a marker for everyone has come through, every
+// older event has been delivered and thrown away.
+func settle(t *testing.T, app *testutil.App, socks ...*socket) {
+	t.Helper()
+
+	id := fmt.Sprintf("marker-%d", markers.Add(1))
+	payload := `{"kind":"marker","id":"` + id + `","op":"insert","users":[],"aud":"all"}`
+
+	if _, err := app.DB.Pool.Exec(context.Background(), `SELECT pg_notify('threereco_changes', $1)`, payload); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, s := range socks {
+		s.hear("marker", id)
+	}
+}
+
+// joinLive opens a socket for each person and settles them.
+func joinLive(t *testing.T, app *testutil.App, people ...tradeUser) []*socket {
+	t.Helper()
+
+	socks := make([]*socket, len(people))
+
+	for i, p := range people {
+		sock, _, err := dial(t, app, p.c, testutil.WebOrigin)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
+		}
+
+		socks[i] = sock
+	}
+
+	settle(t, app, socks...)
+
+	return socks
+}
+
+// closedByServer reports whether the server closes the socket, ignoring any
+// events that were already on their way.
+func closedByServer(s *socket) bool {
+	for range 5 {
+		_ = s.conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+
+		var ev map[string]any
+
+		err := s.conn.ReadJSON(&ev)
+
+		var timeout net.Error
+		if errors.As(err, &timeout) && timeout.Timeout() {
+			return false
+		}
+
+		if err != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 func userID(t *testing.T, c *testutil.Client) string {
 	t.Helper()
 
 	user, _ := c.Do("GET", "/api/auth/me", nil).Body["user"].(map[string]any)
 
 	return user["id"].(string)
-}
-
-func TestLiveEventsReachOnlyTheAllowedClient(t *testing.T) {
-	app := testutil.Server(t)
-	a, b := app.NewClient(t), app.NewClient(t)
-	emailA, emailB := signUp(t, app, a, true), signUp(t, app, b, true)
-
-	signIn(t, a, emailA, goodPassword)
-	signIn(t, b, emailB, goodPassword)
-
-	idA, idB := userID(t, a), userID(t, b)
-	tradeExec(t, app, `UPDATE users SET role = 'business' WHERE id = ANY($1)`, []string{idA, idB})
-	topicA := "notifications:" + idA
-
-	sockA, _, err := dial(t, app, a, testutil.WebOrigin)
-	if err != nil {
-		t.Fatalf("dial A: %v", err)
-	}
-
-	sockB, _, err := dial(t, app, b, testutil.WebOrigin)
-	if err != nil {
-		t.Fatalf("dial B: %v", err)
-	}
-
-	sockA.send(map[string]string{"type": "subscribe", "topic": topicA})
-
-	// B asks for A's topic and is refused; B's own topic is fine.
-	sockB.send(map[string]string{"type": "subscribe", "topic": topicA})
-
-	if ev := sockB.next(); ev["type"] != "denied" || ev["topic"] != topicA {
-		t.Fatalf("B on A's topic: %v, want denied", ev)
-	}
-
-	sockB.send(map[string]string{"type": "subscribe", "topic": "notifications:" + idB})
-	// Admin topics are for staff only.
-	sockB.send(map[string]string{"type": "subscribe", "topic": "admin:users"})
-
-	if ev := sockB.next(); ev["type"] != "denied" || ev["topic"] != "admin:users" {
-		t.Fatalf("B on admin:users: %v, want denied", ev)
-	}
-
-	// The subscribe messages are handled in order, so a ping answered means
-	// A's subscribe is in place before the row below is written.
-	sockA.send(map[string]string{"type": "ping"})
-
-	if ev := sockA.next(); ev["type"] != "pong" {
-		t.Fatalf("A ping: %v", ev)
-	}
-
-	_, err = app.DB.Pool.Exec(context.Background(), `
-		INSERT INTO notifications (id, user_id, type, title, body)
-		VALUES ('n1', $1, 'message_received', 'SECRET TITLE', 'SECRET BODY')`, idA)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ev := sockA.next()
-	if ev["type"] != "changed" || ev["topic"] != topicA || ev["id"] != "n1" {
-		t.Fatalf("A event: %v", ev)
-	}
-
-	// An event names the topic and the row, and carries nothing else.
-	raw, _ := json.Marshal(ev)
-	if strings.Contains(string(raw), "SECRET") || len(ev) != 3 {
-		t.Fatalf("event holds row data: %s", raw)
-	}
-
-	// B heard nothing: the next thing on B's socket is the answer to this ping.
-	sockB.send(map[string]string{"type": "ping"})
-
-	if ev := sockB.next(); ev["type"] != "pong" {
-		t.Fatalf("B heard %v before its pong", ev)
-	}
-
-	// After unsubscribe A hears nothing either.
-	sockA.send(map[string]string{"type": "unsubscribe", "topic": topicA})
-	sockA.send(map[string]string{"type": "ping"})
-
-	if ev := sockA.next(); ev["type"] != "pong" {
-		t.Fatalf("A ping: %v", ev)
-	}
-
-	_, err = app.DB.Pool.Exec(context.Background(),
-		`UPDATE notifications SET read = true WHERE id = 'n1'`)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	time.Sleep(300 * time.Millisecond)
-	sockA.send(map[string]string{"type": "ping"})
-
-	if ev := sockA.next(); ev["type"] != "pong" {
-		t.Fatalf("A heard %v after unsubscribing", ev)
-	}
 }
 
 func TestLiveHandshakeIsChecked(t *testing.T) {
@@ -194,6 +207,16 @@ func TestLiveHandshakeIsChecked(t *testing.T) {
 	}
 }
 
+// A guest has not finished setup, so the socket handshake is refused.
+func TestLiveGuestHandshakeIsRefused(t *testing.T) {
+	app := testutil.Server(t)
+	guest, _ := newGuest(t, app)
+
+	if _, resp, err := dial(t, app, guest, testutil.WebOrigin); err == nil || resp == nil || resp.StatusCode != 403 {
+		t.Fatalf("guest handshake: err=%v resp=%v, want a 403", err, resp)
+	}
+}
+
 func TestLiveSocketAnswersPing(t *testing.T) {
 	app := testutil.Server(t)
 	c := app.NewClient(t)
@@ -214,124 +237,59 @@ func TestLiveSocketAnswersPing(t *testing.T) {
 	}
 }
 
-func TestLiveRecheckDropsRemovedUserAndLostRequestAccess(t *testing.T) {
+// A page cannot choose what it hears: a subscribe message changes nothing.
+func TestLiveSubscribeMessagesDoNothing(t *testing.T) {
 	w := newTradeWorld(t)
-	other := tradeNewUser(t, w.app, "business")
-	id := tradeRequest(t, w.buyer, w.seller, w.stock)
-	topic := "request:" + id
+	socks := joinLive(t, w.app, w.buyer, w.seller)
+	buyer, seller := socks[0], socks[1]
+
+	buyer.send(map[string]string{"type": "subscribe", "topic": "notifications:" + w.seller.id})
+
+	tradeExec(t, w.app, `
+		INSERT INTO notifications (id, user_id, type, title, body)
+		VALUES ('n-sub', $1, 'message_received', 'Hi', 'There')`, w.seller.id)
+
+	seller.hear("notification", "n-sub")
+	buyer.quiet("buyer")
+}
+
+// A removed user's socket is closed on the next recheck.
+func TestLiveRecheckClosesRemovedUser(t *testing.T) {
+	w := newTradeWorld(t)
+	sock := joinLive(t, w.app, w.seller)[0]
 	ctx := context.Background()
 
-	buyerSock, _, err := dial(t, w.app, w.buyer.c, testutil.WebOrigin)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	sellerSock, _, err := dial(t, w.app, w.seller.c, testutil.WebOrigin)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, sock := range []*socket{buyerSock, sellerSock} {
-		sock.send(map[string]string{"type": "subscribe", "topic": topic})
-		sock.send(map[string]string{"type": "ping"})
-
-		if ev := sock.next(); ev["type"] != "pong" {
-			t.Fatalf("subscription barrier: %v", ev)
-		}
-	}
-
-	touch := `UPDATE transaction_requests SET updated_at = now() WHERE id = $1`
-
-	// Two people who still have access keep their topic through a recheck.
+	// A user who is still fine keeps the socket through a recheck.
 	w.app.Hub.Recheck(ctx)
+	sock.quiet("seller")
 
-	if _, err := w.app.DB.Pool.Exec(ctx, touch, id); err != nil {
-		t.Fatal(err)
-	}
-
-	for _, sock := range []*socket{buyerSock, sellerSock} {
-		if ev := sock.next(); ev["type"] != "changed" || ev["topic"] != topic {
-			t.Fatalf("kept topic: %v", ev)
-		}
-	}
-
-	// The buyer loses access when the request moves to someone else.
-	_, err = w.app.DB.Pool.Exec(ctx, `UPDATE transaction_requests SET buyer_id = $2 WHERE id = $1`, id, other.id)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, sock := range []*socket{buyerSock, sellerSock} {
-		if ev := sock.next(); ev["type"] != "changed" {
-			t.Fatalf("move event: %v", ev)
-		}
-	}
-
-	w.app.Hub.Recheck(ctx)
-
-	if _, err := w.app.DB.Pool.Exec(ctx, touch, id); err != nil {
-		t.Fatal(err)
-	}
-
-	if ev := sellerSock.next(); ev["type"] != "changed" {
-		t.Fatalf("seller kept topic: %v", ev)
-	}
-
-	buyerSock.send(map[string]string{"type": "ping"})
-
-	if ev := buyerSock.next(); ev["type"] != "pong" {
-		t.Fatalf("buyer heard %v after losing the request", ev)
-	}
-
-	// A removed user's socket is closed.
 	if _, err := w.app.DB.Pool.Exec(ctx, `UPDATE users SET is_removed = true WHERE id = $1`, w.seller.id); err != nil {
 		t.Fatal(err)
 	}
 
 	w.app.Hub.Recheck(ctx)
 
-	_ = sellerSock.conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-
-	var ev map[string]any
-
-	err = sellerSock.conn.ReadJSON(&ev)
-
-	var timeout net.Error
-	if err == nil || (errors.As(err, &timeout) && timeout.Timeout()) {
-		t.Fatalf("removed user's socket still open: %v %v", ev, err)
+	if !closedByServer(sock) {
+		t.Fatal("removed user's socket still open")
 	}
 }
 
+// A read receipt writes no live frame (0009): the other person only hears the
+// message itself.
 func TestReadReceiptSendsNoChangedFrame(t *testing.T) {
 	w := newTradeWorld(t)
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
-	topic := "request:" + id
-
-	sock, _, err := dial(t, w.app, w.seller.c, testutil.WebOrigin)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-
-	sock.send(map[string]string{"type": "subscribe", "topic": topic})
-	sock.send(map[string]string{"type": "ping"})
-
-	if ev := sock.next(); ev["type"] != "pong" {
-		t.Fatalf("ping: %v", ev)
-	}
+	sock := joinLive(t, w.app, w.seller)[0]
 
 	// A new message must be heard, so a silent socket below means something.
 	tradeWant(t, "send", tradeSay(t, w.buyer, id, "Hello"), 200)
+	sock.hear("request", id)
 
-	if ev := sock.next(); ev["type"] != "changed" || ev["topic"] != topic {
-		t.Fatalf("message event: %v, want changed on %s", ev, topic)
-	}
+	// The message also raised a notification; let everything in flight pass.
+	settle(t, w.app, sock)
 
 	tradeWant(t, "mark read", w.seller.c.Do("POST", "/api/requests/"+id+"/messages/read", nil), 200)
 
 	time.Sleep(300 * time.Millisecond)
-	sock.send(map[string]string{"type": "ping"})
-
-	if ev := sock.next(); ev["type"] != "pong" {
-		t.Fatalf("heard %v after the read receipt, want only the pong", ev)
-	}
+	sock.quiet("seller")
 }

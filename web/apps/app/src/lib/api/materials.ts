@@ -5,23 +5,19 @@ import type * as T from './types';
 export function useMaterials(params: Paging = {}) {
   return useResource<Page<T.Material>>(
     ['materials', params],
-    `/materials${queryString(params)}`,
-    ['materials']
+    `/materials${queryString(params)}`
   );
 }
 export function useMaterial(id: string) {
   return useResource<T.Material>(
     ['materials', id],
     `/materials/${idPath(id)}`,
-    ['materials'],
     false,
     !!id
   );
 }
 export function useCreateMaterial() {
-  return useWrite<T.MaterialInput, T.Created>('/admin/materials', 'POST', [
-    ['materials'],
-  ]);
+  return useWrite<T.MaterialInput, T.Created>('/admin/materials', 'POST', []);
 }
 export function useUpdateMaterial(id: string) {
   return useWrite<Partial<T.MaterialInput>, T.Ok>(

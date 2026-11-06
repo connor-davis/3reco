@@ -10,15 +10,13 @@ export interface ListingFilters extends Paging {
 export function useListings(params: ListingFilters = {}) {
   return useResource<Page<T.Listing>>(
     ['listings', params],
-    `/market/listings${queryString(params)}`,
-    ['market', 'materials']
+    `/market/listings${queryString(params)}`
   );
 }
 export function useListing(id: string) {
   return useResource<T.Listing>(
     ['listings', id],
     `/market/listings/${idPath(id)}`,
-    ['market', 'materials'],
     false,
     !!id
   );
@@ -27,7 +25,6 @@ export function useStoreListings(id: string, params: Paging = {}) {
   return useResource<Page<T.Listing>>(
     ['listings', 'store', id, params],
     `/stores/${idPath(id)}/listings${queryString(params)}`,
-    ['market', 'materials'],
     false,
     !!id
   );

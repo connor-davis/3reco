@@ -6,7 +6,6 @@ export function useCollectors(params: Paging = {}) {
   return useResource<Page<T.Collector>>(
     ['collectors', params],
     `/collectors${queryString(params)}`,
-    [],
     true
   );
 }
@@ -14,7 +13,6 @@ export function useCollector(id: string) {
   return useResource<T.Collector>(
     ['collectors', id],
     `/collectors/${idPath(id)}`,
-    [],
     true,
     !!id
   );
@@ -23,7 +21,6 @@ export function useCollectorSelection() {
   return useResource<T.Collector[]>(
     ['collectors', 'selection'],
     '/collectors/selection',
-    [],
     true
   );
 }
@@ -31,7 +28,6 @@ export function useCollectorStats(phone: string) {
   return useResource<T.CollectorStats>(
     ['collectors', 'stats', phone],
     `/collectors/stats${queryString({ phone })}`,
-    ['transactions:me'],
     true,
     !!phone.trim()
   );

@@ -8,6 +8,7 @@ import { AppSidebar } from './app-sidebar';
 import { BottomTabs } from './bottom-tabs';
 import { Topbar } from './topbar';
 import { isAuthPath, isChatPath } from '@/lib/nav';
+import { useLiveEvents } from '@/lib/live/use-live';
 
 const CommandSearch = lazy(() =>
   import('./command-search').then((module) => ({
@@ -26,6 +27,7 @@ const pagePad = cn(
  * draw their own full-screen layout, so they skip the frame.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  useLiveEvents();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchLoaded, setSearchLoaded] = useState(false);
   const pathname = useRouterState({

@@ -1,49 +1,23 @@
-import { useEffect, useState } from 'react';
-import {
-  useQueryClient,
-  type QueryClient,
-  type QueryKey,
-} from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/use-auth';
+import { LiveConnection } from './connection';
 
-import { LiveConnection, type Status } from './connection';
-
-const connections = new WeakMap<
-  QueryClient,
-  { user: string; live: LiveConnection }
->();
-
-export function useLive(topic: string | undefined, keys: readonly QueryKey[]) {
-  return useLiveTopics(topic ? [topic] : [], keys);
-}
-
-export function useLiveTopics(topics: string[], keys: readonly QueryKey[]) {
+/**
+ * Keeps one live socket open for the signed-in person and refreshes whatever
+ * the server says changed. Call it once, in the app shell. A guest has not
+ * finished setup and the server refuses their socket, so they get none.
+ */
+export function useLiveEvents() {
   const client = useQueryClient();
   const { user } = useAuth();
-  const [status, setStatus] = useState<Status>('disconnected');
-  // Stable serialisation avoids re-subscribing when a caller passes an array literal.
-  const encodedKeys = JSON.stringify(keys);
-  const encodedTopics = JSON.stringify(topics);
+  const userId = user?.id;
+  const live = !!user?.role && user.role !== 'guest';
 
   useEffect(() => {
-    const topicList = JSON.parse(encodedTopics) as string[];
-    if (!user || !topicList.length) return;
-    let connection = connections.get(client);
-    if (!connection || connection.user !== user.id) {
-      connection?.live.stop();
-      connection = { user: user.id, live: new LiveConnection(client) };
-      connections.set(client, connection);
-    }
-    const releases = topicList.map((topic) =>
-      connection.live.subscribe(topic, {
-        keys: JSON.parse(encodedKeys) as QueryKey[],
-        status: setStatus,
-      })
-    );
-    return () => {
-      for (const release of releases) release();
-    };
-  }, [client, user, encodedTopics, encodedKeys]);
-
-  return status;
+    if (!userId || !live) return;
+    const connection = new LiveConnection(client);
+    connection.start();
+    return () => connection.stop();
+  }, [client, userId, live]);
 }

@@ -6,7 +6,6 @@ export function useNotifications(params: Paging = {}) {
   return useResource<Page<T.Notification>>(
     ['notifications', params],
     `/notifications/${queryString(params)}`,
-    ['notifications:me'],
     true
   );
 }
@@ -14,7 +13,6 @@ export function useUnreadCount() {
   return useResource<{ count: number }>(
     ['notifications', 'unread-count'],
     '/notifications/unread-count',
-    ['notifications:me'],
     true
   );
 }

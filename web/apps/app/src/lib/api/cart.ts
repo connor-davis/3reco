@@ -6,7 +6,6 @@ export function useCart(sellerId: string) {
   return useResource<T.Cart>(
     ['cart', sellerId],
     `/cart${queryString({ seller_id: sellerId })}`,
-    ['cart:me', 'market'],
     true,
     !!sellerId
   );

@@ -5,21 +5,15 @@ import {
   type QueryKey,
 } from '@tanstack/react-query';
 import { useAuth } from '../auth/use-auth';
-import { useLiveTopics } from '../live/use-live';
 import { api, json } from './client';
 
 export function useResource<T>(
   key: QueryKey,
   path: string,
-  topics: string[] = [],
   privateQuery = false,
   enabled = true
 ) {
   const { user } = useAuth();
-  useLiveTopics(
-    topics.map((topic) => topic.replace(':me', `:${user?.id ?? ''}`)),
-    [key]
-  );
   return useQuery({
     queryKey: [...key, ...(privateQuery ? [user?.id] : [])],
     queryFn: ({ signal }) => api<T>(path, { signal }),

@@ -1,53 +1,99 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
-export type Status = 'connecting' | 'connected' | 'denied' | 'disconnected';
-type Listener = { keys: readonly QueryKey[]; status: (status: Status) => void };
+// A burst of events for one key (a chat flurry) refetches it once.
+const settleMs = 300;
 
-// Each query client has one active connection for its current account.
+/**
+ * The query keys a change of this kind may have made stale. An id adds the
+ * one detail query that names it. The server already decided this person may
+ * hear the event; the refetch goes through the normal checked routes.
+ */
+export function keysFor(kind: string, id?: string): QueryKey[] {
+  switch (kind) {
+    case 'notification':
+      return [['notifications']];
+    case 'stock':
+      return [['stock']];
+    case 'listing':
+      return [
+        ['listings'],
+        ['stores'],
+        ['reviews'],
+        ['cart'],
+        ...(id ? [['stock', id]] : []),
+      ];
+    case 'cart':
+      return [['cart']];
+    case 'request':
+      return [
+        ['requests', 'incoming'],
+        ['requests', 'outgoing'],
+        ['messages', 'inbox'],
+        ['dashboards'],
+        ...(id
+          ? [
+              ['requests', id],
+              ['messages', id],
+              ['messages', 'history', id],
+            ]
+          : []),
+      ];
+    case 'transaction':
+      return [
+        ['transactions'],
+        ['dashboards'],
+        ['stats'],
+        ['collectors'],
+        ['reviews'],
+      ];
+    case 'user':
+      return [['admin'], ['users'], ['dashboards'], ['stores'], ['auth']];
+    case 'material':
+      return [['materials'], ['listings'], ['stats']];
+    case 'collector':
+      return [['collectors']];
+    case 'review':
+      return [['reviews']];
+    default:
+      return [];
+  }
+}
+
+// One socket per signed-in tab. It joins as the signed-in person, subscribes
+// to nothing, and turns each {kind, id} event into query invalidations.
 export class LiveConnection {
   private socket?: WebSocket;
   private timer?: ReturnType<typeof setTimeout>;
   private attempts = 0;
   private hasConnected = false;
   private stopped = false;
-  private topics = new Map<string, Set<Listener>>();
-  private denied = new Set<string>();
+  private pending = new Map<string, ReturnType<typeof setTimeout>>();
   private client: QueryClient;
 
   constructor(client: QueryClient) {
     this.client = client;
   }
 
-  private send(type: string, topic: string) {
-    if (this.socket?.readyState === WebSocket.OPEN)
-      this.socket.send(JSON.stringify({ type, topic }));
+  start() {
+    if (!this.socket && !this.timer) this.connect();
   }
 
-  subscribe(topic: string, listener: Listener) {
-    const listeners = this.topics.get(topic) ?? new Set<Listener>();
-    const first = listeners.size === 0;
-    listeners.add(listener);
-    this.topics.set(topic, listeners);
-    if (first && this.socket?.readyState === WebSocket.OPEN)
-      this.send('subscribe', topic);
-    listener.status(
-      this.denied.has(topic)
-        ? 'denied'
-        : this.socket?.readyState === WebSocket.OPEN
-          ? 'connected'
-          : 'connecting'
-    );
-    if (!this.socket && !this.timer) this.connect();
+  private invalidateAll() {
+    for (const timer of this.pending.values()) clearTimeout(timer);
+    this.pending.clear();
+    void this.client.invalidateQueries();
+  }
 
-    return () => {
-      listeners.delete(listener);
-      if (!listeners.size) {
-        this.send('unsubscribe', topic);
-        this.topics.delete(topic);
-        this.denied.delete(topic);
-      }
-      if (!this.topics.size) this.stop();
-    };
+  private invalidate(key: QueryKey) {
+    const name = JSON.stringify(key);
+    if (this.pending.has(name)) return;
+    this.pending.set(
+      name,
+      setTimeout(() => {
+        this.pending.delete(name);
+        void this.client.invalidateQueries({ queryKey: key });
+      }, settleMs)
+    );
   }
 
   private connect() {
@@ -60,52 +106,28 @@ export class LiveConnection {
 
     socket.onopen = () => {
       this.attempts = 0;
-      this.denied.clear();
-      for (const [topic, listeners] of this.topics) {
-        this.send('subscribe', topic);
-        for (const listener of listeners) listener.status('connected');
-      }
       // Only a reconnect needs to recover events lost while disconnected.
-      if (this.hasConnected) void this.client.invalidateQueries();
+      if (this.hasConnected) this.invalidateAll();
       this.hasConnected = true;
     };
     socket.onmessage = (event) => {
-      let message: { type?: string; topic?: string };
+      let message: { type?: string; kind?: string; id?: string };
       try {
         message = JSON.parse(String(event.data));
       } catch {
         return;
       }
       if (message.type === 'resync') {
-        void this.client.invalidateQueries();
-        return;
-      }
-      if (!message.topic) return;
-      const listeners = this.topics.get(message.topic);
-      if (message.type === 'denied') {
-        this.denied.add(message.topic);
-        this.send('unsubscribe', message.topic);
-        for (const listener of listeners ?? []) listener.status('denied');
-      } else if (
-        message.type === 'changed' &&
-        !this.denied.has(message.topic)
-      ) {
-        // Several mounted consumers can share one query and topic.
-        const keys = new Map<string, QueryKey>();
-        for (const listener of listeners ?? []) {
-          for (const key of listener.keys) keys.set(JSON.stringify(key), key);
-        }
-        for (const key of keys.values())
-          void this.client.invalidateQueries({ queryKey: key });
+        this.invalidateAll();
+      } else if (message.type === 'changed' && message.kind) {
+        for (const key of keysFor(message.kind, message.id))
+          this.invalidate(key);
       }
     };
     socket.onerror = () => socket.close();
     socket.onclose = () => {
       if (this.stopped) return;
       this.socket = undefined;
-      for (const listeners of this.topics.values()) {
-        for (const listener of listeners) listener.status('disconnected');
-      }
       const delay =
         Math.min(30000, 1000 * 2 ** this.attempts++) + Math.random() * 250;
       this.timer = setTimeout(() => this.connect(), delay);
@@ -116,6 +138,8 @@ export class LiveConnection {
     this.stopped = true;
     clearTimeout(this.timer);
     this.timer = undefined;
+    for (const timer of this.pending.values()) clearTimeout(timer);
+    this.pending.clear();
     if (this.socket) {
       this.socket.onclose = null;
       this.socket.close();

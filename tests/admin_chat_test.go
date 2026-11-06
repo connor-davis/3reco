@@ -2,8 +2,6 @@ package tests
 
 import (
 	"testing"
-
-	"github.com/connor-davis/3reco/tests/testutil"
 )
 
 func TestAdminReadsAnyChatButChangesNothing(t *testing.T) {
@@ -101,53 +99,14 @@ func TestAdminAllConversations(t *testing.T) {
 func TestAdminHearsLiveChatEvents(t *testing.T) {
 	w := newTradeWorld(t)
 	admin := tradeNewUser(t, w.app, "admin")
+	staff := tradeNewUser(t, w.app, "staff")
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
-	topic := "request:" + id
+	socks := joinLive(t, w.app, admin, w.seller, staff)
 
-	sock, _, err := dial(t, w.app, admin.c, testutil.WebOrigin)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
+	tradeWant(t, "send", tradeSay(t, w.buyer, id, "An unloaded chat changed"), 200)
 
-	sock.send(map[string]string{"type": "subscribe", "topic": topic})
-	sock.send(map[string]string{"type": "ping"})
-
-	if ev := sock.next(); ev["type"] != "pong" {
-		t.Fatalf("admin was refused a chat topic: %v", ev)
-	}
-
-	tradeWant(t, "send", tradeSay(t, w.buyer, id, "Hello"), 200)
-
-	if ev := sock.next(); ev["type"] != "changed" || ev["topic"] != topic {
-		t.Fatalf("admin heard %v, want changed on %s", ev, topic)
-	}
-}
-
-func TestInboxTopicsHearMessagesInUnloadedChats(t *testing.T) {
-	w := newTradeWorld(t)
-	admin := tradeNewUser(t, w.app, "admin")
-	id := tradeRequest(t, w.buyer, w.seller, w.stock)
-
-	for _, listener := range []struct {
-		user  tradeUser
-		topic string
-	}{{admin, "admin:requests"}, {w.seller, "requests:" + w.seller.id}} {
-		sock, _, err := dial(t, w.app, listener.user.c, testutil.WebOrigin)
-		if err != nil {
-			t.Fatalf("dial: %v", err)
-		}
-
-		sock.send(map[string]string{"type": "subscribe", "topic": listener.topic})
-		sock.send(map[string]string{"type": "ping"})
-
-		if ev := sock.next(); ev["type"] != "pong" {
-			t.Fatalf("inbox topic refused: %v", ev)
-		}
-
-		tradeWant(t, "message", tradeSay(t, w.buyer, id, "An unloaded chat changed"), 200)
-
-		if ev := sock.next(); ev["type"] != "changed" || ev["topic"] != listener.topic || ev["id"] != id {
-			t.Fatalf("inbox topic heard %v, want changed on %s", ev, listener.topic)
-		}
-	}
+	// Admin and the other person need no subscription; staff cannot read chats.
+	socks[0].hear("request", id)
+	socks[1].hear("request", id)
+	socks[2].quiet("staff")
 }

@@ -11,7 +11,7 @@ src/
 ├── hooks/         custom hooks
 ├── lib/
 │   ├── api/       the API client, types and one hook file per resource
-│   ├── live/      the WebSocket connection and the useLive hook
+│   ├── live/      the WebSocket connection and the useLiveEvents hook
 │   └── auth/      the signed-in user and access checks
 └── main.tsx       entry point
 ```
@@ -40,7 +40,7 @@ In development Vite proxies `/api` (and the WebSocket) to the Go server on `:818
 
 ## Live data
 
-The `useLive` hook subscribes to a topic (for example `notifications:<me>` or `request:<id>`). When the server sends a `changed` event for it, the matching queries are invalidated and refetch. After a reconnect the app resubscribes and refetches what is on screen. See [Notifications Pattern](/docs/dev/notifications).
+The signed-in shell calls `useLiveEvents` once. It opens one socket and subscribes to nothing; the server decides who hears each change. Each `changed` event has a `kind` and an `id`, and the matching queries are invalidated (at most once per key every 300 ms). After a reconnect everything is invalidated. See [Notifications Pattern](/docs/dev/notifications).
 
 ## Routing
 
