@@ -7,14 +7,16 @@ export interface ListingFilters extends Paging {
   seller_id?: string;
   material_id?: string;
 }
-export function useListings(params: ListingFilters = {}) {
+export function useListings(params: ListingFilters = {}, enabled = true) {
   return useResource<Page<T.Listing>>(
     ['listings', params],
-    `/market/listings${queryString(params)}`
+    `/market/listings${queryString(params)}`,
+    false,
+    enabled
   );
 }
 export function useListing(id: string) {
-  return useResource<T.Listing>(
+  return useResource<T.Listing & { held_weight: string }>(
     ['listings', id],
     `/market/listings/${idPath(id)}`,
     false,

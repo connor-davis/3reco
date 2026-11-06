@@ -31,6 +31,7 @@ type Item struct {
 
 // Request is a buying request as its two sides (and staff) see it.
 type Request struct {
+	TransactionID          *string        `json:"transaction_id"`
 	ID                     string         `json:"id"`
 	Seller                 database.Party `json:"seller"`
 	Buyer                  database.Party `json:"buyer"`
@@ -56,7 +57,8 @@ func New(db *database.DB) *Store { return &Store{db: db} }
 var selectRequest = `
 	SELECT r.id, r.seller_id, ` + database.DisplayName("s") + `, r.buyer_id, ` + database.DisplayName("b") + `,
 		r.status, r.created_at, r.updated_at, r.offer_by, r.offer_version,
-		r.buyer_confirmed_version, r.seller_confirmed_version
+		r.buyer_confirmed_version, r.seller_confirmed_version,
+        (SELECT t.id FROM transactions t WHERE t.request_id=r.id AND t.status='complete' LIMIT 1)
 	FROM transaction_requests r
 	JOIN users s ON s.id = r.seller_id
 	JOIN users b ON b.id = r.buyer_id`
@@ -77,6 +79,7 @@ func scan(row pgx.Row) (Request, error) {
 		&r.OfferVersion,
 		&r.BuyerConfirmedVersion,
 		&r.SellerConfirmedVersion,
+		&r.TransactionID,
 	)
 	r.Items = []Item{}
 

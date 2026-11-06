@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useListings } from '@/lib/api/listings';
 import { useStats } from '@/lib/api/stats';
 import { useAuth } from '@/lib/auth/use-auth';
-import { formatKg } from '@/lib/format';
+import { formatKg, plural } from '@/lib/format';
 import { filterListings } from './-components/filter-listings';
 import { MarketFilters } from './-components/market-filters';
 
@@ -47,7 +47,8 @@ function MarketPage() {
         {stats.data && (
           <p className="rounded-2xl border bg-muted/50 px-4 py-3 text-sm">
             Community impact: {formatKg(stats.data.total_kg)} diverted ·{' '}
-            {formatKg(stats.data.co2_kg)} CO₂ saved · {stats.data.deals} trades
+            {formatKg(stats.data.co2_kg)} CO₂ saved ·{' '}
+            {plural(stats.data.deals, 'trade')}
           </p>
         )}
       </DataState>

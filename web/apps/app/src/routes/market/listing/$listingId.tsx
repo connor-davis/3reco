@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,12 +12,19 @@ import { ListingCard } from '@/components/listing-card';
 import { Section } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { PersonAvatar, Stars } from '@/components/visuals';
-import { useStartChat } from '@/components/chat/use-request-actions';
+import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import { useListing, useListings } from '@/lib/api/listings';
 import { useCart, useSaveCart } from '@/lib/api/cart';
 import { useAuth } from '@/lib/auth/use-auth';
 import type { Listing } from '@/lib/api/types';
-import { formatKg, formatRate, formatRand, lineCents } from '@/lib/format';
+import {
+  formatKg,
+  formatRate,
+  formatRand,
+  lineCents,
+  plural,
+  toGrams,
+} from '@/lib/format';
 import { quantityError, weightCounter } from '@/lib/quantity';
 import { Gallery } from './-components/gallery';
 
@@ -89,7 +97,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
     user?.role === 'business' && !own ? listing.seller_id : ''
   );
   const save = useSaveCart(listing.seller_id);
-  const chat = useStartChat();
+  const [chatOpen, setChatOpen] = useState(false);
   const navigate = useNavigate();
   const schema = z.object({
     weight: z.string().superRefine((value, ctx) => {
@@ -99,7 +107,8 @@ function ListingDetail({ listing }: { listing: Listing }) {
   });
   const form = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { weight: listing.weight },
+    mode: 'onChange',
+    defaultValues: { weight: '' },
   });
   const weight = form.watch('weight');
   const problem = quantityError(weight, listing.weight);
@@ -124,7 +133,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
           },
         ],
       });
-      toast.success('Added to your cart.');
+      toast.success('Added to your cart.', { id: 'cart-saved' });
       await navigate({ to: '/cart', search: { seller_id: listing.seller_id } });
     } catch (error) {
       form.setError('root', {
@@ -136,6 +145,11 @@ function ListingDetail({ listing }: { listing: Listing }) {
 
   return (
     <div className="grid gap-8 lg:grid-cols-2">
+      <NewMessageDialog
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        listing={listing}
+      />
       <Gallery />
       <div className="space-y-6">
         <h1 className="text-3xl font-semibold tracking-tight">
@@ -145,7 +159,9 @@ function ListingDetail({ listing }: { listing: Listing }) {
           {formatRate(listing.price)}
         </p>
         <p className="text-muted-foreground">
-          {formatKg(listing.weight)} available
+          {toGrams(listing.weight) === 0
+            ? 'Fully reserved'
+            : `${formatKg(listing.weight)} available`}
         </p>
         {listing.gw_code && (
           <p className="text-sm text-muted-foreground">
@@ -164,10 +180,17 @@ function ListingDetail({ listing }: { listing: Listing }) {
             counter={weightCounter(listing.weight)}
             description="Your cart keeps this quantity. You can change it before sending your request."
           />
+          {problem && !form.formState.errors.weight && (
+            <p role="alert" className="text-sm text-destructive">
+              {problem}
+            </p>
+          )}
           <p>
             Estimated total{' '}
             <strong className="tabular-nums">
-              {formatRand(problem ? 0 : lineCents(listing.price, weight))}
+              {problem
+                ? 'Enter a valid quantity'
+                : formatRand(lineCents(listing.price, weight))}
             </strong>
           </p>
           {user?.role === 'business' && !own ? (
@@ -180,8 +203,8 @@ function ListingDetail({ listing }: { listing: Listing }) {
               <div className="flex flex-wrap gap-3">
                 <Button
                   type="button"
-                  disabled={chat.isPending}
-                  onClick={() => void chat.startChat(listing)}
+                  disabled={toGrams(listing.weight) === 0}
+                  onClick={() => setChatOpen(true)}
                 >
                   Message seller
                 </Button>
@@ -201,9 +224,9 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 : 'Sign in as a business to message sellers and use the cart.'}
             </p>
           )}
-          {(form.formState.errors.root?.message || chat.error) && (
+          {form.formState.errors.root?.message && (
             <p role="alert" className="text-sm text-destructive">
-              {form.formState.errors.root?.message || chat.error}
+              {form.formState.errors.root?.message}
             </p>
           )}
         </form>
@@ -215,7 +238,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
               <Stars value={listing.average_rating} />
             )}
             <p className="text-sm text-muted-foreground">
-              {listing.review_count} reviews
+              {plural(listing.review_count, 'review')}
             </p>
           </div>
           <Link

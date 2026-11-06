@@ -31,6 +31,7 @@ type Summary struct {
 
 // Reviewable is a finished trade the buyer has not reviewed yet.
 type Reviewable struct {
+	Summary       string    `json:"summary"`
 	TransactionID string    `json:"transaction_id"`
 	TotalPrice    string    `json:"total_price"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -93,7 +94,11 @@ func (s *Store) Average(ctx context.Context, sellerID string) (Summary, error) {
 // review yet.
 func (s *Store) Reviewable(ctx context.Context, buyerID, sellerID string) ([]Reviewable, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT t.id, t.total_price::text, t.created_at FROM transactions t
+		SELECT t.id, t.total_price::text, t.created_at,
+			COALESCE((SELECT string_agg(m.name || ', ' || i.weight::text || ' kg', '; ' ORDER BY m.name)
+				FROM transaction_items i JOIN materials m ON m.id=i.material_id
+				WHERE i.transaction_id=t.id), 'Completed trade')
+		FROM transactions t
 		WHERE t.status='complete' AND t.buyer_id = $1 AND t.seller_id = $2 AND t.type = 'b2b'
 			AND NOT EXISTS (SELECT 1 FROM store_reviews r WHERE r.transaction_id = t.id)
 		ORDER BY t.created_at DESC, t.id DESC`, buyerID, sellerID)
@@ -107,7 +112,7 @@ func (s *Store) Reviewable(ctx context.Context, buyerID, sellerID string) ([]Rev
 	for rows.Next() {
 		var r Reviewable
 
-		if err := rows.Scan(&r.TransactionID, &r.TotalPrice, &r.CreatedAt); err != nil {
+		if err := rows.Scan(&r.TransactionID, &r.TotalPrice, &r.CreatedAt, &r.Summary); err != nil {
 			return nil, err
 		}
 

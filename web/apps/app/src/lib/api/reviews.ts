@@ -19,7 +19,7 @@ export function useReviewSummary(sellerId: string) {
   );
 }
 export function useReviewable(sellerId: string) {
-  return useResource<{ items: T.Reviewable[] }>(
+  return useResource<{ items: (T.Reviewable & { summary: string })[] }>(
     ['reviews', 'reviewable', sellerId],
     `/reviews/reviewable${queryString({ seller_id: sellerId })}`,
     true,

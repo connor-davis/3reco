@@ -80,8 +80,11 @@ func TestInvoiceNumberStable(t *testing.T) {
 	id := tradeSale(t, w.seller, w.buyer, w.material, "1.234567", "8.123456")
 	number := strings.ToUpper(id[len(id)-8:])
 	path := "/api/transactions/" + id + "/invoice"
-	mail := testutil.WaitMail(t, w.buyer.email, "Your 3rEco invoice "+number)
-	if len(mail.Attachments) != 1 || mail.Attachments[0].FileName != "3rEco-Invoice-"+number+".pdf" ||
+	mail := testutil.WaitMail(t, w.buyer.email, "Your 3REco invoice "+number)
+	if !strings.Contains(mail.Text, "3REco") || strings.Contains(mail.Text, "3rEco") {
+		t.Fatalf("invoice email brand: %s", mail.Text)
+	}
+	if len(mail.Attachments) != 1 || mail.Attachments[0].FileName != "3REco-Invoice-"+number+".pdf" ||
 		mail.Attachments[0].ContentType != "application/pdf" || mail.Attachments[0].Size == 0 {
 		t.Fatalf("invoice attachments: %+v", mail.Attachments)
 	}

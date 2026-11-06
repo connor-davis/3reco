@@ -12,7 +12,7 @@ type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
 
 const requestStatuses = {
   pending: { label: 'Pending', variant: 'secondary' },
-  offered: { label: 'Offer sent', variant: 'secondary' },
+  offered: { label: 'Offer awaiting confirmation', variant: 'secondary' },
   accepted: { label: 'Complete', variant: 'default' },
   rejected: { label: 'Rejected', variant: 'destructive' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },

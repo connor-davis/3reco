@@ -17,6 +17,7 @@ type Listing struct {
 	MaterialName  string    `json:"material_name"`
 	CarbonFactor  string    `json:"carbon_factor"`
 	GWCode        string    `json:"gw_code"`
+	HeldWeight    string    `json:"held_weight"`
 	Weight        string    `json:"weight"`
 	Price         string    `json:"price"`
 	AverageRating *float64  `json:"average_rating"`
@@ -34,14 +35,14 @@ type Filter struct {
 
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
 	s.material_id,m.name,m.carbon_factor::text,m.gw_code,GREATEST(s.weight-COALESCE(h.held,0),0)::text,s.price::text,
-	s.created_at`
+	s.created_at,COALESCE(h.held,0)::text`
 
 // Held weight is summed once for all stock, not once per row through stock_available().
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
 	JOIN users u ON u.id=s.owner_id
 	LEFT JOIN (SELECT stock_id,sum(weight) AS held FROM stock_holds
 		WHERE status='active' AND expires_at>clock_timestamp() GROUP BY stock_id) h ON h.stock_id=s.id
-	WHERE s.is_listed AND s.weight-COALESCE(h.held,0)>0
+	WHERE s.is_listed AND s.weight>0
 	AND NOT u.is_removed AND u.role='business'`
 
 // Listings excludes hidden, empty and removed-seller stock at the SQL boundary.
@@ -80,6 +81,7 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 			&item.Weight,
 			&item.Price,
 			&item.CreatedAt,
+			&item.HeldWeight,
 		); err != nil {
 			return nil, err
 		}
@@ -104,6 +106,7 @@ func (records *Store) Listing(ctx context.Context, id string) (Listing, error) {
 		&item.Weight,
 		&item.Price,
 		&item.CreatedAt,
+		&item.HeldWeight,
 	)
 
 	return item, err

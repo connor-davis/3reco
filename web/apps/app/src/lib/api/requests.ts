@@ -24,6 +24,8 @@ export function useCreateRequest() {
   return useWrite<T.RequestInput, T.Created>('/requests/', 'POST', [
     ['requests'],
     ['messages'],
+    ['stock'],
+    ['listings'],
   ]);
 }
 export function useOffer(id: string) {

@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,7 +43,7 @@ export function OfferDialog({
     <ResponsiveOverlay
       open={open}
       onOpenChange={onOpenChange}
-      title="Make an offer"
+      title={request.status === 'offered' ? 'Counter offer' : 'Make an offer'}
       description="Set each weight and price per kg. Sending an offer reserves the stock for 48 hours."
     >
       {open && (
@@ -94,6 +95,9 @@ function OfferForm({
               price: item.price.trim().replace(',', '.'),
             })),
           });
+          toast.success(
+            request.status === 'offered' ? 'Counter offer sent.' : 'Offer sent.'
+          );
           onDone();
         } catch (cause) {
           form.setError('root', {

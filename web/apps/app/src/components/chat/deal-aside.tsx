@@ -2,14 +2,17 @@ import { StatusBadge } from '@/components/badges';
 import { LinkButton } from '@/components/link-button';
 import { formatDate, formatKg, formatRand, formatRate } from '@/lib/format';
 import type { TradeRequest } from '@/lib/api/types';
-import { requestTotal } from './helpers';
+import { useAuth } from '@/lib/auth/use-auth';
+import { requestLabel, requestTotal } from './helpers';
+import { useListing } from '@/lib/api/listings';
 
 export function DealAside({ request }: { request: TradeRequest }) {
+  const { user } = useAuth();
   const hasOffer = request.items.some((item) => item.offer_price !== null);
   return (
     <div className="space-y-6 text-sm">
       <div className="flex flex-wrap justify-between gap-2">
-        <StatusBadge status={request.status} />
+        <StatusBadge status={requestLabel(request, user?.id)} />
         <span className="break-all text-muted-foreground">{request.id}</span>
       </div>
       <ul className="space-y-3 rounded-xl border p-4">
@@ -28,11 +31,7 @@ export function DealAside({ request }: { request: TradeRequest }) {
                 {formatRate(item.offer_price ?? '0')}
               </p>
             )}
-            {item.available_weight !== null && (
-              <p className="text-muted-foreground">
-                {formatKg(item.available_weight)} available
-              </p>
-            )}
+            <Availability stockId={item.stock_id ?? ''} />
           </li>
         ))}
       </ul>
@@ -52,6 +51,17 @@ export function DealAside({ request }: { request: TradeRequest }) {
         Visit store
       </LinkButton>
     </div>
+  );
+}
+function Availability({ stockId }: { stockId: string }) {
+  const listing = useListing(stockId);
+  return listing.data ? (
+    <p className="text-muted-foreground">
+      {formatKg(listing.data.weight)} available ·{' '}
+      {formatKg(listing.data.held_weight)} held
+    </p>
+  ) : (
+    <p className="text-muted-foreground">Availability unavailable</p>
   );
 }
 function Row({ label, value }: { label: string; value: string }) {

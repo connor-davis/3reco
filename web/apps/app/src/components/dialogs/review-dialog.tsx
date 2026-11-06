@@ -16,7 +16,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useCreateReview, useReviewable } from '@/lib/api/reviews';
 import { DataState } from '@/components/data-state';
 import { SelectField } from '@/components/form-fields';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatRand, toCents, plural } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const schema = z.object({
@@ -102,8 +102,7 @@ export function ReviewDialog({ open, onOpenChange, storeId }: Props) {
             label="Completed trade"
             options={(eligible.data?.items ?? []).map((trade) => ({
               value: trade.transaction_id,
-              label:
-                formatDate(trade.created_at) + ' · ' + trade.transaction_id,
+              label: `${trade.summary ?? 'Completed trade'} · ${formatRand(toCents(trade.total_price ?? '0'))} · ${formatDate(trade.created_at)}`,
             }))}
           />
           <Controller
@@ -124,7 +123,7 @@ export function ReviewDialog({ open, onOpenChange, storeId }: Props) {
                       <ToggleGroupItem
                         key={star}
                         value={String(star)}
-                        aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                        aria-label={plural(star, 'star')}
                       >
                         <Star
                           className={cn(
