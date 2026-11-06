@@ -21,7 +21,7 @@ import { useCollectors, useDeleteCollector } from '@/lib/api/collectors';
 import type { Collector } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { isStaffRole } from '@/lib/access';
-import { plural } from '@/lib/format';
+import { formatPhone, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/collectors')({
   component: () => (
@@ -135,7 +135,9 @@ function CollectorsPage() {
       cell: ({ row }) => (
         <span>
           <span className="block">
-            {row.original.phone || row.original.email || 'Not shared'}
+            {row.original.phone
+              ? formatPhone(row.original.phone)
+              : row.original.email || 'Not shared'}
           </span>
           <span className="text-xs text-muted-foreground">
             {row.original.phone && row.original.email}
@@ -203,6 +205,8 @@ function CollectorsPage() {
         <DataTable
           columns={columns}
           data={shown}
+          // A to Z within the page; the server pages newest first.
+          initialSort={[{ id: 'name', desc: false }]}
           renderCard={(collector) => (
             <Card size="sm">
               <CardContent className="space-y-2">
@@ -211,7 +215,10 @@ function CollectorsPage() {
                   <span className="font-medium">{collector.name}</span>
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  {[collector.phone, collector.email]
+                  {[
+                    collector.phone && formatPhone(collector.phone),
+                    collector.email,
+                  ]
                     .filter(Boolean)
                     .join(' · ') || 'Not shared'}{' '}
                   · {collector.city}

@@ -4,6 +4,8 @@ package collectors
 import (
 	"context"
 	"errors"
+	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -183,6 +185,11 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 			items = items[:200]
 		}
 
+		// A to Z, so the pick list reads in order.
+		sort.SliceStable(items, func(a, b int) bool {
+			return strings.ToLower(items[a].Name) < strings.ToLower(items[b].Name)
+		})
+
 		return items, nil
 	}
 
@@ -311,6 +318,24 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 
 				if conflict {
 					return apperr.Conflict("That phone number belongs to a business.")
+				}
+			}
+
+			// ponytail: a check, not a unique index, because old data may hold
+			// duplicates. Two saves at the very same moment could both pass.
+			if item.Email != "" {
+				conflict, err := service.store.EmailConflict(ctx, item.Email, item.CreatedByBusinessID, id)
+				if err != nil {
+					return err
+				}
+
+				if conflict {
+					return &apperr.Error{
+						Status:  http.StatusConflict,
+						Code:    "conflict",
+						Message: "You already have a collector with that email.",
+						Data:    map[string]string{"email": "You already have a collector with that email."},
+					}
 				}
 			}
 

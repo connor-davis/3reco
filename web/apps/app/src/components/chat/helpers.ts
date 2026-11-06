@@ -1,6 +1,11 @@
 import { lineCents } from '@/lib/format';
 import type { TradeRequest, Message, Thread } from '@/lib/api/types';
 
+/** The server keeps "[removed]" for a deleted person's message; show words. */
+export function messageText(content: string): string {
+  return content === '[removed]' ? 'Message removed' : content;
+}
+
 export function requestLabel(request: TradeRequest, userId?: string): string {
   if (request.status !== 'offered') return request.status;
   if (userId !== request.buyer.id && userId !== request.seller.id)

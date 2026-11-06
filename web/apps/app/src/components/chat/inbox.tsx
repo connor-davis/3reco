@@ -12,7 +12,7 @@ import { useThreadHistory } from '@/lib/api/messages';
 import { useAuth } from '@/lib/auth/use-auth';
 import { formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { threadSummary } from './helpers';
+import { messageText, threadSummary } from './helpers';
 
 export function Inbox({
   activeId,
@@ -163,7 +163,9 @@ export function Inbox({
                     </span>
                     <span className="block truncate text-sm text-muted-foreground">
                       {thread.latest_message?.system && 'System · '}
-                      {thread.latest_message?.content ?? 'New request'}
+                      {messageText(
+                        thread.latest_message?.content ?? 'New request'
+                      )}
                     </span>
                     <StatusBadge status={thread.status} />
                     <span className="block text-xs text-muted-foreground">

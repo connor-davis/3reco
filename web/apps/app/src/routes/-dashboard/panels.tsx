@@ -21,6 +21,7 @@ import {
   toCents,
   plural,
 } from '@/lib/format';
+import { messageText } from '@/components/chat/helpers';
 import { ImpactChart } from './impact-chart';
 
 export function Panel({
@@ -136,7 +137,7 @@ function RecentThreads() {
                 {thread.other.name}
               </LinkButton>
               <p className="line-clamp-2 text-sm text-muted-foreground">
-                {thread.latest_message?.content ?? 'New request'}
+                {messageText(thread.latest_message?.content ?? 'New request')}
               </p>
               {thread.unread_count > 0 && (
                 <p className="text-sm">{thread.unread_count} unread</p>

@@ -1,5 +1,5 @@
 import { useStats } from '@/lib/api/stats';
-import { toGrams } from '@/lib/format';
+import { formatKgNumber, toGrams } from '@/lib/format';
 
 // Factors are kg CO2e saved per kg of material diverted (design 09). They
 // are illustrative. Every page goes through the helpers below, so no page
@@ -24,9 +24,8 @@ export function co2OfWeight(weight: string, carbonFactor: string): number {
   return (toGrams(weight) * toGrams(carbonFactor)) / 1_000_000;
 }
 
-/** CO2e written as "729 kg CO₂e" or "7.1 t CO₂e". Takes kg or exact text. */
+/** CO2e written like a weight: "729.4 kg CO₂e", "3 580.11 kg CO₂e". */
 export function formatCo2(value: number | string): string {
   const kg = typeof value === 'string' ? toGrams(value) / 1000 : value;
-  if (kg < 1000) return `${Math.round(kg)} kg CO₂e`;
-  return `${(kg / 1000).toFixed(1)} t CO₂e`;
+  return `${formatKgNumber(kg)} kg CO₂e`;
 }

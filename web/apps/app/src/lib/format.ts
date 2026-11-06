@@ -55,15 +55,16 @@ function spaced(whole: number): string {
   return whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-/** Prints a weight with thousands spaces and no unit: "12 000", "999.99". */
+/** Prints a weight with thousands spaces, no unit, 2 decimals at most. */
 export function formatKgNumber(kg: string | number): string {
   const grams = typeof kg === 'number' ? Math.round(kg * 1000) : toGrams(kg);
-  const whole = spaced(Math.floor(grams / 1000));
-  const rest = grams % 1000;
+  const hundredths = Math.round(grams / 10);
+  const whole = spaced(Math.floor(hundredths / 100));
+  const rest = hundredths % 100;
 
   if (rest === 0) return whole;
 
-  return `${whole}.${rest.toString().padStart(3, '0').replace(/0+$/, '')}`;
+  return `${whole}.${rest.toString().padStart(2, '0').replace(/0$/, '')}`;
 }
 
 /** Prints cents as "R 3 020.00" with a space for thousands. */
@@ -75,6 +76,14 @@ export function formatRand(cents: number): string {
   return `${sign}R ${spaced(Math.floor(abs / 100))}.${rest}`;
 }
 
+/** Groups a South African number: "+27 82 000 1010" or "082 000 1010". */
+export function formatPhone(phone: string): string {
+  return phone
+    .trim()
+    .replace(/^\+27(\d{2})(\d{3})(\d{4})$/, '+27 $1 $2 $3')
+    .replace(/^(0\d{2})(\d{3})(\d{4})$/, '$1 $2 $3');
+}
+
 /** Prints a rate such as "R 4.60 / kg". */
 export function formatRate(pricePerKg: string): string {
   return `${formatRand(toCents(pricePerKg))} / kg`;
@@ -83,12 +92,6 @@ export function formatRate(pricePerKg: string): string {
 /** Prints a weight with thousands spaces: "12 000 kg". */
 export function formatKg(kg: string | number): string {
   return `${formatKgNumber(kg)} kg`;
-}
-
-/** Prints a mass in kg below 1 000 and tonnes from 1 000 up (09 rule). */
-export function formatMass(kg: number): string {
-  if (kg < 1000) return `${Math.round(kg)} kg`;
-  return `${(kg / 1000).toFixed(1)} t`;
 }
 
 const dateFormat = new Intl.DateTimeFormat('en-ZA', {

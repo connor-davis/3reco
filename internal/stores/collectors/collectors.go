@@ -217,6 +217,24 @@ func (records *Store) PhoneConflict(ctx context.Context, phone string) (bool, er
 	return exists, err
 }
 
+// EmailConflict tells whether another collector of the same creating business
+// (or of no business, for staff-made ones) already has this email, ignoring case.
+func (records *Store) EmailConflict(ctx context.Context, email string, business *string, except string) (bool, error) {
+	var exists bool
+	err := records.db.Q(ctx).QueryRow(
+		ctx,
+		`SELECT EXISTS(SELECT 1 FROM collectors WHERE lower(email)=lower($1) AND id<>$2
+ AND created_by_business_id IS NOT DISTINCT FROM $3::text)`,
+		email,
+		except,
+		business,
+	).Scan(
+		&exists,
+	)
+
+	return exists, err
+}
+
 // Create records creator IDs supplied by the session.
 func (records *Store) Create(ctx context.Context, item Collector) error {
 	if err := records.seal(&item); err != nil {
