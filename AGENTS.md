@@ -70,7 +70,7 @@ All commands run through [Task](https://taskfile.dev); `task` lists them.
   skipping; a plain `go test` still skips, so its green run proves nothing.
   `THREERECO_TEST_DATABASE_URL` defaults to
   `postgres://threereco:threereco@localhost:5441/threereco?sslmode=disable`.
-- `task check` - gofmt, vet, staticcheck, Go tests, web typecheck, lint and
+- `task check` - gofmt, vet, staticcheck, Go tests, web typecheck, lint, tests and
   build. Run it before every PR.
 - `task import-convex -- <export.zip>` - the one-time move off Convex: load a
   `npx convex export` file into Postgres and MinIO, then print record counts per

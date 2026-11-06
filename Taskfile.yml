@@ -103,13 +103,14 @@ tasks:
       - go test {{.GO_PKGS}}
 
   lint:web:
-    desc: Typecheck, lint and build the web app
+    desc: Typecheck, lint, test and build the web app
     cmds:
       - cd web/apps/app && npm run lint
+      - cd web/apps/app && npm test
       - cd web/apps/app && npm run build
 
   check:
-    desc: gofmt, vet, staticcheck, Go tests, web typecheck, lint and build
+    desc: gofmt, vet, staticcheck, Go tests, web typecheck, lint, tests and build
     cmds:
       - task: fmt:check
       - task: vet
