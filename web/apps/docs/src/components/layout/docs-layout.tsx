@@ -1,86 +1,105 @@
-import { useState } from 'react'
-import { Outlet } from '@tanstack/react-router'
-import { MDXProvider } from '@mdx-js/react'
-import { Github, Sun, Moon, Leaf, Menu } from 'lucide-react'
-import { Sidebar } from './sidebar'
-import { Button } from '@/components/ui/button'
-import { mdxComponents } from '@/components/mdx/mdx-components'
-import { useTheme } from '@/hooks/use-theme'
+import { useState } from 'react';
+import { Link, Outlet, useRouterState } from '@tanstack/react-router';
+import { MDXProvider } from '@mdx-js/react';
+import { Sun, Moon, Menu, ChevronRight } from 'lucide-react';
+import { Sidebar } from './sidebar';
+import { Button } from '@/components/ui/button';
+import { mdxComponents } from '@/components/mdx/mdx-components';
+import { useTheme } from '@/hooks/use-theme';
 
 export function DocsLayout() {
-  const { theme, toggleTheme } = useTheme()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { theme, toggleTheme } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const page = pathname.split('/').filter(Boolean).at(-1)?.replaceAll('-', ' ');
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* ── Header ─────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-full w-full max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Left: hamburger (mobile) + logo */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(o => !o)}
-              aria-label="Toggle navigation"
+    <div className="min-h-svh bg-background text-foreground">
+      <a
+        href="#docs-content"
+        className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:left-2 focus:top-2"
+      >
+        Skip to content
+      </a>
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="min-w-0 min-[781px]:ml-60">
+        <header className="sticky top-0 z-50 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-xl sm:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="min-[781px]:hidden"
+            onClick={() => setSidebarOpen((open) => !open)}
+            aria-label="Toggle navigation"
+            aria-expanded={sidebarOpen}
+            aria-controls="docs-navigation"
+          >
+            <Menu size={18} />
+          </Button>
+          <Link
+            to="/"
+            className="flex min-w-0 items-center gap-2 rounded-md text-base font-semibold min-[781px]:hidden"
+          >
+            <span
+              className="size-2.5 shrink-0 rounded-full bg-primary"
+              aria-hidden="true"
+            />
+            <span>3REco Docs</span>
+          </Link>
+          <nav
+            aria-label="Breadcrumb"
+            className="hidden min-w-0 items-center gap-2 text-sm min-[781px]:flex"
+          >
+            <Link
+              to="/"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <Menu size={20} />
-            </Button>
-            <div className="flex items-center gap-2 font-bold text-lg">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
-                <Leaf size={16} className="text-primary-foreground" />
-              </div>
-              <span className="text-foreground">3rEco</span>
-              <span className="text-muted-foreground font-normal text-sm">docs</span>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                window.open('https://github.com/yourusername/3reco', '_blank')
-              }
-              aria-label="GitHub"
+              Docs
+            </Link>
+            <ChevronRight
+              size={14}
+              className="shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span
+              aria-current="page"
+              className="truncate font-medium capitalize"
             >
-              <Github size={18} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </Button>
-          </div>
-        </div>
-      </header>
+              {page}
+            </span>
+          </nav>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto shrink-0"
+            onClick={toggleTheme}
+            aria-label={
+              theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+            }
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </Button>
+        </header>
 
-      {/* ── Mobile backdrop ────────────────────────────────── */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="fixed inset-x-0 top-14 bottom-0 z-30 bg-foreground/40 min-[781px]:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close navigation"
+          />
+        )}
 
-      {/* ── Body ───────────────────────────────────────────── */}
-      <div className="flex pt-16">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-        {/* Content */}
-        <main className="lg:ml-64 min-h-[calc(100vh-4rem)] flex-1 w-full">
-          <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
+        <main id="docs-content" tabIndex={-1} className="min-w-0">
+          <article className="docs-prose mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
             <MDXProvider components={mdxComponents}>
               <Outlet />
             </MDXProvider>
-          </div>
+          </article>
         </main>
       </div>
     </div>
-  )
+  );
 }
