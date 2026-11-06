@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/use-auth';
+import { endSession } from '../api/auth';
 import { LiveConnection } from './connection';
 
 /**
@@ -16,7 +17,9 @@ export function useLiveEvents() {
 
   useEffect(() => {
     if (!userId || !live) return;
-    const connection = new LiveConnection(client);
+    const connection = new LiveConnection(client, () => {
+      void endSession(client, 'ended');
+    });
     connection.start();
     return () => connection.stop();
   }, [client, userId, live]);

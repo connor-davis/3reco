@@ -38,7 +38,7 @@ func (s *Store) Users(
 	like, role string,
 ) ([]User, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT u.id, `+database.DisplayName("u")+`, u.email, u.role, u.profile_complete, u.created_at
+		SELECT u.id, `+database.PersonName("u")+`, u.email, u.role, u.profile_complete, u.created_at
 		FROM users u
 		WHERE NOT u.is_removed
 			AND ($1::timestamptz IS NULL OR (u.created_at, u.id) < ($1, $2))

@@ -3,7 +3,7 @@ import { DataState } from '@/components/data-state';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
 import { useStats } from '@/lib/api/stats';
-import { formatKg } from '@/lib/format';
+import { formatKg, plural } from '@/lib/format';
 
 type Props = { open?: boolean; onOpenChange?: (open: boolean) => void };
 
@@ -44,7 +44,7 @@ function ImpactBody({
           <p className="text-sm">
             Together, the community has traded{' '}
             <strong>{formatKg(stats.total_kg)}</strong> of materials in{' '}
-            <strong>{stats.deals} trades</strong>, saving an estimated{' '}
+            <strong>{plural(stats.deals, 'trade')}</strong>, saving an estimated{' '}
             <strong>{formatKg(stats.co2_kg)} CO₂e</strong>.
           </p>
         )}

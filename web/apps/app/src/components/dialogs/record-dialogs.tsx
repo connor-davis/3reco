@@ -28,7 +28,7 @@ type Props = {
   onClose: () => void;
 };
 
-const maxReceipts = 5;
+export const maxReceipts = 5;
 const maxBytes = 5 * 1024 * 1024;
 const kinds = ['image/png', 'image/jpeg'];
 
@@ -87,7 +87,7 @@ export function TransactionDialog({
           <Button
             disabled={invoice.isPending}
             onClick={() =>
-              invoice.mutate(shown.id, {
+              invoice.mutate(shown, {
                 onError: (error) => toast.error(errorText(error)),
               })
             }

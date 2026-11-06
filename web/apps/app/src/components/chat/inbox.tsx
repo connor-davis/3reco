@@ -22,6 +22,8 @@ export function Inbox({
 }) {
   const { user } = useAuth();
   const admin = user?.role === 'admin';
+  // Staff read the platform but never take part in a trade chat.
+  const staff = user?.role === 'staff';
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -74,7 +76,7 @@ export function Inbox({
     <div className="flex h-full min-w-0 flex-col gap-4 px-5 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Messages</h1>
-        {!admin && (
+        {!admin && !staff && (
           <IconButton
             label="Start a new conversation"
             variant="outline"
@@ -99,6 +101,7 @@ export function Inbox({
           { value: 'all', label: 'All' },
           ...(!admin ? [{ value: 'unread', label: 'Unread' }] : []),
           { value: 'offers', label: 'Offers' },
+          { value: 'done', label: 'Finished' },
         ]}
       />
       <div
@@ -115,9 +118,13 @@ export function Inbox({
               : 'No conversations yet'
           }
           emptyText={
-            admin
-              ? 'No conversations on 3REco yet.'
-              : 'Ask a seller about a listing to start one.'
+            debouncedSearch || filter !== 'all'
+              ? 'Try another word or filter.'
+              : admin
+                ? 'No conversations on 3REco yet.'
+                : staff
+                  ? 'Staff do not take part in trade chats.'
+                  : 'Ask a seller about a listing to start one.'
           }
           skeleton={<RowsSkeleton rows={6} />}
         >

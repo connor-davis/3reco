@@ -21,6 +21,14 @@ export async function replaceSession(
   client.setQueryData(authKey, user);
 }
 
+/** Drops the signed-in person and every private cache, then shows sign-in. */
+export async function endSession(client: QueryClient, reason?: 'ended') {
+  await replaceSession(client, null);
+
+  if (!window.location.pathname.endsWith('/sign-in'))
+    window.location.assign(reason ? `/sign-in?reason=${reason}` : '/sign-in');
+}
+
 export async function readMe(signal?: AbortSignal): Promise<AuthUser | null> {
   try {
     return (await api<{ user: AuthUser }>('/auth/me', { signal })).user;

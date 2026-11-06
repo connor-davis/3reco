@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { replaceSession, useMe } from '../api/auth';
+import { endSession, readMe, useMe } from '../api/auth';
 import { AuthContext } from './context';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -8,11 +8,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient();
 
   useEffect(() => {
+    // One 401 from some other route can be a cookie that is still arriving.
+    // Only /api/auth/me saying "no session" signs the person out.
     const signedOut = () => {
-      void replaceSession(client, null).then(() => {
-        if (!window.location.pathname.endsWith('/sign-in'))
-          window.location.assign('/sign-in');
-      });
+      void readMe()
+        .then((user) => (user ? undefined : endSession(client)))
+        .catch(() => undefined);
     };
     window.addEventListener('api:unauthorized', signedOut);
     return () => window.removeEventListener('api:unauthorized', signedOut);

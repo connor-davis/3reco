@@ -67,8 +67,9 @@ func TestRequestMessagesSendReadAndInbox(t *testing.T) {
 	tradeWant(t, "cancel", w.buyer.c.Do("POST", "/api/requests/"+id+"/cancel", nil), 200)
 	tradeWant(t, "send when closed", tradeSay(t, w.buyer, id, "hello?"), 409)
 
-	if n := len(tradeItems(w.seller.c.Do("GET", "/api/messages/inbox", nil))); n != 0 {
-		t.Errorf("inbox holds %d closed threads, want 0", n)
+	// The chat stays in the inbox so the history can still be read.
+	if n := len(tradeItems(w.seller.c.Do("GET", "/api/messages/inbox", nil))); n != 1 {
+		t.Errorf("inbox holds %d closed threads, want 1", n)
 	}
 }
 

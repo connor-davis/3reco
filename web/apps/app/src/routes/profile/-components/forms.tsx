@@ -169,7 +169,7 @@ export function PersonalForm({ profile, onSaved, wizard }: Props) {
         description={
           profile.id_number
             ? 'Saved: ' + profile.id_number + '. Leave blank to keep it.'
-            : 'Enter a 13-digit ID, if applicable.'
+            : '13 digits. Leave blank if you have none.'
         }
         autoComplete="off"
       />
@@ -265,7 +265,7 @@ export function PayoutForm({ profile, onSaved, wizard }: Props) {
             ? 'Saved: ' +
               profile.bank_account_number +
               '. Leave blank to keep it.'
-            : 'Enter the account number.'
+            : 'Digits only, no spaces.'
         }
       />
       <TextField

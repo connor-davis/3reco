@@ -176,7 +176,7 @@ func (s *Service) AllThreads(
 }
 
 func threadFilter(filter string, admin bool) error {
-	if filter == "" || filter == "all" || filter == "offers" || (filter == "unread" && !admin) {
+	if filter == "" || filter == "all" || filter == "offers" || filter == "done" || (filter == "unread" && !admin) {
 		return nil
 	}
 

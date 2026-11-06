@@ -109,8 +109,13 @@ func (h *Handler) write(conn *websocket.Conn, client *realtime.Client) {
 	for {
 		select {
 		case <-client.Closed():
+			code, reason := websocket.CloseNormalClosure, ""
+			if client.Revoked() {
+				code, reason = realtime.CloseSessionEnded, "session-ended"
+			}
+
 			_ = conn.WriteControl(websocket.CloseMessage,
-				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+				websocket.FormatCloseMessage(code, reason),
 				time.Now().Add(writeLimit))
 			_ = conn.Close()
 

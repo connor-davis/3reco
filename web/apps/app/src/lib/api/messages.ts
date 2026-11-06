@@ -3,6 +3,7 @@ import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/use-auth';
+import { canOpen } from '../access';
 import { api } from './client';
 
 // Start with recent messages; the next cursor reaches older history on demand.
@@ -48,7 +49,8 @@ export function useThreadHistory(q = '', filter = 'all') {
     },
     getNextPageParam: (page) =>
       page.has_more ? (page.next_cursor ?? undefined) : undefined,
-    enabled: !!user,
+    // A collector or a guest has no inbox, so asking would only earn a 403.
+    enabled: !!user && canOpen(user.role, 'messages'),
   });
   return query;
 }

@@ -14,7 +14,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { Dashboard } from '@/lib/api/types';
-import { formatDate, formatKg, formatRand, toCents } from '@/lib/format';
+import {
+  formatDate,
+  formatKg,
+  formatRand,
+  toCents,
+  plural,
+} from '@/lib/format';
 import { ImpactChart } from './impact-chart';
 
 export function Panel({
@@ -74,7 +80,8 @@ export function CounterpartyRows({
                 {party.name}
               </span>
               <span className="text-sm text-muted-foreground">
-                {party.count} trades · {formatRand(toCents(party.value))}
+                {plural(party.count, 'trade')} ·{' '}
+                {formatRand(toCents(party.value))}
               </span>
             </li>
           ))}

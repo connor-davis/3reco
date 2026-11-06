@@ -148,8 +148,7 @@ function Wizard({ fixed }: { fixed: Choice | null }) {
     >
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Step {index + 1}
-          {chosen && ` of ${total}`}
+          Step {index + 1} of {total}
         </p>
         <Progress
           value={((index + 1) / total) * 100}

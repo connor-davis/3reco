@@ -76,8 +76,10 @@ function FieldFrame({
   state: ControllerFieldState;
   children: (props: ControlProps) => ReactNode;
 }) {
+  // The error replaces the hint, so the two never say the same thing twice.
+  const hint = state.invalid ? undefined : description;
   const describedBy =
-    [description && ids.hintId, state.invalid && ids.errorId]
+    [hint && ids.hintId, state.invalid && ids.errorId]
       .filter(Boolean)
       .join(' ') || undefined;
 
@@ -89,9 +91,7 @@ function FieldFrame({
         'aria-invalid': state.invalid,
         'aria-describedby': describedBy,
       })}
-      {description && (
-        <FieldDescription id={ids.hintId}>{description}</FieldDescription>
-      )}
+      {hint && <FieldDescription id={ids.hintId}>{hint}</FieldDescription>}
       <FieldError id={ids.errorId} errors={[state.error]} />
     </Field>
   );

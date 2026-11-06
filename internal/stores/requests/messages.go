@@ -88,7 +88,8 @@ func (s *Store) MarkRead(ctx context.Context, requestID, userID string) error {
 	return err
 }
 
-// Inbox returns up to limit+1 pending or offered requests the user takes part in, most
+// Inbox returns up to limit+1 requests of any status the user takes part in (a
+// finished chat stays findable; filter "done" shows only those), most
 // recent activity first. Activity is the newest message, or the request
 // itself when nobody has written yet.
 func (s *Store) Inbox(
@@ -109,12 +110,13 @@ func (s *Store) Inbox(
 		LEFT JOIN LATERAL (
 			SELECT id, sender_id, content, created_at FROM transaction_request_messages
 			WHERE request_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) lm ON true
-		WHERE (r.seller_id = $1 OR r.buyer_id = $1) AND r.status IN ('pending', 'offered')
+		WHERE (r.seller_id = $1 OR r.buyer_id = $1)
 			AND ($5 = '' OR strpos(lower(`+database.DisplayName("o")+`), lower($5)) > 0
 				OR strpos(lower(COALESCE(lm.content, '')), lower($5)) > 0
 				OR EXISTS (SELECT 1 FROM transaction_request_items i JOIN materials m ON m.id = i.material_id
 					WHERE i.request_id = r.id AND strpos(lower(m.name), lower($5)) > 0))
 			AND ($6 <> 'offers' OR r.status = 'offered')
+			AND ($6 <> 'done' OR r.status IN ('accepted', 'rejected', 'cancelled'))
 			AND ($6 <> 'unread' OR EXISTS (SELECT 1 FROM transaction_request_messages m
 				WHERE m.request_id = r.id AND m.sender_id <> $1 AND NOT EXISTS (
 					SELECT 1 FROM request_message_reads x WHERE x.message_id = m.id AND x.user_id = $1)))
@@ -201,6 +203,7 @@ func (s *Store) AllThreads(
 			OR EXISTS (SELECT 1 FROM transaction_request_items i JOIN materials m ON m.id = i.material_id
 				WHERE i.request_id = r.id AND strpos(lower(m.name), lower($4)) > 0))
 			AND ($5 <> 'offers' OR r.status = 'offered')
+			AND ($5 <> 'done' OR r.status IN ('accepted', 'rejected', 'cancelled'))
 			AND ($1::timestamptz IS NULL OR (r.activity_at, r.id) < ($1, $2))
 		ORDER BY activity DESC, r.id DESC
 		LIMIT $3`, cur.At, cur.ID, limit+1, search, filter)

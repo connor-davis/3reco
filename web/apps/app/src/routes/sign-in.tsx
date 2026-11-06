@@ -25,6 +25,9 @@ function SignInPage() {
   type Values = z.infer<typeof schema>;
 
   const navigate = useNavigate();
+  // The live socket sends people here with ?reason=ended when access is gone.
+  const ended =
+    new URLSearchParams(window.location.search).get('reason') === 'ended';
   const signIn = useSignIn();
   const [failure, setFailure] = useState<string | null>(null);
   const [unverified, setUnverified] = useState<string | null>(null);
@@ -39,8 +42,11 @@ function SignInPage() {
     setUnverified(null);
 
     signIn.mutate(values, {
-      onSuccess: () => {
-        toast.success('Welcome back.');
+      onSuccess: (data) => {
+        // Someone who has not finished setup is new, not coming back.
+        toast.success(
+          data.user.role === 'guest' ? 'Welcome.' : 'Welcome back.'
+        );
         navigate({ to: '/' });
       },
       onError: (error) => {
@@ -57,7 +63,16 @@ function SignInPage() {
     <AuthShell
       title="Welcome back."
       description="Sign in to trade, chat and track your stock."
-      feedback={failure ? { tone: 'error', text: failure } : null}
+      feedback={
+        failure
+          ? { tone: 'error', text: failure }
+          : ended
+            ? {
+                tone: 'info',
+                text: 'You were signed out because your account changed.',
+              }
+            : null
+      }
       footer={
         <>
           <p>
