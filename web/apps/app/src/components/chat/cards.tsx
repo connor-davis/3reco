@@ -10,7 +10,14 @@ import {
 import { useAuth } from '@/lib/auth/use-auth';
 import { useDownloadInvoice } from '@/lib/api/transactions';
 import type { TradeRequest } from '@/lib/api/types';
-import { formatKg, formatRand, formatRate, lineCents } from '@/lib/format';
+import {
+  formatKg,
+  formatRand,
+  formatRate,
+  formatTime,
+  lineCents,
+  plural,
+} from '@/lib/format';
 import { requestTotal } from './helpers';
 
 export function OfferCard({
@@ -35,11 +42,16 @@ export function OfferCard({
     <Card size="sm" className="max-w-sm pt-0">
       <CardHeader className="bg-accent py-3">
         <CardTitle>
-          Offer · {request.items.length}{' '}
-          {request.items.length === 1 ? 'material' : 'materials'}
+          Offer · {plural(request.items.length, 'material')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Current deal status ·{' '}
+          <time dateTime={request.updated_at}>
+            {formatTime(request.updated_at)}
+          </time>
+        </p>
         <ul className="space-y-3">
           {request.items.map((item, index) => (
             <li
@@ -125,12 +137,20 @@ export function InvoiceCard({
 }) {
   const { user } = useAuth();
   const download = useDownloadInvoice();
+  transactionId ??= (request as TradeRequest & { transaction_id?: string })
+    .transaction_id;
   return (
     <Card size="sm" className="max-w-sm">
       <CardHeader>
         <CardTitle>Complete</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Current deal status ·{' '}
+          <time dateTime={request.updated_at}>
+            {formatTime(request.updated_at)}
+          </time>
+        </p>
         <p>Total {formatRand(requestTotal(request))}</p>
         <p>The transaction and invoice are in your records.</p>
         {download.error && (
@@ -143,8 +163,8 @@ export function InvoiceCard({
         <LinkButton
           to={
             user?.id === request.seller.id
-              ? '/transactions/sales'
-              : '/transactions/purchases'
+              ? `/transactions/sales?open=${encodeURIComponent(transactionId ?? '')}`
+              : `/transactions/purchases?open=${encodeURIComponent(transactionId ?? '')}`
           }
           variant="outline"
         >

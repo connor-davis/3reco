@@ -8,7 +8,8 @@ import { ListingCard } from '@/components/listing-card';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useStartChat } from '@/components/chat/use-request-actions';
+import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
+import type { Listing } from '@/lib/api/types';
 import { useStore } from '@/lib/api/stores';
 import { useStoreListings } from '@/lib/api/listings';
 import {
@@ -17,7 +18,7 @@ import {
   useReviewSummary,
 } from '@/lib/api/reviews';
 import { useAuth } from '@/lib/auth/use-auth';
-import { formatDate } from '@/lib/format';
+import { formatDate, plural, toGrams } from '@/lib/format';
 
 export const Route = createFileRoute('/market/store/$sellerId')({
   component: StorePage,
@@ -33,7 +34,7 @@ function StorePage() {
   const reviews = useReviews(sellerId, { cursor: reviewCursor });
   const summary = useReviewSummary(sellerId);
   const remove = useDeleteReview();
-  const chat = useStartChat();
+  const [chatListing, setChatListing] = useState<Listing | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -47,6 +48,13 @@ function StorePage() {
     >
       {store.data && (
         <>
+          <NewMessageDialog
+            open={chatListing !== null}
+            onOpenChange={(open) => {
+              if (!open) setChatListing(null);
+            }}
+            listing={chatListing ?? undefined}
+          />
           <header className="flex flex-wrap items-center gap-4 rounded-3xl bg-muted p-6">
             <PersonAvatar name={store.data.name} className="size-16" />
             <div className="min-w-0 flex-1 space-y-1">
@@ -71,19 +79,18 @@ function StorePage() {
             )}
             {user?.role === 'business' && user.id !== sellerId && (
               <Button
-                disabled={!listings.data?.items.length || chat.isPending}
+                disabled={
+                  !listings.data?.items.some((item) => toGrams(item.weight) > 0)
+                }
                 onClick={() => {
-                  const item = listings.data?.items[0];
-                  if (item) void chat.startChat(item);
+                  const item = listings.data?.items.find(
+                    (item) => toGrams(item.weight) > 0
+                  );
+                  if (item) setChatListing(item);
                 }}
               >
                 Message store
               </Button>
-            )}
-            {chat.error && (
-              <p role="alert" className="basis-full text-destructive">
-                {chat.error}
-              </p>
             )}
           </header>
           <Tabs defaultValue="stock" className="mt-8">
@@ -138,7 +145,9 @@ function StorePage() {
                     {summary.data.average !== null && (
                       <Stars value={summary.data.average} />
                     )}
-                    <p>{summary.data.count} completed-trade reviews</p>
+                    <p>
+                      {plural(summary.data.count, 'completed-trade review')}
+                    </p>
                   </div>
                 )}
               </DataState>

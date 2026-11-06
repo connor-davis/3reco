@@ -225,17 +225,17 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 		body := fmt.Sprintf(
 			"Your invoice is ready\n\nHi %s,\n\n"+
 				"Please find your invoice %s dated %s attached to this email.\n\n"+
-				"This invoice was generated automatically by 3rEco.",
+				"This invoice was generated automatically by 3REco.",
 			Name(document.Buyer),
 			invoice.Number,
 			invoice.Date,
 		)
 
 		return s.mailer.Send(ctx, mail.Message{
-			To: document.Buyer.Email, Subject: "Your 3rEco invoice " + invoice.Number,
+			To: document.Buyer.Email, Subject: "Your 3REco invoice " + invoice.Number,
 			Text: body, HTML: "<p>" + strings.ReplaceAll(html.EscapeString(body), "\n", "<br>") + "</p>",
 			Attachments: []mail.Attachment{{
-				Filename:    "3rEco-Invoice-" + invoice.Number + ".pdf",
+				Filename:    "3REco-Invoice-" + invoice.Number + ".pdf",
 				ContentType: "application/pdf",
 				Content:     data,
 			}},

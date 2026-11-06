@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ShoppingCart, Store as StoreIcon } from 'lucide-react';
@@ -18,8 +19,13 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { useCart, useSaveCart, useClearCart } from '@/lib/api/cart';
-import { useStores, useStore } from '@/lib/api/stores';
+import {
+  useCart,
+  useCartStores,
+  useSaveCart,
+  useClearCart,
+} from '@/lib/api/cart';
+import { useStore } from '@/lib/api/stores';
 import { useListing } from '@/lib/api/listings';
 import { useCreateRequest } from '@/lib/api/requests';
 import type { CartItem } from '@/lib/api/types';
@@ -28,7 +34,9 @@ import { quantityError, weightCounter } from '@/lib/quantity';
 
 export const Route = createFileRoute('/cart')({
   validateSearch: (search: Record<string, unknown>) => ({
-    seller_id: typeof search.seller_id === 'string' ? search.seller_id : '',
+    ...(typeof search.seller_id === 'string' && search.seller_id
+      ? { seller_id: search.seller_id }
+      : {}),
   }),
   component: () => (
     <Guarded page="cart">
@@ -38,19 +46,23 @@ export const Route = createFileRoute('/cart')({
 });
 
 function CartPage() {
-  const { seller_id: sellerId } = Route.useSearch();
+  const { seller_id: selectedSeller } = Route.useSearch();
   const navigate = useNavigate();
+  useEffect(() => {
+    toast.dismiss('cart-saved');
+  }, []);
   const [search, setSearch] = useState('');
-  const [cursor, setCursor] = useState<string>();
-  const stores = useStores({ q: search, cursor });
-  const selected = useStore(sellerId);
+  const stores = useCartStores();
+  const sellerId = selectedSeller ?? stores.data?.items[0]?.id ?? '';
   const options =
-    stores.data?.items.map((store) => ({
-      value: store.id,
-      label: store.name,
-    })) ?? [];
-  if (selected.data && !options.some((option) => option.value === sellerId))
-    options.unshift({ value: sellerId, label: selected.data.name });
+    stores.data?.items
+      .filter((store) =>
+        store.name.toLowerCase().includes(search.toLowerCase())
+      )
+      .map((store) => ({
+        value: store.id,
+        label: store.name,
+      })) ?? [];
 
   return (
     <>
@@ -69,7 +81,6 @@ function CartPage() {
           value={search}
           onChange={(value) => {
             setSearch(value);
-            setCursor(undefined);
           }}
         />
         <DataState
@@ -88,21 +99,6 @@ function CartPage() {
             }
           />
         </DataState>
-        <div className="flex gap-3">
-          {cursor && (
-            <Button variant="outline" onClick={() => setCursor(undefined)}>
-              First page
-            </Button>
-          )}
-          {stores.data?.has_more && (
-            <Button
-              variant="outline"
-              onClick={() => setCursor(stores.data?.next_cursor ?? undefined)}
-            >
-              More stores
-            </Button>
-          )}
-        </div>
       </div>
       {sellerId ? (
         <SellerCart key={sellerId} sellerId={sellerId} />
@@ -181,9 +177,15 @@ function CartForm({
   const availability = useRef(new Map<string, string | null>());
   const validateLine = useCallback((id: string, problem: string | null) => {
     availability.current.set(id, problem);
+    setBlockedLines((current) =>
+      current[id] === problem ? current : { ...current, [id]: problem }
+    );
   }, []);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [blockedLines, setBlockedLines] = useState<
+    Record<string, string | null>
+  >({});
   const form = useForm<CartValues>({
     resolver: zodResolver(createCartSchema()),
     defaultValues: {
@@ -247,6 +249,7 @@ function CartForm({
           to: '/messages/$requestId',
           params: { requestId: id },
         });
+        toast.success('Request sent. Stock is reserved for 48 hours.');
       }
     } catch (cause) {
       setError(
@@ -322,9 +325,26 @@ function CartForm({
       <CardFooter className="flex-wrap gap-3">
         <p className="mr-auto">
           Estimated total{' '}
-          <strong className="tabular-nums">{formatRand(total)}</strong>
+          <strong className="tabular-nums">
+            {values.some(
+              (item) =>
+                !!quantityError(item.weight) || !!blockedLines[item.stock_id]
+            )
+              ? 'Enter valid quantities'
+              : formatRand(total)}
+          </strong>
         </p>
-        <Button type="submit" form="cart-form" disabled={busy}>
+        <Button
+          type="submit"
+          form="cart-form"
+          disabled={
+            busy ||
+            values.some(
+              (item) =>
+                !!quantityError(item.weight) || !!blockedLines[item.stock_id]
+            )
+          }
+        >
           Send request
         </Button>
       </CardFooter>
@@ -374,7 +394,8 @@ function CartLine({
             <LinkButton
               to="/market/listing/$listingId"
               params={{ listingId: stockId }}
-              variant="ghost"
+              variant="link"
+              className="px-0"
             >
               {listing.data.material_name}
             </LinkButton>

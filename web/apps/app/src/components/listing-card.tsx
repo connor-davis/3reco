@@ -1,27 +1,14 @@
 import { Link } from '@tanstack/react-router';
 import { Package } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatKg, formatRate } from '@/lib/format';
+import { formatKg, formatRate, toGrams } from '@/lib/format';
 import type { Listing } from '@/lib/api/types';
-import { useStartChat } from './chat/use-request-actions';
 
 export function ListingCard({ listing }: { listing: Listing }) {
-  const chat = useStartChat();
-
   return (
     <Card className="group/card relative gap-0 bg-transparent py-0 shadow-none ring-0">
       <div className="relative flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-muted-foreground">
         <Package className="size-16" strokeWidth={1.25} aria-hidden="true" />
-        <Button
-          className="absolute top-3 right-3 z-10 min-h-11"
-          variant="secondary"
-          disabled={chat.isPending}
-          onClick={() => void chat.startChat(listing)}
-          aria-label={`Ask about ${listing.material_name}`}
-        >
-          Ask
-        </Button>
       </div>
       <CardContent className="mt-3.5 space-y-1.5 px-0">
         <h3 className="line-clamp-2 min-h-12 font-semibold tracking-tight">
@@ -34,7 +21,9 @@ export function ListingCard({ listing }: { listing: Listing }) {
           </Link>
         </h3>
         <p className="text-sm text-muted-foreground">
-          {formatKg(listing.weight)} available
+          {toGrams(listing.weight) === 0
+            ? 'Fully reserved'
+            : `${formatKg(listing.weight)} available`}
         </p>
         <p className="font-semibold tabular-nums">
           {formatRate(listing.price)}
@@ -46,11 +35,6 @@ export function ListingCard({ listing }: { listing: Listing }) {
         >
           {listing.seller_name}
         </Link>
-        {chat.error && (
-          <p role="alert" className="text-sm text-destructive">
-            {chat.error}
-          </p>
-        )}
       </CardContent>
     </Card>
   );

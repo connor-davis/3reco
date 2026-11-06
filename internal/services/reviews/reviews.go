@@ -10,6 +10,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
+	"github.com/connor-davis/3reco/internal/stores/notifications"
 	store "github.com/connor-davis/3reco/internal/stores/reviews"
 )
 
@@ -97,7 +98,22 @@ func (s *Service) Add(
 
 	id := database.NewID()
 
-	err = s.store.Insert(ctx, id, transactionID, trade.SellerID, buyerID, rating, comment)
+	err = s.db.InTx(ctx, func(ctx context.Context) error {
+		if err := s.store.Insert(ctx, id, transactionID, trade.SellerID, buyerID, rating, comment); err != nil {
+			return err
+		}
+
+		// A review is a new trade message. Use the existing notification kind so
+		// the bell and its realtime routing keep the same owner-only contract.
+		return notifications.New(s.db).Insert(
+			ctx,
+			trade.SellerID,
+			"message_received",
+			"New trade review",
+			"A buyer reviewed your completed trade.",
+			"/market/store/"+trade.SellerID,
+		)
+	})
 	if _, taken := database.IsUnique(err); taken {
 		return "", apperr.Conflict("You have already reviewed this transaction.").
 			WithCode("already_reviewed")

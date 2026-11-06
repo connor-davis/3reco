@@ -12,6 +12,11 @@ import (
 	store "github.com/connor-davis/3reco/internal/stores/market"
 )
 
+// CartStores returns the caller's saved seller carts.
+func (service *Service) CartStores(ctx context.Context, buyer string) ([]store.CartStore, error) {
+	return service.store.CartStores(ctx, buyer)
+}
+
 func cartParties(buyer, seller string) error {
 	if buyer == "" {
 		return apperr.Unauthorized("Please sign in.")

@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import {
   useCallback,
   useEffect,
@@ -33,6 +34,7 @@ import {
   counterpartyOf,
   isClosed,
   orderedMessages,
+  requestLabel,
 } from './helpers';
 import { useRequestActions } from './use-request-actions';
 
@@ -167,7 +169,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
               ? `${request.buyer.name} and ${request.seller.name}`
               : other.name}
           </h2>
-          <StatusBadge status={request.status} />
+          <StatusBadge status={requestLabel(request, user?.id)} />
         </div>
         <IconButton label="Request details" onClick={() => setInfoOpen(true)}>
           <Info />
@@ -286,7 +288,11 @@ export function Conversation({ request }: { request: TradeRequest }) {
             <OfferCard
               request={request}
               canRespond={canAct && canRespond(request, user?.id)}
-              onAccept={() => void actions.accept()}
+              onAccept={() =>
+                void actions.accept().then((ok) => {
+                  if (ok) toast.success('Confirmation saved.');
+                })
+              }
               onDecline={() => setConfirm('reject')}
               disabled={actions.isPending}
             />
@@ -376,7 +382,16 @@ export function Conversation({ request }: { request: TradeRequest }) {
         onConfirm={() => {
           if (confirm)
             void actions[confirm]().then((ok) => {
-              if (ok) setConfirm(null);
+              if (ok) {
+                toast.success(
+                  confirm === 'cancel'
+                    ? 'Request cancelled.'
+                    : confirm === 'withdraw'
+                      ? 'Offer withdrawn.'
+                      : 'Request rejected.'
+                );
+                setConfirm(null);
+              }
             });
         }}
       />

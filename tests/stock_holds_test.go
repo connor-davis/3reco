@@ -74,9 +74,11 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	other := tradeNewUser(t, w.app, "business")
 	otherID := tradeRequest(t, other, w.seller, w.stock)
 	tradeOffer(t, w.seller, otherID, w.material, "59.875", "9")
-	status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 404)
-	if items := pageItems(t, w.buyer.c.Do("GET", "/api/market/listings", nil)); len(items) != 0 {
-		t.Fatalf("fully held listing visible: %+v", items)
+	reserved := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200)
+	holdDecimal(t, reserved.Body["weight"], "0")
+	holdDecimal(t, reserved.Body["held_weight"], "100")
+	if items := pageItems(t, w.buyer.c.Do("GET", "/api/market/listings", nil)); len(items) != 1 {
+		t.Fatalf("fully held listing missing: %+v", items)
 	}
 
 	if items := tradeItems(w.buyer.c.Do("GET", cartPath, nil)); len(items) != 0 {

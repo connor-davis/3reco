@@ -8,6 +8,16 @@ import (
 	store "github.com/connor-davis/3reco/internal/stores/market"
 )
 
+func (handler *Handler) cartStores(c fiber.Ctx) error {
+	user, _ := middleware.CurrentUser(c)
+	items, err := handler.svc.CartStores(c.Context(), user.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"items": items})
+}
+
 func (handler *Handler) cart(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
 	item, err := handler.svc.Cart(c.Context(), user.ID, c.Query("seller_id"))

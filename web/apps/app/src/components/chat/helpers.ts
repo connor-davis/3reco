@@ -1,6 +1,24 @@
 import { lineCents } from '@/lib/format';
 import type { TradeRequest, Message } from '@/lib/api/types';
 
+export function requestLabel(request: TradeRequest, userId?: string): string {
+  if (request.status !== 'offered') return request.status;
+  if (userId !== request.buyer.id && userId !== request.seller.id)
+    return 'Offer awaiting confirmation';
+  const own =
+    userId === request.buyer.id
+      ? request.buyer_confirmed_version
+      : request.seller_confirmed_version;
+  const other =
+    userId === request.buyer.id
+      ? request.seller_confirmed_version
+      : request.buyer_confirmed_version;
+  if (own === request.offer_version)
+    return 'Waiting for the other party to confirm';
+  if (other === request.offer_version) return 'Waiting for you to confirm';
+  return request.offer_by === userId ? 'Offer sent' : 'Offer received';
+}
+
 export function counterpartyOf(request: TradeRequest, userId?: string) {
   return request.buyer.id === userId ? request.seller : request.buyer;
 }
