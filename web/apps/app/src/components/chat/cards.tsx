@@ -41,14 +41,14 @@ export function OfferCard({
               key={`${item.material_id}-${index}`}
               className="flex justify-between gap-4"
             >
-              <span>
+              <span className="min-w-0 break-words">
                 {item.material_name}
                 <span className="block text-xs text-muted-foreground">
                   {formatKg(item.offer_weight ?? '0')} at{' '}
                   {formatRate(item.offer_price ?? '0')}
                 </span>
               </span>
-              <span className="tabular-nums">
+              <span className="shrink-0 text-right whitespace-nowrap tabular-nums">
                 {formatRand(
                   lineCents(item.offer_price ?? '0', item.offer_weight ?? '0')
                 )}
@@ -58,7 +58,7 @@ export function OfferCard({
         </ul>
         <p className="flex justify-between border-t pt-3 font-semibold">
           <span>Total</span>
-          <span className="tabular-nums">
+          <span className="whitespace-nowrap tabular-nums">
             {formatRand(requestTotal(request))}
           </span>
         </p>

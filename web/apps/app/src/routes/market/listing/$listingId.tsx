@@ -17,7 +17,7 @@ import { useCart, useSaveCart } from '@/lib/api/cart';
 import { useAuth } from '@/lib/auth/use-auth';
 import type { Listing } from '@/lib/api/types';
 import { formatKg, formatRate, formatRand, lineCents } from '@/lib/format';
-import { quantityError } from '@/lib/quantity';
+import { quantityError, weightCounter } from '@/lib/quantity';
 import { Gallery } from './-components/gallery';
 
 export const Route = createFileRoute('/market/listing/$listingId')({
@@ -161,6 +161,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
             control={form.control}
             name="weight"
             label="Quantity (kg)"
+            counter={weightCounter(listing.weight)}
             description="Use a draft quantity to estimate the total. The cart saves the material; the seller sets the final quantity in an offer."
           />
           <p>

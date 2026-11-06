@@ -6,6 +6,7 @@ import {
   type FieldValues,
   type Path,
 } from 'react-hook-form';
+import type { CounterProps } from '@/lib/quantity';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Combobox,
@@ -125,14 +126,18 @@ export function TextField<T extends FieldValues>({
   );
 }
 
-/** Text field for exact decimals (money, kg). Never a number input. */
+/**
+ * Text field for exact decimals (money, kg). Never a number input. Pass
+ * `counter` for an amount: it adds minus, plus and Arrow keys.
+ */
 export function DecimalField<T extends FieldValues>({
   control,
   name,
   label,
   description,
+  counter,
   ...inputProps
-}: TextFieldProps<T>) {
+}: TextFieldProps<T> & { counter?: CounterProps }) {
   const ids = useFieldIds();
 
   return (
@@ -146,7 +151,15 @@ export function DecimalField<T extends FieldValues>({
           description={description}
           state={fieldState}
         >
-          {(aria) => <DecimalInput {...field} {...aria} {...inputProps} />}
+          {(aria) => (
+            <DecimalInput
+              {...field}
+              {...aria}
+              {...inputProps}
+              counter={counter}
+              onValueChange={field.onChange}
+            />
+          )}
         </FieldFrame>
       )}
     />

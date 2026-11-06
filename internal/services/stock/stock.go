@@ -85,14 +85,15 @@ func validate(item store.Item) error {
 	return nil
 }
 
-// Create starts stock unlisted and validates the material price inside the transaction.
+// Create starts stock unlisted unless is_listed is true, and validates the material price
+// inside the transaction.
 func (service *Service) Create(ctx context.Context, owner string, in Input) (string, error) {
 	if in.Weight == nil || in.Price == nil || in.MaterialID == "" {
 		return "", apperr.BadRequest("Provide material, weight and price.", nil)
 	}
 
 	item := store.Item{ID: database.NewID(), OwnerID: owner, MaterialID: in.MaterialID,
-		Weight: *in.Weight, Price: *in.Price}
+		Weight: *in.Weight, Price: *in.Price, IsListed: in.IsListed != nil && *in.IsListed}
 	err := service.db.InTx(
 		ctx,
 		func(ctx context.Context) error {

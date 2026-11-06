@@ -32,6 +32,13 @@ import {
 import { useRequestActions } from './use-request-actions';
 
 type Confirm = 'cancel' | 'reject' | 'withdraw';
+
+// "Withdraw" takes back the offer, not the whole request.
+const confirmText: Record<Confirm, { title: string; label: string }> = {
+  cancel: { title: 'Cancel this request?', label: 'Cancel request' },
+  reject: { title: 'Reject this request?', label: 'Reject request' },
+  withdraw: { title: 'Withdraw this offer?', label: 'Withdraw offer' },
+};
 const schema = z.object({
   content: z
     .string()
@@ -272,13 +279,13 @@ export function Conversation({ request }: { request: TradeRequest }) {
         onOpenChange={(open) => {
           if (!open) setConfirm(null);
         }}
-        title={`${confirm ?? 'cancel'} this request?`}
+        title={confirm ? confirmText[confirm].title : 'Cancel this request?'}
         description={
           confirm === 'withdraw'
             ? 'The reserved stock will be released and negotiation can continue.'
             : 'The other party will be notified.'
         }
-        confirmLabel={confirm ?? 'Confirm'}
+        confirmLabel={confirm ? confirmText[confirm].label : 'Confirm'}
         onConfirm={() => {
           if (confirm)
             void actions[confirm]().then((ok) => {

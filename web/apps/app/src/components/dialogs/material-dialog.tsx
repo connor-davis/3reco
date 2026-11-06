@@ -11,6 +11,7 @@ import { ApiError } from '@/lib/api/client';
 import { useCreateMaterial, useUpdateMaterial } from '@/lib/api/materials';
 import type { Material } from '@/lib/api/types';
 import { toCents } from '@/lib/format';
+import { priceCounter } from '@/lib/quantity';
 
 const decimal = /^\d{1,12}([.,]\d{1,6})?$/;
 
@@ -19,7 +20,8 @@ const schema = z.object({
   carbon_factor: z
     .string()
     .refine((value) => decimal.test(value.trim()), 'Use a plain number.')
-    .refine((value) => toCents(value) > 0, 'Enter the kg CO₂ saved per kg.'),
+    // Not toCents: it cuts after 2 places, so 0.000001 would read as zero.
+    .refine((value) => /[1-9]/.test(value), 'Enter the kg CO₂ saved per kg.'),
   gw_code: z.string().min(3, 'Enter the GW code, for example GW-PET-01.'),
   price: z
     .string()
@@ -105,12 +107,19 @@ export function MaterialDialog({ open, onOpenChange, material }: Props) {
           control={control}
           name="carbon_factor"
           label="Carbon factor (kg CO₂ / kg)"
+          counter={{
+            noun: 'carbon factor',
+            step: '0.001',
+            min: '0.000001',
+            places: 6,
+          }}
         />
         <TextField control={control} name="gw_code" label="GW code" />
         <DecimalField
           control={control}
           name="price"
           label="Base price (R / kg)"
+          counter={priceCounter()}
         />
         {serverError && (
           <p role="alert" className="text-sm text-destructive">

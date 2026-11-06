@@ -14,6 +14,7 @@ import { useCreateStock, useUpdateStock } from '@/lib/api/stock';
 import type { StockItem } from '@/lib/api/types';
 import { ApiError } from '@/lib/api/client';
 import { formatRate, toCents, toGrams } from '@/lib/format';
+import { priceCounter, weightCounter } from '@/lib/quantity';
 
 const decimal = /^\d{1,12}([.,]\d{1,2})?$/;
 
@@ -120,6 +121,7 @@ export function StockDialog({ open, onOpenChange, stock }: Props) {
           control={control}
           name="weight"
           label="Weight (kg)"
+          counter={weightCounter()}
           description={
             stock && stock.available_weight !== stock.weight
               ? 'Some of this stock is held for open offers.'
@@ -130,6 +132,7 @@ export function StockDialog({ open, onOpenChange, stock }: Props) {
           control={control}
           name="price"
           label="Price (R / kg)"
+          counter={priceCounter(base)}
           description={base ? `At least ${formatRate(base)}.` : undefined}
         />
         <Field orientation="horizontal">

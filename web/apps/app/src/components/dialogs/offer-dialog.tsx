@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useOffer } from '@/lib/api/requests';
 import type { TradeRequest } from '@/lib/api/types';
 import { formatRand, lineCents } from '@/lib/format';
-import { quantityError } from '@/lib/quantity';
+import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
 
 const schema = z.object({
   items: z
@@ -111,11 +111,15 @@ function OfferForm({
               control={form.control}
               name={`items.${index}.weight`}
               label="Weight (kg)"
+              counter={weightCounter(
+                request.items[index].available_weight ?? undefined
+              )}
             />
             <DecimalField
               control={form.control}
               name={`items.${index}.price`}
               label="Price per kg (R)"
+              counter={priceCounter()}
             />
           </div>
         </fieldset>
