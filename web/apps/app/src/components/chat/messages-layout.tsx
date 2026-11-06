@@ -56,7 +56,11 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
     <>
       {isMobile ? (
         <div className="h-[calc(100dvh-6.75rem)] min-h-[32rem] overflow-hidden">
-          {requestId ? thread : <div className="h-full bg-background">{inbox}</div>}
+          {requestId ? (
+            thread
+          ) : (
+            <div className="h-full bg-background">{inbox}</div>
+          )}
         </div>
       ) : (
         <div className="h-[calc(100dvh-3.5rem)] min-h-[32rem]">
