@@ -47,7 +47,7 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
         </EmptyMedia>
         <EmptyTitle>Pick a conversation</EmptyTitle>
         <EmptyDescription>
-          Choose one on the left, or start a new one.
+          Choose a conversation from your inbox to read it.
         </EmptyDescription>
       </EmptyHeader>
     </Empty>

@@ -6,8 +6,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/use-auth';
 import { api } from './client';
 
-// Message cursors move forward from the oldest message. Keep every page so
-// live invalidation can reach the newest messages without losing history.
+// Start with recent messages; the next cursor reaches older history on demand.
 export function useMessageHistory(id: string) {
   const { user } = useAuth();
   useLiveTopics(id ? [`request:${id}`] : [], [['messages', 'history', id]]);
@@ -16,7 +15,7 @@ export function useMessageHistory(id: string) {
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam, signal }) =>
       api<Page<T.Message>>(
-        `/requests/${idPath(id)}/messages${queryString({ cursor: pageParam, limit: 100 })}`,
+        `/requests/${idPath(id)}/messages${queryString({ cursor: pageParam, limit: 30 })}`,
         { signal }
       ),
     getNextPageParam: (page) =>
@@ -24,60 +23,38 @@ export function useMessageHistory(id: string) {
     enabled: !!id && !!user,
   });
 }
-export function useThreadHistory() {
+export function useThreadHistory(q = '', filter = 'all') {
   const { user } = useAuth();
+  const admin = user?.role === 'admin';
   const query = useInfiniteQuery({
-    queryKey: ['messages', 'inbox', 'history', user?.id],
+    queryKey: ['messages', 'inbox', 'history', user?.id, admin, q, filter],
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam, signal }) =>
-      api<Page<T.Thread>>(
-        `/messages/inbox${queryString({ cursor: pageParam, limit: 100 })}`,
-        { signal }
-      ),
+    queryFn: async ({ pageParam, signal }): Promise<Page<T.Thread>> => {
+      const params = queryString({ cursor: pageParam, limit: 30, q, filter });
+      if (!admin) return api(`/messages/inbox${params}`, { signal });
+
+      const page = await api<Page<T.AdminThread>>(`/messages/all${params}`, {
+        signal,
+      });
+      return {
+        ...page,
+        items: page.items.map((thread) => ({
+          ...thread,
+          other: {
+            id: thread.request_id,
+            name: `${thread.buyer.name} ↔ ${thread.seller.name}`,
+          },
+          unread_count: 0,
+        })),
+      };
+    },
     getNextPageParam: (page) =>
       page.has_more ? (page.next_cursor ?? undefined) : undefined,
     enabled: !!user,
   });
   useLiveTopics(
-    user
-      ? [
-          `requests:${user.id}`,
-          ...(query.data?.pages.flatMap((page) =>
-            page.items.map((thread) => `request:${thread.request_id}`)
-          ) ?? []),
-        ]
-      : [],
+    user ? [admin ? 'admin:requests' : `requests:${user.id}`] : [],
     [['messages', 'inbox']]
-  );
-  return query;
-}
-
-// Admin only: every conversation on 3REco, newest first. It follows each
-// listed chat too, because a new message only pings its own request topic.
-export function useAllThreads() {
-  const { user } = useAuth();
-  const query = useInfiniteQuery({
-    queryKey: ['messages', 'all', user?.id],
-    initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam, signal }) =>
-      api<Page<T.AdminThread>>(
-        `/messages/all${queryString({ cursor: pageParam, limit: 100 })}`,
-        { signal }
-      ),
-    getNextPageParam: (page) =>
-      page.has_more ? (page.next_cursor ?? undefined) : undefined,
-    enabled: user?.role === 'admin',
-  });
-  useLiveTopics(
-    user?.role === 'admin'
-      ? [
-          'admin:requests',
-          ...(query.data?.pages.flatMap((page) =>
-            page.items.map((thread) => `request:${thread.request_id}`)
-          ) ?? []),
-        ]
-      : [],
-    [['messages', 'all']]
   );
   return query;
 }

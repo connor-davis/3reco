@@ -91,6 +91,14 @@ func objectBytes(t *testing.T, app *testutil.App, key string) []byte {
 func TestImportCountsAndIdsKept(t *testing.T) {
 	app, report := importFixture(t)
 
+	if n := tradeText(t, app, `
+		SELECT count(*)::text FROM transaction_requests r
+		WHERE activity_at <> COALESCE(
+			(SELECT max(created_at) FROM transaction_request_messages WHERE request_id = r.id),
+			r.created_at)`); n != "0" {
+		t.Errorf("%s imported inbox timestamps do not match historical activity", n)
+	}
+
 	want := map[string]int{
 		"users": 6, "collectors": 1, "materials": 2, "stock": 1, "transactions": 3,
 		"transaction_items": 3, "transaction_receipts": 1, "transaction_requests": 2,

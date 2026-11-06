@@ -123,6 +123,16 @@ func (s *Store) Begin(ctx context.Context) error {
 
 // Finish turns the realtime triggers back on. Call it last inside InTx.
 func (s *Store) Finish(ctx context.Context) error {
+	// Message triggers were off during import; restore the indexed inbox order
+	// from the historical timestamps before live notifications resume.
+	_, err := s.db.Q(ctx).Exec(ctx, `
+		UPDATE transaction_requests r SET activity_at = COALESCE(
+			(SELECT max(created_at) FROM transaction_request_messages WHERE request_id = r.id),
+			r.created_at)`)
+	if err != nil {
+		return err
+	}
+
 	for _, table := range realtimeTables {
 		if _, err := s.db.Q(ctx).Exec(ctx, "ALTER TABLE "+table+" ENABLE TRIGGER realtime"); err != nil {
 			return err

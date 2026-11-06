@@ -29,6 +29,7 @@ line when you add an owner.
 | `0008_perf_indexes.sql` | Sort-order indexes for market, stock, transactions, requests, messages, notifications and users |
 | `0009_quiet_read_receipts.sql` | Drops the `realtime` trigger on `request_message_reads` |
 | `0010_keep_transactions.sql` | Blocks DELETE and TRUNCATE on `transactions`, `transaction_items` and `transaction_receipts` (trade records are kept; personal details go by UPDATE) |
+| `0011_chat_activity.sql` | Indexed inbox activity and message broadcasts to both participants and `admin:requests` |
 
 Never rename a merged migration. Add a new file.
 
@@ -57,8 +58,9 @@ Never rename a merged migration. Add a new file.
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
 | Admin read-only view of every chat: the all-conversations list and the read-only rule | `internal/stores/requests/messages.go` (`AllThreads`), `internal/services/requests` (`loadForRead`, `AllThreads`), `GET /api/messages/all` |
-| The admin All conversations page | `web/apps/app/src/routes/admin/chats.tsx` |
+| Unified participant/admin inbox, server search, infinite scroll and recent-first chat history | `web/apps/app/src/components/chat/{inbox,conversation}.tsx`, `web/apps/app/src/lib/api/messages.ts` |
 | Admin chat tests (read, list, no write, no read receipts, live) | `tests/admin_chat_test.go` |
+| Inbox search/filter scope and newest-first message cursor tests | `tests/messages_paging_test.go` |
 | Offer reservation locks, releases and set-based expiry SQL | `internal/stores/requests/holds.go` |
 | The 48-hour offer lifetime and atomic expiry notifications | `internal/services/requests/holds.go` |
 | Stock availability and fenced hold consumption during settlement | `internal/stores/transactions/holds.go` |

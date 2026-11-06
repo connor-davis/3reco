@@ -122,3 +122,32 @@ func TestAdminHearsLiveChatEvents(t *testing.T) {
 		t.Fatalf("admin heard %v, want changed on %s", ev, topic)
 	}
 }
+
+func TestInboxTopicsHearMessagesInUnloadedChats(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+
+	for _, listener := range []struct {
+		user  tradeUser
+		topic string
+	}{{admin, "admin:requests"}, {w.seller, "requests:" + w.seller.id}} {
+		sock, _, err := dial(t, w.app, listener.user.c, testutil.WebOrigin)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
+		}
+
+		sock.send(map[string]string{"type": "subscribe", "topic": listener.topic})
+		sock.send(map[string]string{"type": "ping"})
+
+		if ev := sock.next(); ev["type"] != "pong" {
+			t.Fatalf("inbox topic refused: %v", ev)
+		}
+
+		tradeWant(t, "message", tradeSay(t, w.buyer, id, "An unloaded chat changed"), 200)
+
+		if ev := sock.next(); ev["type"] != "changed" || ev["topic"] != listener.topic || ev["id"] != id {
+			t.Fatalf("inbox topic heard %v, want changed on %s", ev, listener.topic)
+		}
+	}
+}

@@ -41,7 +41,7 @@ func (h *Handler) markRead(c fiber.Ctx) error {
 func (h *Handler) inbox(c fiber.Ctx) error {
 	cursor, limit := listArgs(c)
 
-	page, err := h.svc.Inbox(c.Context(), caller(c), cursor, limit)
+	page, err := h.svc.Inbox(c.Context(), caller(c), cursor, limit, c.Query("q"), c.Query("filter"))
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,14 @@ func (h *Handler) inbox(c fiber.Ctx) error {
 func (h *Handler) allThreads(c fiber.Ctx) error {
 	cursor, limit := listArgs(c)
 
-	page, err := h.svc.AllThreads(c.Context(), caller(c), cursor, limit)
+	page, err := h.svc.AllThreads(
+		c.Context(),
+		caller(c),
+		cursor,
+		limit,
+		c.Query("q"),
+		c.Query("filter"),
+	)
 	if err != nil {
 		return err
 	}

@@ -28,7 +28,7 @@ type Thread struct {
 	ActivityAt    time.Time      `json:"activity_at"`
 }
 
-// Messages returns up to limit+1 messages of a request, oldest first, after
+// Messages returns up to limit+1 messages of a request, newest first, before
 // the cursor.
 func (s *Store) Messages(
 	ctx context.Context,
@@ -38,8 +38,8 @@ func (s *Store) Messages(
 ) ([]Message, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT id, sender_id, content, created_at FROM transaction_request_messages
-		WHERE request_id = $1 AND ($2::timestamptz IS NULL OR (created_at, id) > ($2, $3))
-		ORDER BY created_at, id
+		WHERE request_id = $1 AND ($2::timestamptz IS NULL OR (created_at, id) < ($2, $3))
+		ORDER BY created_at DESC, id DESC
 		LIMIT $4`, requestID, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err
@@ -96,20 +96,29 @@ func (s *Store) Inbox(
 	userID string,
 	cur paging.Cursor,
 	limit int,
+	search, filter string,
 ) ([]Thread, error) {
 	// The page is cut first; unread counts are then summed once for its requests.
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		WITH page AS (
 		SELECT r.id, r.status, o.id AS other_id, `+database.DisplayName("o")+` AS other_name,
 			lm.id AS lm_id, lm.sender_id AS lm_sender, lm.content AS lm_content,
-			lm.created_at AS lm_at, COALESCE(lm.created_at, r.created_at) AS activity
+			lm.created_at AS lm_at, r.activity_at AS activity
 		FROM transaction_requests r
 		JOIN users o ON o.id = CASE WHEN r.seller_id = $1 THEN r.buyer_id ELSE r.seller_id END
 		LEFT JOIN LATERAL (
 			SELECT id, sender_id, content, created_at FROM transaction_request_messages
 			WHERE request_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) lm ON true
 		WHERE (r.seller_id = $1 OR r.buyer_id = $1) AND r.status IN ('pending', 'offered')
-			AND ($2::timestamptz IS NULL OR (COALESCE(lm.created_at, r.created_at), r.id) < ($2, $3))
+			AND ($5 = '' OR strpos(lower(`+database.DisplayName("o")+`), lower($5)) > 0
+				OR strpos(lower(COALESCE(lm.content, '')), lower($5)) > 0
+				OR EXISTS (SELECT 1 FROM transaction_request_items i JOIN materials m ON m.id = i.material_id
+					WHERE i.request_id = r.id AND strpos(lower(m.name), lower($5)) > 0))
+			AND ($6 <> 'offers' OR r.status = 'offered')
+			AND ($6 <> 'unread' OR EXISTS (SELECT 1 FROM transaction_request_messages m
+				WHERE m.request_id = r.id AND m.sender_id <> $1 AND NOT EXISTS (
+					SELECT 1 FROM request_message_reads x WHERE x.message_id = m.id AND x.user_id = $1)))
+			AND ($2::timestamptz IS NULL OR (r.activity_at, r.id) < ($2, $3))
 		ORDER BY activity DESC, r.id DESC
 		LIMIT $4)
 		SELECT page.id, page.status, page.other_id, page.other_name, page.lm_id, page.lm_sender,
@@ -120,7 +129,7 @@ func (s *Store) Inbox(
 				SELECT 1 FROM request_message_reads x
 				WHERE x.message_id = m.id AND x.user_id = $1)
 			GROUP BY m.request_id) un ON un.request_id = page.id
-		ORDER BY page.activity DESC, page.id DESC`, userID, cur.At, cur.ID, limit+1)
+		ORDER BY page.activity DESC, page.id DESC`, userID, cur.At, cur.ID, limit+1, search, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -173,21 +182,28 @@ func (s *Store) AllThreads(
 	ctx context.Context,
 	cur paging.Cursor,
 	limit int,
+	search, filter string,
 ) ([]AdminThread, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT r.id, r.status, b.id, `+database.DisplayName("b")+`,
 			sl.id, `+database.DisplayName("sl")+`,
 			lm.id, lm.sender_id, lm.content, lm.created_at,
-			COALESCE(lm.created_at, r.created_at) AS activity
+			r.activity_at AS activity
 		FROM transaction_requests r
 		JOIN users b ON b.id = r.buyer_id
 		JOIN users sl ON sl.id = r.seller_id
 		LEFT JOIN LATERAL (
 			SELECT id, sender_id, content, created_at FROM transaction_request_messages
 			WHERE request_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) lm ON true
-		WHERE ($1::timestamptz IS NULL OR (COALESCE(lm.created_at, r.created_at), r.id) < ($1, $2))
+		WHERE ($4 = '' OR strpos(lower(`+database.DisplayName("b")+`), lower($4)) > 0
+			OR strpos(lower(`+database.DisplayName("sl")+`), lower($4)) > 0
+			OR strpos(lower(COALESCE(lm.content, '')), lower($4)) > 0
+			OR EXISTS (SELECT 1 FROM transaction_request_items i JOIN materials m ON m.id = i.material_id
+				WHERE i.request_id = r.id AND strpos(lower(m.name), lower($4)) > 0))
+			AND ($5 <> 'offers' OR r.status = 'offered')
+			AND ($1::timestamptz IS NULL OR (r.activity_at, r.id) < ($1, $2))
 		ORDER BY activity DESC, r.id DESC
-		LIMIT $3`, cur.At, cur.ID, limit+1)
+		LIMIT $3`, cur.At, cur.ID, limit+1, search, filter)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ const (
 	previewRunes    = 60
 )
 
-// Messages lists the chat of a request, oldest first. Only its two sides may
+// Messages lists the chat of a request, newest first. Only its two sides may
 // read it, and an admin; staff may not. An admin read changes nothing.
 func (s *Service) Messages(
 	ctx context.Context,
@@ -118,6 +118,7 @@ func (s *Service) Inbox(
 	user auth.User,
 	cursor string,
 	limit int,
+	search, filter string,
 ) (paging.Page[store.Thread], error) {
 	var empty paging.Page[store.Thread]
 
@@ -126,7 +127,11 @@ func (s *Service) Inbox(
 		return empty, err
 	}
 
-	rows, err := s.store.Inbox(ctx, user.ID, cur, limit)
+	if err := threadFilter(filter, false); err != nil {
+		return empty, err
+	}
+
+	rows, err := s.store.Inbox(ctx, user.ID, cur, limit, strings.TrimSpace(search), filter)
 	if err != nil {
 		return empty, err
 	}
@@ -143,6 +148,7 @@ func (s *Service) AllThreads(
 	user auth.User,
 	cursor string,
 	limit int,
+	search, filter string,
 ) (paging.Page[store.AdminThread], error) {
 	var empty paging.Page[store.AdminThread]
 
@@ -155,7 +161,11 @@ func (s *Service) AllThreads(
 		return empty, err
 	}
 
-	rows, err := s.store.AllThreads(ctx, cur, limit)
+	if err := threadFilter(filter, true); err != nil {
+		return empty, err
+	}
+
+	rows, err := s.store.AllThreads(ctx, cur, limit, strings.TrimSpace(search), filter)
 	if err != nil {
 		return empty, err
 	}
@@ -163,4 +173,12 @@ func (s *Service) AllThreads(
 	return paging.Build(rows, limit, func(t store.AdminThread) (time.Time, string) {
 		return t.ActivityAt, t.RequestID
 	}), nil
+}
+
+func threadFilter(filter string, admin bool) error {
+	if filter == "" || filter == "all" || filter == "offers" || (filter == "unread" && !admin) {
+		return nil
+	}
+
+	return apperr.BadRequest("Choose a valid conversation filter.", nil)
 }
