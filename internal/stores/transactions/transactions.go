@@ -198,10 +198,16 @@ func (s *Store) List(
 	cur paging.Cursor,
 	limit int,
 ) ([]Transaction, error) {
+	orderDate := database.EffectiveDate("t")
+	if scope == ScopeCollectorSales {
+		// Recent collections follow when they were recorded, including backdated sales.
+		orderDate = "t.created_at"
+	}
+
 	rows, err := s.db.Q(ctx).Query(ctx, selectTransaction+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`
-		AND ($7::timestamptz IS NULL OR (`+database.EffectiveDate("t")+`, t.created_at, t.id) <
+		AND ($7::timestamptz IS NULL OR (`+orderDate+`, t.created_at, t.id) <
 			($7, (SELECT created_at FROM transactions WHERE id=$8), $8))
-		ORDER BY `+database.EffectiveDate("t")+` DESC, t.created_at DESC, t.id DESC
+		ORDER BY `+orderDate+` DESC, t.created_at DESC, t.id DESC
 		LIMIT $9`, userID, f.Like, f.Type, f.From, f.To, f.Status, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err

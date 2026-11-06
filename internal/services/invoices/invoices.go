@@ -319,6 +319,7 @@ func (s *Service) Project(ctx context.Context, user auth.User, document store.Do
 	}
 	if !full {
 		document.Seller.Account = crypt.Mask(document.Seller.Account)
+		document.Seller.Branch = crypt.Mask(document.Seller.Branch)
 		document.Seller.PaymentID = crypt.Mask(document.Seller.PaymentID)
 	}
 

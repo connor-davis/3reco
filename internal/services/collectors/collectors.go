@@ -197,7 +197,15 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		page.NextCursor = &next
 	}
 
-	return page, nil
+	total, err := service.store.Count(ctx, query, phone)
+	if err != nil {
+		return nil, err
+	}
+
+	return struct {
+		paging.Page[store.Collector]
+		Total int `json:"total"`
+	}{Page: page, Total: total}, nil
 }
 
 // ParseCursor reads a cursor List handed out earlier. Empty means the start.

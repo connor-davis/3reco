@@ -3,7 +3,7 @@ import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
 
 export function useCollectors(params: Paging = {}) {
-  return useResource<Page<T.Collector>>(
+  return useResource<Page<T.Collector> & { total: number }>(
     ['collectors', params],
     `/collectors${queryString(params)}`,
     true

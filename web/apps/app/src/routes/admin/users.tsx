@@ -22,6 +22,7 @@ import {
   usePrivacyEvents,
 } from '@/lib/api/admin';
 import { useExport } from '@/lib/api/exports';
+import { useAuth } from '@/lib/auth/use-auth';
 import type { Role, AdminUser, PrivacyEvent } from '@/lib/api/types';
 import { formatDate, formatDateTime, plural } from '@/lib/format';
 
@@ -86,6 +87,7 @@ function RoleSelect({ user }: { user: AdminUser }) {
 }
 
 function UsersPage() {
+  const { user: currentUser } = useAuth();
   const [cursor, setCursor] = useState<string | undefined>();
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('all');
@@ -108,6 +110,8 @@ function UsersPage() {
   const shown = list.data?.items ?? [];
 
   function removeButton(user: AdminUser) {
+    if (user.id === currentUser?.id) return null;
+
     return (
       <Button
         className="min-h-11"
@@ -276,6 +280,18 @@ const privacyKinds: Record<string, string> = {
   admin_full_view: 'Full identifier viewed',
 };
 
+function eventLabel(event: PrivacyEvent) {
+  const label = privacyKinds[event.kind] ?? event.kind;
+  const kind = event.details?.export_kind;
+  if (!kind) return label;
+
+  const filters = Object.entries(event.details.filters ?? {})
+    .filter(([, value]) => value !== '')
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(', ');
+  return `${label} · ${kind}${filters ? ` (${filters})` : ''}`;
+}
+
 /** Privacy event rows identify people by name and role. */
 function PartyCell({
   name,
@@ -303,7 +319,7 @@ function PrivacyEvents() {
     {
       accessorKey: 'kind',
       header: 'Event',
-      cell: ({ row }) => privacyKinds[row.original.kind] ?? row.original.kind,
+      cell: ({ row }) => eventLabel(row.original),
     },
     {
       id: 'actor',
@@ -353,9 +369,7 @@ function PrivacyEvents() {
           renderCard={(event) => (
             <Card size="sm">
               <CardContent className="space-y-2 break-all text-sm">
-                <p className="font-medium">
-                  {privacyKinds[event.kind] ?? event.kind}
-                </p>
+                <p className="font-medium">{eventLabel(event)}</p>
                 <PartyCell name={event.actor_name} role={event.actor_role} />
                 {event.subject_id ? (
                   <PartyCell

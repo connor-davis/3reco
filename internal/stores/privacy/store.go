@@ -5,14 +5,15 @@ package privacy
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 )
 
-// Event is one line of the audit log. It holds no personal details, only who
-// did what to whom.
+// Event is one line of the audit log. Export entries include the selected
+// download kind and filters so administrators can trace bulk reads.
 type Event struct {
 	ID        string    `json:"id"`
 	ActorID   string    `json:"actor_id"`
@@ -22,10 +23,11 @@ type Event struct {
 
 	// The names and roles are read now, from the account or collector the id
 	// names, so an admin sees who it was. They are null when the id is gone.
-	ActorName   *string `json:"actor_name"`
-	ActorRole   *string `json:"actor_role"`
-	SubjectName *string `json:"subject_name"`
-	SubjectRole *string `json:"subject_role"`
+	ActorName   *string         `json:"actor_name"`
+	ActorRole   *string         `json:"actor_role"`
+	SubjectName *string         `json:"subject_name"`
+	SubjectRole *string         `json:"subject_role"`
+	Details     json.RawMessage `json:"details"`
 }
 
 // Store runs the privacy SQL.
@@ -43,13 +45,31 @@ func (s *Store) Record(ctx context.Context, actor, subject, kind string) error {
 	return err
 }
 
+// RecordExport records the download kind and filters once streaming begins.
+func (s *Store) RecordExport(ctx context.Context, actor, subject, kind string, filters map[string]string) error {
+	details, err := json.Marshal(map[string]any{"export_kind": kind, "filters": filters})
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Q(ctx).Exec(ctx, `INSERT INTO privacy_events
+		(id,actor_id,subject_id,kind,details) VALUES ($1,$2,NULLIF($3,''),'export',$4::jsonb)`,
+		database.NewID(), actor, subject, details)
+
+	return err
+}
+
 // Events returns up to limit+1 audit lines, newest first.
 func (s *Store) Events(ctx context.Context, cur paging.Cursor, limit int) ([]Event, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT e.id, e.actor_id, e.subject_id, e.kind, e.created_at,
-			CASE WHEN a.id IS NOT NULL THEN `+database.PersonName("a")+` END, a.role,
-			CASE WHEN s.id IS NOT NULL THEN `+database.PersonName("s")+` ELSE c.name END,
-			CASE WHEN s.id IS NOT NULL THEN s.role WHEN c.id IS NOT NULL THEN 'collector' END
+			CASE WHEN a.is_removed THEN 'Removed account'
+				WHEN a.id IS NOT NULL THEN `+database.PersonName("a")+` END,
+			CASE WHEN NOT a.is_removed THEN a.role END,
+			CASE WHEN s.is_removed THEN 'Removed account'
+				WHEN s.id IS NOT NULL THEN `+database.PersonName("s")+` ELSE c.name END,
+			CASE WHEN NOT s.is_removed THEN s.role WHEN c.id IS NOT NULL THEN 'collector' END,
+			e.details
 		FROM privacy_events e
 		LEFT JOIN users a ON a.id = e.actor_id
 		LEFT JOIN users s ON s.id = e.subject_id
@@ -67,7 +87,7 @@ func (s *Store) Events(ctx context.Context, cur paging.Cursor, limit int) ([]Eve
 		var e Event
 
 		if err := rows.Scan(&e.ID, &e.ActorID, &e.SubjectID, &e.Kind, &e.CreatedAt,
-			&e.ActorName, &e.ActorRole, &e.SubjectName, &e.SubjectRole); err != nil {
+			&e.ActorName, &e.ActorRole, &e.SubjectName, &e.SubjectRole, &e.Details); err != nil {
 			return nil, err
 		}
 

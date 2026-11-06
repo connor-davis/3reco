@@ -106,6 +106,17 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 // A nil *After means "from the start".
 type After struct{ Name, ID string }
 
+// Count returns every matching directory row, independent of the current cursor.
+func (records *Store) Count(ctx context.Context, query paging.Query, phone string) (int, error) {
+	var total int
+	err := records.db.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM collectors
+		WHERE (($2<>'' AND normalized_phone=$2) OR ($2='' AND
+		($1='' OR name ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1 OR normalized_phone ILIKE $1
+		OR city ILIKE $1 OR province ILIKE $1)))`, query.Like, phone).Scan(&total)
+
+	return total, err
+}
+
 // List retains the legacy managed directory, A to Z by name then id, so a
 // cursor over (lower(name), id) never skips or repeats a row. Search runs in
 // SQL before LIMIT. Services redact each row by scope.

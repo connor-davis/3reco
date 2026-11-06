@@ -16,6 +16,7 @@ var exportHeader = []string{
 	"Items Count", "Materials", "Total Weight (kg)", "Total Price (R)", "Seller Name", "Seller Email",
 	"Seller Phone", "Seller Address", "Buyer Name", "Buyer Email", "Buyer Phone", "Buyer Address",
 	"Collector Payout Method", "Collector Payout Details",
+	"Invoice number",
 }
 
 func csvRows(t *testing.T, client *testutil.Client, path string) [][]string {

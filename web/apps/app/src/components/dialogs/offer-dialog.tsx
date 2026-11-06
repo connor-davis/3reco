@@ -10,6 +10,13 @@ import type { TradeRequest } from '@/lib/api/types';
 import { formatRand, lineCents } from '@/lib/format';
 import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
 
+function priceError(raw: string): string | undefined {
+  const price = raw.trim().replace(',', '.');
+  if (!/^\d{1,12}(\.\d{1,2})?$/.test(price) || !/[1-9]/.test(price)) {
+    return 'Enter a price above R 0.00 with up to 2 decimals.';
+  }
+}
+
 const schema = z.object({
   items: z
     .array(
@@ -19,13 +26,10 @@ const schema = z.object({
           const message = quantityError(value);
           if (message) ctx.addIssue({ code: 'custom', message });
         }),
-        price: z
-          .string()
-          .regex(
-            /^\d+(\.\d{1,2})?$/,
-            'Enter a price in R, with up to 2 decimals.'
-          )
-          .refine((value) => Number(value) > 0, 'Enter a price above R 0.00.'),
+        price: z.string().superRefine((value, ctx) => {
+          const message = priceError(value);
+          if (message) ctx.addIssue({ code: 'custom', message });
+        }),
       })
     )
     .min(1),
@@ -80,6 +84,7 @@ function OfferForm({
   });
   const { fields } = useFieldArray({ control: form.control, name: 'items' });
   const lines = form.watch('items');
+  const validLines = schema.safeParse({ items: lines }).success;
   const total = lines.reduce(
     (sum, line) => sum + lineCents(line.price, line.weight),
     0
@@ -143,7 +148,7 @@ function OfferForm({
       )}
       <Button
         type="submit"
-        disabled={offer.isPending || !form.formState.isValid}
+        disabled={offer.isPending || !validLines || !form.formState.isValid}
       >
         {request.status === 'offered' ? 'Send counter offer' : 'Send offer'}
       </Button>
