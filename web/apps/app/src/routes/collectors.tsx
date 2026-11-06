@@ -89,6 +89,9 @@ function CollectorsPage() {
   // Only admin and staff may remove a collector. Businesses add and edit.
   const canRemove = user?.role === 'admin' || user?.role === 'staff';
   const shown = list.data?.items ?? [];
+  // The API adds `total`; until it does, no total is shown rather than a guess.
+  const rawTotal = (list.data as { total?: unknown } | undefined)?.total;
+  const total = typeof rawTotal === 'number' ? rawTotal : undefined;
 
   function openForm(collector?: Collector) {
     setEditing(collector);
@@ -120,6 +123,8 @@ function CollectorsPage() {
     {
       accessorKey: 'name',
       header: 'Collector',
+      // The server sorts A to Z and nothing else, so the header is not a button.
+      enableSorting: false,
       meta: { sticky: 'left' },
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
@@ -226,10 +231,15 @@ function CollectorsPage() {
               </CardContent>
             </Card>
           )}
-          footer={<span>{plural(shown.length, 'collector')} on this page</span>}
+          footer={
+            <span>
+              {total !== undefined && `${plural(total, 'collector')} · `}
+              Sorted A to Z
+            </span>
+          }
         />
       </DataState>
-      <Pager pager={pager} page={list.data} />
+      <Pager pager={pager} page={list.data} total={total} />
       <CollectorDialog
         open={formOpen}
         onOpenChange={setFormOpen}

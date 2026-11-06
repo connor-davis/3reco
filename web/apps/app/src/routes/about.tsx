@@ -9,12 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStats } from '@/lib/api/stats';
 import { formatKg } from '@/lib/format';
 import { formatCo2 } from '@/lib/impact';
+import { isStaffRole } from '@/lib/access';
+import { useAuth } from '@/lib/auth/use-auth';
 
 export const Route = createFileRoute('/about')({ component: AboutPage });
 
 function AboutPage() {
   const query = useStats();
   const stats = query.data;
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
   return (
@@ -53,14 +56,16 @@ function AboutPage() {
           <LinkButton className="min-h-11" to="/market" size="lg">
             Browse materials
           </LinkButton>
-          <LinkButton
-            className="min-h-11"
-            to="/sign-up"
-            size="lg"
-            variant="outline"
-          >
-            Join the community
-          </LinkButton>
+          {!isStaffRole(user?.role) && (
+            <LinkButton
+              className="min-h-11"
+              to="/sign-up"
+              size="lg"
+              variant="outline"
+            >
+              Join the community
+            </LinkButton>
+          )}
           <Button
             className="min-h-11"
             variant="outline"

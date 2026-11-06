@@ -100,7 +100,7 @@ export function Inbox({
         onChange={setFilter}
         options={[
           { value: 'all', label: 'All' },
-          ...(!admin ? [{ value: 'unread', label: 'Unread' }] : []),
+          ...(!admin && !staff ? [{ value: 'unread', label: 'Unread' }] : []),
           { value: 'offers', label: 'Offers' },
           { value: 'done', label: 'Finished' },
         ]}

@@ -34,6 +34,11 @@ export function OfferCard({
   disabled: boolean;
 }) {
   const { user } = useAuth();
+  // An admin reading someone else's chat is on neither side of the deal.
+  const onlooker =
+    user?.id !== request.buyer.id && user?.id !== request.seller.id;
+  const buyerConfirmed =
+    request.buyer_confirmed_version === request.offer_version;
   const ownConfirmed =
     user?.id === request.buyer.id
       ? request.buyer_confirmed_version === request.offer_version
@@ -112,7 +117,13 @@ export function OfferCard({
         {(request.buyer_confirmed_version === request.offer_version ||
           request.seller_confirmed_version === request.offer_version) && (
           <p role="status">
-            {ownConfirmed ? (
+            {onlooker ? (
+              buyerConfirmed ? (
+                'Buyer accepted; waiting for the seller.'
+              ) : (
+                'Seller accepted; waiting for the buyer.'
+              )
+            ) : ownConfirmed ? (
               <>
                 Waiting for{' '}
                 {user?.id === request.buyer.id

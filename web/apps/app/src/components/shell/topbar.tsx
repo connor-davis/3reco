@@ -15,38 +15,8 @@ import { Kbd } from '@/components/ui/kbd';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AccountMenu } from './account-menu';
 import { NotificationTray } from './notification-tray';
-import { isRequestPath } from '@/lib/nav';
+import { pageTitleFor } from '@/lib/nav';
 import { cn } from '@/lib/utils';
-
-const titles: Record<string, string> = {
-  '': 'Dashboard',
-  about: 'About',
-  cart: 'Your cart',
-  collections: 'Collections',
-  collectors: 'Collectors',
-  materials: 'Materials',
-  stock: 'Stock',
-  market: 'Browse materials',
-  messages: 'Messages',
-  profile: 'Your profile',
-  transactions: 'Transactions',
-  admin: 'User management',
-  terms: 'Terms',
-  privacy: 'Privacy',
-};
-
-function titleFor(pathname: string): string {
-  const [first = '', second = ''] = pathname.split('/').filter(Boolean);
-
-  if (first === 'market' && second === 'incoming') return 'Incoming requests';
-  if (first === 'market' && second === 'outgoing') return 'Outgoing requests';
-  if (isRequestPath(pathname)) return 'Messages';
-  if (first === 'transactions' && second) {
-    return second === 'sales' ? 'Sales' : 'Purchases';
-  }
-
-  return titles[first] ?? 'Page not found';
-}
 
 type TopbarProps = { onSearch: () => void };
 
@@ -65,19 +35,19 @@ export function Topbar({ onSearch }: TopbarProps) {
     >
       <Breadcrumb className="hidden sm:block">
         <BreadcrumbList>
-          {titleFor(pathname) !== 'Page not found' && (
+          {pageTitleFor(pathname) !== 'Page not found' && (
             <>
               <BreadcrumbItem>Workspace</BreadcrumbItem>
               <BreadcrumbSeparator />
             </>
           )}
           <BreadcrumbItem>
-            <BreadcrumbPage>{titleFor(pathname)}</BreadcrumbPage>
+            <BreadcrumbPage>{pageTitleFor(pathname)}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <p className="truncate text-sm font-medium sm:hidden">
-        {titleFor(pathname)}
+        {pageTitleFor(pathname)}
       </p>
 
       <div className="ml-auto flex items-center gap-1">

@@ -197,11 +197,8 @@ test('not-found has a recovery link and request headings never use the raw id', 
   );
   assert.equal(tree.find((node) => node.props.to)?.props.to, '/');
   assert.match(source('routes/__root.tsx'), /notFoundComponent: NotFound/);
-  const { titleFor } = compile('components/shell/topbar.tsx', {
-    expose: '\nexports.titleFor = titleFor;',
-    mocks: {
-      '@/lib/nav': { isRequestPath: (path) => path.startsWith('/messages/') },
-    },
+  const { pageTitleFor: titleFor } = compile('lib/nav.ts', {
+    mocks: { 'lucide-react': {} },
   });
   assert.equal(titleFor('/missing'), 'Page not found');
   assert.equal(titleFor('/messages/raw-request-id'), 'Messages');

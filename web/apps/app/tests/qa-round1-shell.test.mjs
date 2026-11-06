@@ -81,7 +81,7 @@ test('F9: counts use plural()', () => {
 });
 
 test('F21: terms and privacy have a topbar title', () => {
-  const src = text('../src/components/shell/topbar.tsx');
+  const src = text('../src/lib/nav.ts');
   assert.match(src, /terms: 'Terms'/);
   assert.match(src, /privacy: 'Privacy'/);
 });

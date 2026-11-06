@@ -50,3 +50,12 @@ export const roleLabels: Record<Role, string> = {
 
 export const isStaffRole = (role: string | null | undefined) =>
   role === 'admin' || role === 'staff';
+
+/** A role written for people: "Business". Safe for a missing or unknown role. */
+export function roleLabel(role: string | null | undefined): string {
+  if (!role) return '';
+
+  return (
+    roleLabels[role as Role] ?? role.charAt(0).toUpperCase() + role.slice(1)
+  );
+}
