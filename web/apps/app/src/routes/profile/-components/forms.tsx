@@ -121,8 +121,10 @@ export function PersonalForm({ profile, onSaved, wizard }: Props) {
   const form = useForm<PersonalValues>({
     resolver: zodResolver(personalSchema),
     defaultValues: {
-      first_name: profile.first_name,
-      last_name: profile.last_name,
+      // Older accounts only have a full name; split it to save typing.
+      first_name: profile.first_name || profile.name.split(' ')[0] || '',
+      last_name:
+        profile.last_name || profile.name.split(' ').slice(1).join(' '),
       phone: profile.phone,
       id_number: '',
     },
