@@ -55,6 +55,8 @@ export function Conversation({ request }: { request: TradeRequest }) {
   const other = counterpartyOf(request, user?.id);
   const seller = request.seller.id === user?.id;
   const participant = seller || request.buyer.id === user?.id;
+  // An admin may read any chat, but never writes or acts in one.
+  const viewer = user?.role === 'admin' && !participant;
   const canAct = user?.role === 'business' && participant && !isClosed(request);
   const messages = orderedMessages(
     history.data?.pages.flatMap((page) => page.items) ?? []
@@ -80,11 +82,16 @@ export function Conversation({ request }: { request: TradeRequest }) {
 
   const markRead = read.mutate;
   useEffect(() => {
-    if (!newestIncoming || hasNextPage || lastRead.current === newestIncoming)
+    if (
+      viewer ||
+      !newestIncoming ||
+      hasNextPage ||
+      lastRead.current === newestIncoming
+    )
       return;
     lastRead.current = newestIncoming;
     markRead();
-  }, [newestIncoming, hasNextPage, markRead]);
+  }, [viewer, newestIncoming, hasNextPage, markRead]);
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-chat">
@@ -98,7 +105,11 @@ export function Conversation({ request }: { request: TradeRequest }) {
         </Link>
         <PersonAvatar name={other.name} />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate font-semibold">{other.name}</h2>
+          <h2 className="truncate font-semibold">
+            {viewer
+              ? `${request.buyer.name} and ${request.seller.name}`
+              : other.name}
+          </h2>
           <StatusBadge status={request.status} />
         </div>
         <IconButton label="Request details" onClick={() => setInfoOpen(true)}>
@@ -246,11 +257,13 @@ export function Conversation({ request }: { request: TradeRequest }) {
           </form>
         ) : (
           <p className="text-center text-sm text-muted-foreground">
-            {isClosed(request)
-              ? 'This request is closed.'
-              : request.status === 'offered'
-                ? 'Respond to or withdraw the offer to continue messaging.'
-                : 'Read only'}
+            {viewer
+              ? 'You are viewing this chat as an admin.'
+              : isClosed(request)
+                ? 'This request is closed.'
+                : request.status === 'offered'
+                  ? 'Respond to or withdraw the offer to continue messaging.'
+                  : 'Read only'}
           </p>
         )}
       </footer>

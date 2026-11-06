@@ -221,6 +221,14 @@ export interface Thread {
   unread_count: number;
   activity_at: string;
 }
+export interface AdminThread {
+  request_id: string;
+  status: RequestStatus;
+  buyer: Party;
+  seller: Party;
+  latest_message: Message | null;
+  activity_at: string;
+}
 export interface Receipt {
   id: string;
   file_name: string;
@@ -301,6 +309,7 @@ export interface Dashboard {
   series: (DashboardTotals & { day: string })[];
   counterparties: { id: string; name: string; count: number; value: Decimal }[];
   users?: { role: string; count: number }[];
+  by_type?: { type: 'c2b' | 'b2b'; count: number; weight: Decimal }[];
   collector_linked?: boolean;
 }
 export interface PrivacyEvent {

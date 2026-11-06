@@ -34,6 +34,7 @@ type Dashboard struct {
 	Series         []store.Day          `json:"series"`
 	Counterparties []store.Counterparty `json:"counterparties"`
 	Users          []store.RoleCount    `json:"users,omitempty"`
+	ByType         []store.TypeTotal    `json:"by_type,omitempty"`
 	CollectorLink  *bool                `json:"collector_linked,omitempty"`
 }
 
@@ -107,6 +108,17 @@ func (s *Service) Admin(
 	}
 
 	d.Users, err = s.store.RoleCounts(ctx)
+	if err != nil {
+		return d, err
+	}
+
+	// The same window as the totals, split into collections and business sales.
+	start, end, err := window(from, to, time.Now())
+	if err != nil {
+		return d, err
+	}
+
+	d.ByType, err = s.store.TypeTotals(ctx, start, end)
 
 	return d, err
 }

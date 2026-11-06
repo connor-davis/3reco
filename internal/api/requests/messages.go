@@ -48,3 +48,14 @@ func (h *Handler) inbox(c fiber.Ctx) error {
 
 	return c.JSON(page)
 }
+
+func (h *Handler) allThreads(c fiber.Ctx) error {
+	cursor, limit := listArgs(c)
+
+	page, err := h.svc.AllThreads(c.Context(), caller(c), cursor, limit)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(page)
+}

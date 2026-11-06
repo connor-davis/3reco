@@ -41,6 +41,7 @@ func (h *Handler) Register(api fiber.Router) {
 	requests.Post("/:id/messages/read", h.markRead)
 
 	api.Get("/messages/inbox", middleware.RequireUser, h.inbox)
+	api.Get("/messages/all", middleware.RequireUser, h.allThreads)
 }
 
 func caller(c fiber.Ctx) auth.User {

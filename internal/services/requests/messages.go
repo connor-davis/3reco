@@ -19,7 +19,7 @@ const (
 )
 
 // Messages lists the chat of a request, oldest first. Only its two sides may
-// read it; staff may not.
+// read it, and an admin; staff may not. An admin read changes nothing.
 func (s *Service) Messages(
 	ctx context.Context,
 	user auth.User,
@@ -28,7 +28,7 @@ func (s *Service) Messages(
 ) (paging.Page[store.Message], error) {
 	var empty paging.Page[store.Message]
 
-	if _, err := s.load(ctx, user, id, false); err != nil {
+	if _, err := s.loadForRead(ctx, user, id); err != nil {
 		return empty, err
 	}
 
@@ -132,6 +132,35 @@ func (s *Service) Inbox(
 	}
 
 	return paging.Build(rows, limit, func(t store.Thread) (time.Time, string) {
+		return t.ActivityAt, t.RequestID
+	}), nil
+}
+
+// AllThreads lists every conversation, any status, for an admin. Staff and
+// everyone else get a 403. It reads only; no read receipts are made.
+func (s *Service) AllThreads(
+	ctx context.Context,
+	user auth.User,
+	cursor string,
+	limit int,
+) (paging.Page[store.AdminThread], error) {
+	var empty paging.Page[store.AdminThread]
+
+	if !auth.HasRole(user, auth.RoleAdmin) {
+		return empty, apperr.Forbidden("Only an admin can see this.")
+	}
+
+	cur, err := paging.ParseCursor(cursor)
+	if err != nil {
+		return empty, err
+	}
+
+	rows, err := s.store.AllThreads(ctx, cur, limit)
+	if err != nil {
+		return empty, err
+	}
+
+	return paging.Build(rows, limit, func(t store.AdminThread) (time.Time, string) {
 		return t.ActivityAt, t.RequestID
 	}), nil
 }

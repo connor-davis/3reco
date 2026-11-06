@@ -50,7 +50,11 @@ function Dashboard() {
               (user?.firstName || user?.name || 'there') +
               '.'
         }
-        description="Your settled trades over the last 30 days."
+        description={
+          staff
+            ? 'Everyone on 3REco, last 30 days.'
+            : 'Your settled trades, last 30 days.'
+        }
         actions={
           <LinkButton
             className="min-h-11"
@@ -96,26 +100,53 @@ function Dashboard() {
           <>
             <StatGrid>
               <StatCard
-                label={collector ? 'Collected' : 'Materials traded'}
+                label={
+                  collector
+                    ? 'Collected (30 days)'
+                    : 'Materials traded (30 days)'
+                }
                 value={formatKg(dashboard.totals.weight)}
                 icon={Boxes}
               />
               <StatCard
-                label={collector ? 'Your earnings' : 'Trade value'}
+                label={
+                  collector
+                    ? 'Your earnings (30 days)'
+                    : 'Trade value (30 days)'
+                }
                 value={formatRand(toCents(dashboard.totals.value))}
                 icon={Receipt}
               />
               <StatCard
-                label={collector ? 'Collections' : 'Settled trades'}
+                label={
+                  collector
+                    ? 'Collections (30 days)'
+                    : 'Settled trades (30 days)'
+                }
                 value={String(dashboard.totals.count)}
                 icon={ClipboardList}
               />
               <StatCard
-                label="CO₂e saved"
+                label="CO₂e saved (30 days)"
                 value={formatKg(dashboard.totals.carbon_savings) + ' CO₂e'}
                 icon={Leaf}
               />
             </StatGrid>
+            {staff && dashboard.by_type && (
+              <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                {dashboard.by_type.map((row) => (
+                  <li key={row.type}>
+                    <span className="font-medium text-foreground">
+                      {row.count}
+                    </span>{' '}
+                    {row.type === 'c2b'
+                      ? 'Collections (collectors → businesses)'
+                      : 'Business to business'}
+                    , {formatKg(row.weight)}
+                  </li>
+                ))}
+              </ul>
+            )}
             <Section
               title="Trade activity"
               description={
@@ -187,8 +218,8 @@ function CommunityImpact() {
   const stats = query.data;
   return (
     <Section
-      title="Our community's impact"
-      description="All settled trades on 3REco"
+      title="Our community's impact — all time"
+      description="Every settled trade on 3REco since the start, not just the last 30 days."
     >
       <DataState
         query={query}
@@ -201,22 +232,27 @@ function CommunityImpact() {
           <div className="space-y-6">
             <StatGrid>
               <StatCard
-                label="Materials traded"
+                label="Materials traded (all time)"
                 value={formatKg(stats.total_kg)}
                 icon={Boxes}
               />
               <StatCard
-                label="CO₂e saved"
+                label="CO₂e saved (all time)"
                 value={formatKg(stats.co2_kg) + ' CO₂e'}
                 icon={Leaf}
               />
               <StatCard
-                label="Settled trades"
+                label="Settled trades (all time)"
                 value={String(stats.deals)}
                 icon={Receipt}
               />
             </StatGrid>
-            <h3 className="font-medium">Top stores by material traded</h3>
+            <div>
+              <h3 className="font-medium">Top stores by material traded</h3>
+              <p className="text-sm text-muted-foreground">
+                Collections bought and materials sold.
+              </p>
+            </div>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {stats.top_stores.map((store, index) => (
                 <li key={store.id} className="rounded-2xl border p-4">

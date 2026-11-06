@@ -59,17 +59,20 @@ func TestPublicStats(t *testing.T) {
 		t.Errorf("deal count: %s", after.Raw)
 	}
 	stores, ok := after.Body["top_stores"].([]any)
-	if !ok || len(stores) != 1 {
-		t.Fatalf("active b2b sellers only: %s", after.Raw)
+	if !ok || len(stores) != 2 {
+		t.Fatalf("a b2b seller and a collection buyer, not the removed one: %s", after.Raw)
 	}
 
-	store := stores[0].(map[string]any)
-	if len(store) != 3 || store["id"] != seller.id {
-		t.Fatalf("unexpected store projection: %s", after.Raw)
-	}
-	for _, key := range []string{"id", "name", "kg"} {
-		if _, ok := store[key].(string); !ok {
-			t.Errorf("store %s is not text: %s", key, after.Raw)
+	// The seller traded 12.125 kg; the buyer bought 3.5 kg of collections.
+	for index, want := range []string{seller.id, buyer.id} {
+		store := stores[index].(map[string]any)
+		if len(store) != 3 || store["id"] != want {
+			t.Fatalf("unexpected store %d projection: %s", index, after.Raw)
+		}
+		for _, key := range []string{"id", "name", "kg"} {
+			if _, ok := store[key].(string); !ok {
+				t.Errorf("store %s is not text: %s", key, after.Raw)
+			}
 		}
 	}
 }

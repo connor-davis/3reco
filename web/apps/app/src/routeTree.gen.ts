@@ -34,6 +34,7 @@ import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminChatsRouteImport } from './routes/admin/chats'
 import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store/$sellerId'
 import { Route as MarketListingListingIdRouteImport } from './routes/market/listing/$listingId'
 
@@ -162,6 +163,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminChatsRoute = AdminChatsRouteImport.update({
+  id: '/admin/chats',
+  path: '/admin/chats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MarketStoreSellerIdRoute = MarketStoreSellerIdRouteImport.update({
   id: '/market/store/$sellerId',
   path: '/market/store/$sellerId',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/stock': typeof StockRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/chats': typeof AdminChatsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/stock': typeof StockRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/chats': typeof AdminChatsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/stock': typeof StockRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/chats': typeof AdminChatsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/stock'
     | '/terms'
     | '/verify-email'
+    | '/admin/chats'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/stock'
     | '/terms'
     | '/verify-email'
+    | '/admin/chats'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/stock'
     | '/terms'
     | '/verify-email'
+    | '/admin/chats'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -366,6 +378,7 @@ export interface RootRouteChildren {
   StockRoute: typeof StockRoute
   TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  AdminChatsRoute: typeof AdminChatsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   MarketRequestIdRoute: typeof MarketRequestIdRoute
   MarketIncomingRoute: typeof MarketIncomingRoute
@@ -558,6 +571,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/chats': {
+      id: '/admin/chats'
+      path: '/admin/chats'
+      fullPath: '/admin/chats'
+      preLoaderRoute: typeof AdminChatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/market/store/$sellerId': {
       id: '/market/store/$sellerId'
       path: '/market/store/$sellerId'
@@ -590,6 +610,7 @@ const rootRouteChildren: RootRouteChildren = {
   StockRoute: StockRoute,
   TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  AdminChatsRoute: AdminChatsRoute,
   AdminUsersRoute: AdminUsersRoute,
   MarketRequestIdRoute: MarketRequestIdRoute,
   MarketIncomingRoute: MarketIncomingRoute,

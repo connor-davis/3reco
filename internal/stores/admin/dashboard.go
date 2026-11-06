@@ -39,6 +39,13 @@ type Counterparty struct {
 	Value string `json:"value"`
 }
 
+// TypeTotal is the settled trades of one type (c2b or b2b) in a window.
+type TypeTotal struct {
+	Type   string `json:"type"`
+	Count  int    `json:"count"`
+	Weight string `json:"weight"`
+}
+
 // RoleCount is how many live users hold a role.
 type RoleCount struct {
 	Role  string `json:"role"`
@@ -155,6 +162,36 @@ func (s *Store) RoleCounts(ctx context.Context) ([]RoleCount, error) {
 		var r RoleCount
 
 		if err := rows.Scan(&r.Role, &r.Count); err != nil {
+			return nil, err
+		}
+
+		out = append(out, r)
+	}
+
+	return out, rows.Err()
+}
+
+// TypeTotals counts every transaction in [from, to) and its kg, by type.
+func (s *Store) TypeTotals(ctx context.Context, from, to time.Time) ([]TypeTotal, error) {
+	rows, err := s.db.Q(ctx).Query(ctx, `
+		SELECT t.type, count(*), COALESCE(sum(x.w), 0)::text
+		FROM transactions t
+		LEFT JOIN LATERAL (
+			SELECT sum(i.weight) AS w FROM transaction_items i WHERE i.transaction_id = t.id
+		) x ON true
+		WHERE `+database.EffectiveDate("t")+` >= $1 AND `+database.EffectiveDate("t")+` < $2
+		GROUP BY t.type ORDER BY t.type`, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []TypeTotal{}
+
+	for rows.Next() {
+		var r TypeTotal
+
+		if err := rows.Scan(&r.Type, &r.Count, &r.Weight); err != nil {
 			return nil, err
 		}
 
