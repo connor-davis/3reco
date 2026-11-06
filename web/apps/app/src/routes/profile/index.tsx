@@ -75,7 +75,7 @@ function ProfilePage() {
         skeleton={<RowsSkeleton rows={4} />}
       >
         <Tabs defaultValue="personal" className="gap-6">
-          <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsList className="h-auto w-full justify-start p-1.5 max-md:overflow-x-auto max-md:overflow-y-hidden max-md:pb-2.5">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             {role !== 'collector' && (
               <TabsTrigger value="business">Business</TabsTrigger>
