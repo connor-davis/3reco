@@ -83,7 +83,7 @@ func (s *Service) Attach(
 	sum := sha256.Sum256(data)
 	checksum := hex.EncodeToString(sum[:])
 	receipt = tstore.Receipt{
-		ID: database.NewID(), FileName: storage.SafeName(name), ContentType: kind, Size: int64(len(data)),
+		ID: database.NewID(), FileName: storage.CleanName(name), ContentType: kind, Size: int64(len(data)),
 	}
 	key := "receipts/" + id + "/" + receipt.ID
 

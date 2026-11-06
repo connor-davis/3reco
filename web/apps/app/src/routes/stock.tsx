@@ -82,11 +82,19 @@ function Weights({ item }: { item: StockItem }) {
 
   return (
     <span>
-      <span className="block">{formatKg(item.available_weight)} available</span>
-      <span className="text-xs text-muted-foreground">
-        {formatKg(item.weight)} in stock
-        {held !== null && ` · ${formatKg(held)} held for offers`}
-      </span>
+      {held === null ? (
+        <span className="block">{formatKg(item.weight)} in stock</span>
+      ) : (
+        <>
+          <span className="block">
+            {formatKg(item.available_weight)} available
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {formatKg(item.weight)} in stock
+            {` · ${formatKg(held)} held for offers`}
+          </span>
+        </>
+      )}
     </span>
   );
 }

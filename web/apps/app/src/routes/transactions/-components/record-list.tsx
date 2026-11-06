@@ -43,7 +43,6 @@ import {
   formatKg,
   formatRand,
   formatRate,
-  plural,
   toCents,
   toGrams,
 } from '@/lib/format';
@@ -127,7 +126,7 @@ export function RecordList({
   // A link such as /transactions/purchases?open=<id> opens that trade.
   const { open: openId } = useSearch({ strict: false }) as { open?: string };
   const navigate = useNavigate();
-  const linked = useTransaction(readOnly || !openId ? '' : openId);
+  const linked = useTransaction(openId ?? '');
 
   // The server does the searching, so the filters ride along with every page.
   const q = useDebounced(query.trim());
@@ -307,9 +306,7 @@ export function RecordList({
                     size="sm"
                     onClick={() => setOpen(row)}
                   >
-                    Details
-                    {!readOnly &&
-                      ` (${row.receipts.length} of ${plural(maxReceipts, 'receipt')})`}
+                    {`Invoice and receipts (${row.receipts.length} of ${maxReceipts})`}
                   </Button>
                 )}
               </ItemActions>
@@ -321,7 +318,6 @@ export function RecordList({
       <TransactionDialog
         key={(open ?? linkedRow)?.id}
         record={open ?? linkedRow}
-        readOnly={readOnly}
         onClose={() => {
           setOpen(null);
           if (openId)

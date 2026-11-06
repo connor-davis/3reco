@@ -77,7 +77,7 @@ func TestInvoiceNumberStable(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE users SET bank_account_holder_name='Invoice Holder',bank_name='Test Bank',
 		bank_account_number=$2,bank_branch_code='250655',bank_account_type='Cheque' WHERE id=$1`,
 		w.seller.id, testutil.Seal(t, "123456789"))
-	id := tradeSale(t, w.seller, w.buyer, w.material, "1.234567", "8.123456")
+	id := tradeSale(t, w.seller, w.buyer, w.material, "1.234567", "8.12")
 	number := strings.ToUpper(id[len(id)-8:])
 	path := "/api/transactions/" + id + "/invoice"
 	mail := testutil.WaitMail(t, w.buyer.email, "Your 3REco invoice "+number)
@@ -95,7 +95,7 @@ func TestInvoiceNumberStable(t *testing.T) {
 	for _, client := range []*testutil.Client{w.buyer.c, w.seller.c, staff.c, admin.c} {
 		got := client.Do("GET", path, nil)
 		tradeWant(t, "invoice reader", got, 200)
-		for _, text := range []string{"%PDF", number, "Invoice Holder", "123456789", "10.03", "3REco"} {
+		for _, text := range []string{"%PDF", number, "Invoice Holder", "123456789", "10.02", "3REco"} {
 			if !bytes.Contains(got.Raw, []byte(text)) {
 				t.Errorf("invoice lacks %q", text)
 			}

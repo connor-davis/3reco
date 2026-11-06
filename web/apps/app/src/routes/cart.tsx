@@ -75,42 +75,56 @@ function CartPage() {
           </LinkButton>
         }
       />
-      <div className="mb-6 space-y-4">
-        <SearchBox
-          label="Find a store"
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-          }}
-        />
-        <DataState
-          query={stores}
-          isEmpty={!options.length}
-          icon={StoreIcon}
-          emptyTitle="No stores found"
-          emptyText="Try another search."
-        >
-          <ChoiceSelect
-            label="Store cart"
-            value={sellerId}
-            options={options}
-            onChange={(value) =>
-              void navigate({ to: '/cart', search: { seller_id: value } })
-            }
-          />
-        </DataState>
-      </div>
-      {sellerId ? (
-        <SellerCart key={sellerId} sellerId={sellerId} />
-      ) : (
+      {!stores.data?.items.length && !stores.isPending && !selectedSeller ? (
         <DataState
           isEmpty
           icon={ShoppingCart}
-          emptyTitle="Choose a store"
-          emptyText="Your materials are saved separately for each store."
+          emptyTitle="Your cart is empty"
+          emptyText="Browse materials to add some."
+          emptyAction={<LinkButton to="/market">Browse materials</LinkButton>}
         >
           <span />
         </DataState>
+      ) : (
+        <>
+          <div className="mb-6 space-y-4">
+            <SearchBox
+              label="Find a store"
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+              }}
+            />
+            <DataState
+              query={stores}
+              isEmpty={!options.length}
+              icon={StoreIcon}
+              emptyTitle="No stores found"
+              emptyText="Try another search."
+            >
+              <ChoiceSelect
+                label="Store cart"
+                value={sellerId}
+                options={options}
+                onChange={(value) =>
+                  void navigate({ to: '/cart', search: { seller_id: value } })
+                }
+              />
+            </DataState>
+          </div>
+          {sellerId ? (
+            <SellerCart key={sellerId} sellerId={sellerId} />
+          ) : (
+            <DataState
+              isEmpty
+              icon={ShoppingCart}
+              emptyTitle="Choose a store"
+              emptyText="Your materials are saved separately for each store."
+            >
+              <span />
+            </DataState>
+          )}
+        </>
       )}
     </>
   );

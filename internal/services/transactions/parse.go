@@ -23,9 +23,18 @@ const maxItems = 100
 // needs, and small enough that no sum can overflow a Postgres numeric.
 var decimalPattern = regexp.MustCompile(`^\d{1,12}(\.\d{1,6})?$`)
 
+// A price is money, so it stops at cents; that keeps every line total exact
+// to the cent after one rounding.
+var pricePattern = regexp.MustCompile(`^\d{1,12}(\.\d{1,2})?$`)
+
 func parseDecimal(field, raw string) (*big.Rat, error) {
-	if !decimalPattern.MatchString(raw) {
-		return nil, apperr.Field(field, "Enter a number such as 12.5.")
+	pattern, message := decimalPattern, "Enter a number such as 12.5."
+	if field == "price" {
+		pattern, message = pricePattern, "Enter a price with up to 2 decimals, such as 12.50."
+	}
+
+	if !pattern.MatchString(raw) {
+		return nil, apperr.Field(field, message)
 	}
 
 	value, ok := new(big.Rat).SetString(raw)
@@ -80,8 +89,23 @@ func CheckItems(items []SaleItem) error {
 
 // parseDay checks a YYYY-MM-DD collection day is a real calendar date.
 func parseDay(raw string) error {
-	if _, err := time.Parse("2006-01-02", raw); err != nil {
+	day, err := time.Parse("2006-01-02", raw)
+	if err != nil {
 		return apperr.Field("collection_day", "Use a real date in YYYY-MM-DD format.")
+	}
+
+	if day.Format(time.DateOnly) > time.Now().In(sast).Format(time.DateOnly) {
+		return apperr.Field("collection_day", "The collection date cannot be in the future.")
+	}
+
+	return nil
+}
+
+// checkCollectionDate refuses a collection moment whose South African day is
+// after today.
+func checkCollectionDate(at time.Time) error {
+	if at.In(sast).Format(time.DateOnly) > time.Now().In(sast).Format(time.DateOnly) {
+		return apperr.Field("collection_date", "The collection date cannot be in the future.")
 	}
 
 	return nil

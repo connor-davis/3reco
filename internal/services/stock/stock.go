@@ -82,13 +82,17 @@ func validate(item store.Item) error {
 		return err
 	}
 
+	if !new(big.Rat).Mul(price, big.NewRat(100, 1)).IsInt() {
+		return apperr.Field("price", "Enter a price with up to 2 decimals, such as 12.50.")
+	}
+
 	base, err := Decimal(item.BasePrice, "base_price", false)
 	if err != nil {
 		return err
 	}
 
 	if price.Cmp(base) < 0 {
-		return apperr.Field("price", "Price must meet the material base price.")
+		return apperr.Field("price", "Price must be at least R "+base.FloatString(2)+" / kg.")
 	}
 
 	return nil

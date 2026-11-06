@@ -59,12 +59,13 @@ func (s *Store) InsertItem(
 	return err
 }
 
-// SetTotal sets the total price to the sum of weight times price over the
-// stored items, in exact decimals.
+// SetTotal sets the total price to the sum of the line totals. Each line is
+// weight times price rounded half up to cents, so the total is exact cents and
+// every screen, PDF and CSV can show the same figure.
 func (s *Store) SetTotal(ctx context.Context, transactionID string) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `
 		UPDATE transactions SET total_price = (
-			SELECT COALESCE(SUM(weight * price), 0) FROM transaction_items WHERE transaction_id = $1)
+			SELECT COALESCE(SUM(ROUND(weight * price, 2)), 0) FROM transaction_items WHERE transaction_id = $1)
 		WHERE id = $1`, transactionID)
 
 	return err

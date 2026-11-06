@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStats } from '@/lib/api/stats';
 import { formatKg } from '@/lib/format';
+import { formatCo2 } from '@/lib/impact';
 
 export const Route = createFileRoute('/about')({ component: AboutPage });
 
@@ -43,7 +44,7 @@ function AboutPage() {
                 className="size-4 shrink-0 text-primary"
                 aria-hidden="true"
               />
-              {formatKg(stats.total_kg)} traded · {formatKg(stats.co2_kg)} CO₂e
+              {formatKg(stats.total_kg)} traded · {formatCo2(stats.co2_kg)}
               saved
             </p>
           )}

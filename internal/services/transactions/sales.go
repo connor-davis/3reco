@@ -236,6 +236,12 @@ func (s *Service) CollectorSale(
 		}
 	}
 
+	if in.CollectionDate != nil {
+		if err := checkCollectionDate(*in.CollectionDate); err != nil {
+			return "", err
+		}
+	}
+
 	var id string
 
 	err = s.db.InTx(ctx, func(ctx context.Context) error {

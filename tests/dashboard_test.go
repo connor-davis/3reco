@@ -183,8 +183,8 @@ func TestDashboardSASTDayBounds(t *testing.T) {
 
 	totals, _ := body["totals"].(map[string]any)
 	if totals["count"] != float64(4) || totals["value"] != "240.00" ||
-		totals["weight"] != "40.000" || totals["carbon_savings"] != "80.000" {
-		t.Errorf("totals %v, want 4 trades, 240.00, 40.000 kg and 80.000 carbon", totals)
+		totals["weight"] != "40.000" || totals["carbon_savings"] != "80" {
+		t.Errorf("totals %v, want 4 trades, 240.00, 40.000 kg and 80 carbon", totals)
 	}
 
 	// A single day takes exactly that South African day.
