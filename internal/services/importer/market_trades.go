@@ -88,6 +88,15 @@ func (p *planner) collectorSnapshot(r *row, out store.Row) {
 			continue
 		}
 
+		// Convex can store an area code as 3610.0; keep it a whole number.
+		if column == "area_code" {
+			if whole, ok := r.whole("collectorSnapshot.areaCode", value); ok {
+				renamed[column] = whole
+			}
+
+			continue
+		}
+
 		switch value.(type) {
 		case string, json.Number:
 			renamed[column] = value

@@ -181,6 +181,11 @@ func TestLiveHandshakeIsChecked(t *testing.T) {
 		t.Fatalf("bad origin: err=%v resp=%v, want a 403 handshake", err, resp)
 	}
 
+	// The Go server also serves the built app, so its own address is allowed.
+	if _, _, err := dial(t, app, c, "http://"+app.Host); err != nil {
+		t.Fatalf("same-host origin: %v, want a socket", err)
+	}
+
 	// A plain GET (not a socket) is told to upgrade.
 	if res := c.Do("GET", "/api/live", nil); res.Status != 426 {
 		t.Errorf("plain GET: %d, want 426", res.Status)

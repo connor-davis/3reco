@@ -152,6 +152,16 @@ func setCookie(c fiber.Ctx, cfg config.Config, name, value string) {
 	})
 }
 
+// TrustedOrigin is true when the browser's Origin is the web app's origin, or
+// the API's own address (the Go binary serves the built app itself, so a page
+// on :8180 is same-site even when THREERECO_WEB_ORIGIN names the Vite server).
+// A browser never lets a page forge its Origin.
+func TrustedOrigin(c fiber.Ctx, cfg config.Config) bool {
+	origin := c.Get("Origin")
+
+	return origin != "" && (origin == cfg.WebOrigin || origin == c.Scheme()+"://"+c.Host())
+}
+
 // CSRF refuses a browser request that changes data from another site. A
 // browser always sends Origin or Sec-Fetch-Site on those; a request with
 // neither is a script or curl, which has no cookie to ride on. SameSite=Lax
@@ -163,8 +173,8 @@ func CSRF(cfg config.Config) fiber.Handler {
 			return c.Next()
 		}
 
-		if origin := c.Get("Origin"); origin != "" {
-			if origin != cfg.WebOrigin {
+		if c.Get("Origin") != "" {
+			if !TrustedOrigin(c, cfg) {
 				return apperr.Forbidden("This request came from another site.")
 			}
 

@@ -143,6 +143,23 @@ func TestInvoiceNumberStable(t *testing.T) {
 	}
 }
 
+// Convex stored some snapshot area codes as 3610.0; the invoice must still build.
+func TestInvoiceReadsFloatAreaCode(t *testing.T) {
+	w := newTradeWorld(t)
+	collector := tradeCollector(t, w.app, w.buyer, "+27800000010")
+	got := w.buyer.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(collector, "", tradeLine(w.material, "2", "3.25")))
+	tradeWant(t, "float area code collection", got, 200)
+	id := got.Body["transaction_id"].(string)
+	testutil.WaitMail(t, w.buyer.email, strings.ToUpper(id[len(id)-8:]))
+	tradeExec(t, w.app, `UPDATE transactions SET collector_snapshot=
+		COALESCE(collector_snapshot,'{}'::jsonb) || '{"area_code":3610.0}'::jsonb WHERE id=$1`, id)
+
+	if err := w.app.Invoices.Generate(context.Background(), id, false); err != nil {
+		t.Fatalf("invoice with area code 3610.0: %v", err)
+	}
+}
+
 func TestInvoiceSnapshotAndRollback(t *testing.T) {
 	w := newTradeWorld(t)
 	collector := tradeCollector(t, w.app, w.buyer, "+27800000009")

@@ -74,7 +74,10 @@ func (s *Store) Document(ctx context.Context, id string) (Document, error) {
 	var anonymised bool
 	err = s.db.Q(ctx).QueryRow(ctx, `SELECT COALESCE(t.invoice_key,''),t.anonymised_at IS NOT NULL,
 		CASE WHEN t.type='b2b' THEN `+userContact("s")+` ELSE
-		COALESCE(`+collectorContact("c")+`,'{}'::jsonb) || COALESCE((SELECT jsonb_object_agg(key,value)
+		COALESCE(`+collectorContact("c")+`,'{}'::jsonb) || COALESCE((SELECT jsonb_object_agg(key,
+			-- Convex stored some area codes as 3610.0, which Go cannot read into an int.
+			CASE WHEN key='area_code' AND jsonb_typeof(value)='number'
+			THEN to_jsonb(trunc((value#>>'{}')::numeric)::int) ELSE value END)
 		FROM jsonb_each(COALESCE(t.collector_snapshot,'{}'::jsonb))
 		WHERE value <> 'null'::jsonb AND value <> '""'::jsonb),'{}'::jsonb) END,
 		`+userContact("b")+` FROM transactions t JOIN users b ON b.id=t.buyer_id

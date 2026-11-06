@@ -45,7 +45,7 @@ func (h *Handler) upgrade(c fiber.Ctx) error {
 		return fiber.ErrUpgradeRequired
 	}
 
-	if c.Get("Origin") != h.cfg.WebOrigin {
+	if !middleware.TrustedOrigin(c, h.cfg) {
 		return apperr.Forbidden("This site may not open a live connection.")
 	}
 
