@@ -1,10 +1,14 @@
 import { useState, type ReactNode } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
-import { TransactionDialog } from '@/components/dialogs/record-dialogs';
+import {
+  maxReceipts,
+  TransactionDialog,
+} from '@/components/dialogs/record-dialogs';
 import { LinkButton } from '@/components/link-button';
 import { ChipGroup } from '@/components/filters';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
@@ -24,14 +28,22 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { useExport, type ExportKind } from '@/lib/api/exports';
-import { useTransactions, useTransactionTotals } from '@/lib/api/transactions';
+import { useRequest } from '@/lib/api/requests';
+import {
+  useTransaction,
+  useTransactions,
+  useTransactionTotals,
+} from '@/lib/api/transactions';
 import type { Transaction } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/use-auth';
 import { useDebounced } from '@/lib/use-debounced';
+import { waitingFor } from '@/lib/waiting';
 import {
   formatDate,
   formatKg,
   formatRand,
   formatRate,
+  plural,
   toCents,
   toGrams,
 } from '@/lib/format';
@@ -77,7 +89,19 @@ function titleOf(row: Transaction) {
   const names = row.items.map((item) => item.material_name);
   const more = names.length > 2 ? ` +${names.length - 2} more` : '';
 
-  return `${names.slice(0, 2).join(', ')}${more} Â· ${formatKg(weightOf(row) / 1000)}`;
+  return `${names.slice(0, 2).join(', ')}${more} · ${formatKg(weightOf(row) / 1000)}`;
+}
+
+/** The "who are we waiting for" tag on a pending row. */
+function WaitingTag({ requestId }: { requestId: string }) {
+  const { user } = useAuth();
+  const request = useRequest(requestId);
+
+  if (!request.data) return null;
+
+  return (
+    <Badge variant="secondary">{waitingFor(request.data, user?.id)}</Badge>
+  );
 }
 
 /** The shared record list: filters, optional stats, rows and the detail dialog. */
@@ -100,6 +124,11 @@ export function RecordList({
   const [csv, setCsv] = useState('transaction');
   const [open, setOpen] = useState<Transaction | null>(null);
 
+  // A link such as /transactions/purchases?open=<id> opens that trade.
+  const { open: openId } = useSearch({ strict: false }) as { open?: string };
+  const navigate = useNavigate();
+  const linked = useTransaction(readOnly || !openId ? '' : openId);
+
   // The server does the searching, so the filters ride along with every page.
   const q = useDebounced(query.trim());
   const filters = {
@@ -116,6 +145,9 @@ export function RecordList({
   const download = useExport(exportKind ?? 'transactions');
 
   const shown = list.data?.items ?? [];
+  const linkedRow = openId
+    ? (shown.find((row) => row.id === openId) ?? linked.data ?? null)
+    : null;
   const filtered = !!(q || range?.from || (!collectionsOnly && type !== 'all'));
   const caption = !filtered
     ? 'All time'
@@ -243,12 +275,12 @@ export function RecordList({
               <ItemContent className="min-w-48">
                 <ItemTitle>{titleOf(row)}</ItemTitle>
                 <ItemDescription>
-                  {row.seller.name} â†’ {row.buyer.name}
+                  {row.seller.name} → {row.buyer.name}
                 </ItemDescription>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(dayOf(row))} Â· {row.invoice_number}
+                  {formatDate(dayOf(row))} · {row.invoice_number}
                   {row.items.length === 1 &&
-                    ` Â· ${formatRate(row.items[0].price)}`}
+                    ` · ${formatRate(row.items[0].price)}`}
                 </p>
               </ItemContent>
               <ItemActions className="flex-wrap">
@@ -258,6 +290,9 @@ export function RecordList({
                 <span className="w-28 text-right font-semibold tabular-nums">
                   {formatRand(toCents(row.total_price))}
                 </span>
+                {row.status === 'pending' && row.request_id && (
+                  <WaitingTag requestId={row.request_id} />
+                )}
                 {row.status === 'pending' && row.request_id ? (
                   <LinkButton
                     to="/messages/$requestId"
@@ -273,7 +308,8 @@ export function RecordList({
                     onClick={() => setOpen(row)}
                   >
                     Details
-                    {!readOnly && ` (${row.receipts.length} receipts)`}
+                    {!readOnly &&
+                      ` (${row.receipts.length} of ${plural(maxReceipts, 'receipt')})`}
                   </Button>
                 )}
               </ItemActions>
@@ -283,10 +319,14 @@ export function RecordList({
       </DataState>
       <Pager pager={pager} page={list.data} />
       <TransactionDialog
-        key={open?.id}
-        record={open}
+        key={(open ?? linkedRow)?.id}
+        record={open ?? linkedRow}
         readOnly={readOnly}
-        onClose={() => setOpen(null)}
+        onClose={() => {
+          setOpen(null);
+          if (openId)
+            void navigate({ to: '.', search: {} as never, replace: true });
+        }}
       />
     </>
   );

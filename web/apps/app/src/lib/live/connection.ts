@@ -1,5 +1,8 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
+// The close code the server sends when a sign-in ended (see the Go hub).
+export const sessionEndedCode = 4401;
+
 // A burst of events for one key (a chat flurry) refetches it once.
 const settleMs = 300;
 
@@ -69,9 +72,12 @@ export class LiveConnection {
   private stopped = false;
   private pending = new Map<string, ReturnType<typeof setTimeout>>();
   private client: QueryClient;
+  private onEnded?: () => void;
 
-  constructor(client: QueryClient) {
+  // onEnded runs when the server says this sign-in is over.
+  constructor(client: QueryClient, onEnded?: () => void) {
     this.client = client;
+    this.onEnded = onEnded;
   }
 
   start() {
@@ -125,9 +131,18 @@ export class LiveConnection {
       }
     };
     socket.onerror = () => socket.close();
-    socket.onclose = () => {
+    socket.onclose = (event) => {
       if (this.stopped) return;
       this.socket = undefined;
+
+      // The server closes with this code for an ended, removed or guest
+      // session. Reconnecting would only be refused, so sign out instead.
+      if (event.code === sessionEndedCode) {
+        this.stop();
+        this.onEnded?.();
+        return;
+      }
+
       const delay =
         Math.min(30000, 1000 * 2 ** this.attempts++) + Math.random() * 250;
       this.timer = setTimeout(() => this.connect(), delay);

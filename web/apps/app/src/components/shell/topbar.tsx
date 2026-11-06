@@ -31,6 +31,8 @@ const titles: Record<string, string> = {
   profile: 'Your profile',
   transactions: 'Transactions',
   admin: 'User management',
+  terms: 'Terms',
+  privacy: 'Privacy',
 };
 
 function titleFor(pathname: string): string {

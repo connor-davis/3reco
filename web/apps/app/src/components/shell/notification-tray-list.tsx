@@ -11,7 +11,6 @@ import {
   ItemDescription,
   ItemTitle,
 } from '@/components/ui/item';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataState } from '@/components/data-state';
 import { formatDate, formatTime } from '@/lib/format';
@@ -62,7 +61,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      <ScrollArea className="max-h-80">
+      <div className="max-h-80 min-h-0 overflow-x-hidden overflow-y-auto">
         <DataState
           query={[notices, count]}
           isEmpty={shown.length === 0}
@@ -94,11 +93,11 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       {formatTime(notice.created_at)}
                     </span>
                   </ItemContent>
-                  <ItemActions className="flex-col items-end">
+                  <ItemActions className="flex-wrap justify-end">
                     {notice.link?.startsWith('/') &&
                       !notice.link.startsWith('//') && (
                         <Button
-                          className="min-h-11"
+                          size="sm"
                           variant="outline"
                           disabled={pending}
                           onClick={() =>
@@ -115,7 +114,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       )}
                     {!notice.read && (
                       <Button
-                        className="min-h-11"
+                        size="sm"
                         variant="ghost"
                         disabled={pending}
                         onClick={() => read.mutate(notice.id)}
@@ -124,7 +123,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       </Button>
                     )}
                     <Button
-                      className="min-h-11"
+                      size="sm"
                       variant="ghost"
                       disabled={pending}
                       onClick={() => dismiss.mutate(notice.id)}
@@ -165,7 +164,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
             </Button>
           </div>
         )}
-      </ScrollArea>
+      </div>
       <div className="flex justify-between border-t p-2">
         <Button
           className="min-h-11"

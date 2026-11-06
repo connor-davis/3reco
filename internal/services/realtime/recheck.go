@@ -43,7 +43,9 @@ func (h *Hub) Recheck(ctx context.Context) {
 	}
 
 	live, err := h.liveSessions(ctx, sessionIDs)
-	if err != nil {
+	failed := err != nil
+
+	if failed {
 		// ponytail: a database hiccup drops every socket; browsers reconnect,
 		// so it only costs one refetch each.
 		live = nil
@@ -55,6 +57,8 @@ func (h *Hub) Recheck(ctx context.Context) {
 	for _, c := range all {
 		role, ok := live[c.SessionID]
 		if !ok || role == auth.RoleGuest {
+			// A failed lookup is not proof: those browsers just reconnect.
+			c.revoked.Store(!failed)
 			h.dropLocked(c)
 
 			continue

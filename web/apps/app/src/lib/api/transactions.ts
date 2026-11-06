@@ -2,7 +2,7 @@ import { useResource, useWrite, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
 import { useMutation } from '@tanstack/react-query';
-import { download } from './client';
+import { api, download } from './client';
 
 export function useTransactions(
   kind: 'mine' | 'purchases' | 'sales' = 'mine',
@@ -52,9 +52,27 @@ export function useCreateSale() {
 export function invoiceUrl(id: string) {
   return `/api/transactions/${idPath(id)}/invoice`;
 }
+/** The saved file name: the invoice number people see, never the raw id. */
+export function invoiceFilename(invoiceNumber: string) {
+  return `invoice-${invoiceNumber}.pdf`;
+}
+/** Pass the trade when you have it; a bare id looks the number up first. */
 export function useDownloadInvoice() {
   return useMutation({
-    mutationFn: (id: string) =>
-      download(`/transactions/${idPath(id)}/invoice`, `invoice-${id}.pdf`),
+    mutationFn: async (
+      target: string | { id: string; invoice_number: string }
+    ) => {
+      const id = typeof target === 'string' ? target : target.id;
+      const number =
+        typeof target === 'string'
+          ? (await api<T.Transaction>(`/transactions/${idPath(id)}`))
+              .invoice_number
+          : target.invoice_number;
+
+      await download(
+        `/transactions/${idPath(id)}/invoice`,
+        invoiceFilename(number)
+      );
+    },
   });
 }

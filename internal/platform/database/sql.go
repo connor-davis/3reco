@@ -9,6 +9,16 @@ func DisplayName(alias string) string {
 		"NULLIF(" + alias + ".name, ''), 'Unknown')"
 }
 
+// PersonName is the name to show for the person behind a user row aliased as
+// alias, in admin lists: admin and staff by their own first and last name (a
+// business name left over from an earlier role is not theirs), everyone else
+// as DisplayName does. It never falls back to the email.
+func PersonName(alias string) string {
+	return "CASE WHEN " + alias + ".role IN ('admin', 'staff') THEN " +
+		"COALESCE(NULLIF(btrim(concat_ws(' ', " + alias + ".first_name, " + alias + ".last_name)), ''), " +
+		"NULLIF(" + alias + ".name, ''), 'Unknown') ELSE " + DisplayName(alias) + " END"
+}
+
 // EffectiveDate is the SQL for the day a transaction row aliased as alias
 // counts on. A collection day is midnight in South Africa; a collection date
 // counts on its South African day; everything else uses the created time.

@@ -187,6 +187,11 @@ Never rename a merged migration. Add a new file.
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
 | One socket per tab and cache invalidation by `{kind, id}` | `web/apps/app/src/lib/live/use-live.ts`, `connection.ts` |
 | HTTP error/decimal contracts and socket lifecycle tests | `web/apps/app/tests/api.test.mjs` |
+| QA round 1 shell fixes (no mojibake, invoice filename, waiting tag, role copy, guest gating, session-ended close 4401) | `web/apps/app/tests/qa-round1-shell.test.mjs` |
+| Who a pending trade is waiting for | `web/apps/app/src/lib/waiting.ts` |
+| Session-ended socket close code 4401 (revoked, removed or guest) | `internal/services/realtime/hub.go` (`CloseSessionEnded`), `internal/api/sockets/handler.go`, tests in `tests/realtime_revoked_test.go` |
+| Admin/staff see a person's real name, not the business name (`PersonName`) | `internal/platform/database/sql.go`, tests in `tests/admin_names_test.go` |
+| Finished chats stay in the inbox (`done` filter) | `internal/stores/requests/messages.go`, tests in `tests/inbox_done_test.go` |
 | Deferred desktop dialog / phone drawer implementation | `web/apps/app/src/components/responsive-overlay-body.tsx` (loaded by `responsive-overlay.tsx`) |
 | Deferred notification list, paging and actions | `web/apps/app/src/components/shell/notification-tray-list.tsx` (bell in `notification-tray.tsx`) |
 | Signed-in user context and auth query cache | `web/apps/app/src/lib/auth/`, `src/lib/api/auth.ts` |

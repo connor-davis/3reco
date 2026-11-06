@@ -20,6 +20,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useCollectors, useDeleteCollector } from '@/lib/api/collectors';
 import type { Collector } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
+import { isStaffRole } from '@/lib/access';
+import { plural } from '@/lib/format';
 
 export const Route = createFileRoute('/collectors')({
   component: () => (
@@ -75,6 +77,8 @@ function RemoveCollector({ collector, onClose }: RemoveProps) {
 
 function CollectorsPage() {
   const { user } = useAuth();
+  // Admin and staff see everyone's collectors, so the page is not "yours".
+  const directory = isStaffRole(user?.role);
   const [query, setQuery] = useState('');
   const pager = usePager(50, { q: useDebounced(query.trim()) });
   const list = useCollectors(pager.params);
@@ -163,8 +167,12 @@ function CollectorsPage() {
   return (
     <>
       <PageHeader
-        title="Your collector network"
-        description="The people who bring you material, and how you pay them."
+        title={directory ? 'Collector directory' : 'Your collector network'}
+        description={
+          directory
+            ? 'Every collector on 3REco, and how they are paid.'
+            : 'The people who bring you material, and how you pay them.'
+        }
         actions={
           <Button onClick={() => openForm()}>
             <Plus data-icon="inline-start" />
@@ -184,7 +192,11 @@ function CollectorsPage() {
         isEmpty={shown.length === 0}
         icon={Users}
         emptyTitle="No collectors found"
-        emptyText="Add the people who collect for you."
+        emptyText={
+          directory
+            ? 'No collectors on 3REco yet.'
+            : 'Add the people who collect for you.'
+        }
         emptyAction={<Button onClick={() => openForm()}>Add collector</Button>}
         skeleton={<RowsSkeleton />}
       >
@@ -209,7 +221,7 @@ function CollectorsPage() {
               </CardContent>
             </Card>
           )}
-          footer={<span>{shown.length} collectors on this page</span>}
+          footer={<span>{plural(shown.length, 'collector')} on this page</span>}
         />
       </DataState>
       <Pager pager={pager} page={list.data} />

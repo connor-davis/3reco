@@ -20,7 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useDeleteMaterial, useMaterials } from '@/lib/api/materials';
 import type { Material } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
-import { formatRate } from '@/lib/format';
+import { formatRate, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/materials')({
   component: () => (
@@ -150,7 +150,7 @@ function MaterialsPage() {
           )}
           footer={
             <>
-              <span>{shown.length} material grades</span>
+              <span>{plural(shown.length, 'material grade')}</span>
               <span>Carbon factors apply per kg traded</span>
             </>
           }

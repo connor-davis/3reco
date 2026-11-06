@@ -332,6 +332,10 @@ export interface PrivacyEvent {
   subject_id: string | null;
   kind: string;
   created_at: string;
+  actor_name: string | null;
+  actor_role: string | null;
+  subject_name: string | null;
+  subject_role: string | null;
 }
 export interface Notice {
   version: string;

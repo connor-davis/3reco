@@ -19,6 +19,13 @@ type Event struct {
 	SubjectID *string   `json:"subject_id"`
 	Kind      string    `json:"kind"`
 	CreatedAt time.Time `json:"created_at"`
+
+	// The names and roles are read now, from the account or collector the id
+	// names, so an admin sees who it was. They are null when the id is gone.
+	ActorName   *string `json:"actor_name"`
+	ActorRole   *string `json:"actor_role"`
+	SubjectName *string `json:"subject_name"`
+	SubjectRole *string `json:"subject_role"`
 }
 
 // Store runs the privacy SQL.
@@ -39,9 +46,16 @@ func (s *Store) Record(ctx context.Context, actor, subject, kind string) error {
 // Events returns up to limit+1 audit lines, newest first.
 func (s *Store) Events(ctx context.Context, cur paging.Cursor, limit int) ([]Event, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT id, actor_id, subject_id, kind, created_at FROM privacy_events
-		WHERE ($1::timestamptz IS NULL OR (created_at, id) < ($1, $2))
-		ORDER BY created_at DESC, id DESC LIMIT $3`, cur.At, cur.ID, limit+1)
+		SELECT e.id, e.actor_id, e.subject_id, e.kind, e.created_at,
+			CASE WHEN a.id IS NOT NULL THEN `+database.PersonName("a")+` END, a.role,
+			CASE WHEN s.id IS NOT NULL THEN `+database.PersonName("s")+` ELSE c.name END,
+			CASE WHEN s.id IS NOT NULL THEN s.role WHEN c.id IS NOT NULL THEN 'collector' END
+		FROM privacy_events e
+		LEFT JOIN users a ON a.id = e.actor_id
+		LEFT JOIN users s ON s.id = e.subject_id
+		LEFT JOIN collectors c ON c.id = e.subject_id
+		WHERE ($1::timestamptz IS NULL OR (e.created_at, e.id) < ($1, $2))
+		ORDER BY e.created_at DESC, e.id DESC LIMIT $3`, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +66,8 @@ func (s *Store) Events(ctx context.Context, cur paging.Cursor, limit int) ([]Eve
 	for rows.Next() {
 		var e Event
 
-		if err := rows.Scan(&e.ID, &e.ActorID, &e.SubjectID, &e.Kind, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.ActorID, &e.SubjectID, &e.Kind, &e.CreatedAt,
+			&e.ActorName, &e.ActorRole, &e.SubjectName, &e.SubjectRole); err != nil {
 			return nil, err
 		}
 

@@ -23,7 +23,7 @@ import {
 } from '@/lib/api/admin';
 import { useExport } from '@/lib/api/exports';
 import type { Role, AdminUser, PrivacyEvent } from '@/lib/api/types';
-import { formatDate } from '@/lib/format';
+import { formatDate, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/admin/users')({
   component: () => (
@@ -201,7 +201,7 @@ function UsersPage() {
         isEmpty={shown.length === 0}
         icon={Users}
         emptyTitle="No one matches"
-        emptyText="Try another name, role or page."
+        emptyText="Try another name or role."
       >
         <DataTable
           columns={columns}
@@ -226,7 +226,7 @@ function UsersPage() {
       </DataState>
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm text-muted-foreground">
-          {shown.length} users shown
+          {plural(shown.length, 'user')} shown
         </span>
         {cursor && (
           <Button
@@ -251,7 +251,7 @@ function UsersPage() {
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
         title={'Remove ' + (removing?.name ?? 'user') + '?'}
-        description="They lose access straight away. Their trade records stay because they must be kept by law. Their personal details are removed from those records."
+        description="This is permanent and cannot be undone. They are signed out straight away and cannot sign in again. Their trade records stay because they must be kept by law, but their personal details are removed from those records."
         confirmLabel="Remove user"
         typedName={removing?.email ?? removing?.name}
         onConfirm={() => {
@@ -274,6 +274,29 @@ const privacyKinds: Record<string, string> = {
   admin_full_view: 'Full identifier viewed',
 };
 
+/** A name and role, with the raw id tucked underneath for support. */
+function PartyCell({
+  id,
+  name,
+  role,
+}: {
+  id: string;
+  name: string | null;
+  role: string | null;
+}) {
+  return (
+    <span className="block">
+      <span className="block font-medium">
+        {name ?? 'Unknown'}
+        {role && (
+          <span className="font-normal text-muted-foreground"> · {role}</span>
+        )}
+      </span>
+      <span className="text-xs break-all text-muted-foreground">ID {id}</span>
+    </span>
+  );
+}
+
 function PrivacyEvents() {
   const [cursor, setCursor] = useState<string | undefined>();
   const query = usePrivacyEvents({ cursor, limit: 50 });
@@ -283,11 +306,30 @@ function PrivacyEvents() {
       header: 'Event',
       cell: ({ row }) => privacyKinds[row.original.kind] ?? row.original.kind,
     },
-    { accessorKey: 'actor_id', header: 'Actor ID' },
     {
-      accessorKey: 'subject_id',
-      header: 'Subject ID',
-      cell: ({ row }) => row.original.subject_id ?? 'No individual subject',
+      id: 'actor',
+      header: 'Done by',
+      cell: ({ row }) => (
+        <PartyCell
+          id={row.original.actor_id}
+          name={row.original.actor_name}
+          role={row.original.actor_role}
+        />
+      ),
+    },
+    {
+      id: 'subject',
+      header: 'About',
+      cell: ({ row }) =>
+        row.original.subject_id ? (
+          <PartyCell
+            id={row.original.subject_id}
+            name={row.original.subject_name}
+            role={row.original.subject_role}
+          />
+        ) : (
+          'No individual subject'
+        ),
     },
     {
       accessorKey: 'created_at',
@@ -317,8 +359,20 @@ function PrivacyEvents() {
                 <p className="font-medium">
                   {privacyKinds[event.kind] ?? event.kind}
                 </p>
-                <p>Actor: {event.actor_id}</p>
-                <p>Subject: {event.subject_id ?? 'No individual subject'}</p>
+                <PartyCell
+                  id={event.actor_id}
+                  name={event.actor_name}
+                  role={event.actor_role}
+                />
+                {event.subject_id ? (
+                  <PartyCell
+                    id={event.subject_id}
+                    name={event.subject_name}
+                    role={event.subject_role}
+                  />
+                ) : (
+                  <p>No individual subject</p>
+                )}
                 <p>{formatDate(event.created_at)}</p>
               </CardContent>
             </Card>

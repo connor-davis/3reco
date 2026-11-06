@@ -9,6 +9,7 @@ package realtime
 import (
 	"encoding/json"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
@@ -20,6 +21,11 @@ const (
 	sendBuffer   = 64
 	recheckEvery = 30 * time.Second
 )
+
+// CloseSessionEnded is the WebSocket close code sent when the person's sign-in
+// ended, or they were removed or sent back to guest. A browser seeing it signs
+// out at once instead of reconnecting. 4000-4999 is the range for app codes.
+const CloseSessionEnded = 4401
 
 // Event is what a client receives. Type is "changed", "resync" or "pong";
 // only "changed" carries a Kind and an ID.
@@ -38,6 +44,8 @@ type Client struct {
 	send   chan []byte
 	closed chan struct{}
 	once   sync.Once
+
+	revoked atomic.Bool // set when the sign-in ended, so the close code says so
 }
 
 // Send is the stream of encoded events for the socket writer.
@@ -45,6 +53,9 @@ func (c *Client) Send() <-chan []byte { return c.send }
 
 // Closed is closed when the hub drops the client.
 func (c *Client) Closed() <-chan struct{} { return c.closed }
+
+// Revoked reports whether the hub dropped the client because the sign-in ended.
+func (c *Client) Revoked() bool { return c.revoked.Load() }
 
 // Hub fans database changes out to clients.
 type Hub struct {
@@ -106,6 +117,7 @@ func (h *Hub) DisconnectUser(userID string) {
 	defer h.mu.Unlock()
 
 	for c := range h.byUser[userID] {
+		c.revoked.Store(true)
 		h.dropLocked(c)
 	}
 }

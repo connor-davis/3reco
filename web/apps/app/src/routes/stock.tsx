@@ -20,7 +20,7 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useDeleteStock, useStock, useUpdateStock } from '@/lib/api/stock';
 import type { StockItem } from '@/lib/api/types';
-import { formatKg, formatRate, toGrams } from '@/lib/format';
+import { formatKg, formatRate, toGrams, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/stock')({
   component: () => (
@@ -222,7 +222,7 @@ function StockPage() {
           )}
           footer={
             <>
-              <span>{shown.length} materials on this page</span>
+              <span>{plural(shown.length, 'material')} on this page</span>
               <span>Listed stock is visible in the market.</span>
             </>
           }
