@@ -9,7 +9,7 @@ test('G18: privacy desktop and phone rows render names and roles without raw IDs
     users.indexOf('function PrivacyEvents')
   );
   assert.match(cell, /name \?\? 'Unknown'/);
-  assert.match(cell, /\{role\}/);
+  assert.match(cell, /\{roleLabel\(role\)\}/);
   assert.doesNotMatch(cell, /\bid\b|ID \{/);
   assert.equal(
     (

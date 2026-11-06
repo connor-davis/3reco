@@ -22,6 +22,7 @@ import {
   usePrivacyEvents,
 } from '@/lib/api/admin';
 import { useExport } from '@/lib/api/exports';
+import { roleLabel } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
 import type { Role, AdminUser, PrivacyEvent } from '@/lib/api/types';
 import { formatDate, formatDateTime, plural } from '@/lib/format';
@@ -34,7 +35,9 @@ export const Route = createFileRoute('/admin/users')({
   ),
 });
 
-const roleOptions = ['guest', 'business', 'collector', 'staff', 'admin'];
+const roleOptions = ['guest', 'business', 'collector', 'staff', 'admin'].map(
+  (value) => ({ value, label: roleLabel(value) })
+);
 const filterOptions = [{ value: 'all', label: 'All roles' }, ...roleOptions];
 
 function AdminPage() {
@@ -305,7 +308,10 @@ function PartyCell({
       <span className="block font-medium">
         {name ?? 'Unknown'}
         {role && (
-          <span className="font-normal text-muted-foreground"> · {role}</span>
+          <span className="font-normal text-muted-foreground">
+            {' '}
+            · {roleLabel(role)}
+          </span>
         )}
       </span>
     </span>
