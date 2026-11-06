@@ -115,17 +115,18 @@ func (records *Store) BasePrice(ctx context.Context, id string) (string, error) 
 	return price, err
 }
 
-// Create inserts unlisted stock for its caller.
+// Create inserts stock for its caller, listed only when the item says so.
 func (records *Store) Create(ctx context.Context, item Item) error {
 	_, err := records.db.Q(ctx).Exec(
 		ctx,
-		`INSERT INTO stock(id,owner_id,material_id,weight,price)
-		VALUES($1,$2,$3,$4::numeric,$5::numeric)`,
+		`INSERT INTO stock(id,owner_id,material_id,weight,price,is_listed)
+		VALUES($1,$2,$3,$4::numeric,$5::numeric,$6)`,
 		item.ID,
 		item.OwnerID,
 		item.MaterialID,
 		item.Weight,
 		item.Price,
+		item.IsListed,
 	)
 
 	return err

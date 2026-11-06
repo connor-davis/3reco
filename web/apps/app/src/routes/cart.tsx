@@ -24,7 +24,7 @@ import { useListing } from '@/lib/api/listings';
 import { useCreateRequest } from '@/lib/api/requests';
 import type { CartItem } from '@/lib/api/types';
 import { formatRand, formatRate, lineCents } from '@/lib/format';
-import { quantityError } from '@/lib/quantity';
+import { quantityError, weightCounter } from '@/lib/quantity';
 
 export const Route = createFileRoute('/cart')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -387,6 +387,7 @@ function CartLine({
         control={form.control}
         name={`items.${index}.weight`}
         label="Weight (kg)"
+        counter={weightCounter(listing.data?.weight)}
       />
       {problem && problem !== fieldError && (
         <p role="alert" className="text-sm text-destructive">

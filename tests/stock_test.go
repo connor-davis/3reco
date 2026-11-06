@@ -55,6 +55,30 @@ func TestStockOwnershipLeak(t *testing.T) {
 	status(t, owner.Do("GET", "/api/stock/"+id, nil), 404)
 }
 
+func TestStockCreateHonoursIsListed(t *testing.T) {
+	app := testutil.Server(t)
+	owner, _ := domainUser(t, app, "business")
+	material := domainMaterial(t, app, "Copper", "2")
+
+	for _, listed := range []bool{true, false} {
+		created := status(
+			t,
+			owner.Do(
+				"POST",
+				"/api/stock",
+				map[string]any{
+					"material_id": material, "weight": "5", "price": "3", "is_listed": listed,
+				},
+			),
+			200,
+		)
+		result := status(t, owner.Do("GET", "/api/stock/"+created.Body["id"].(string), nil), 200)
+		if result.Body["is_listed"] != listed {
+			t.Fatalf("is_listed %v was saved as %v", listed, result.Body["is_listed"])
+		}
+	}
+}
+
 func TestStockUpdateZeroPrice(t *testing.T) {
 	app := testutil.Server(t)
 	owner, ownerID := domainUser(t, app, "business")

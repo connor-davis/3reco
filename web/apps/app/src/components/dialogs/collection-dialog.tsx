@@ -18,7 +18,7 @@ import { useCollectorSelection } from '@/lib/api/collectors';
 import { useMaterials } from '@/lib/api/materials';
 import { useCreateCollection } from '@/lib/api/transactions';
 import { formatRand, lineCents, toCents } from '@/lib/format';
-import { quantityError } from '@/lib/quantity';
+import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
 
 const line = z.object({
   material_id: z.string().min(1, 'Pick a material.'),
@@ -135,7 +135,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
         {fields.map((field, index) => (
           <div
             key={field.id}
-            className="grid items-start gap-3 sm:grid-cols-[1fr_7rem_7rem_auto]"
+            className="grid items-start gap-3 sm:grid-cols-[1fr_11rem_12rem_auto]"
           >
             <SelectField
               control={control}
@@ -150,11 +150,13 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
               control={control}
               name={`lines.${index}.weight`}
               label="Weight (kg)"
+              counter={weightCounter()}
             />
             <DecimalField
               control={control}
               name={`lines.${index}.price`}
               label="R / kg"
+              counter={priceCounter()}
             />
             <IconButton
               label={`Remove line ${index + 1}`}
