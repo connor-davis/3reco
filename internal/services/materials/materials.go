@@ -152,7 +152,9 @@ func (service *Service) Delete(ctx context.Context, user auth.User, id string) e
 			err = service.store.Delete(ctx, id)
 			var failure *pgconn.PgError
 			if errors.As(err, &failure) && failure.Code == "23503" {
-				return apperr.Conflict("This material is in use.")
+				return apperr.Conflict(
+					"This material is used in past trades or stock, so it can't be deleted.",
+				)
 			}
 
 			return err
