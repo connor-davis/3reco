@@ -33,7 +33,7 @@ export function useCollectorStats(phone: string) {
     `/collectors/stats${queryString({ phone })}`,
     ['transactions:me'],
     true,
-    !!phone
+    !!phone.trim()
   );
 }
 export function useCreateCollector() {

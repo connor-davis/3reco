@@ -134,6 +134,7 @@ function StockPage() {
     {
       accessorKey: 'material_name',
       header: 'Material',
+      meta: { sticky: 'left' },
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
           <MaterialMark className="size-9 rounded-lg" />
@@ -163,6 +164,7 @@ function StockPage() {
     {
       id: 'actions',
       header: 'Actions',
+      meta: { sticky: 'right' },
       enableSorting: false,
       cell: ({ row }) => actions(row.original),
     },

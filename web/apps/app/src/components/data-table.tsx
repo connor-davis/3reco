@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import { useIsCompact } from '@/hooks/use-mobile';
 
 declare module '@tanstack/react-table' {
@@ -26,6 +27,7 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     align?: 'left' | 'right';
+    sticky?: 'left' | 'right';
   }
 }
 
@@ -39,7 +41,7 @@ type DataTableProps<T> = {
 
 /**
  * The shadcn Table with TanStack Table doing columns and sorting. Below
- * 780px the same rows render as cards, so nothing scrolls sideways.
+ * 1100px the same rows render as cards, so nothing scrolls sideways.
  */
 export function DataTable<T>({
   columns,
@@ -74,15 +76,23 @@ export function DataTable<T>({
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((group) => (
-                <TableRow key={group.id}>
+                <TableRow
+                  key={group.id}
+                  className="group bg-background [--row-background:var(--background)] hover:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))]"
+                >
                   {group.headers.map((header) => (
                     <TableHead
                       key={header.id}
-                      className={
-                        header.column.columnDef.meta?.align === 'right'
-                          ? 'text-right tabular-nums'
-                          : undefined
-                      }
+                      className={cn(
+                        header.column.columnDef.meta?.align === 'right' &&
+                          'text-right tabular-nums',
+                        header.column.columnDef.meta?.sticky &&
+                          'sticky z-20 bg-[var(--row-background)] border-border',
+                        header.column.columnDef.meta?.sticky === 'left' &&
+                          'left-0 border-r',
+                        header.column.columnDef.meta?.sticky === 'right' &&
+                          'right-0 border-l'
+                      )}
                     >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
                         <SortButton
@@ -108,15 +118,23 @@ export function DataTable<T>({
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  className="group bg-background [--row-background:var(--background)] hover:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))] data-[state=selected]:[--row-background:var(--muted)] has-aria-expanded:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))]"
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={
-                        cell.column.columnDef.meta?.align === 'right'
-                          ? 'text-right whitespace-nowrap tabular-nums'
-                          : undefined
-                      }
+                      className={cn(
+                        cell.column.columnDef.meta?.align === 'right' &&
+                          'text-right whitespace-nowrap tabular-nums',
+                        cell.column.columnDef.meta?.sticky &&
+                          'sticky z-10 bg-[var(--row-background)] border-border transition-colors',
+                        cell.column.columnDef.meta?.sticky === 'left' &&
+                          'left-0 border-r',
+                        cell.column.columnDef.meta?.sticky === 'right' &&
+                          'right-0 border-l'
+                      )}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

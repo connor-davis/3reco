@@ -17,6 +17,64 @@ func collectorBody(phone string) map[string]any {
 		"street_address": "Private Street", "city": "Cape Town", "province": "Western Cape", "area_code": 8000}
 }
 
+func TestCollectorOptionalContacts(t *testing.T) {
+	app := testutil.Server(t)
+	creator, _ := domainUser(t, app, "business")
+	other, _ := domainUser(t, app, "business")
+	admin, _ := domainUser(t, app, "admin")
+
+	for _, email := range []string{"first@example.test", "second@example.test"} {
+		body := collectorBody("")
+		body["email"] = email
+		id := status(t, creator.Do("POST", "/api/collectors", body), 200).Body["id"].(string)
+		if got := tradeText(t, app, `SELECT (phone IS NULL AND normalized_phone IS NULL)::text
+			FROM collectors WHERE id=$1`, id); got != "true" {
+			t.Fatal("missing phone was not stored as NULL")
+		}
+
+		status(t, creator.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Email only"}), 200)
+		status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Forged"}), 404)
+		missing := status(t, creator.Do("PATCH", "/api/collectors/"+id, map[string]any{"email": ""}), 400)
+		fields := missing.Body["fields"].(map[string]any)
+		for _, field := range []string{"email", "phone"} {
+			if fields[field] != "Add an email or a phone number." {
+				t.Fatalf("missing %s error: %s", field, missing.Raw)
+			}
+		}
+
+		items := pageItems(t, status(t, creator.Do("GET", "/api/collectors?q="+email, nil), 200))
+		if len(items) != 1 {
+			t.Fatal("email-only collector was not searchable")
+		}
+		status(t, admin.Do("DELETE", "/api/collectors/"+id,
+			map[string]any{"confirmation_value": "wrong"}), 400)
+		status(t, admin.Do("DELETE", "/api/collectors/"+id,
+			map[string]any{"confirmation_value": email}), 200)
+	}
+
+	// Both phone-less records must coexist, not merely save after a deletion.
+	for range 2 {
+		status(t, creator.Do("POST", "/api/collectors", collectorBody("")), 200)
+	}
+
+	body := collectorBody(domainPhone())
+	body["email"] = ""
+	id := status(t, creator.Do("POST", "/api/collectors", body), 200).Body["id"].(string)
+	status(t, creator.Do("PATCH", "/api/collectors/"+id,
+		map[string]any{"email": "replacement@example.test", "phone": ""}), 200)
+	status(t, creator.Do("PATCH", "/api/collectors/"+id,
+		map[string]any{"phone": "invalid"}), 400)
+
+	body["phone"] = ""
+	missing := status(t, creator.Do("POST", "/api/collectors", body), 400)
+	fields := missing.Body["fields"].(map[string]any)
+	for _, field := range []string{"email", "phone"} {
+		if fields[field] != "Add an email or a phone number." {
+			t.Fatalf("missing %s error: %s", field, missing.Raw)
+		}
+	}
+}
+
 // noPrivateKeysButMasks is noPrivateKeys for collectors, which show the account
 // number and e-wallet id masked to everyone who may not see them in full.
 func noPrivateKeysButMasks(t *testing.T, value any) {

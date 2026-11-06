@@ -225,8 +225,8 @@ func (records *Store) Create(ctx context.Context, item Collector) error {
 		ctx,
 		`INSERT INTO collectors(id,name,email,phone,image,bank_account_holder_name,bank_name,bank_account_number,bank_branch_code,bank_account_type,payout_method,ewallet_platform_name,ewallet_payment_id,street_address,city,province,
  normalized_phone,area_code,created_by_user_id,created_by_business_id)
- VALUES($1,$2,NULLIF($3,''),$4,NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),NULLIF($8,''),NULLIF($9,''),NULLIF($10,''),NULLIF($11,''),NULLIF($12,''),NULLIF($13,''),NULLIF($14,''),NULLIF($15,''),NULLIF($16,''),
- $17,$18,$19,$20)`,
+ VALUES($1,$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),NULLIF($8,''),NULLIF($9,''),NULLIF($10,''),NULLIF($11,''),NULLIF($12,''),NULLIF($13,''),NULLIF($14,''),NULLIF($15,''),NULLIF($16,''),
+ NULLIF($17,''),$18,$19,$20)`,
 		item.ID,
 		item.Name,
 		item.Email,
@@ -263,7 +263,7 @@ func (records *Store) Save(ctx context.Context, item Collector) error {
 		`UPDATE collectors SET
 		name=$2,
 		email=NULLIF($3,''),
-		phone=$4,
+		phone=NULLIF($4,''),
 		image=NULLIF($5,''),
 		bank_account_holder_name=NULLIF($6,''),
 		bank_name=NULLIF($7,''),
@@ -276,7 +276,7 @@ func (records *Store) Save(ctx context.Context, item Collector) error {
 		street_address=NULLIF($14,''),
 		city=NULLIF($15,''),
 		province=NULLIF($16,''),
-		normalized_phone=$17,area_code=$18,updated_at=now() WHERE id=$1`,
+		normalized_phone=NULLIF($17,''),area_code=$18,updated_at=now() WHERE id=$1`,
 		item.ID,
 		item.Name,
 		item.Email,
@@ -337,6 +337,10 @@ func (records *Store) Delete(ctx context.Context, id string) error {
 
 // ByPhone scopes phone lookups in SQL so an unrelated business cannot distinguish missing records.
 func (records *Store) ByPhone(ctx context.Context, phone, creator string) (Collector, error) {
+	if phone == "" {
+		return Collector{}, pgx.ErrNoRows
+	}
+
 	var item Collector
 	err := records.scan(
 		records.db.Q(ctx).QueryRow(

@@ -45,6 +45,33 @@ func printed(report *importer.Report) string {
 	return out.String()
 }
 
+func TestImportEmailOnlyCollectors(t *testing.T) {
+	app := testutil.Server(t)
+	fixture := newFixture()
+	original := fixture.tables["collectors"][0]
+	delete(original, "phone")
+	delete(original, "normalizedPhone")
+	original["email"] = "collector@example.test"
+
+	second := map[string]any{}
+	for key, value := range original {
+		second[key] = value
+	}
+	second["_id"] = "emailonlycollector000000000002"
+	second["phone"], second["normalizedPhone"] = "", ""
+	fixture.tables["collectors"] = append(fixture.tables["collectors"], second)
+
+	report, err := importer.Run(context.Background(), app.DB, app.Storage,
+		testutil.Cipher(t), fixture.zipFile(t))
+	if err != nil {
+		t.Fatalf("email-only import: %v\n%s", err, printed(report))
+	}
+	if count := tradeText(t, app, `SELECT count(*)::text FROM collectors
+		WHERE phone IS NULL AND normalized_phone IS NULL`); count != "2" {
+		t.Fatalf("NULL phones: %s", count)
+	}
+}
+
 // storedKeys lists every object in the test bucket.
 func storedKeys(t *testing.T, app *testutil.App) []string {
 	t.Helper()

@@ -1,6 +1,11 @@
 package importer
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/connor-davis/3reco/internal/services/profile"
+)
 
 var notificationTypes = []string{
 	"request_received", "request_accepted", "request_rejected", "request_cancelled",
@@ -13,8 +18,8 @@ func (p *planner) planCollectors() {
 	fields := []field{
 		{col: "name", key: "name", kind: kText, required: true},
 		{col: "email", key: "email", kind: kText},
-		{col: "phone", key: "phone", kind: kText, required: true},
-		{col: "normalized_phone", key: "normalizedPhone", kind: kText, required: true},
+		{col: "phone", key: "phone", kind: kText},
+		{col: "normalized_phone", key: "normalizedPhone", kind: kText},
 		{col: "image", key: "image", kind: kText},
 		{col: "bank_account_holder_name", key: "bankAccountHolderName", kind: kText},
 		{col: "bank_name", key: "bankName", kind: kText},
@@ -37,6 +42,20 @@ func (p *planner) planCollectors() {
 	for _, d := range p.docs["collectors"] {
 		r := newRow(p.rep, "collectors", d)
 		out := r.build(fields)
+		phone, _ := out["phone"].(string)
+		email, _ := out["email"].(string)
+		if strings.TrimSpace(phone) == "" {
+			delete(out, "phone")
+			delete(out, "normalized_phone")
+			if strings.TrimSpace(email) == "" {
+				r.fail("phone", "Add an email or a phone number.")
+			}
+		} else if normalized, err := profile.Phone(phone); err != nil {
+			r.fail("phone", err.Error())
+		} else {
+			out["phone"], out["normalized_phone"] = normalized, normalized
+		}
+
 		p.seal(r, out, "bank_account_number", "ewallet_payment_id")
 		r.created(out, true)
 

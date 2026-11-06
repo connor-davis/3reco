@@ -13,6 +13,13 @@ func validate(item store.Collector) error {
 		return apperr.Field("name", "Enter the collector name.")
 	}
 
+	if item.Email == "" && item.Phone == "" {
+		return apperr.BadRequest("Please fix the highlighted fields.", map[string]string{
+			"email": "Add an email or a phone number.",
+			"phone": "Add an email or a phone number.",
+		})
+	}
+
 	if item.Email != "" {
 		address, err := mail.ParseAddress(item.Email)
 		if err != nil || address.Address != item.Email {

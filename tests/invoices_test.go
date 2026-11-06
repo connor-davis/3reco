@@ -160,6 +160,33 @@ func TestInvoiceReadsFloatAreaCode(t *testing.T) {
 	}
 }
 
+func TestInvoiceAndExportWithoutCollectorPhone(t *testing.T) {
+	w := newTradeWorld(t)
+	body := collectorBody("")
+	collector := status(t, w.buyer.c.Do("POST", "/api/collectors", body), 200).Body["id"].(string)
+	got := w.buyer.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(collector, "", tradeLine(w.material, "2", "3.25")))
+	tradeWant(t, "email-only collection", got, 200)
+	id := got.Body["transaction_id"].(string)
+	testutil.WaitMail(t, w.buyer.email, strings.ToUpper(id[len(id)-8:]))
+
+	document, err := tstore.New(w.app.DB, testutil.Cipher(t)).Document(context.Background(), id)
+	if err != nil || document.Seller.Phone != "" || document.Seller.Email != "collector@example.test" {
+		t.Fatalf("email-only document: %+v, %v", document.Seller, err)
+	}
+
+	invoice := status(t, w.buyer.c.Do("GET", "/api/transactions/"+id+"/invoice", nil), 200)
+	if !bytes.Contains(invoice.Raw, []byte("collector@example.test")) ||
+		bytes.Contains(invoice.Raw, []byte("null")) {
+		t.Fatal("email-only invoice has missing email or literal null")
+	}
+
+	rows := csvRows(t, w.buyer.c, "/api/exports/collections")
+	if len(rows) != 2 || rows[1][11] != "" || rows[1][10] != "collector@example.test" {
+		t.Fatalf("email-only export: %v", rows)
+	}
+}
+
 func TestInvoiceSnapshotAndRollback(t *testing.T) {
 	w := newTradeWorld(t)
 	collector := tradeCollector(t, w.app, w.buyer, "+27800000009")
