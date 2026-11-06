@@ -116,6 +116,7 @@ function CollectorsPage() {
     {
       accessorKey: 'name',
       header: 'Collector',
+      meta: { sticky: 'left' },
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
           <PersonAvatar name={row.original.name} />
@@ -129,9 +130,11 @@ function CollectorsPage() {
       enableSorting: false,
       cell: ({ row }) => (
         <span>
-          <span className="block">{row.original.phone ?? 'Not shared'}</span>
+          <span className="block">
+            {row.original.phone || row.original.email || 'Not shared'}
+          </span>
           <span className="text-xs text-muted-foreground">
-            {row.original.email}
+            {row.original.phone && row.original.email}
           </span>
         </span>
       ),
@@ -151,6 +154,7 @@ function CollectorsPage() {
     {
       id: 'actions',
       header: 'Actions',
+      meta: { sticky: 'right' },
       enableSorting: false,
       cell: ({ row }) => actions(row.original),
     },
@@ -170,7 +174,7 @@ function CollectorsPage() {
       />
       <div className="mb-6">
         <SearchBox
-          label="Search collectors or phone numbers"
+          label="Search by name, email or phone"
           value={query}
           onChange={setQuery}
         />
@@ -195,7 +199,10 @@ function CollectorsPage() {
                   <span className="font-medium">{collector.name}</span>
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  {collector.phone ?? 'Not shared'} · {collector.city}
+                  {[collector.phone, collector.email]
+                    .filter(Boolean)
+                    .join(' · ') || 'Not shared'}{' '}
+                  · {collector.city}
                 </p>
                 <p className="text-sm">{payoutText(collector)}</p>
                 {actions(collector)}

@@ -125,6 +125,7 @@ function UsersPage() {
     {
       accessorKey: 'name',
       header: 'Person',
+      meta: { sticky: 'left' },
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
           <PersonAvatar name={row.original.name} />
@@ -160,6 +161,7 @@ function UsersPage() {
     {
       id: 'actions',
       header: 'Actions',
+      meta: { sticky: 'right' },
       enableSorting: false,
       cell: ({ row }) => removeButton(row.original),
     },

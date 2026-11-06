@@ -74,6 +74,7 @@ function MaterialsPage() {
     {
       accessorKey: 'name',
       header: 'Material',
+      meta: { sticky: 'left' },
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
           <MaterialMark className="size-9 rounded-lg" />
@@ -97,6 +98,7 @@ function MaterialsPage() {
     {
       id: 'actions',
       header: 'Actions',
+      meta: { sticky: 'right' },
       cell: ({ row }) => actionsFor(row.original),
     },
   ];

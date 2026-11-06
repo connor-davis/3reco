@@ -290,19 +290,21 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				return err
 			}
 
-			phone, err := profile.Phone(item.Phone)
-			if err != nil {
-				return err
-			}
+			if item.Phone != "" {
+				phone, err := profile.Phone(item.Phone)
+				if err != nil {
+					return err
+				}
 
-			item.Phone = phone
-			conflict, err := service.store.PhoneConflict(ctx, phone)
-			if err != nil {
-				return err
-			}
+				item.Phone = phone
+				conflict, err := service.store.PhoneConflict(ctx, phone)
+				if err != nil {
+					return err
+				}
 
-			if conflict {
-				return apperr.Conflict("That phone number belongs to a business.")
+				if conflict {
+					return apperr.Conflict("That phone number belongs to a business.")
+				}
 			}
 
 			if creating {

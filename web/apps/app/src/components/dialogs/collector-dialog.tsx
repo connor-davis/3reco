@@ -50,8 +50,14 @@ function schemaFor(collector?: Collector) {
   return z
     .object({
       name: z.string().min(2, 'Enter the full name.'),
-      email: z.string().email('Enter a valid email.'),
-      phone: phoneSchema,
+      email: z
+        .string()
+        .trim()
+        .pipe(z.string().email('Enter a valid email.').or(z.literal(''))),
+      phone: z
+        .string()
+        .trim()
+        .pipe(phoneSchema.or(z.literal(''))),
       street_address: z.string().min(3, 'Enter the street address.'),
       city: z.string().min(2, 'Enter the city or suburb.'),
       area_code: z.string().regex(/^\d{4}$/, 'The area code is 4 digits.'),
@@ -68,6 +74,11 @@ function schemaFor(collector?: Collector) {
     .superRefine((values, ctx) => {
       const fail = (path: string, message: string) =>
         ctx.addIssue({ code: 'custom', path: [path], message });
+
+      if (!values.email && !values.phone) {
+        fail('email', 'Add an email or a phone number.');
+        fail('phone', 'Add an email or a phone number.');
+      }
 
       if (values.payout_method === 'bank') {
         if (!values.bank_account_holder_name.trim()) {

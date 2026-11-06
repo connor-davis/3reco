@@ -31,6 +31,7 @@ line when you add an owner.
 | `0010_keep_transactions.sql` | Blocks DELETE and TRUNCATE on `transactions`, `transaction_items` and `transaction_receipts` (trade records are kept; personal details go by UPDATE) |
 | `0011_chat_activity.sql` | Indexed inbox activity and message broadcasts to both participants and `admin:requests` |
 | `0012_guest_role.sql` | Every user has a role: backfills no-role users to `guest`, adds `guest` to the role check, default `guest`, NOT NULL |
+| `0013_collector_optional_phone.sql` | Allows absent collector phones as NULL |
 
 Never rename a merged migration. Add a new file.
 

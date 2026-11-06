@@ -122,7 +122,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             label="Collector"
             options={(collectors.data ?? []).map((item) => ({
               value: item.id,
-              label: item.name,
+              label: `${item.name} · ${item.phone || item.email || ''}`,
             }))}
           />
           <TextField
