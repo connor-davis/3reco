@@ -52,8 +52,8 @@ type Props = {
 
 const typeOptions = [
   { value: 'all', label: 'All types' },
-  { value: 'b2b', label: 'B2B' },
-  { value: 'c2b', label: 'C2B' },
+  { value: 'b2b', label: 'Business trade' },
+  { value: 'c2b', label: 'Collector purchase' },
 ];
 
 const csvOptions = [
@@ -104,7 +104,9 @@ export function RecordList({
 
     const day = new Date(dayOf(row));
     if (range?.from && day < range.from) return false;
-    if (range?.to && day > range.to) return false;
+    const end = range?.to && new Date(range.to);
+    end?.setHours(23, 59, 59, 999);
+    if (end && day > end) return false;
 
     const text = `${row.id} ${row.invoice_number} ${row.seller.name} ${row.buyer.name} ${row.items
       .map((item) => item.material_name)
@@ -220,7 +222,9 @@ export function RecordList({
                 </p>
               </ItemContent>
               <ItemActions className="flex-wrap">
-                <Badge variant="outline">{row.type.toUpperCase()}</Badge>
+                <Badge variant="outline">
+                  {row.type === 'b2b' ? 'Business trade' : 'Collector purchase'}
+                </Badge>
                 <span className="w-28 text-right font-semibold tabular-nums">
                   {formatRand(toCents(row.total_price))}
                 </span>

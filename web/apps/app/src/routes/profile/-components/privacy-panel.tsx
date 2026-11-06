@@ -100,8 +100,8 @@ export function PrivacyPanel() {
         <h3 className="font-medium">Delete my account</h3>
         <p className="text-sm text-muted-foreground">
           Your account and profile will be removed, open requests cancelled, and
-          you will be signed out. Completed trades keep an anonymised record.
-          This cannot be undone.
+          you will be signed out. Trade records stay because they must be kept
+          by law, with your personal details removed. This cannot be undone.
         </p>
         <Button
           className="min-h-11"
@@ -121,7 +121,7 @@ export function PrivacyPanel() {
           }
         }}
         title="Delete your account?"
-        description="Re-enter your password and type DELETE to confirm permanent removal."
+        description="Your account and personal details will be removed. Trade records stay because they must be kept by law, with your personal details removed. Re-enter your password and type DELETE to confirm. This cannot be undone."
       >
         <form
           className="space-y-4"
@@ -182,7 +182,7 @@ export function PrivacyPanel() {
               variant="destructive"
               disabled={erase.isPending}
             >
-              {erase.isPending ? 'Deleting…' : 'Delete permanently'}
+              {erase.isPending ? 'Deleting…' : 'Delete my account'}
             </Button>
           </div>
         </form>

@@ -115,7 +115,20 @@ export function CardsSkeleton({ cards = 6 }: { cards?: number }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: cards }, (_, index) => (
-        <Skeleton key={index} className="h-64 rounded-2xl" />
+        <div key={index} aria-hidden="true">
+          <Skeleton className="aspect-[4/3] rounded-2xl" />
+          <div className="mt-3.5 space-y-1.5">
+            <div className="min-h-12 space-y-2 py-1">
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-4 w-3/5" />
+            </div>
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="h-5 w-2/5" />
+            <div className="flex min-h-11 items-center">
+              <Skeleton className="h-5 w-3/5" />
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   );

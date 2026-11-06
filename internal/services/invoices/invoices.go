@@ -156,7 +156,7 @@ func Compose(document store.Document) pdf.Invoice {
 	}
 	for _, item := range trade.Items {
 		invoice.Lines = append(invoice.Lines, pdf.Line{
-			Material: item.MaterialName, Weight: pdf.Decimal(item.Weight),
+			Material: item.MaterialName, Weight: item.Weight,
 			Price: pdf.Decimal(item.Price), Total: pdf.Product(item.Weight, item.Price),
 		})
 	}

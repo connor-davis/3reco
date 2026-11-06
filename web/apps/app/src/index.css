@@ -18,6 +18,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: oklch(0.648 0.2 131.684);
+  --primary-hover: oklch(0.69 0.2 131.684);
   --primary-foreground: oklch(0.18 0.04 131);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -29,7 +30,7 @@
   /* Small link text needs 4.5:1; the exact brand green only reaches 3:1 on white. */
   --link: oklch(0.46 0.14 131.684);
   --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
+  --input: oklch(0.55 0.004 286.32);
   --ring: oklch(0.648 0.2 131.684);
   --chart-1: oklch(0.871 0.15 131);
   --chart-2: oklch(0.76 0.19 131);
@@ -69,7 +70,7 @@
   --destructive: oklch(0.86 0.15 22.216);
   --link: oklch(0.768 0.2 130.85);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --input: oklch(0.65 0.004 286.32);
   --ring: oklch(0.768 0.233 130.85);
   --sidebar: oklch(0.141 0.005 285.823);
   --sidebar-foreground: oklch(0.985 0 0);
@@ -113,6 +114,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -138,5 +140,8 @@
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
+  }
+  button:not(:disabled):not([aria-disabled='true']) {
+    cursor: pointer;
   }
 }

@@ -145,12 +145,14 @@ function StockPage() {
     {
       id: 'weight',
       header: 'Weight',
+      meta: { align: 'right' },
       enableSorting: false,
       cell: ({ row }) => <Weights item={row.original} />,
     },
     {
       accessorKey: 'price',
       header: 'Price / kg',
+      meta: { align: 'right' },
       cell: ({ row }) => formatRate(row.original.price),
     },
     {

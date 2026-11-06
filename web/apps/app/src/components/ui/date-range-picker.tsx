@@ -23,6 +23,7 @@ export function DateRangePicker({
   fullWidth = false,
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<DateRange | undefined>(value);
 
   const label = value?.from
     ? value.to
@@ -31,15 +32,19 @@ export function DateRangePicker({
     : placeholder;
 
   function handleSelect(range: DateRange | undefined) {
-    onChange(range);
-    // Close only once both ends of the range are picked
-    if (range?.from && range?.to) setOpen(false);
+    setDraft(range);
   }
 
   return (
     <div className={cn('flex items-center gap-1', fullWidth && 'w-full')}>
       <div className={cn(fullWidth && 'min-w-0 flex-1')}>
-        <Popover open={open} onOpenChange={(v) => setOpen(v)}>
+        <Popover
+          open={open}
+          onOpenChange={(next) => {
+            if (next) setDraft(value);
+            setOpen(next);
+          }}
+        >
           <PopoverTrigger
             render={(props) => (
               <Button
@@ -63,12 +68,32 @@ export function DateRangePicker({
             )}
           />
           <PopoverContent align={align} className="w-auto p-0">
-            <Calendar mode="range" selected={value} onSelect={handleSelect} />
+            <Calendar mode="range" selected={draft} onSelect={handleSelect} />
+            <div className="flex justify-end gap-2 border-t p-3">
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!draft?.from}
+                onClick={() => {
+                  if (!draft?.from) return;
+                  onChange({ from: draft.from, to: draft.to ?? draft.from });
+                  setOpen(false);
+                }}
+              >
+                Apply dates
+              </Button>
+            </div>
           </PopoverContent>
         </Popover>
       </div>
       {value?.from && (
-        <Button variant="ghost" size="icon" onClick={() => onChange(undefined)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Clear dates"
+          onClick={() => onChange(undefined)}
+        >
           <XIcon className="size-4" />
         </Button>
       )}

@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthShell } from '@/components/auth-shell';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useSendVerification, useVerifyEmail } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
 
@@ -24,6 +26,7 @@ function VerifyEmailPage() {
   const { token, email } = Route.useSearch();
   const verify = useVerifyEmail();
   const send = useSendVerification();
+  const [resendEmail, setResendEmail] = useState(email ?? '');
   // A token works once, so StrictMode's second effect run must not resend it.
   const sentToken = useRef<string | null>(null);
 
@@ -43,13 +46,25 @@ function VerifyEmailPage() {
 
   return (
     <AuthShell
-      title={token ? 'Verifying your email.' : 'Check your email.'}
+      title={
+        verify.isSuccess
+          ? 'Email verified.'
+          : failure
+            ? 'This link could not be verified.'
+            : token
+              ? 'Verifying your email.'
+              : 'Check your email.'
+      }
       description={
-        token
-          ? 'One moment while we check your link.'
-          : email
-            ? `We sent a verification link to ${email}.`
-            : 'We sent you a verification link.'
+        verify.isSuccess
+          ? 'Your email is confirmed. Sign in to continue.'
+          : failure
+            ? 'Enter your email below to request a new link.'
+            : token
+              ? 'One moment while we check your link.'
+              : email
+                ? `We sent a verification link to ${email}.`
+                : 'We sent you a verification link.'
       }
       feedback={
         verify.isSuccess
@@ -76,24 +91,35 @@ function VerifyEmailPage() {
           <MailCheck className="size-5" aria-hidden="true" />
         )}
       </span>
-      {!token && (
+      {(!token || failure) && (
         <>
           <p className="text-sm text-muted-foreground">
             Check your spam folder too.
           </p>
-          {email && (
-            <Button
-              className="w-full"
-              disabled={send.isPending}
-              onClick={() =>
-                send.mutate(email, {
-                  onSuccess: () =>
-                    toast.success('Verification email sent. Check your inbox.'),
-                  onError: () =>
-                    toast.error('We could not send the email. Try again.'),
-                })
-              }
-            >
+          <form
+            className="w-full space-y-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              send.mutate(resendEmail.trim(), {
+                onSuccess: () =>
+                  toast.success(
+                    'If this email needs verification, we have sent a link. Check your inbox.'
+                  ),
+                onError: () =>
+                  toast.error('We could not send the email. Try again.'),
+              });
+            }}
+          >
+            <Label htmlFor="verification-email">Email</Label>
+            <Input
+              id="verification-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={resendEmail}
+              onChange={(event) => setResendEmail(event.target.value)}
+            />
+            <Button type="submit" className="w-full" disabled={send.isPending}>
               {send.isPending ? (
                 <>
                   <Spinner data-icon="inline-start" /> Sending…
@@ -102,17 +128,8 @@ function VerifyEmailPage() {
                 'Resend verification email'
               )}
             </Button>
-          )}
+          </form>
         </>
-      )}
-      {token && failure && email && (
-        <Link
-          to="/verify-email"
-          search={{ email }}
-          className="inline-flex min-h-11 items-center underline"
-        >
-          Send a fresh link
-        </Link>
       )}
     </AuthShell>
   );

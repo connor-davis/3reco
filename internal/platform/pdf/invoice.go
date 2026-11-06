@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/go-pdf/fpdf"
 )
@@ -50,24 +51,43 @@ func Product(weight, price string) string {
 	return left.Mul(left, right).FloatString(2)
 }
 
+func grouped(value string) string {
+	whole, fraction, decimal := strings.Cut(value, ".")
+	sign := ""
+	if strings.HasPrefix(whole, "-") {
+		sign, whole = "-", strings.TrimPrefix(whole, "-")
+	}
+
+	for index := len(whole) - 3; index > 0; index -= 3 {
+		whole = whole[:index] + " " + whole[index:]
+	}
+
+	if decimal {
+		return sign + whole + "." + fraction
+	}
+
+	return sign + whole
+}
+
 // Render makes an A4 invoice with a repeating header, wrapped lines and page breaks.
 func Render(invoice Invoice) ([]byte, error) {
 	doc := fpdf.New("P", "mm", "A4", "")
 	doc.SetMargins(16, 35, 16)
 	doc.SetAutoPageBreak(true, 22)
-	doc.SetTitle("3rEco Invoice "+invoice.Number, true)
-	doc.SetAuthor("3rEco", false)
+	doc.SetTitle("3REco Invoice "+invoice.Number, true)
+	doc.SetAuthor("3REco", false)
 	// Keep text inspectable for document QA and simple downstream PDF readers.
 	doc.SetCompression(false)
 	text := doc.UnicodeTranslatorFromDescriptor("")
 
 	doc.SetHeaderFunc(func() {
-		doc.SetFillColor(104, 196, 11)
+		// sRGB conversion of oklch(0.648 0.2 131.684), clipped to gamut and rounded.
+		doc.SetFillColor(94, 165, 0)
 		doc.Rect(0, 0, 210, 27, "F")
 		doc.SetTextColor(20, 40, 10)
 		doc.SetFont("Helvetica", "B", 22)
 		doc.SetXY(16, 8)
-		doc.Cell(90, 10, "3rEco")
+		doc.Cell(90, 10, "3REco")
 		doc.SetFont("Helvetica", "B", 17)
 		doc.CellFormat(88, 10, "INVOICE", "", 0, "R", false, 0, "")
 		doc.SetTextColor(30, 30, 30)
@@ -76,7 +96,7 @@ func Render(invoice Invoice) ([]byte, error) {
 	doc.SetFooterFunc(func() {
 		doc.SetY(-16)
 		doc.SetFont("Helvetica", "", 8)
-		doc.CellFormat(178, 5, "This invoice was generated automatically by 3rEco.",
+		doc.CellFormat(178, 5, "This invoice was generated automatically by 3REco.",
 			"", 1, "C", false, 0, "")
 		doc.CellFormat(178, 4, fmt.Sprintf("Page %d", doc.PageNo()), "", 0, "C", false, 0, "")
 	})
@@ -102,7 +122,12 @@ func Render(invoice Invoice) ([]byte, error) {
 		doc.SetFont("Helvetica", "B", 9)
 		doc.SetFillColor(239, 245, 234)
 		for i, label := range []string{"Material", "Weight (kg)", "Price / kg (R)", "Total (R)"} {
-			doc.CellFormat([]float64{76, 34, 34, 34}[i], 8, label, "B", 0, "L", true, 0, "")
+			align := "R"
+			if i == 0 {
+				align = "L"
+			}
+
+			doc.CellFormat([]float64{76, 34, 34, 34}[i], 8, label, "B", 0, align, true, 0, "")
 		}
 		doc.Ln(8)
 		doc.SetFont("Helvetica", "", 9)
@@ -110,7 +135,11 @@ func Render(invoice Invoice) ([]byte, error) {
 	tableHeader()
 
 	for _, line := range invoice.Lines {
-		cells := []string{text(line.Material), line.Weight, line.Price, line.Total}
+		weight := strings.TrimRight(strings.TrimRight(line.Weight, "0"), ".")
+		if !strings.Contains(line.Weight, ".") {
+			weight = line.Weight
+		}
+		cells := []string{text(line.Material), grouped(weight), grouped(line.Price), grouped(line.Total)}
 		widths := []float64{76, 34, 34, 34}
 		// Split every cell, including unusually large exact amounts, to avoid overlaps.
 		wrapped := make([][][]byte, len(cells))
@@ -132,7 +161,12 @@ func Render(invoice Invoice) ([]byte, error) {
 					cell = string(lines[row])
 				}
 
-				doc.CellFormat(widths[column], 6, cell, "", 0, "L", false, 0, "")
+				align := "R"
+				if column == 0 {
+					align = "L"
+				}
+
+				doc.CellFormat(widths[column], 6, cell, "", 0, align, false, 0, "")
 			}
 			doc.Ln(6)
 		}
@@ -141,7 +175,7 @@ func Render(invoice Invoice) ([]byte, error) {
 
 	doc.Ln(4)
 	doc.SetFont("Helvetica", "B", 12)
-	doc.MultiCell(178, 8, "Grand total: R "+invoice.Total, "T", "R", false)
+	doc.MultiCell(178, 8, "Grand total: R "+grouped(invoice.Total), "T", "R", false)
 	doc.Ln(5)
 	doc.SetFont("Helvetica", "B", 10)
 	doc.MultiCell(178, 6, "Payment details", "", "L", false)
