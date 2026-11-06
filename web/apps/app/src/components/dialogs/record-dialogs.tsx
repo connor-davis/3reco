@@ -22,9 +22,6 @@ import {
 
 type Props = {
   record: Transaction | null;
-  // A collector sees the list row only: the API keeps the detail, invoice
-  // and receipts for the buyer, the business seller and staff.
-  readOnly?: boolean;
   onClose: () => void;
 };
 
@@ -33,22 +30,18 @@ const maxBytes = 5 * 1024 * 1024;
 const kinds = ['image/png', 'image/jpeg'];
 
 /** One trade: who, when, every line, the invoice and its receipts. */
-export function TransactionDialog({
-  record,
-  readOnly = false,
-  onClose,
-}: Props) {
+export function TransactionDialog({ record, onClose }: Props) {
   const { user } = useAuth();
-  const fresh = useTransaction(readOnly || !record ? '' : record.id);
+  const fresh = useTransaction(record?.id ?? '');
   const upload = useUploadReceipt(record?.id ?? '');
   const download = useDownloadReceipt(record?.id ?? '');
   const invoice = useDownloadInvoice();
   const [fileError, setFileError] = useState('');
   const shown = fresh.data ?? record;
 
-  // Receipts are for the people in the trade, not for staff looking on.
+  // Anyone who can open the trade may see its invoice and receipts, but only
+  // the people in it add receipts: not staff, and not the collector.
   const canUpload =
-    !readOnly &&
     !!shown &&
     !!user &&
     (shown.buyer.id === user.id ||
@@ -82,8 +75,7 @@ export function TransactionDialog({
       title={shown ? `Invoice ${shown.invoice_number}` : 'Transaction'}
       description="The lines, the invoice and the receipts for this trade."
       footer={
-        shown &&
-        !readOnly && (
+        shown && (
           <Button
             disabled={invoice.isPending}
             onClick={() =>
@@ -133,70 +125,66 @@ export function TransactionDialog({
               value={formatRand(toCents(shown.total_price))}
             />
           </dl>
-          {!readOnly && (
-            <>
-              <Separator />
-              <section aria-label="Receipts" className="space-y-3">
-                <h3 className="font-medium">
-                  Receipts ({shown.receipts.length} of {maxReceipts})
-                </h3>
-                {shown.receipts.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No receipts yet.
-                  </p>
-                )}
-                <ul className="space-y-2">
-                  {shown.receipts.map((receipt) => (
-                    <li
-                      key={receipt.id}
-                      className="flex items-center justify-between gap-3 text-sm"
+          <>
+            <Separator />
+            <section aria-label="Receipts" className="space-y-3">
+              <h3 className="font-medium">
+                Receipts ({shown.receipts.length} of {maxReceipts})
+              </h3>
+              {shown.receipts.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No receipts yet.
+                </p>
+              )}
+              <ul className="space-y-2">
+                {shown.receipts.map((receipt) => (
+                  <li
+                    key={receipt.id}
+                    className="flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="min-w-0 truncate">
+                      {receipt.file_name}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        download.mutate(receipt, {
+                          onError: (error) => toast.error(errorText(error)),
+                        })
+                      }
                     >
-                      <span className="min-w-0 truncate">
-                        {receipt.file_name}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          download.mutate(receipt, {
-                            onError: (error) => toast.error(errorText(error)),
-                          })
-                        }
-                      >
-                        Download
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-                {canUpload && shown.receipts.length < maxReceipts && (
-                  <Field data-invalid={fileError !== ''}>
-                    <FieldLabel htmlFor="receipt-file">
-                      Add a receipt
-                    </FieldLabel>
-                    <Input
-                      id="receipt-file"
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      disabled={upload.isPending}
-                      aria-invalid={fileError !== ''}
-                      onChange={(event) => {
-                        pick(event.target.files?.[0]);
-                        event.target.value = '';
-                      }}
-                    />
-                    <FieldDescription>
-                      PNG or JPEG, up to 5 MB. Up to {maxReceipts} receipts.
-                    </FieldDescription>
-                    {fileError && (
-                      <p role="alert" className="text-sm text-destructive">
-                        {fileError}
-                      </p>
-                    )}
-                  </Field>
-                )}
-              </section>
-            </>
-          )}
+                      Download
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              {canUpload && shown.receipts.length < maxReceipts && (
+                <Field data-invalid={fileError !== ''}>
+                  <FieldLabel htmlFor="receipt-file">Add a receipt</FieldLabel>
+                  <Input
+                    id="receipt-file"
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    disabled={upload.isPending}
+                    aria-invalid={fileError !== ''}
+                    onChange={(event) => {
+                      pick(event.target.files?.[0]);
+                      event.target.value = '';
+                    }}
+                  />
+                  <FieldDescription>
+                    PNG or JPEG, up to 5 MB. Up to {maxReceipts} receipts.
+                  </FieldDescription>
+                  {fileError && (
+                    <p role="alert" className="text-sm text-destructive">
+                      {fileError}
+                    </p>
+                  )}
+                </Field>
+              )}
+            </section>
+          </>
         </div>
       )}
     </ResponsiveOverlay>

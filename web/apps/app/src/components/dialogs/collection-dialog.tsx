@@ -17,7 +17,13 @@ import { Button } from '@/components/ui/button';
 import { useCollectorSelection } from '@/lib/api/collectors';
 import { useMaterials } from '@/lib/api/materials';
 import { useCreateCollection } from '@/lib/api/transactions';
-import { formatRand, lineCents, toCents } from '@/lib/format';
+import {
+  formatRand,
+  formatRate,
+  lineCents,
+  toCents,
+  today,
+} from '@/lib/format';
 import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
 
 const line = z.object({
@@ -26,18 +32,33 @@ const line = z.object({
     const message = quantityError(value);
     if (message) ctx.addIssue({ code: 'custom', message });
   }),
-  price: z
-    .string()
-    .refine(
-      (value) => /^\d{1,12}([.,]\d{1,2})?$/.test(value.trim()),
-      'Use up to 2 decimals.'
-    )
-    .refine((value) => toCents(value) > 0, 'Enter a price above R 0.00.'),
+  // The sign and zero come first, so "-1" is not told to use 2 decimals.
+  price: z.string().superRefine((value, ctx) => {
+    const text = value.trim();
+    const number = /^-?\d*[.,]?\d*$/.test(text) && /\d/.test(text);
+    let message = '';
+
+    if (number && (text.startsWith('-') || !/[1-9]/.test(text))) {
+      message = 'Enter a price above R 0.00.';
+    } else if (!/^\d{1,12}([.,]\d{1,2})?$/.test(text)) {
+      message = 'Use up to 2 decimals.';
+    } else if (toCents(text) <= 0) {
+      message = 'Enter a price above R 0.00.';
+    }
+
+    if (message) ctx.addIssue({ code: 'custom', message });
+  }),
 });
 
 const schema = z.object({
   collector_id: z.string().min(1, 'Pick the collector.'),
-  collection_day: z.string().min(1, 'Pick the collection date.'),
+  collection_day: z
+    .string()
+    .min(1, 'Pick the collection date.')
+    .refine(
+      (value) => value <= today(),
+      'The collection date cannot be in the future.'
+    ),
   lines: z
     .array(line)
     .min(1, 'Add at least one material.')
@@ -54,8 +75,6 @@ type Values = z.infer<typeof schema>;
 type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 
 const emptyLine = { material_id: '', weight: '', price: '' };
-
-const today = () => new Date().toISOString().slice(0, 10);
 
 const exact = (value: string) => value.trim().replace(',', '.');
 
@@ -75,7 +94,11 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
 
-  const total = watch('lines').reduce(
+  const sorted = [...(materials.data?.items ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+  const lines = watch('lines');
+  const total = lines.reduce(
     (sum, item) => sum + lineCents(item.price || '0', item.weight || '0'),
     0
   );
@@ -130,6 +153,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             name="collection_day"
             label="Collection date"
             type="date"
+            max={today()}
           />
         </div>
         {fields.map((field, index) => (
@@ -141,7 +165,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
               control={control}
               name={`lines.${index}.material_id`}
               label="Material"
-              options={(materials.data?.items ?? []).map((item) => ({
+              options={sorted.map((item) => ({
                 value: item.id,
                 label: item.name,
               }))}
@@ -168,6 +192,17 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             </IconButton>
           </div>
         ))}
+        {lines.map((item, index) => {
+          const base = sorted.find((m) => m.id === item.material_id)?.price;
+          const cents = toCents(item.price || '0');
+
+          return base && cents > 0 && cents < toCents(base) ? (
+            <p key={index} className="text-sm text-muted-foreground">
+              Line {index + 1} is below the base price of {formatRate(base)}.
+              You can still save.
+            </p>
+          ) : null;
+        })}
         {formState.errors.lines?.root?.message && (
           <p role="alert" className="text-sm text-destructive">
             {formState.errors.lines.root.message}

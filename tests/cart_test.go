@@ -39,7 +39,7 @@ func TestCartOwnershipAndValidation(t *testing.T) {
 	}
 
 	if len(cart.Items) != 1 || cart.Items[0].StockID != stockID || cart.Items[0].Weight != "2.5" ||
-		cart.Items[0].Price != "3.1234567890123456789" {
+		cart.Items[0].Price != "3.12" {
 		t.Fatalf("cart: %s", result.Raw)
 	}
 

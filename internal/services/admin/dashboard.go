@@ -226,7 +226,7 @@ func fill(days []store.Day, start, end time.Time) ([]store.Day, Totals) {
 		Count:  count,
 		Value:  value.FloatString(2),
 		Weight: weight.FloatString(3),
-		Carbon: carbon.FloatString(3),
+		Carbon: carbon.FloatString(0),
 	}
 }
 

@@ -173,26 +173,30 @@ function ListingDetail({ listing }: { listing: Listing }) {
           className="space-y-4"
           noValidate
         >
-          <DecimalField
-            control={form.control}
-            name="weight"
-            label="Quantity (kg)"
-            counter={weightCounter(listing.weight)}
-            description="Your cart keeps this quantity. You can change it before sending your request."
-          />
-          {problem && !form.formState.errors.weight && (
-            <p role="alert" className="text-sm text-destructive">
-              {problem}
-            </p>
+          {!own && (
+            <>
+              <DecimalField
+                control={form.control}
+                name="weight"
+                label="Quantity (kg)"
+                counter={weightCounter(listing.weight)}
+                description="Your cart keeps this quantity. You can change it before sending your request."
+              />
+              {problem && !form.formState.errors.weight && (
+                <p role="alert" className="text-sm text-destructive">
+                  {problem}
+                </p>
+              )}
+              <p>
+                Estimated total{' '}
+                <strong className="tabular-nums">
+                  {problem
+                    ? 'Enter a valid quantity'
+                    : formatRand(lineCents(listing.price, weight))}
+                </strong>
+              </p>
+            </>
           )}
-          <p>
-            Estimated total{' '}
-            <strong className="tabular-nums">
-              {problem
-                ? 'Enter a valid quantity'
-                : formatRand(lineCents(listing.price, weight))}
-            </strong>
-          </p>
           {user?.role === 'business' && !own ? (
             <DataState
               query={cart}

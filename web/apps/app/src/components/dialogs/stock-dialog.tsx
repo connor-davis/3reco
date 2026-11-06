@@ -80,12 +80,15 @@ export function StockDialog({ open, onOpenChange, stock }: Props) {
       }
       onOpenChange(false);
     } catch (error) {
-      if (error instanceof ApiError && error.fields) {
-        for (const [name, message] of Object.entries(error.fields)) {
-          if (name in values) setError(name as keyof Values, { message });
-        }
+      // A message on its own field is enough; the banner is for the rest.
+      const named =
+        error instanceof ApiError && error.fields
+          ? Object.entries(error.fields).filter(([name]) => name in values)
+          : [];
+      for (const [name, message] of named) {
+        setError(name as keyof Values, { message });
       }
-      setServerError(errorText(error));
+      if (!named.length) setServerError(errorText(error));
     }
   }
 
@@ -133,7 +136,11 @@ export function StockDialog({ open, onOpenChange, stock }: Props) {
           name="price"
           label="Price (R / kg)"
           counter={priceCounter(base)}
-          description={base ? `At least ${formatRate(base)}.` : undefined}
+          description={
+            base
+              ? `At least ${formatRate(base)}.`
+              : 'Pick a material to see its lowest price.'
+          }
         />
         <Field orientation="horizontal">
           <Switch

@@ -36,7 +36,7 @@ test('F2: no tracked source file holds double-encoded text', () => {
 test('F11: the invoice file is named after the invoice number', () => {
   assert.match(
     text('../src/lib/api/transactions.ts'),
-    /invoice-\$\{invoiceNumber\}\.pdf/
+    /3REco-Invoice-\$\{invoiceNumber\}\.pdf/
   );
   assert.match(
     text('../src/components/dialogs/record-dialogs.tsx'),

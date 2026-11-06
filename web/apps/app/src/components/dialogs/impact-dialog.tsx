@@ -4,6 +4,7 @@ import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
 import { useStats } from '@/lib/api/stats';
 import { formatKg, plural } from '@/lib/format';
+import { formatCo2 } from '@/lib/impact';
 
 type Props = { open?: boolean; onOpenChange?: (open: boolean) => void };
 
@@ -45,7 +46,7 @@ function ImpactBody({
             Together, the community has traded{' '}
             <strong>{formatKg(stats.total_kg)}</strong> of materials in{' '}
             <strong>{plural(stats.deals, 'trade')}</strong>, saving an estimated{' '}
-            <strong>{formatKg(stats.co2_kg)} CO₂e</strong>.
+            <strong>{formatCo2(stats.co2_kg)}</strong>.
           </p>
         )}
       </DataState>

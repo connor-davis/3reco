@@ -39,7 +39,7 @@ func TestExportsScopeAndColumns(t *testing.T) {
 	staff := tradeNewUser(t, w.app, "staff")
 	collectorUser := tradeNewUser(t, w.app, "collector")
 	stranger := tradeNewUser(t, w.app, "business")
-	id := tradeSale(t, w.seller, w.buyer, w.material, "2.5", "8.125")
+	id := tradeSale(t, w.seller, w.buyer, w.material, "2.5", "8.13")
 	collector := tradeCollector(t, w.app, w.buyer, "+27800000008")
 	collection := w.buyer.c.Do("POST", "/api/transactions/collections",
 		tradeCollection(collector, "", tradeLine(w.material, "1.5", "3.5")))
@@ -76,9 +76,9 @@ func TestExportsScopeAndColumns(t *testing.T) {
 
 	row := csvRows(t, w.seller.c, "/api/exports/sales")[1]
 	if row[0] != id || row[2] != "05/11/2026" || row[3] != "05/11/2026 01:30" ||
-		row[7] != "2.50" || row[8] != "20.31" || row[9] != "'=SUM(1,2)" ||
+		row[7] != "2.50" || row[8] != "20.33" || row[9] != "'=SUM(1,2)" ||
 		row[12] != "Street, \"quoted\"\nsecond line" ||
-		row[6] != "1. Copper, \"clean\"\nwire - 2.50 kg x R 8.13 = R 20.31" {
+		row[6] != "1. Copper, \"clean\"\nwire - 2.50 kg x R 8.13 = R 20.33" {
 		t.Fatalf("export values: %#v", row)
 	}
 

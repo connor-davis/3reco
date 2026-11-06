@@ -206,6 +206,10 @@ Never rename a merged migration. Add a new file.
 | Who must finish setup (guest, or unfinished collector/business) and the redirect | `web/apps/app/src/lib/setup.ts`, `src/components/setup-gate.tsx` (wraps the outlet in `routes/__root.tsx`), tests in `tests/setup.test.mjs` |
 | Tidy a person's name (ALL CAPS / all lower only); used on first/last name, sign-up and collector name | `web/apps/app/src/lib/names.ts` (`personName` prop of `TextField`), tests in `tests/names.test.mjs` |
 | Money, weight, date and count formatting (`plural(count, one, many?)` for every on-screen count) | `web/apps/app/src/lib/format.ts`, tests in `tests/counter.test.mjs` |
+| One money rule: each line is weight x price rounded half up to cents when written, the trade total is the sum of those lines, and every display rounds the same way; prices stop at 2 decimals | `SetTotal` in `internal/stores/transactions/items.go`, `pdf.Product` / `pdf.Decimal`, `toCents` / `lineCents` in `web/apps/app/src/lib/format.ts`, tests in `tests/qa_round2_money_test.go`, `web/apps/app/tests/qa-round2-money.test.mjs` |
+| No collection date after today (Africa/Johannesburg) | `parseDay`, `checkCollectionDate` in `internal/services/transactions/parse.go`, `today()` in `web/apps/app/src/lib/format.ts`, tests in `tests/qa_round2_collections_test.go` |
+| File names a person chose keep their case (`CleanName`); `SafeName` still lowercases | `internal/platform/storage/storage.go` |
+| QA round 2 job A web tests (collections, trade, stock, market, copy) | `web/apps/app/tests/qa-round2-{collections,trade,stock,market,copy}.test.mjs` |
 | Role gate per page, role labels, role nav and phone tabs | `web/apps/app/src/lib/access.ts`, `src/components/access-guard.tsx`, `src/lib/nav.ts` |
 
 ## Web app serving and deployment

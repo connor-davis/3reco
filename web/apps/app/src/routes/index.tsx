@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   Boxes,
@@ -17,6 +18,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useDashboard } from '@/lib/api/dashboards';
 import { useStats } from '@/lib/api/stats';
 import { formatDate, formatKg, formatRand, toCents } from '@/lib/format';
+import { formatCo2 } from '@/lib/impact';
 import {
   CounterpartyRows,
   RecentActivity,
@@ -32,12 +34,36 @@ export const Route = createFileRoute('/')({
   ),
 });
 
+// True on the first dashboard visit on this device, so a new person is
+// greeted with "Welcome" and only then "Welcome back".
+function useFirstVisit(id?: string) {
+  const key = 'welcomed:' + id;
+  const [first] = useState(() => {
+    try {
+      return !!id && !localStorage.getItem(key);
+    } catch {
+      return false; // storage is blocked: say "Welcome back", never "Welcome"
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (id) localStorage.setItem(key, '1');
+    } catch {
+      // Nothing to remember it with; the greeting just stays "Welcome back".
+    }
+  }, [id, key]);
+
+  return first;
+}
+
 function Dashboard() {
   const { user } = useAuth();
   const staff = user?.role === 'admin' || user?.role === 'staff';
   const collector = user?.role === 'collector';
   const kind = staff ? 'admin' : collector ? 'collector' : 'business';
   const query = useDashboard(kind);
+  const first = useFirstVisit(user?.id);
   const dashboard = query.data;
 
   return (
@@ -46,7 +72,7 @@ function Dashboard() {
         title={
           staff
             ? 'A clear view of the trade.'
-            : 'Welcome back, ' +
+            : (first ? 'Welcome, ' : 'Welcome back, ') +
               (user?.firstName || user?.name || 'there') +
               '.'
         }
@@ -128,7 +154,7 @@ function Dashboard() {
               />
               <StatCard
                 label="CO₂e saved (30 days)"
-                value={formatKg(dashboard.totals.carbon_savings) + ' CO₂e'}
+                value={formatCo2(dashboard.totals.carbon_savings)}
                 icon={Leaf}
               />
             </StatGrid>
@@ -238,7 +264,7 @@ function CommunityImpact() {
               />
               <StatCard
                 label="CO₂e saved (all time)"
-                value={formatKg(stats.co2_kg) + ' CO₂e'}
+                value={formatCo2(stats.co2_kg)}
                 icon={Leaf}
               />
               <StatCard

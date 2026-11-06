@@ -1,9 +1,9 @@
 // Money is integer cents and weight is a decimal string. Nothing here uses
 // floating point for money, so totals never drift (AGENTS.md).
 
-/** Turns "4.60" into 460 (cents). Extra digits are cut, not rounded. */
+/** Turns "4.60" into 460 (cents). Extra digits are rounded half up. */
 export function toCents(price: string): number {
-  return toUnits(price, 2);
+  return Number(exactScaled(price, 2, true) ?? 0n);
 }
 
 /** Turns "1250.5" into 1250500 (grams). */
@@ -22,9 +22,33 @@ function toUnits(value: string, decimals: number): number {
   return wholeUnits + parseInt(padded || '0', 10);
 }
 
-/** Line total in cents: price per kg times weight, rounded to the cent. */
+// Decimal text to a scaled BigInt (2 places = cents), or null when it is not a
+// plain decimal. Digits past `places` are cut, or rounded half up when asked.
+function exactScaled(
+  value: string,
+  places: number,
+  round = false
+): bigint | null {
+  const clean = value.trim().replace(',', '.');
+  if (!/^\d*\.?\d*$/.test(clean)) return null;
+
+  const [whole = '', fraction = ''] = clean.split('.');
+  const kept = BigInt(
+    (whole || '0') + fraction.padEnd(places, '0').slice(0, places)
+  );
+  const next = fraction.charAt(places);
+
+  return round && next >= '5' ? kept + 1n : kept;
+}
+
+/** Line total in cents: price per kg times weight, rounded half up to the cent. */
 export function lineCents(pricePerKg: string, kg: string): number {
-  return Math.round((toCents(pricePerKg) * toGrams(kg)) / 1000);
+  const price = exactScaled(pricePerKg, 6) ?? 0n;
+  const weight = exactScaled(kg, 6) ?? 0n;
+
+  return Number(
+    (price * weight * 100n + 500_000_000_000n) / 1_000_000_000_000n
+  );
 }
 
 function spaced(whole: number): string {
@@ -101,4 +125,11 @@ export function initials(name: string): string {
 /** "1 trade", "2 trades", "0 trades". Pass the plural when it is not just +s. */
 export function plural(count: number, one: string, many = `${one}s`): string {
   return `${count} ${count === 1 ? one : many}`;
+}
+
+/** Today's date as "2026-11-06" in South African time, not UTC. */
+export function today(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg',
+  }).format(new Date());
 }

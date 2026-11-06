@@ -86,7 +86,7 @@ func domainStock(t *testing.T, client *testutil.Client, material string, listed 
 			"POST",
 			"/api/stock",
 			map[string]any{
-				"material_id": material, "weight": "10.125", "price": "3.1234567890123456789",
+				"material_id": material, "weight": "10.125", "price": "3.12",
 			},
 		),
 		200,
@@ -156,7 +156,7 @@ func TestSellerListingsOnlyListedPublic(t *testing.T) {
 
 		result := status(t, client.Do("GET", "/api/market/listings/"+listed, nil), 200)
 		noPrivateKeys(t, result.Body)
-		if result.Body["price"] != "3.1234567890123456789" {
+		if result.Body["price"] != "3.12" {
 			t.Fatalf("price rounded: %s", result.Raw)
 		}
 

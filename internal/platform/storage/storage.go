@@ -90,13 +90,19 @@ func (c *Client) RemoveAfterCommit(ctx context.Context, key string) {
 	})
 }
 
-var unsafeName = regexp.MustCompile(`[^a-z0-9_.-]+`)
+var unsafeName = regexp.MustCompile(`[^a-zA-Z0-9_.-]+`)
 
 // SafeName makes a file name safe to show and to put in a header: lowercase,
 // letters, digits, dot, dash and underscore only. Never use the user's name as
 // the object key; use NewID plus this as the extension holder.
 func SafeName(original string) string {
-	name := unsafeName.ReplaceAllString(strings.ToLower(original), "_")
+	return CleanName(strings.ToLower(original))
+}
+
+// CleanName is SafeName that keeps the original letter case, for names a
+// person chose and will want to see again, such as an uploaded receipt.
+func CleanName(original string) string {
+	name := unsafeName.ReplaceAllString(original, "_")
 	name = strings.Trim(name, "._")
 
 	if name == "" {

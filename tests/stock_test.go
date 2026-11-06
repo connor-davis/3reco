@@ -118,7 +118,7 @@ func TestStockUpdateZeroPrice(t *testing.T) {
 	status(t, owner.Do("PATCH", "/api/stock/"+id, map[string]any{"is_listed": true}), 200)
 	status(t, owner.Do("PATCH", "/api/stock/"+id, map[string]any{"is_listed": true}), 200)
 	result := status(t, owner.Do("GET", "/api/stock/"+id, nil), 200)
-	if result.Body["price"] != "3.1234567890123456789" || result.Body["weight"] != "10.125" {
+	if result.Body["price"] != "3.12" || result.Body["weight"] != "10.125" {
 		t.Fatalf("omitted fields changed: %s", result.Raw)
 	}
 
@@ -165,4 +165,24 @@ func TestStockNotificationRollback(t *testing.T) {
 	if result.Body["is_listed"] != false {
 		t.Fatalf("stock committed without notification: %s", result.Raw)
 	}
+}
+
+// A price under the base says the number, and stock prices stop at cents.
+func TestStockPriceMessages(t *testing.T) {
+	app := testutil.Server(t)
+	owner, _ := domainUser(t, app, "business")
+	material := domainMaterial(t, app, "Copper", "95")
+
+	low := owner.Do("POST", "/api/stock",
+		map[string]any{"material_id": material, "weight": "1", "price": "50"})
+	status(t, low, 400)
+
+	if fields, _ := low.Body["fields"].(map[string]any); fields["price"] != "Price must be at least R 95.00 / kg." {
+		t.Errorf("low price message: %s", low.Raw)
+	}
+
+	status(t, owner.Do("POST", "/api/stock",
+		map[string]any{"material_id": material, "weight": "1", "price": "95.125"}), 400)
+	status(t, owner.Do("POST", "/api/stock",
+		map[string]any{"material_id": material, "weight": "1", "price": "95.12"}), 200)
 }

@@ -54,7 +54,7 @@ export function invoiceUrl(id: string) {
 }
 /** The saved file name: the invoice number people see, never the raw id. */
 export function invoiceFilename(invoiceNumber: string) {
-  return `invoice-${invoiceNumber}.pdf`;
+  return `3REco-Invoice-${invoiceNumber}.pdf`;
 }
 /** Pass the trade when you have it; a bare id looks the number up first. */
 export function useDownloadInvoice() {

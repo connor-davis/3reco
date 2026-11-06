@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Inbox } from 'lucide-react';
 import { StatusBadge } from '@/components/badges';
-import { counterpartyOf, requestTotal } from '@/components/chat/helpers';
+import {
+  counterpartyOf,
+  isClosed,
+  requestTotal,
+} from '@/components/chat/helpers';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
 import { LinkButton } from '@/components/link-button';
@@ -10,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { PersonAvatar } from '@/components/visuals';
 import { useRequests } from '@/lib/api/requests';
 import { useAuth } from '@/lib/auth/use-auth';
-import { formatDate, formatRand } from '@/lib/format';
+import type { TradeRequest } from '@/lib/api/types';
+import { formatDate, formatKg, formatRand, formatRate } from '@/lib/format';
 
 export function RequestList({
   direction,
@@ -90,12 +95,15 @@ export function RequestList({
                     {request.items.map((item) => item.material_name).join(', ')}{' '}
                     · {formatDate(request.created_at)}
                   </p>
+                  {direction === 'incoming' && <Terms request={request} />}
                 </div>
                 <StatusBadge status={request.status} />
                 <p className="tabular-nums">
                   {request.items.some((item) => item.offer_price !== null)
                     ? formatRand(requestTotal(request))
-                    : 'Awaiting offer'}
+                    : isClosed(request)
+                      ? 'Closed'
+                      : 'Awaiting offer'}
                 </p>
                 <LinkButton
                   to="/market/$requestId"
@@ -126,4 +134,20 @@ export function RequestList({
       </div>
     </>
   );
+}
+
+// What was asked for, from the offer when there is one: "200 kg at R 23.40 / kg".
+function Terms({ request }: { request: TradeRequest }) {
+  const lines = request.items.flatMap((item) => {
+    const weight = item.offer_weight ?? item.requested_weight;
+    const price = item.offer_price ?? item.requested_price;
+
+    return weight && price
+      ? [`${formatKg(weight)} at ${formatRate(price)}`]
+      : [];
+  });
+
+  if (!lines.length) return null;
+
+  return <p className="text-sm text-muted-foreground">{lines.join(' · ')}</p>;
 }

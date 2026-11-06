@@ -13,7 +13,7 @@ func (h *Handler) invoice(c fiber.Ctx) error {
 	}
 
 	c.Set("Content-Type", "application/pdf")
-	c.Set("Content-Disposition", `attachment; filename="3rEco-Invoice-`+number+`.pdf"`)
+	c.Set("Content-Disposition", `attachment; filename="3REco-Invoice-`+number+`.pdf"`)
 	c.Set("Cache-Control", "private, no-store")
 
 	return c.SendStream(reader)
