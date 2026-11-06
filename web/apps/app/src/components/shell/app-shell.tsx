@@ -7,7 +7,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppSidebar } from './app-sidebar';
 import { BottomTabs } from './bottom-tabs';
 import { Topbar } from './topbar';
-import { isAuthPath, isChatPath } from '@/lib/nav';
+import { isAuthPath, isChatPath, pageTitleFor } from '@/lib/nav';
 import { useLiveEvents } from '@/lib/live/use-live';
 
 const CommandSearch = lazy(() =>
@@ -36,6 +36,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const bare = isAuthPath(pathname);
   // Chat screens run edge to edge, like a messenger, so they skip the page padding.
   const chat = isChatPath(pathname);
+
+  // Each page names its browser tab, so history and tabs can be told apart.
+  useEffect(() => {
+    document.title = `${pageTitleFor(pathname)} · 3REco`;
+  }, [pathname]);
 
   // Keep the shortcut available before the search implementation has loaded.
   useEffect(() => {
@@ -91,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </SidebarProvider>
       )}
-      <Toaster position="top-center" />
+      <Toaster position="top-right" />
     </TooltipProvider>
   );
 }

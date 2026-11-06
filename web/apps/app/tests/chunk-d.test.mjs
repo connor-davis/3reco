@@ -61,6 +61,8 @@ function load(relative, overrides = {}) {
           return read(new URL('../src/lib/format.ts', import.meta.url));
         if (name === '@/lib/impact')
           return read(new URL('../src/lib/impact.ts', import.meta.url));
+        if (name === '@/lib/access')
+          return read(new URL('../src/lib/access.ts', import.meta.url));
         if (name === '@/lib/names')
           return read(new URL('../src/lib/names.ts', import.meta.url));
         if (name === '@/lib/api/client') return { ApiError: Error };

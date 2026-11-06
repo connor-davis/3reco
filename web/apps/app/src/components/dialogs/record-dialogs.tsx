@@ -154,7 +154,7 @@ export function TransactionDialog({ record, onClose }: Props) {
                         })
                       }
                     >
-                      Download
+                      Download receipt
                     </Button>
                   </li>
                 ))}

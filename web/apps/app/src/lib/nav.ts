@@ -218,3 +218,40 @@ export function isRequestPath(pathname: string) {
 /** Chat screens run edge to edge, like a messenger. */
 export const isChatPath = (pathname: string) =>
   pathname.startsWith('/messages') || isRequestPath(pathname);
+
+const pageTitles: Record<string, string> = {
+  '': 'Dashboard',
+  about: 'About',
+  cart: 'Your cart',
+  collections: 'Collections',
+  collectors: 'Collectors',
+  materials: 'Materials',
+  stock: 'Stock',
+  market: 'Browse materials',
+  messages: 'Messages',
+  profile: 'Your profile',
+  transactions: 'Transactions',
+  admin: 'User management',
+  terms: 'Terms',
+  privacy: 'Privacy',
+  'sign-in': 'Sign in',
+  'sign-up': 'Create account',
+  'verify-email': 'Verify email',
+  'forgot-password': 'Forgot password',
+  'reset-password': 'Reset password',
+  setup: 'Finish setup',
+};
+
+/** The page name shown in the top bar and the browser tab. */
+export function pageTitleFor(pathname: string): string {
+  const [first = '', second = ''] = pathname.split('/').filter(Boolean);
+
+  if (first === 'market' && second === 'incoming') return 'Incoming requests';
+  if (first === 'market' && second === 'outgoing') return 'Outgoing requests';
+  if (isRequestPath(pathname)) return 'Messages';
+  if (first === 'transactions' && second) {
+    return second === 'sales' ? 'Sales' : 'Purchases';
+  }
+
+  return pageTitles[first] ?? 'Page not found';
+}

@@ -19,6 +19,7 @@ import { useDashboard } from '@/lib/api/dashboards';
 import { useStats } from '@/lib/api/stats';
 import { formatDate, formatKg, formatRand, toCents } from '@/lib/format';
 import { formatCo2 } from '@/lib/impact';
+import { roleLabel } from '@/lib/access';
 import {
   CounterpartyRows,
   RecentActivity,
@@ -191,7 +192,7 @@ function Dashboard() {
                   {dashboard.users.map((group) => (
                     <li key={group.role} className="text-sm">
                       <span className="font-medium">{group.count}</span>{' '}
-                      {group.role || 'without a role'}
+                      {roleLabel(group.role) || 'Without a role'}
                     </li>
                   ))}
                 </ul>

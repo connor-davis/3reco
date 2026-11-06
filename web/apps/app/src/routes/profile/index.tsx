@@ -40,6 +40,8 @@ export const Route = createFileRoute('/profile/')({
 function ProfilePage() {
   const { user } = useAuth();
   const role = user?.role;
+  // Admin and staff run 3REco; they have no business or bank details to keep.
+  const staff = isStaffRole(role);
   const [avatarOpen, setAvatarOpen] = useState(false);
 
   const query = useProfile();
@@ -69,10 +71,10 @@ function ProfilePage() {
         <Tabs defaultValue="personal" className="gap-6">
           <TabsList className="h-auto w-full justify-start p-1.5 max-md:overflow-x-auto max-md:overflow-y-hidden max-md:pb-2.5">
             <TabsTrigger value="personal">Personal</TabsTrigger>
-            {role !== 'collector' && (
+            {role !== 'collector' && !staff && (
               <TabsTrigger value="business">Business</TabsTrigger>
             )}
-            <TabsTrigger value="bank">Bank & payout</TabsTrigger>
+            {!staff && <TabsTrigger value="bank">Bank & payout</TabsTrigger>}
             <TabsTrigger value="location">Location</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="privacy">Your data</TabsTrigger>
@@ -105,19 +107,23 @@ function ProfilePage() {
               {profile && <PersonalForm profile={profile} />}
             </Section>
           </TabsContent>
-          <TabsContent value="business">
-            <Section
-              title="Business details"
-              description="Shown to people you trade with."
-            >
-              {profile && <BusinessForm profile={profile} />}
-            </Section>
-          </TabsContent>
-          <TabsContent value="bank">
-            <Section title="Bank & payout" description="Where payments go.">
-              {profile && <PayoutForm profile={profile} />}
-            </Section>
-          </TabsContent>
+          {!staff && (
+            <>
+              <TabsContent value="business">
+                <Section
+                  title="Business details"
+                  description="Shown to people you trade with."
+                >
+                  {profile && <BusinessForm profile={profile} />}
+                </Section>
+              </TabsContent>
+              <TabsContent value="bank">
+                <Section title="Bank & payout" description="Where payments go.">
+                  {profile && <PayoutForm profile={profile} />}
+                </Section>
+              </TabsContent>
+            </>
+          )}
           <TabsContent value="location">
             <Section
               title="Location"
