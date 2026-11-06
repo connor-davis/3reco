@@ -29,7 +29,7 @@ line when you add an owner.
 | `0008_perf_indexes.sql` | Sort-order indexes for market, stock, transactions, requests, messages, notifications and users |
 | `0009_quiet_read_receipts.sql` | Drops the `realtime` trigger on `request_message_reads` |
 | `0010_keep_transactions.sql` | Blocks DELETE and TRUNCATE on `transactions`, `transaction_items` and `transaction_receipts` (trade records are kept; personal details go by UPDATE) |
-| `0011_guest_role.sql` | Every user has a role: backfills no-role users to `guest`, adds `guest` to the role check, default `guest`, NOT NULL |
+| `0012_guest_role.sql` | Every user has a role: backfills no-role users to `guest`, adds `guest` to the role check, default `guest`, NOT NULL |
 
 Never rename a merged migration. Add a new file.
 
