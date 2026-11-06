@@ -43,7 +43,8 @@ func TestPrivacyEventsCarryNamesAndRoles(t *testing.T) {
 	w := newTradeWorld(t)
 	admin := tradeNewUser(t, w.app, "admin")
 
-	tradeExec(t, w.app, `UPDATE users SET first_name='Ada', last_name='Admin' WHERE id = $1`, admin.id)
+	tradeExec(t, w.app, `UPDATE users SET first_name='Ada', last_name='Admin',
+		business_name='Stale Business' WHERE id = $1`, admin.id)
 
 	collector := privacyCollector(t, w.buyer.c)
 	status(t, admin.c.Do("GET", "/api/collectors/"+collector, nil), 200)
@@ -64,7 +65,8 @@ func TestPrivacyEventsCarryNamesAndRoles(t *testing.T) {
 		t.Errorf("actor not named: %v", event)
 	}
 
-	if event["subject_name"] == nil || event["subject_role"] != "collector" {
+	wantName := tradeText(t, w.app, `SELECT name FROM collectors WHERE id=$1`, collector)
+	if event["subject_name"] != wantName || event["subject_role"] != "collector" {
 		t.Errorf("subject not named: %v", event)
 	}
 

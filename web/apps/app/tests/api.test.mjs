@@ -114,6 +114,7 @@ test('inbox badges, preview and list share one cold read and retain cursor pagin
         };
       if (name === '../auth/use-auth')
         return { useAuth: () => ({ user: { id: 'buyer' } }) };
+      if (name === '../access') return { canOpen: () => true };
       if (name === './resource') return { idPath: encodeURIComponent };
       if (name === './paging')
         return {
@@ -189,6 +190,7 @@ test('admin inbox searches on the server and keeps one query per search', async 
         };
       if (name === '../auth/use-auth')
         return { useAuth: () => ({ user: { id: 'admin', role: 'admin' } }) };
+      if (name === '../access') return { canOpen: () => true };
       if (name === './resource') return { idPath: encodeURIComponent };
       if (name === './paging')
         return {
@@ -244,7 +246,7 @@ test('socket joins without subscribing, settles invalidations per key, reconnect
     }
     close() {
       this.readyState = 3;
-      this.onclose?.();
+      this.onclose?.({ code: 1006 });
     }
   }
   const { LiveConnection, keysFor } = load('../src/lib/live/connection.ts', {

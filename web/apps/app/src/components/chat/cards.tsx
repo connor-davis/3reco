@@ -97,6 +97,18 @@ export function OfferCard({
               : 'Not confirmed'}
           </li>
         </ul>
+        {request.status === 'offered' &&
+          request.offer_by === user?.id &&
+          request.buyer_confirmed_version !== request.offer_version &&
+          request.seller_confirmed_version !== request.offer_version && (
+            <p role="status">
+              Waiting for{' '}
+              {user?.id === request.buyer.id
+                ? request.seller.name
+                : request.buyer.name}{' '}
+              to respond.
+            </p>
+          )}
         {(request.buyer_confirmed_version === request.offer_version ||
           request.seller_confirmed_version === request.offer_version) && (
           <p role="status">
@@ -151,6 +163,14 @@ export function InvoiceCard({
             {formatTime(request.updated_at)}
           </time>
         </p>
+        <ul className="space-y-2">
+          {request.items.map((item) => (
+            <li key={item.material_id}>
+              {item.material_name} · {formatKg(item.offer_weight ?? '0')} at{' '}
+              {formatRate(item.offer_price ?? '0')}
+            </li>
+          ))}
+        </ul>
         <p>Total {formatRand(requestTotal(request))}</p>
         <p>The transaction and invoice are in your records.</p>
         {download.error && (

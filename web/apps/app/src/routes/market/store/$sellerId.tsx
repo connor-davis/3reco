@@ -16,6 +16,7 @@ import {
   useReviews,
   useDeleteReview,
   useReviewSummary,
+  useReviewable,
 } from '@/lib/api/reviews';
 import { useAuth } from '@/lib/auth/use-auth';
 import { formatDate, plural, toGrams } from '@/lib/format';
@@ -34,6 +35,10 @@ function StorePage() {
   const reviews = useReviews(sellerId, { cursor: reviewCursor });
   const summary = useReviewSummary(sellerId);
   const remove = useDeleteReview();
+  const eligible = useReviewable(
+    sellerId,
+    user?.role === 'business' && user.id !== sellerId
+  );
   const [chatListing, setChatListing] = useState<Listing | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -152,8 +157,18 @@ function StorePage() {
                 )}
               </DataState>
               {user?.role === 'business' && user.id !== sellerId && (
-                <Button variant="outline" onClick={() => setReviewOpen(true)}>
-                  Leave a review
+                <Button
+                  variant="outline"
+                  onClick={() => setReviewOpen(true)}
+                  disabled={
+                    eligible.isPending ||
+                    eligible.isError ||
+                    !eligible.data?.items.length
+                  }
+                >
+                  {eligible.isSuccess && !eligible.data.items.length
+                    ? 'You have reviewed all eligible trades.'
+                    : 'Leave a review'}
                 </Button>
               )}
               <DataState

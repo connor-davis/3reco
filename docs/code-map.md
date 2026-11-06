@@ -34,6 +34,7 @@ line when you add an owner.
 | `0013_collector_optional_phone.sql` | Allows absent collector phones as NULL |
 | `0014_realtime_recipients.sql` | `notify_change()` and `notify_stock_hold()` send kind, id, op and recipients; `realtime` triggers on collectors, store_reviews and transaction_receipts; narrower users trigger |
 | `0015_market_flow.sql` | Cart quantities, requested terms, versioned offers, dual confirmation and retained transaction status |
+| `0016_request_system_messages.sql` | Explicit system request events sharing message unread tracking |
 
 Never rename a merged migration. Add a new file.
 
@@ -67,6 +68,10 @@ Never rename a merged migration. Add a new file.
 | Pending trade creation and completion of the same retained row | `internal/services/transactions/pending.go`, `internal/stores/transactions/pending.go` |
 | Admin read-only view of every chat: the all-conversations list and the read-only rule | `internal/stores/requests/messages.go` (`AllThreads`), `internal/services/requests` (`loadForRead`, `AllThreads`), `GET /api/messages/all` |
 | Unified participant/admin inbox, server search, infinite scroll and recent-first chat history | `web/apps/app/src/components/chat/{inbox,conversation}.tsx`, `web/apps/app/src/lib/api/messages.ts` |
+| Inbox offer author and pending confirmations, closed-state summary | `web/apps/app/src/components/chat/helpers.ts` (`threadSummary`), `internal/stores/requests/messages.go` |
+| Fresh request system line and seller unread event | `internal/services/requests/requests.go`, `internal/stores/requests/messages.go`, `tests/messages_test.go` |
+| Round 2 phone-search and unchanged guest-access regression tests | `tests/qa_round2_{collectors,guest}_test.go` |
+| Round 2 shell, inbox, review and privacy regression tests; isolated TS loader | `web/apps/app/tests/qa-round2-{shell,guest,inbox,admin}.test.mjs`, `qa-round2-loader.mjs`; discovered by the `tests/*.test.mjs` npm test glob |
 | Admin chat tests (read, list, no write, no read receipts, live) | `tests/admin_chat_test.go` |
 | Inbox search/filter scope and newest-first message cursor tests | `tests/messages_paging_test.go` |
 | Offer reservation locks, releases and set-based expiry SQL | `internal/stores/requests/holds.go` |

@@ -107,6 +107,9 @@ func TestMessagesNewestPageThenOlder(t *testing.T) {
 
 		for _, item := range tradeItems(page) {
 			message := item.(map[string]any)
+			if message["system"] == true {
+				continue
+			}
 			want := fmt.Sprintf("%04d", 75-count)
 			if message["id"] != want || seen[want] {
 				t.Fatalf("message %v, expected newest-first %s", message, want)

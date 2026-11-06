@@ -102,8 +102,8 @@ function Wizard({ fixed }: { fixed: Choice | null }) {
     ...(chosen ? detailSteps[chosen] : []),
   ];
   const step = steps[index] ?? 'type';
-  // Until a guest picks, the count assumes the shorter path.
-  const total = chosen ? steps.length : detailSteps.collector.length + 1;
+  // The role determines the length; do not promise a total before it is chosen.
+  const total = steps.length;
 
   async function next() {
     if (index < steps.length - 1) return setIndex(index + 1);
@@ -148,10 +148,16 @@ function Wizard({ fixed }: { fixed: Choice | null }) {
     >
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Step {index + 1} of {total}
+          {step === 'type' ? (
+            'Step 1'
+          ) : (
+            <>
+              Step {index + 1} of {total}
+            </>
+          )}
         </p>
         <Progress
-          value={((index + 1) / total) * 100}
+          value={step === 'type' ? 0 : ((index + 1) / total) * 100}
           aria-label="Setup progress"
         />
       </div>

@@ -1,6 +1,7 @@
 import { useResource, useWrite, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
+import { useAuth } from '../auth/use-auth';
 
 export function useNotifications(params: Paging = {}) {
   return useResource<Page<T.Notification>>(
@@ -10,10 +11,12 @@ export function useNotifications(params: Paging = {}) {
   );
 }
 export function useUnreadCount() {
+  const { user } = useAuth();
   return useResource<{ count: number }>(
     ['notifications', 'unread-count'],
     '/notifications/unread-count',
-    true
+    true,
+    !!user && user.role !== 'guest'
   );
 }
 export function useReadNotification() {

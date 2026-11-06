@@ -245,6 +245,15 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 		}
 
 		body := strings.Join(terms, "; ")
+		var requested []string
+		for _, item := range r.Items {
+			requested = append(requested, *item.RequestedWeight+" kg "+item.MaterialName)
+		}
+
+		if err := s.store.InsertRequestEvent(ctx, id, user.ID,
+			r.Buyer.Name+" requested "+strings.Join(requested, "; ")); err != nil {
+			return err
+		}
 
 		return s.notes.Notify(ctx, in.SellerID, notifications.RequestReceived,
 			"New request received", body, "/market/"+id)
