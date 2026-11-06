@@ -28,7 +28,7 @@ var guardedTables = []string{
 var realtimeTables = []string{
 	"notifications", "stock", "carts", "cart_items", "transaction_requests",
 	"transaction_request_messages", "transactions",
-	"users", "materials",
+	"users", "materials", "collectors", "store_reviews", "transaction_receipts",
 }
 
 var identifier = regexp.MustCompile(`^[a-z_]+$`)

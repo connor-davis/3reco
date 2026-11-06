@@ -6,7 +6,6 @@ export function useReviews(sellerId: string, params: Paging = {}) {
   return useResource<Page<T.Review>>(
     ['reviews', sellerId, params],
     `/stores/${idPath(sellerId)}/reviews${queryString(params)}`,
-    ['market'],
     false,
     !!sellerId
   );
@@ -15,7 +14,6 @@ export function useReviewSummary(sellerId: string) {
   return useResource<T.ReviewSummary>(
     ['reviews', 'summary', sellerId],
     `/stores/${idPath(sellerId)}/reviews/summary`,
-    ['market'],
     false,
     !!sellerId
   );
@@ -24,7 +22,6 @@ export function useReviewable(sellerId: string) {
   return useResource<{ items: T.Reviewable[] }>(
     ['reviews', 'reviewable', sellerId],
     `/reviews/reviewable${queryString({ seller_id: sellerId })}`,
-    ['transactions:me'],
     true,
     !!sellerId
   );

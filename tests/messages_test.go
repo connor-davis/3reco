@@ -143,48 +143,17 @@ func TestRequestMessagesLeak(t *testing.T) {
 	}
 }
 
-// A message reaches the other person's socket on request:<id>; a stranger
-// cannot join that topic.
+// A message reaches the other person's socket as a change to the request; a
+// stranger hears nothing and the event holds no message text.
 func TestRequestMessageRealtime(t *testing.T) {
 	w := newTradeWorld(t)
 	outsider := tradeNewUser(t, w.app, "business")
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
-	topic := "request:" + id
-
-	sock, _, err := dial(t, w.app, w.seller.c, testutil.WebOrigin)
-	if err != nil {
-		t.Fatalf("dial seller: %v", err)
-	}
-
-	other, _, err := dial(t, w.app, outsider.c, testutil.WebOrigin)
-	if err != nil {
-		t.Fatalf("dial outsider: %v", err)
-	}
-
-	other.send(map[string]string{"type": "subscribe", "topic": topic})
-
-	if ev := other.next(); ev["type"] != "denied" || ev["topic"] != topic {
-		t.Fatalf("outsider on %s: %v, want denied", topic, ev)
-	}
-
-	sock.send(map[string]string{"type": "subscribe", "topic": topic})
-	sock.send(map[string]string{"type": "ping"})
-
-	if ev := sock.next(); ev["type"] != "pong" {
-		t.Fatalf("seller ping: %v", ev)
-	}
+	socks := joinLive(t, w.app, w.seller, outsider)
 
 	tradeWant(t, "send", tradeSay(t, w.buyer, id, "SECRET WORDS"), 200)
 
 	// Wait for the event first, then check that the stranger heard nothing.
-	ev := sock.next()
-	if ev["type"] != "changed" || ev["topic"] != topic {
-		t.Fatalf("seller event: %v", ev)
-	}
-
-	other.send(map[string]string{"type": "ping"})
-
-	if ev := other.next(); ev["type"] != "pong" {
-		t.Fatalf("outsider heard %v before its pong", ev)
-	}
+	socks[0].hear("request", id)
+	socks[1].quiet("outsider")
 }

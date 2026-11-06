@@ -5,8 +5,8 @@
 ## How It Works
 
 1. A service does something the user should know about and inserts a notification for the right `user_id`, **inside the same transaction** as the change. If the transaction rolls back, so does the notification.
-2. The `notifications` trigger sends `notifications:<user_id>` on the `threereco_changes` channel.
-3. The hub forwards `{"type":"changed","topic":"notifications:<user_id>","id":"<notification id>"}` to that user's open sockets.
+2. The `notifications` trigger sends a `notification` change for that user on the `threereco_changes` channel.
+3. The hub forwards `{"type":"changed","kind":"notification","id":"<notification id>"}` to that user's open sockets.
 4. The app invalidates its notification queries and refetches.
 
 The event never carries the notification itself, so a client that missed an event loses nothing: the next fetch has it.

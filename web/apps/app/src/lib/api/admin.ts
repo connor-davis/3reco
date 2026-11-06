@@ -6,7 +6,6 @@ export function useAdminUsers(params: Paging = {}) {
   return useResource<Page<T.AdminUser>>(
     ['admin', 'users', params],
     `/admin/users${queryString(params)}`,
-    ['admin:users'],
     true
   );
 }
@@ -14,7 +13,6 @@ export function usePrivacyEvents(params: Paging = {}) {
   return useResource<Page<T.PrivacyEvent>>(
     ['admin', 'privacy-events', params],
     `/admin/privacy-events${queryString(params)}`,
-    [],
     true
   );
 }

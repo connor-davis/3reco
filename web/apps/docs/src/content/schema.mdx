@@ -41,5 +41,5 @@ pending → offered → accepted
    └─────────┴→ rejected | cancelled
 ```
 
-- **Live tables** have a trigger that sends a `NOTIFY` so the realtime hub can tell connected clients to refetch.
+- **Live tables** have a trigger that sends a `NOTIFY` so the realtime hub can tell the right connected clients to refetch. The trigger is named `realtime`; `notify_change()` (migration `0014`) sends the kind, the id and who may hear it, never row data.
 - **Indexes** match the list screens: each list is sorted by time and id, and read with a cursor.

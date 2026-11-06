@@ -13,9 +13,6 @@ export function useDashboard(
   return useResource<T.Dashboard>(
     ['dashboards', kind, range],
     `${kind === 'admin' ? '/admin/dashboard' : `/dashboard/${kind}`}${queryString(range)}`,
-    kind === 'admin'
-      ? ['admin:transactions', 'admin:requests', 'admin:users']
-      : ['transactions:me', 'requests:me'],
     true
   );
 }

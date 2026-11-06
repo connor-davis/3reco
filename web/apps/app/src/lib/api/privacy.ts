@@ -5,12 +5,7 @@ import { api, download, json } from './client';
 import { replaceSession } from './auth';
 
 export function usePrivacyNotice() {
-  return useResource<T.Notice>(
-    ['privacy', 'notice'],
-    '/privacy/notice',
-    [],
-    true
-  );
+  return useResource<T.Notice>(['privacy', 'notice'], '/privacy/notice', true);
 }
 export function useAcceptPrivacyNotice() {
   return useWrite<void, T.Ok>('/privacy/notice/accept', 'POST', [['privacy']]);

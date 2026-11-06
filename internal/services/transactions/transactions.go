@@ -142,12 +142,24 @@ func (s *Service) scope(
 	}
 }
 
-// canRead is the one rule for seeing a transaction: staff, its buyer, or the
-// seller of a business trade. A collector seller has no login.
-func canRead(user auth.User, t store.Transaction) bool {
-	return auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) ||
+// canRead is the one rule for seeing a transaction: staff, its buyer, the
+// seller of a business trade, or the collector user a collector sale is linked
+// to. It matches what the list scope shows, so a row in a list always opens.
+func (s *Service) canRead(ctx context.Context, user auth.User, t store.Transaction) (bool, error) {
+	if auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) ||
 		t.Buyer.ID == user.ID ||
-		(t.Type == "b2b" && t.Seller.ID == user.ID)
+		(t.Type == "b2b" && t.Seller.ID == user.ID) {
+		return true, nil
+	}
+
+	if t.Type != "c2b" || !auth.HasRole(user, auth.RoleCollector) {
+		return false, nil
+	}
+
+	// c2b rows store the collector's id, not the user's.
+	collectorID, found, err := s.store.CollectorForUser(ctx, user.ID)
+
+	return found && collectorID == t.Seller.ID, err
 }
 
 // Detail returns one transaction the caller may see. Anyone else gets the
@@ -162,7 +174,12 @@ func (s *Service) Detail(ctx context.Context, user auth.User, id string) (store.
 		return t, err
 	}
 
-	if !canRead(user, t) {
+	ok, err := s.canRead(ctx, user, t)
+	if err != nil {
+		return store.Transaction{}, err
+	}
+
+	if !ok {
 		return store.Transaction{}, errNotFound
 	}
 

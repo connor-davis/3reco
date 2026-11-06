@@ -1,9 +1,9 @@
-// Package sockets is the WebSocket route, GET /api/live. A browser joins
-// topics and hears "changed" events; it never gets row data.
+// Package sockets is the WebSocket route, GET /api/live. A signed-in browser
+// opens one socket and hears "changed" events for everything it may see; it
+// subscribes to nothing and never gets row data.
 package sockets
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
@@ -60,8 +60,7 @@ func (h *Handler) upgrade(c fiber.Ctx) error {
 }
 
 type request struct {
-	Type  string `json:"type"`
-	Topic string `json:"topic"`
+	Type string `json:"type"`
 }
 
 // conn serves one socket. Only the writer goroutine writes to it.
@@ -72,9 +71,6 @@ func (h *Handler) conn(conn *websocket.Conn) {
 
 		return
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	client := h.hub.Join(sess)
 	defer h.hub.Leave(client)
@@ -99,15 +95,8 @@ func (h *Handler) conn(conn *websocket.Conn) {
 			continue
 		}
 
-		switch req.Type {
-		case "subscribe":
-			// A refused topic is dropped without a word; the page just never hears it.
-			if err := h.hub.Subscribe(ctx, client, req.Topic); err != nil {
-				h.hub.Reply(client, realtime.Event{Type: "denied", Topic: req.Topic})
-			}
-		case "unsubscribe":
-			h.hub.Unsubscribe(client, req.Topic)
-		case "ping":
+		// The only thing a page may say is "ping"; what it hears is not its choice.
+		if req.Type == "ping" {
 			h.hub.Reply(client, realtime.Event{Type: "pong"})
 		}
 	}

@@ -9,7 +9,6 @@ export function useRequests(
   return useResource<Page<T.TradeRequest>>(
     ['requests', direction, params],
     `/requests/${direction}${queryString(params)}`,
-    ['requests:me'],
     true
   );
 }
@@ -17,7 +16,6 @@ export function useRequest(id: string) {
   return useResource<T.TradeRequest>(
     ['requests', id],
     `/requests/${idPath(id)}`,
-    id ? [`request:${id}`] : [],
     true,
     !!id
   );

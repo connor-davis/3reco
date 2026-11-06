@@ -35,7 +35,7 @@ app.
   (MinIO / S3), `pdf`, `apperr`.
 - `web/apps/app` - the React app (React 19, Vite, TanStack Router,
   Tailwind 4, shadcn). It talks to the API through `src/lib/api` and gets live
-  data from the `useLive` hook. The Go binary serves its `dist/` folder.
+  data from the `useLiveEvents` hook. The Go binary serves its `dist/` folder.
 - `web/apps/docs` - the documentation site.
 - `deployments` - `Dockerfile` (Go binary plus the built web app, one
   container) and `docker-compose.yml` (local Postgres, MinIO, Mailpit). The

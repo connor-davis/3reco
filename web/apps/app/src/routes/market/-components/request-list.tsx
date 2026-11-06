@@ -9,7 +9,6 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { PersonAvatar } from '@/components/visuals';
 import { useRequests } from '@/lib/api/requests';
-import { useLiveTopics } from '@/lib/live/use-live';
 import { useAuth } from '@/lib/auth/use-auth';
 import { formatDate, formatRand } from '@/lib/format';
 
@@ -30,10 +29,6 @@ export function RequestList({
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const requests = query.data?.items ?? [];
-  useLiveTopics(
-    requests.map((request) => `request:${request.id}`),
-    [['requests', direction]]
-  );
   const shown = requests.filter(
     (request) =>
       (status === 'all' || request.status === status) &&

@@ -114,7 +114,6 @@ test('inbox badges, preview and list share one cold read and retain cursor pagin
         };
       if (name === '../auth/use-auth')
         return { useAuth: () => ({ user: { id: 'buyer' } }) };
-      if (name === '../live/use-live') return { useLiveTopics() {} };
       if (name === './resource') return { idPath: encodeURIComponent };
       if (name === './paging')
         return {
@@ -172,8 +171,7 @@ test('inbox badges, preview and list share one cold read and retain cursor pagin
   }
 });
 
-test('admin inbox searches on the server and uses one topic regardless of loaded rows', async () => {
-  const subscriptions = [];
+test('admin inbox searches on the server and keeps one query per search', async () => {
   const paths = [];
   const thread = {
     request_id: 'chat',
@@ -191,8 +189,6 @@ test('admin inbox searches on the server and uses one topic regardless of loaded
         };
       if (name === '../auth/use-auth')
         return { useAuth: () => ({ user: { id: 'admin', role: 'admin' } }) };
-      if (name === '../live/use-live')
-        return { useLiveTopics: (topics) => subscriptions.push(topics) };
       if (name === './resource') return { idPath: encodeURIComponent };
       if (name === './paging')
         return {
@@ -217,20 +213,17 @@ test('admin inbox searches on the server and uses one topic regardless of loaded
   assert.equal(paths[0], '/messages/all?limit=30&q=glass&filter=offers');
   assert.equal(page.items[0].other.name, 'Buyer ↔ Seller');
   assert.equal(page.items[0].unread_count, 0);
-  assert.equal(subscriptions[0].length, 1);
-  assert.equal(subscriptions[0][0], 'admin:requests');
   assert.notEqual(
     JSON.stringify(options.queryKey),
     JSON.stringify(hooks.useThreadHistory('paper', 'all').queryKey)
   );
 });
 
-test('socket shares subscriptions, invalidates topics, reconnects and stops denied topics', () => {
+test('socket joins without subscribing, settles invalidations per key, reconnects and resyncs', () => {
   const sockets = [];
   const pending = new Map();
   let timerId = 0;
   const invalidations = [];
-  const states = [];
   class Socket {
     static OPEN = 1;
     readyState = 0;
@@ -254,7 +247,7 @@ test('socket shares subscriptions, invalidates topics, reconnects and stops deni
       this.onclose?.();
     }
   }
-  const { LiveConnection } = load('../src/lib/live/connection.ts', {
+  const { LiveConnection, keysFor } = load('../src/lib/live/connection.ts', {
     window: { location: { href: 'https://3reco.test/stock' } },
     WebSocket: Socket,
     setTimeout: (callback, delay) => {
@@ -264,55 +257,59 @@ test('socket shares subscriptions, invalidates topics, reconnects and stops deni
     },
     clearTimeout: (id) => pending.delete(id),
   });
+  const settle = () => {
+    for (const [id, timer] of [...pending]) {
+      if (timer.delay !== 300) continue;
+      pending.delete(id);
+      timer.callback();
+    }
+  };
   const connection = new LiveConnection({
     invalidateQueries: (options) => invalidations.push(options),
   });
-  const listener = { keys: [['stock']], status: (state) => states.push(state) };
-  const releaseFirst = connection.subscribe('stock:user', listener);
-  const releaseSecond = connection.subscribe('stock:user', { ...listener });
+  connection.start();
+  connection.start();
   assert.equal(sockets.length, 1);
   assert.equal(sockets[0].url.href, 'wss://3reco.test/api/live');
   sockets[0].open();
-  assert.equal(
-    invalidations.length,
-    0,
-    'first open keeps bootstrap queries fresh'
-  );
-  assert.equal(
-    sockets[0].sent.filter((message) => message.type === 'subscribe').length,
-    1
-  );
-  sockets[0].message({ type: 'changed', topic: 'stock:user', id: 'row' });
-  assert.equal(
-    invalidations.length,
-    1,
-    'shared observers invalidate once per event'
-  );
-  releaseFirst();
-  assert.equal(
-    sockets[0].sent.filter((message) => message.type === 'unsubscribe').length,
-    0
-  );
+  assert.equal(invalidations.length, 0, 'first open keeps bootstrap queries');
+  assert.equal(sockets[0].sent.length, 0, 'the page subscribes to nothing');
+
+  // A burst for one chat refetches each key once, after a short pause.
+  for (let i = 0; i < 5; i++)
+    sockets[0].message({ type: 'changed', kind: 'request', id: 'r1' });
+  assert.equal(invalidations.length, 0, 'events wait for the pause');
+  settle();
+  const keys = invalidations.map((item) => JSON.stringify(item.queryKey));
+  assert.equal(keys.length, keysFor('request', 'r1').length);
+  assert.equal(new Set(keys).size, keys.length, 'each key once');
+  assert.ok(keys.includes('["messages","history","r1"]'));
+  assert.ok(keys.includes('["requests","r1"]'));
+  assert.ok(keys.includes('["messages","inbox"]'));
 
   invalidations.length = 0;
-  sockets[0].message({ type: 'changed', topic: 'stock:user', id: 'row' });
-  assert.equal(JSON.stringify(invalidations), '[{"queryKey":["stock"]}]');
+  sockets[0].message({ type: 'changed', kind: 'notification', id: 'n1' });
+  sockets[0].message({ type: 'changed', kind: 'nothing-known', id: 'x' });
   sockets[0].message({ type: 'pong' });
-  assert.equal(invalidations.length, 1);
+  settle();
+  assert.equal(
+    JSON.stringify(invalidations),
+    '[{"queryKey":["notifications"]}]'
+  );
+
+  // A resync invalidates everything at once and drops waiting events.
+  invalidations.length = 0;
+  sockets[0].message({ type: 'changed', kind: 'stock', id: 's1' });
   sockets[0].message({ type: 'resync' });
-  assert.equal(invalidations[1], undefined);
+  assert.equal(invalidations.length, 1);
+  assert.equal(invalidations[0], undefined);
+  settle();
+  assert.equal(invalidations.length, 1, 'a dropped event does not fire later');
 
   sockets[0].close();
   assert.equal(pending.size, 1);
-  const releaseMarket = connection.subscribe('market', {
-    ...listener,
-    keys: [['listings']],
-  });
-  assert.equal(
-    sockets.length,
-    1,
-    'subscribe during backoff must not open another connection'
-  );
+  connection.start();
+  assert.equal(sockets.length, 1, 'no second socket during backoff');
   const [id, retry] = [...pending][0];
   assert.ok(retry.delay >= 1000 && retry.delay < 1250);
   pending.delete(id);
@@ -321,18 +318,9 @@ test('socket shares subscriptions, invalidates topics, reconnects and stops deni
   sockets[1].open();
   assert.equal(invalidations.length, 1, 'reconnect recovers missed events');
   assert.equal(invalidations[0], undefined);
-  assert.equal(
-    sockets[1].sent.filter((message) => message.type === 'subscribe').length,
-    2
-  );
+  assert.equal(sockets[1].sent.length, 0);
 
-  invalidations.length = 0;
-  sockets[1].message({ type: 'denied', topic: 'stock:user' });
-  sockets[1].message({ type: 'changed', topic: 'stock:user' });
-  assert.equal(invalidations.length, 0);
-  assert.ok(states.includes('denied'));
-  releaseSecond();
-  releaseMarket();
+  connection.stop();
   assert.equal(sockets[1].readyState, 3);
   assert.equal(pending.size, 0);
 });

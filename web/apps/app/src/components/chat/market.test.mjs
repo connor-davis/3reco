@@ -91,9 +91,6 @@ function messageHooks(api, live = []) {
         return `?${query}`;
       },
     },
-    '../live/use-live': {
-      useLiveTopics: (topics, keys) => live.push({ topics, keys }),
-    },
     '@tanstack/react-query': { useInfiniteQuery: (options) => options },
     '../auth/use-auth': { useAuth: () => ({ user: { id: 'buyer' } }) },
     './client': { api },
@@ -153,13 +150,11 @@ test('message history follows forward cursors and live refetch reaches appended 
   }
 });
 
-test('message and inbox histories subscribe through request topics', () => {
+test('message and inbox histories page by cursor', () => {
   const live = [];
   const hooks = messageHooks(async () => ({}), live);
   hooks.useMessageHistory('request');
   const inbox = hooks.useThreadHistory();
-  assert.equal(live[0].topics.join(','), 'request:request');
-  assert.equal(live[1].topics.join(','), 'requests:buyer');
   assert.equal(
     inbox.getNextPageParam({ has_more: true, next_cursor: 'opaque' }),
     'opaque'

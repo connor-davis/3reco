@@ -379,25 +379,10 @@ func TestStockHoldsExpirySkipsLocksAndRollsBack(t *testing.T) {
 func TestStockHoldsRealtime(t *testing.T) {
 	w := newTradeWorld(t)
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
-	sock, _, err := dial(t, w.app, w.seller.c, testutil.WebOrigin)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	topic := "stock:" + w.seller.id
-	sock.send(map[string]string{"type": "subscribe", "topic": topic})
-	sock.send(map[string]string{"type": "ping"})
-	if event := sock.next(); event["type"] != "pong" {
-		t.Fatalf("subscription barrier: %v", event)
-	}
+	sock := joinLive(t, w.app, w.seller)[0]
 
 	tradeOffer(t, w.seller, id, w.material, "40", "9")
-	event := sock.next()
-	if event["type"] != "changed" || event["topic"] != topic || event["id"] != id {
-		t.Fatalf("hold event: %v", event)
-	}
 
-	if len(event) != 3 {
-		t.Fatalf("hold event leaked fields: %v", event)
-	}
+	sock.hear("request", id)
+	sock.hear("stock", w.stock)
 }

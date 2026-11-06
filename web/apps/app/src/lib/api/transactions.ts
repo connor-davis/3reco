@@ -11,7 +11,6 @@ export function useTransactions(
   return useResource<Page<T.Transaction>>(
     ['transactions', kind, params],
     `/transactions/${kind === 'mine' ? '' : kind}${queryString(params)}`,
-    ['transactions:me'],
     true
   );
 }
@@ -24,7 +23,6 @@ export function useTransactionTotals(
   return useResource<T.TransactionTotals>(
     ['transactions', 'totals', kind, filters],
     `/transactions/totals${queryString({ kind, ...filters })}`,
-    ['transactions:me'],
     true,
     enabled
   );
@@ -33,7 +31,6 @@ export function useTransaction(id: string) {
   return useResource<T.Transaction>(
     ['transactions', id],
     `/transactions/${idPath(id)}`,
-    ['transactions:me'],
     true,
     !!id
   );
