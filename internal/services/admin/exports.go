@@ -119,7 +119,30 @@ func (s *Service) PrepareExport(
 		return empty, apperr.Field("role", "Choose a valid account role.")
 	}
 
-	return Export{Filename: kind + ".csv", Write: func(ctx context.Context, output io.Writer) error {
+	filename := "3REco-" + kind
+	if tradeType != "" {
+		filename += "-" + tradeType
+	}
+	if itemised {
+		filename += "-by-material"
+	}
+	for _, bound := range []*time.Time{from, to} {
+		if bound != nil {
+			filename += "-" + bound.In(sast).Format(time.DateOnly)
+		}
+	}
+	if search != "" || role != "" {
+		filename += "-filtered"
+	}
+
+	return Export{Filename: filename + ".csv", Write: func(ctx context.Context, output io.Writer) error {
+		if err := s.audit.RecordExport(ctx, user.ID, "", kind, map[string]string{
+			"from": rawFrom, "to": rawTo, "itemised": rawItemised,
+			"type": tradeType, "role": role, "q": search,
+		}); err != nil {
+			return err
+		}
+
 		writer := csv.NewWriter(output)
 		write := func(cells []string) error {
 			for i, cell := range cells {
@@ -159,12 +182,13 @@ func (s *Service) PrepareExport(
 			header = append(header, "Materials")
 		}
 		header = append(header, transactionColumns[7:]...)
+		header = append(header, "Invoice number")
 		if err := write(header); err != nil {
 			return err
 		}
 
 		audited := false
-		return s.trades.ExportIDs(ctx, scope, owner, tradeType, from, to, func(id string) error {
+		return s.trades.ExportIDs(ctx, scope, owner, tradeType, paging.SearchPattern(search), from, to, func(id string) error {
 			document, err := s.trades.Document(ctx, id)
 			if err != nil {
 				return err
@@ -230,7 +254,7 @@ func exportRows(document tstore.Document, itemised bool) [][]string {
 
 	suffix := []string{weight.FloatString(2), pdf.Decimal(trade.TotalPrice), invoices.Name(seller),
 		seller.Email, seller.Phone, invoices.Address(seller), invoices.Name(buyer), buyer.Email,
-		buyer.Phone, invoices.Address(buyer), method, payout}
+		buyer.Phone, invoices.Address(buyer), method, payout, trade.InvoiceNumber}
 	if !itemised {
 		return [][]string{append(append(prefix, strings.Join(materials, "\n")), suffix...)}
 	}

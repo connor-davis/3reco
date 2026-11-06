@@ -165,6 +165,7 @@ export function RecordList({
         to: to?.toISOString(),
         itemised: csv === 'material',
         type: filters.type,
+        q,
       },
       { onError: (error) => toast.error(errorText(error)) }
     );
@@ -247,7 +248,12 @@ export function RecordList({
               <Button
                 variant="outline"
                 className="h-11"
-                disabled={download.isPending}
+                disabled={
+                  download.isPending ||
+                  totals.isFetching ||
+                  !totals.data?.count ||
+                  query.trim() !== q
+                }
                 onClick={exportCsv}
               >
                 <Download data-icon="inline-start" />

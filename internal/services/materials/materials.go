@@ -4,6 +4,8 @@ package materials
 import (
 	"context"
 	"errors"
+	"math/big"
+	"regexp"
 	"strings"
 	"time"
 
@@ -79,6 +81,10 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 	err := service.db.InTx(
 		ctx,
 		func(ctx context.Context) error {
+			if err := service.store.LockCatalog(ctx); err != nil {
+				return err
+			}
+
 			item := store.Material{ID: id}
 			if !creating {
 				var err error
@@ -108,16 +114,34 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				item.Price = *in.Price
 			}
 
-			if item.Name == "" || item.GWCode == "" {
-				return apperr.BadRequest("Provide name and GW code.", nil)
+			if item.Name == "" {
+				return apperr.Field("name", "Enter the material name.")
+			}
+			if item.GWCode == "" {
+				return apperr.Field("gw_code", "Enter the GW code, for example GW13.")
 			}
 
-			if _, err := stock.Decimal(item.Price, "price", false); err != nil {
+			if err := checkAmount(item.Price, "price", true); err != nil {
+				return err
+			}
+			if err := checkAmount(item.CarbonFactor, "carbon_factor", false); err != nil {
 				return err
 			}
 
-			if _, err := stock.Decimal(item.CarbonFactor, "carbon_factor", false); err != nil {
+			name, code, err := service.store.Conflicts(ctx, item)
+			if err != nil {
 				return err
+			}
+			for field, duplicate := range map[string]bool{"name": name, "gw_code": code} {
+				if duplicate {
+					message := "A material with this name already exists."
+					if field == "gw_code" {
+						message = "A material with this GW code already exists."
+					}
+					failure := apperr.Conflict(message)
+					failure.Data = map[string]string{field: message}
+					return failure
+				}
 			}
 
 			if creating {
@@ -131,6 +155,26 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 	return id, err
 }
 
+var amountPattern = regexp.MustCompile(`^[0-9]{1,12}(\.[0-9]{1,2})?$`)
+
+func checkAmount(raw, field string, capped bool) error {
+	if !amountPattern.MatchString(raw) {
+		return apperr.Field(field, "Enter a positive amount with up to 2 decimals.")
+	}
+	number, err := stock.Decimal(raw, field, false)
+	if err != nil {
+		return err
+	}
+	if number.Sign() <= 0 {
+		return apperr.Field(field, "Enter a positive amount with up to 2 decimals.")
+	}
+	if capped && number.Cmp(big.NewRat(100000, 1)) > 0 {
+		return apperr.Field(field, "Price must be R 100000.00 per kg or less.")
+	}
+
+	return nil
+}
+
 // Delete reports references as a conflict instead of leaking database errors.
 func (service *Service) Delete(ctx context.Context, user auth.User, id string) error {
 	if !auth.HasRole(user, "admin") {
@@ -140,6 +184,10 @@ func (service *Service) Delete(ctx context.Context, user auth.User, id string) e
 	return service.db.InTx(
 		ctx,
 		func(ctx context.Context) error {
+			if err := service.store.LockCatalog(ctx); err != nil {
+				return err
+			}
+
 			_, err := service.store.Find(ctx, id, true)
 			if errors.Is(err, pgx.ErrNoRows) {
 				return apperr.NotFound("No such material.")

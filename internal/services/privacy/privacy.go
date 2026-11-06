@@ -141,5 +141,5 @@ func (s *Service) Export(ctx context.Context, user auth.User) (map[string]any, e
 	out["collectors_created"] = created
 	out["exported_at"] = time.Now().UTC()
 
-	return out, s.store.Record(ctx, user.ID, user.ID, KindExport)
+	return out, s.store.RecordExport(ctx, user.ID, user.ID, "personal", map[string]string{})
 }

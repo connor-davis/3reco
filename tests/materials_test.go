@@ -12,7 +12,7 @@ func TestMaterialsAdminOnly(t *testing.T) {
 	member, _ := domainUser(t, app, "collector")
 	staff, _ := domainUser(t, app, "staff")
 	anonymous := app.NewClient(t)
-	body := map[string]any{"name": "Copper", "price": "2.1234567890123456789", "carbon_factor": "2.25", "gw_code": "GW1"}
+	body := map[string]any{"name": "Copper", "price": "2.12", "carbon_factor": "2.25", "gw_code": "GW1"}
 	id := status(t, admin.Do("POST", "/api/admin/materials", body), 200).Body["id"].(string)
 
 	for _, client := range []*testutil.Client{anonymous, member, staff} {

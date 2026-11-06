@@ -158,7 +158,7 @@ func (s *Store) SetInvoice(ctx context.Context, id, key string) error {
 func (s *Store) ExportIDs(
 	ctx context.Context,
 	scope Scope,
-	owner, kind string,
+	owner, kind, like string,
 	from, to any,
 	visit func(string) error,
 ) error {
@@ -166,13 +166,17 @@ func (s *Store) ExportIDs(
 	var recorded *time.Time
 	var lastID string
 	for {
-		rows, err := s.db.Q(ctx).Query(ctx, `SELECT t.id,`+database.EffectiveDate("t")+`,t.created_at FROM transactions t
+		rows, err := s.db.Q(ctx).Query(ctx, `SELECT t.id,`+database.EffectiveDate("t")+`,t.created_at`+fromJoins+`
 			WHERE t.status='complete' AND (`+scopeSQL[scope]+`) AND ($2='' OR t.type=$2)
 			AND ($3::timestamptz IS NULL OR `+database.EffectiveDate("t")+` >= $3)
 			AND ($4::timestamptz IS NULL OR `+database.EffectiveDate("t")+` <= $4)
+			AND ($8='' OR t.id ILIKE $8 OR `+database.DisplayName("b")+` ILIKE $8
+			OR COALESCE(c.name, `+database.DisplayName("s")+`) ILIKE $8
+			OR EXISTS(SELECT 1 FROM transaction_items i JOIN materials m ON m.id=i.material_id
+				WHERE i.transaction_id=t.id AND m.name ILIKE $8))
 			AND ($5::timestamptz IS NULL OR (`+database.EffectiveDate("t")+`,t.created_at,t.id)<($5,$7::timestamptz,$6))
 			ORDER BY `+database.EffectiveDate("t")+` DESC,t.created_at DESC,t.id DESC LIMIT 100`,
-			owner, kind, from, to, before, lastID, recorded)
+			owner, kind, from, to, before, lastID, recorded, like)
 		if err != nil {
 			return err
 		}

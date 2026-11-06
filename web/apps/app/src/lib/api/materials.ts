@@ -16,8 +16,17 @@ export function useMaterial(id: string) {
     !!id
   );
 }
+/** The complete public catalog for duplicate checks in the material form. */
+export function useMaterialCatalog() {
+  return useResource<T.Material[]>(
+    ['materials', 'catalog'],
+    '/materials?all=true'
+  );
+}
 export function useCreateMaterial() {
-  return useWrite<T.MaterialInput, T.Created>('/admin/materials', 'POST', []);
+  return useWrite<T.MaterialInput, T.Created>('/admin/materials', 'POST', [
+    ['materials'],
+  ]);
 }
 export function useUpdateMaterial(id: string) {
   return useWrite<Partial<T.MaterialInput>, T.Ok>(
