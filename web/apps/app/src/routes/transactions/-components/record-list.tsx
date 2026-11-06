@@ -140,7 +140,7 @@ export function RecordList({
   };
   const pager = usePager(50, filters);
   const list = useTransactions(kind, pager.params);
-  const totals = useTransactionTotals(kind, filters, stats);
+  const totals = useTransactionTotals(kind, filters);
   const download = useExport(exportKind ?? 'transactions');
 
   const shown = list.data?.items ?? [];
@@ -164,6 +164,7 @@ export function RecordList({
         from: range?.from?.toISOString(),
         to: to?.toISOString(),
         itemised: csv === 'material',
+        type: filters.type,
       },
       { onError: (error) => toast.error(errorText(error)) }
     );
@@ -260,11 +261,19 @@ export function RecordList({
         query={list}
         isEmpty={shown.length === 0}
         icon={Receipt}
-        emptyTitle={filtered ? 'No matching records' : emptyTitle}
+        emptyTitle={
+          filtered
+            ? 'No matching records'
+            : status === 'pending'
+              ? `No pending ${kind === 'mine' ? 'transactions' : kind}`
+              : emptyTitle
+        }
         emptyText={
           filtered
             ? 'Try other dates or words.'
-            : 'They appear here once a deal is recorded.'
+            : status === 'pending'
+              ? 'Agreed trades appear here while both sides confirm.'
+              : 'They appear here once a deal is recorded.'
         }
         skeleton={<RowsSkeleton />}
       >
@@ -314,7 +323,7 @@ export function RecordList({
           ))}
         </ItemGroup>
       </DataState>
-      <Pager pager={pager} page={list.data} />
+      <Pager pager={pager} page={list.data} total={totals.data?.count} />
       <TransactionDialog
         key={(open ?? linkedRow)?.id}
         record={open ?? linkedRow}

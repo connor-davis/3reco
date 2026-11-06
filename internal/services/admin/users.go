@@ -11,6 +11,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/invoices"
 	"github.com/connor-davis/3reco/internal/services/privacy"
 	store "github.com/connor-davis/3reco/internal/stores/admin"
 	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
@@ -23,11 +24,12 @@ var roles = []string{auth.RoleGuest, auth.RoleAdmin, auth.RoleStaff, auth.RoleBu
 // Service is the admin rules. The routes check the caller's role, and the
 // methods that change data check it again.
 type Service struct {
-	db      *database.DB
-	store   *store.Store
-	trades  *tstore.Store
-	privacy *privacy.Service
-	audit   *pstore.Store
+	db       *database.DB
+	store    *store.Store
+	trades   *tstore.Store
+	privacy  *privacy.Service
+	audit    *pstore.Store
+	invoices *invoices.Service
 }
 
 // New builds the service.
@@ -37,8 +39,9 @@ func New(
 	trades *tstore.Store,
 	privacyService *privacy.Service,
 	audit *pstore.Store,
+	invoiceService *invoices.Service,
 ) *Service {
-	return &Service{db: db, store: s, trades: trades, privacy: privacyService, audit: audit}
+	return &Service{db: db, store: s, trades: trades, privacy: privacyService, audit: audit, invoices: invoiceService}
 }
 
 func requireAdmin(user auth.User) error {

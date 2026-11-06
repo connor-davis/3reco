@@ -149,6 +149,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
         open={chatOpen}
         onOpenChange={setChatOpen}
         listing={listing}
+        initialWeight={problem ? '' : weight}
       />
       <Gallery />
       <div className="space-y-6">

@@ -185,7 +185,9 @@ function UsersPage() {
           className="min-h-11"
           variant="outline"
           disabled={download.isPending}
-          onClick={() => download.mutate({})}
+          onClick={() =>
+            download.mutate({ role: role === 'all' ? undefined : role, q })
+          }
         >
           <Download data-icon="inline-start" />
           {download.isPending ? 'Exporting…' : 'Export users'}

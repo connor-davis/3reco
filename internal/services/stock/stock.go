@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/big"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -72,9 +73,12 @@ func (service *Service) Find(ctx context.Context, id, caller string) (store.Item
 	return item, err
 }
 
-func validate(item store.Item) error {
+func validate(item store.Item, newWeight bool) error {
 	if _, err := Decimal(item.Weight, "weight", true); err != nil {
 		return err
+	}
+	if _, fraction, _ := strings.Cut(item.Weight, "."); newWeight && len(fraction) > 2 {
+		return apperr.Field("weight", "Enter a weight with up to 2 decimals, such as 12.50.")
 	}
 
 	price, err := Decimal(item.Price, "price", false)
@@ -120,7 +124,7 @@ func (service *Service) Create(ctx context.Context, owner string, in Input) (str
 			}
 
 			item.BasePrice = base
-			if err := validate(item); err != nil {
+			if err := validate(item, true); err != nil {
 				return err
 			}
 
@@ -175,7 +179,7 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 				}
 			}
 
-			if err := validate(item); err != nil {
+			if err := validate(item, in.Weight != nil); err != nil {
 				return err
 			}
 

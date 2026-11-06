@@ -27,7 +27,7 @@ func TestPublicStats(t *testing.T) {
 	material := tradeMaterial(t, app, "Stats plastic", "1")
 	tradeStock(t, app, seller.id, material, "100", "2")
 	tradeStock(t, app, removed.id, material, "100", "2")
-	tradeSale(t, seller, buyer, material, "12.125", "2")
+	tradeSale(t, seller, buyer, material, "12.12", "2")
 	tradeSale(t, removed, buyer, material, "20", "2")
 	tradeExec(t, app, `UPDATE users SET is_removed=true WHERE id=$1`, removed.id)
 
@@ -42,7 +42,7 @@ func TestPublicStats(t *testing.T) {
 		t.Fatalf("stats exposed unexpected keys: %s", after.Raw)
 	}
 
-	for key, expected := range map[string]string{"total_kg": "35.625", "co2_kg": "71.25"} {
+	for key, expected := range map[string]string{"total_kg": "35.62", "co2_kg": "71.24"} {
 		value, ok := after.Body[key].(string)
 		if !ok {
 			t.Fatalf("%s must be a decimal string: %s", key, after.Raw)
@@ -63,7 +63,7 @@ func TestPublicStats(t *testing.T) {
 		t.Fatalf("a b2b seller and a collection buyer, not the removed one: %s", after.Raw)
 	}
 
-	// The seller traded 12.125 kg; the buyer bought 3.5 kg of collections.
+	// The seller traded 12.12 kg; the buyer bought 3.5 kg of collections.
 	for index, want := range []string{seller.id, buyer.id} {
 		store := stores[index].(map[string]any)
 		if len(store) != 3 || store["id"] != want {

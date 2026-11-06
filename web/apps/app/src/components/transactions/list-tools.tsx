@@ -7,17 +7,22 @@ import { cn } from '@/lib/utils';
 type PagerProps = {
   pager: ReturnType<typeof usePager>;
   page?: Page<unknown>;
+  total?: number;
 };
 
 /** Previous and Next buttons. Hidden while there is only one page. */
-export function Pager({ pager, page }: PagerProps) {
+export function Pager({ pager, page, total }: PagerProps) {
   const next = page ? nextPage(page) : undefined;
 
   if (!pager.hasPrevious && !next) return null;
 
   return (
     <div className="mt-4 flex items-center justify-end gap-2 text-sm text-muted-foreground">
-      <span>Page {pager.pageNumber}</span>
+      <span>
+        {total === undefined
+          ? `Page ${pager.pageNumber}`
+          : `${(pager.pageNumber - 1) * pager.params.limit + 1}–${(pager.pageNumber - 1) * pager.params.limit + (page?.items.length ?? 0)} of ${total}`}
+      </span>
       <Button
         variant="outline"
         size="sm"

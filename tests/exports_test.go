@@ -75,7 +75,7 @@ func TestExportsScopeAndColumns(t *testing.T) {
 	}
 
 	row := csvRows(t, w.seller.c, "/api/exports/sales")[1]
-	if row[0] != id || row[2] != "05/11/2026" || row[3] != "05/11/2026 01:30" ||
+	if row[0] != id || row[2] != "2026-11-05" || row[3] != "2026-11-05T01:30:00+02:00" ||
 		row[7] != "2.50" || row[8] != "20.33" || row[9] != "'=SUM(1,2)" ||
 		row[12] != "Street, \"quoted\"\nsecond line" ||
 		row[6] != "1. Copper, \"clean\"\nwire - 2.50 kg x R 8.13 = R 20.33" {
@@ -93,7 +93,7 @@ func TestExportsScopeAndColumns(t *testing.T) {
 
 	bound := url.QueryEscape("2026-10-01T00:00:00+02:00")
 	rows := csvRows(t, w.buyer.c, "/api/exports/collections?from="+bound+"&to="+bound)
-	if len(rows) != 2 || rows[1][0] != c2b || rows[1][2] != "01/10/2026" {
+	if len(rows) != 2 || rows[1][0] != c2b || rows[1][2] != "2026-10-01" {
 		t.Fatalf("inclusive effective-date filter: %v", rows)
 	}
 	for _, query := range []string{"from=nope", "from=2026-10-01", "itemised=wrong",

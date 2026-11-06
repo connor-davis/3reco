@@ -6,12 +6,15 @@ import (
 )
 
 // ExportUsers streams allowlisted active account columns without payout fields.
-func (s *Store) ExportUsers(ctx context.Context, visit func([]string) error) error {
+func (s *Store) ExportUsers(ctx context.Context, role, like string, visit func([]string) error) error {
 	rows, err := s.db.Q(ctx).Query(ctx, `SELECT COALESCE(email,''),COALESCE(role,''),
 		COALESCE(first_name,''),COALESCE(last_name,''),COALESCE(business_name,''),
 		COALESCE(business_registration_number,''),COALESCE(phone,''),COALESCE(street_address,''),
 		COALESCE(city,''),COALESCE(area_code::text,''),COALESCE(province,''),created_at
-		FROM users WHERE NOT is_removed ORDER BY created_at DESC,id DESC`)
+		FROM users u WHERE NOT is_removed AND ($1='' OR role=$1)
+		AND ($2='' OR name ILIKE $2 OR email ILIKE $2 OR business_name ILIKE $2
+			OR concat_ws(' ',first_name,last_name) ILIKE $2)
+		ORDER BY created_at DESC,id DESC`, role, like)
 	if err != nil {
 		return err
 	}
@@ -26,7 +29,7 @@ func (s *Store) ExportUsers(ctx context.Context, visit func([]string) error) err
 			return err
 		}
 
-		values[11] = registered.UTC().Format(time.RFC3339)
+		values[11] = registered.In(time.FixedZone("SAST", 7200)).Format(time.RFC3339)
 		if err := visit(values); err != nil {
 			return err
 		}

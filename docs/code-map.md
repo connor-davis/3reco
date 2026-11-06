@@ -61,6 +61,7 @@ Never rename a merged migration. Add a new file.
 | Notice version and retention periods (the one place to change them) | `internal/platform/config/privacy.go` |
 | Export, self-delete, notice, audit log, hourly retention: SQL, rules, `/api/privacy` routes | `internal/stores/privacy`, `internal/services/privacy`, `internal/api/privacy` |
 | Who sees a collector's full account number (creator, own login, admin; the rest masked) | `internal/services/collectors/collectors.go` |
+| Reuse collector payout access for frozen invoice/CSV snapshots | `internal/services/collectors/payout_access.go` (`CanReadFullPayout`), `internal/services/invoices/invoices.go` (`Project`) |
 | Privacy tests: ciphertext at rest, mask and full view, export, delete, retention, notice, audit | `tests/privacy_test.go`, `tests/privacy_rights_test.go`, `tests/fieldcrypt_test.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
@@ -117,6 +118,7 @@ Never rename a merged migration. Add a new file.
 | Receipt sniffing, access leaks, SHA duplicate cleanup and concurrent sixth upload | `tests/receipts_test.go` |
 | Invoice authorization, exact decimals, pagination, snapshots, regeneration, rollback and attached Mailpit messages | `tests/invoices_test.go` |
 | Five CSV schemas, role/owner scope, effective date bounds, escaping and formula guard | `tests/exports_test.go` |
+| Round 3 trade regressions: payout roles and mail attachments, weight writes, stock prices, history, export filters and negotiated reviews | `tests/qa_round3_trade_test.go`, `web/apps/app/tests/qa-round3-trade.test.mjs` |
 | Code rules: doc comments, file length | `tests/style_test.go` |
 | Offer holds, races, rollback, expiry, stock safeguards, availability and realtime | `tests/stock_holds_test.go` |
 | Request terms, dual confirmation, pending isolation, counter/cancellation, privacy and migration backfill | `tests/market_flow_test.go` |

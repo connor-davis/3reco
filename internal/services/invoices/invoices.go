@@ -16,11 +16,13 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/pdf"
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/collectors"
 	"github.com/connor-davis/3reco/internal/services/privacy"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
@@ -29,13 +31,14 @@ import (
 
 // Service owns invoice rendering and delivery.
 type Service struct {
-	db      *database.DB
-	store   *store.Store
-	objects *storage.Client
-	mailer  *mail.Mailer
-	trades  *transactions.Service
-	audit   *pstore.Store
-	pending sync.WaitGroup
+	db         *database.DB
+	store      *store.Store
+	objects    *storage.Client
+	mailer     *mail.Mailer
+	trades     *transactions.Service
+	audit      *pstore.Store
+	pending    sync.WaitGroup
+	collectors *collectors.Service
 }
 
 // New wires the after-commit hook before requests can create trades.
@@ -47,9 +50,11 @@ func New(
 	mailer *mail.Mailer,
 	trades *transactions.Service,
 	audit *pstore.Store,
+	collectorService *collectors.Service,
 ) *Service {
 	service := &Service{
 		db: db, store: rows, objects: objects, mailer: mailer, trades: trades, audit: audit,
+		collectors: collectorService,
 	}
 	trades.SetInvoiceHook(service.queue)
 	lifecycle.Append(fx.Hook{OnStop: func(ctx context.Context) error {
@@ -150,7 +155,7 @@ func Compose(document store.Document) pdf.Invoice {
 
 	invoice := pdf.Invoice{
 		Number: trade.InvoiceNumber,
-		Date:   trade.EffectiveAt.In(time.FixedZone("SAST", 7200)).Format("2 January 2006"),
+		Date:   trade.EffectiveAt.In(time.FixedZone("SAST", 7200)).Format("02 Jan 2006"),
 		Seller: party(document.Seller), Buyer: party(document.Buyer),
 		Type: kind, Payment: payment, Total: pdf.Decimal(trade.TotalPrice),
 	}
@@ -186,7 +191,13 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 			return nil
 		}
 
-		data, err = pdf.Render(Compose(document))
+		// Store and email only the buyer's authorized projection. Downloads
+		// render for their own reader so a cached full PDF never leaks to staff.
+		projected, err := s.Project(ctx, document.BuyerUser, document)
+		if err != nil {
+			return err
+		}
+		data, err = pdf.Render(Compose(projected))
 		if err != nil {
 			return err
 		}
@@ -265,6 +276,25 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 		return nil, "", apperr.NotFound("That invoice is no longer kept.")
 	}
 
+	if trade.Type == "c2b" {
+		projected, err := s.Project(ctx, user, document)
+		if err != nil {
+			return nil, "", err
+		}
+		if auth.HasRole(user, auth.RoleAdmin) &&
+			(projected.Seller.Account != "" || projected.Seller.PaymentID != "") {
+			if err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView); err != nil {
+				return nil, "", err
+			}
+		}
+		data, err := pdf.Render(Compose(projected))
+		if err != nil {
+			return nil, "", err
+		}
+
+		return io.NopCloser(bytes.NewReader(data)), trade.InvoiceNumber, nil
+	}
+
 	// The PDF shows the seller's full account number: an admin read is audited.
 	if auth.HasRole(user, "admin") && document.Seller.Account != "" {
 		err := s.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView)
@@ -292,4 +322,23 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 	reader, err := s.objects.Get(ctx, document.InvoiceKey)
 
 	return reader, trade.InvoiceNumber, err
+}
+
+// Project masks frozen collector identifiers using the collector service's
+// current access check. Trade participation alone does not grant payout access.
+func (s *Service) Project(ctx context.Context, user auth.User, document store.Document) (store.Document, error) {
+	if document.Trade.Type != "c2b" {
+		return document, nil
+	}
+
+	full, err := s.collectors.CanReadFullPayout(ctx, user, document.Trade.Seller.ID)
+	if err != nil {
+		return store.Document{}, err
+	}
+	if !full {
+		document.Seller.Account = crypt.Mask(document.Seller.Account)
+		document.Seller.PaymentID = crypt.Mask(document.Seller.PaymentID)
+	}
+
+	return document, nil
 }

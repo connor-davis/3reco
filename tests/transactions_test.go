@@ -15,8 +15,8 @@ func tradeCollector(t *testing.T, app *testutil.App, by tradeUser, phone string)
 	id := database.NewID()
 
 	tradeExec(t, app, `
-		INSERT INTO collectors (id, name, phone, normalized_phone, created_by_user_id)
-		VALUES ($1, 'Thandi Collector', $2, $2, $3)`, id, phone, by.id)
+		INSERT INTO collectors (id, name, phone, normalized_phone, created_by_user_id, created_by_business_id)
+		VALUES ($1, 'Thandi Collector', $2, $2, $3, $3)`, id, phone, by.id)
 
 	return id
 }

@@ -176,7 +176,7 @@ func (s *Service) settle(
 			return "", errNoStock
 		}
 
-		err = s.store.Give(ctx, buyerID, item.MaterialID, item.Weight, item.Price, database.NewID())
+		err = s.store.Give(ctx, buyerID, item.MaterialID, item.Weight, database.NewID())
 		if err != nil {
 			return "", err
 		}
@@ -311,7 +311,7 @@ func (s *Service) collect(ctx context.Context, buyerID string, in CollectionInpu
 			return "", errNoMaterial
 		}
 
-		err := s.store.Give(ctx, buyerID, item.MaterialID, item.Weight, item.Price, database.NewID())
+		err := s.store.Give(ctx, buyerID, item.MaterialID, item.Weight, database.NewID())
 		if err != nil {
 			return "", err
 		}
