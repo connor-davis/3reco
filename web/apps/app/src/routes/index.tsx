@@ -185,6 +185,7 @@ function Dashboard() {
                 <CounterpartyRows
                   rows={dashboard.counterparties}
                   tradesTo={collector ? '/transactions/sales' : '/transactions'}
+                  platformTotals={staff ? dashboard.totals : undefined}
                 />
                 <MaterialsPanel series={dashboard.series} />
               </div>

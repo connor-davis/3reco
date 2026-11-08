@@ -10,6 +10,12 @@ test('qa-round18 L1: Trading partners fills its card and pins a summary to the b
   assert.match(panels, /sum \+ toCents\(party\.value\)/);
   assert.match(panels, /sum \+ party\.count/);
   assert.match(panels, /View all trades/);
+  // Admin rows list a trade under both partners, so they are never summed.
+  assert.match(panels, /platformTotals\?\.count \?\?/);
+  assert.match(
+    source('routes/index.tsx'),
+    /platformTotals=\{staff \? dashboard\.totals : undefined\}/
+  );
   assert.match(
     source('routes/index.tsx'),
     /tradesTo=\{collector \? '\/transactions\/sales' : '\/transactions'\}/

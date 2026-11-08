@@ -67,13 +67,20 @@ export function MaterialsPanel({ series }: { series: Dashboard['series'] }) {
 export function CounterpartyRows({
   rows,
   tradesTo = '/transactions',
+  platformTotals,
 }: {
   rows: Dashboard['counterparties'];
   tradesTo?: '/transactions' | '/transactions/sales';
+  // Admin and staff: a trade is a row under both its partners, so the rows
+  // cannot be added up. Pass the platform's own totals, each trade once.
+  platformTotals?: Dashboard['totals'];
 }) {
   // Integer cents and counts, so the summary matches the rows exactly.
-  const trades = rows.reduce((sum, party) => sum + party.count, 0);
-  const cents = rows.reduce((sum, party) => sum + toCents(party.value), 0);
+  const trades =
+    platformTotals?.count ?? rows.reduce((sum, party) => sum + party.count, 0);
+  const cents = platformTotals
+    ? toCents(platformTotals.value)
+    : rows.reduce((sum, party) => sum + toCents(party.value), 0);
   return (
     <Panel
       className="flex h-full flex-col"
@@ -108,7 +115,7 @@ export function CounterpartyRows({
             <span className="font-medium text-foreground">
               {plural(trades, 'trade')} · {formatRand(cents)}
             </span>{' '}
-            across these partners
+            {platformTotals ? 'in this period' : 'across these partners'}
           </p>
           <LinkButton className="min-h-11" to={tradesTo} variant="outline">
             View all trades

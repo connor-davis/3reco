@@ -118,3 +118,31 @@ func TestRound18CollectorsSortDescendingAcrossPages(t *testing.T) {
 		t.Fatalf("descending is not the exact reverse of ascending:\n%v\n%v", up, down)
 	}
 }
+
+// One B2B trade is a row under both partners, but the admin totals the summary
+// uses count it once.
+func TestRound18AdminTotalsCountEachTradeOnce(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+
+	tradeSale(t, w.seller, w.buyer, w.material, "20", "8") // 160.00
+
+	body := tradeDash(t, admin, "/api/admin/dashboard")
+
+	cps, _ := body["counterparties"].([]any)
+	if len(cps) != 2 {
+		t.Fatalf("partners %v, want the trade under both sides", cps)
+	}
+
+	for _, c := range cps {
+		row, _ := c.(map[string]any)
+		if row["count"] != float64(1) || !sameMoney(t, row["value"], "160") {
+			t.Errorf("partner row %v, want 1 trade worth 160", row)
+		}
+	}
+
+	totals, _ := body["totals"].(map[string]any)
+	if totals["count"] != float64(1) || !sameMoney(t, totals["value"], "160") {
+		t.Errorf("admin totals %v, want 1 trade worth 160", totals)
+	}
+}
