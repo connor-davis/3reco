@@ -20,7 +20,8 @@ import {
   useSignOutAll,
   useRevokeOtherSessions,
 } from '@/lib/api/auth';
-import { formatDate } from '@/lib/format';
+import { roleLabel } from '@/lib/access';
+import { formatDate, formatTime } from '@/lib/format';
 
 export function SessionsPanel() {
   const sessions = useSessions();
@@ -47,8 +48,9 @@ export function SessionsPanel() {
               <ItemContent>
                 <ItemTitle>{session.name}</ItemTitle>
                 <ItemDescription>
-                  {session.email} · {session.role ?? 'No role'} · Started{' '}
-                  {formatDate(session.createdAt)}
+                  {session.email} · {roleLabel(session.role) || 'Guest'} ·
+                  Started {formatDate(session.createdAt)} at{' '}
+                  {formatTime(session.createdAt)}
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
@@ -107,7 +109,7 @@ export function SessionsPanel() {
         open={open}
         onOpenChange={setOpen}
         title="Sign all accounts out?"
-        description="All accounts saved in this browser will need to sign in again."
+        description="All signed-in accounts on this device will need to sign in again."
         confirmLabel="Sign all out"
         cancelLabel="Stay signed in"
         onConfirm={() => signOut.mutate()}

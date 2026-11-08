@@ -58,7 +58,7 @@ export function MaterialDialog({ open, onOpenChange, material }: Props) {
   const catalog = useMaterialCatalog();
   const update = useUpdateMaterial(material?.id ?? '');
   const [serverError, setServerError] = useState('');
-  const { control, handleSubmit, setError } = useForm<Values>({
+  const { control, handleSubmit, setError, reset } = useForm<Values>({
     resolver: zodResolver(schema),
     values: {
       name: material?.name ?? '',
@@ -102,6 +102,7 @@ export function MaterialDialog({ open, onOpenChange, material }: Props) {
         await create.mutateAsync(input);
         toast.success('Material added.');
       }
+      reset();
       onOpenChange(false);
     } catch (error) {
       if (error instanceof ApiError && error.fields) {

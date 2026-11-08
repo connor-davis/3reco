@@ -35,12 +35,14 @@ export function Topbar({ onSearch }: TopbarProps) {
     >
       <Breadcrumb className="hidden sm:block">
         <BreadcrumbList>
-          {pageTitleFor(pathname) !== 'Page not found' && (
-            <>
-              <BreadcrumbItem>Workspace</BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          )}
+          {user &&
+            user.role !== 'guest' &&
+            pageTitleFor(pathname) !== 'Page not found' && (
+              <>
+                <BreadcrumbItem>Workspace</BreadcrumbItem>
+                <BreadcrumbSeparator />
+              </>
+            )}
           <BreadcrumbItem>
             <BreadcrumbPage>{pageTitleFor(pathname)}</BreadcrumbPage>
           </BreadcrumbItem>

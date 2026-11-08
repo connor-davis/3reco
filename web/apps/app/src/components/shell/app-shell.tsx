@@ -1,4 +1,11 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useRouterState } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
@@ -9,6 +16,7 @@ import { BottomTabs } from './bottom-tabs';
 import { Topbar } from './topbar';
 import { isAuthPath, isChatPath, pageTitleFor } from '@/lib/nav';
 import { useLiveEvents } from '@/lib/live/use-live';
+import { GuestOnly } from '@/lib/auth/guest-only';
 
 const CommandSearch = lazy(() =>
   import('./command-search').then((module) => ({
@@ -37,8 +45,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Chat screens run edge to edge, like a messenger, so they skip the page padding.
   const chat = isChatPath(pathname);
 
-  // Each page names its browser tab, so history and tabs can be told apart.
-  useEffect(() => {
+  // Set the fallback before route effects apply the loaded store or listing name.
+  useLayoutEffect(() => {
     document.title = `${pageTitleFor(pathname)} · 3REco`;
   }, [pathname]);
 
@@ -68,7 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       {bare ? (
-        children
+        <GuestOnly>{children}</GuestOnly>
       ) : (
         <SidebarProvider>
           <AppSidebar />
@@ -96,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </SidebarProvider>
       )}
-      <Toaster position="top-right" />
+      <Toaster position="bottom-right" />
     </TooltipProvider>
   );
 }

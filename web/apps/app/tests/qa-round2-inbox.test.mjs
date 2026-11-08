@@ -54,6 +54,7 @@ test('G13/G28: sender gets a waiting sentence; completion keeps material terms',
     plural: (n) => `${n} material`,
   };
   const cards = load('components/chat/cards.tsx', {
+    '@/lib/api/requests': {},
     '@/components/link-button': { LinkButton: wrapper },
     '@/components/ui/button': { Button: wrapper },
     '@/components/ui/card': Object.fromEntries(
@@ -113,5 +114,5 @@ test('G15: no eligible review keeps both submit and launch disabled', () => {
   );
   const store = source('routes/market/store/$sellerId.tsx');
   assert.match(store, /!eligible.data\?\.items.length/);
-  assert.match(store, /You have reviewed all eligible trades\./);
+  assert.match(store, /Reviews are for completed purchases from this store\./);
 });

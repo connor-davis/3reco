@@ -11,8 +11,21 @@ import { Spinner } from '@/components/ui/spinner';
 import { ApiError } from '@/lib/api/client';
 import { useSignIn } from '@/lib/api/auth';
 import { showApiError } from '@/lib/form-errors';
+import { authDestination } from '@/lib/auth/redirect';
 
 export const Route = createFileRoute('/sign-in')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    ...(typeof search.email === 'string' ? { email: search.email } : {}),
+    ...(search.add === true || search.add === 1 || search.add === '1'
+      ? { add: true }
+      : {}),
+    ...(typeof search.redirect === 'string'
+      ? { redirect: search.redirect }
+      : {}),
+    ...(search.reason === 'ended' || search.reason === 'removed'
+      ? { reason: search.reason }
+      : {}),
+  }),
   component: SignInPage,
 });
 
@@ -26,7 +39,8 @@ function SignInPage() {
 
   const navigate = useNavigate();
   // The live socket names why access ended so people know what happened.
-  const reason = new URLSearchParams(window.location.search).get('reason');
+  const params = new URLSearchParams(window.location.search);
+  const reason = params.get('reason');
   const ended = reason === 'ended';
   const signIn = useSignIn();
   const [failure, setFailure] = useState<string | null>(null);
@@ -34,7 +48,7 @@ function SignInPage() {
 
   const { control, handleSubmit, setError, formState } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: params.get('email') ?? '', password: '' },
   });
 
   function onSubmit(values: Values) {
@@ -47,7 +61,7 @@ function SignInPage() {
         toast.success(
           data.user.role === 'guest' ? 'Welcome.' : 'Welcome back.'
         );
-        navigate({ to: '/' });
+        navigate({ to: authDestination(params.get('redirect')) });
       },
       onError: (error) => {
         // The API says so when the email is not verified yet; offer the way on.

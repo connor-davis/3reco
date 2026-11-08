@@ -155,7 +155,9 @@ function Dashboard() {
               />
               <StatCard
                 label="CO₂e saved (30 days)"
-                value={formatCo2(dashboard.totals.carbon_savings)}
+                value={formatCo2(dashboard.totals.carbon_savings, {
+                  wholeKg: true,
+                })}
                 icon={Leaf}
               />
             </StatGrid>
@@ -265,7 +267,7 @@ function CommunityImpact() {
               />
               <StatCard
                 label="CO₂e saved (all time)"
-                value={formatCo2(stats.co2_kg)}
+                value={formatCo2(stats.co2_kg, { wholeKg: true })}
                 icon={Leaf}
               />
               <StatCard

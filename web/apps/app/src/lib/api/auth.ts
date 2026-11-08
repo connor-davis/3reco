@@ -72,10 +72,10 @@ function useAuthMutation<Input, Output>(
         json(method, body(input))
       ),
     onSuccess: async () => {
-      // A device switch must remove the previous account's private cache.
-      await replaceSession(client, null);
+      // Read the new cookie before publishing the account change. A temporary
+      // signed-out state would send a valid dashboard session back to sign-in.
       const user = await readMe();
-      client.setQueryData(authKey, user);
+      await replaceSession(client, user);
     },
   });
 }

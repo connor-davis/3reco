@@ -143,7 +143,7 @@ function ProfilePage() {
           <TabsContent value="sessions">
             <Section
               title="Sessions"
-              description="Accounts saved in this browser."
+              description="Signed-in accounts on this device."
             >
               <SessionsPanel />
             </Section>
