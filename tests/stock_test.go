@@ -135,7 +135,7 @@ func TestStockUpdateZeroPrice(t *testing.T) {
 	).Scan(
 		&count,
 	)
-	if err != nil || count != 2 {
+	if err != nil || count != 0 {
 		t.Fatalf("notifications: %d %v", count, err)
 	}
 
@@ -144,26 +144,6 @@ func TestStockUpdateZeroPrice(t *testing.T) {
 	status(t, owner.Do("PATCH", "/api/stock/"+zeroID, map[string]any{"price": "0"}), 200)
 	if result := status(t, owner.Do("GET", "/api/stock/"+zeroID, nil), 200); result.Body["price"] != "0" {
 		t.Fatalf("explicit zero ignored: %s", result.Raw)
-	}
-}
-
-func TestStockNotificationRollback(t *testing.T) {
-	app := testutil.Server(t)
-	owner, _ := domainUser(t, app, "business")
-	id := domainStock(t, owner, domainMaterial(t, app, "Copper", "2"), false)
-	_, err := app.DB.Pool.Exec(
-		context.Background(),
-		`ALTER TABLE notifications
-		ADD CONSTRAINT force_notification_failure CHECK (type<>'stock_listed')`,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	status(t, owner.Do("PATCH", "/api/stock/"+id, map[string]any{"is_listed": true}), 500)
-	result := status(t, owner.Do("GET", "/api/stock/"+id, nil), 200)
-	if result.Body["is_listed"] != false {
-		t.Fatalf("stock committed without notification: %s", result.Raw)
 	}
 }
 

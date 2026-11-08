@@ -24,8 +24,6 @@ const (
 	RequestRejected  = "request_rejected"
 	RequestCancelled = "request_cancelled"
 	MessageReceived  = "message_received"
-	StockListed      = "stock_listed"
-	StockUnlisted    = "stock_unlisted"
 )
 
 // Notify tells one user something. Call it in the same transaction as the
