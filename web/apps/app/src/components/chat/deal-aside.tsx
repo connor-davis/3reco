@@ -1,6 +1,12 @@
 import { StatusBadge } from '@/components/badges';
 import { LinkButton } from '@/components/link-button';
-import { formatDate, formatKg, formatRand, formatRate } from '@/lib/format';
+import {
+  formatDate,
+  formatKg,
+  formatRand,
+  formatRate,
+  toGrams,
+} from '@/lib/format';
 import type { TradeRequest } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { requestLabel, requestTotal } from './helpers';
@@ -57,8 +63,9 @@ function Availability({ stockId }: { stockId: string }) {
   const listing = useListing(stockId);
   return listing.data ? (
     <p className="text-muted-foreground">
-      {formatKg(listing.data.weight)} available ·{' '}
-      {formatKg(listing.data.held_weight)} held
+      {formatKg(listing.data.weight)} available
+      {toGrams(listing.data.held_weight) > 0 &&
+        ` · ${formatKg(listing.data.held_weight)} held`}
     </p>
   ) : (
     <p className="text-muted-foreground">Availability unavailable</p>

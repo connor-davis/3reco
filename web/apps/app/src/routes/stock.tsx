@@ -120,18 +120,14 @@ function StockPage() {
   }
 
   function actions(item: StockItem) {
+    // Two lots can share a material, so the name carries weight and price.
+    const lot = `${item.material_name}, ${formatKg(item.weight)} at ${formatRate(item.price)}`;
     return (
       <div className="flex gap-1">
-        <IconButton
-          label={`Edit ${item.material_name}`}
-          onClick={() => openForm(item)}
-        >
+        <IconButton label={`Edit ${lot}`} onClick={() => openForm(item)}>
           <Pencil />
         </IconButton>
-        <IconButton
-          label={`Remove ${item.material_name}`}
-          onClick={() => setRemoving(item)}
-        >
+        <IconButton label={`Remove ${lot}`} onClick={() => setRemoving(item)}>
           <Trash2 />
         </IconButton>
       </div>

@@ -27,7 +27,7 @@ test('G19: closed inbox rows and every offer confirmation state', () => {
   );
   assert.match(
     helpers.threadSummary(thread),
-    /Offer by Metro.*Waiting for Greenline and Metro/
+    /Offer by Metro.*Waiting for both sides/
   );
   assert.match(
     helpers.threadSummary({ ...thread, buyer_confirmed_version: 2 }),

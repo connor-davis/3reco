@@ -125,6 +125,7 @@ test('make offer and counter disable Send for invalid prices even with stale for
           '@/lib/api/requests': { useOffer: () => ({ isPending: false }) },
           '@/lib/quantity': {
             quantityError: () => undefined,
+            priceError: compile('lib/quantity.ts').priceError,
             priceCounter: () => ({}),
             weightCounter: () => ({}),
           },

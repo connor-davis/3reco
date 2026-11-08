@@ -4,16 +4,22 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { load, source } from './qa-round2-loader.mjs';
 
-// priceError is private to the dialog, so run the function text itself.
+// The format rules live in lib/quantity.ts; the cap is the dialog's own.
 function priceErrorFn() {
+  const { priceError: priceFormatError } = load('lib/quantity.ts', {
+    '@/lib/format': load('lib/format.ts'),
+  });
+  const { lineCents } = load('lib/format.ts');
   const text = source('components/dialogs/offer-dialog.tsx');
   const start = text.indexOf('const MAX_PRICE_CENTS');
-  const end = text.indexOf('// A line carries');
+  const end = text.indexOf('// Only a hint');
   const { outputText } = ts.transpileModule(text.slice(start, end), {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   });
-  const { lineCents } = load('lib/format.ts');
-  return vm.runInNewContext(`${outputText}; priceError`, { lineCents });
+  return vm.runInNewContext(`${outputText}; priceError`, {
+    lineCents,
+    priceFormatError,
+  });
 }
 
 test('an offer price gets the right message for each mistake', () => {

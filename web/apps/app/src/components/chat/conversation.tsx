@@ -182,6 +182,11 @@ export function Conversation({ request }: { request: TradeRequest }) {
           <DealStepper request={request} />
           {canAct && (
             <div className="flex flex-wrap gap-2">
+              {request.status === 'pending' && !seller && (
+                <p className="text-sm text-muted-foreground">
+                  Waiting for {request.seller.name} to make an offer.
+                </p>
+              )}
               {canMakeOffer(request, user?.id) && (
                 <Button
                   disabled={actions.isPending}

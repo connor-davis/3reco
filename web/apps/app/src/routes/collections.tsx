@@ -22,12 +22,15 @@ function CollectionsPage() {
   // A business buys for itself. Staff would have to pick a business, and the
   // API has no list of businesses for that, so only businesses record here.
   const canRecord = user?.role === 'business';
+  const description = canRecord
+    ? 'Record materials bought from collectors. Keep every receipt in one place.'
+    : 'Review collections across the marketplace and their paperwork.';
 
   return (
     <>
       <RecordList
         title="Collections"
-        description="Record materials bought from collectors. Keep every receipt in one place."
+        description={description}
         kind="mine"
         exportKind="collections"
         collectionsOnly

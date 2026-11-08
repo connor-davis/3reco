@@ -73,6 +73,8 @@ Never rename a merged migration. Add a new file.
 | Admin read-only view of every chat: the all-conversations list and the read-only rule | `internal/stores/requests/messages.go` (`AllThreads`), `internal/services/requests` (`loadForRead`, `AllThreads`), `GET /api/messages/all` |
 | Unified participant/admin inbox, server search, infinite scroll and recent-first chat history | `web/apps/app/src/components/chat/{inbox,conversation}.tsx`, `web/apps/app/src/lib/api/messages.ts` |
 | Inbox offer author and pending confirmations, closed-state summary | `web/apps/app/src/components/chat/helpers.ts` (`threadSummary`), `internal/stores/requests/messages.go` |
+| Weight and price messages for every form (sign and zero first, then number, decimals, stock) | `quantityError`, `priceError` in `web/apps/app/src/lib/quantity.ts` |
+| Incoming and outgoing request lists; each row is one link to the chat | `web/apps/app/src/routes/market/-components/request-list.tsx` |
 | Fresh request system line and seller unread event | `internal/services/requests/requests.go`, `internal/stores/requests/messages.go`, `tests/messages_test.go` |
 | Round 2 phone-search and unchanged guest-access regression tests | `tests/qa_round2_{collectors,guest}_test.go` |
 | Round 2 shell, inbox, review and privacy regression tests; isolated TS loader | `web/apps/app/tests/qa-round2-{shell,guest,inbox,admin}.test.mjs`, `qa-round2-loader.mjs`; discovered by the `tests/*.test.mjs` npm test glob |

@@ -105,18 +105,34 @@ export function quantityError(
   availableKg?: string
 ): string | null {
   const clean = value.trim().replace(',', '.');
+  const isNumber = /^-?\d*\.?\d*$/.test(clean) && /\d/.test(clean);
 
-  if (!/^\d+(\.\d{1,2})?$/.test(clean)) {
-    return 'Enter a weight in kg, with up to 2 decimals.';
+  // The sign and zero come first, so "-5" is not told to use 2 decimals.
+  if (clean.startsWith('-') || (isNumber && !/[1-9]/.test(clean))) {
+    return 'Enter a weight above 0 kg.';
   }
 
-  const grams = toGrams(clean);
+  if (!isNumber) return 'Enter a weight as a number, like 12.5.';
 
-  if (grams === 0) return 'Enter a weight above 0 kg.';
+  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return 'Use up to 2 decimals.';
+
+  const grams = toGrams(clean);
 
   if (availableKg && grams > toGrams(availableKg)) {
     return `Only ${formatKg(availableKg)} is available.`;
   }
 
   return null;
+}
+
+/** Why a price per kg is not valid, or undefined when it is. Format only: caps live with the caller. */
+export function priceError(raw: string): string | undefined {
+  const price = raw.trim().replace(',', '.');
+  if (!/^-?\d*\.?\d*$/.test(price) || !/\d/.test(price)) {
+    return 'Enter a price as a number, like 22.80.';
+  }
+  if (/^\d{1,12}\.\d{3,}$/.test(price)) return 'Use up to 2 decimals.';
+  if (!/^\d{1,12}(\.\d{1,2})?$/.test(price) || !/[1-9]/.test(price)) {
+    return 'Enter a price above R 0.00.';
+  }
 }

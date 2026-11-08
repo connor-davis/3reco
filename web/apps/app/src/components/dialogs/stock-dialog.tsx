@@ -13,21 +13,26 @@ import { useMaterials } from '@/lib/api/materials';
 import { useCreateStock, useUpdateStock } from '@/lib/api/stock';
 import type { StockItem } from '@/lib/api/types';
 import { ApiError } from '@/lib/api/client';
-import { formatRate, toCents, toGrams } from '@/lib/format';
-import { priceCounter, weightCounter } from '@/lib/quantity';
+import { formatRate, toCents } from '@/lib/format';
+import {
+  priceCounter,
+  priceError,
+  quantityError,
+  weightCounter,
+} from '@/lib/quantity';
 
 const decimal = /^\d{1,12}([.,]\d{1,2})?$/;
 
 const schema = z.object({
   material_id: z.string().min(1, 'Pick a material.'),
-  weight: z
-    .string()
-    .refine((value) => decimal.test(value.trim()), 'Use up to 2 decimals.')
-    .refine((value) => toGrams(value) > 0, 'Enter a weight above 0 kg.'),
-  price: z
-    .string()
-    .refine((value) => decimal.test(value.trim()), 'Use up to 2 decimals.')
-    .refine((value) => toCents(value) > 0, 'Enter a price above R 0.00.'),
+  weight: z.string().superRefine((value, ctx) => {
+    const message = quantityError(value);
+    if (message) ctx.addIssue({ code: 'custom', message });
+  }),
+  price: z.string().superRefine((value, ctx) => {
+    const message = priceError(value);
+    if (message) ctx.addIssue({ code: 'custom', message });
+  }),
   is_listed: z.boolean(),
 });
 
