@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -33,6 +33,13 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
+// Same words as the server, so the message reads the same before and after Save.
+function belowBase(price: string, base?: string) {
+  return base && decimal.test(price.trim()) && toCents(price) < toCents(base)
+    ? `Price must be at least ${formatRate(base)}.`
+    : undefined;
+}
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,21 +58,45 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   const create = useCreateStock();
   const update = useUpdateStock(stock?.id ?? '');
   const [serverError, setServerError] = useState('');
-  const { control, handleSubmit, watch, setValue, setError, formState } =
-    useForm<Values>({
-      resolver: zodResolver(schema),
-      mode: 'onChange',
-      values: {
-        material_id: stock?.material_id ?? '',
-        weight: stock?.weight ?? '',
-        price: stock?.price ?? '',
-        is_listed: stock?.is_listed ?? true,
-      },
-    });
+  // The resolver reads the base price from here, so it follows the material.
+  const baseRef = useRef<string | undefined>(undefined);
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    setError,
+    trigger,
+    formState,
+  } = useForm<Values>({
+    resolver: async (values, context, options) => {
+      const result = await zodResolver(schema)(values, context, options);
+      const message = belowBase(values.price, baseRef.current);
+      if (!message || 'price' in result.errors) return result;
+
+      return {
+        values: {},
+        errors: { ...result.errors, price: { type: 'min', message } },
+      };
+    },
+    mode: 'onChange',
+    values: {
+      material_id: stock?.material_id ?? '',
+      weight: stock?.weight ?? '',
+      price: stock?.price ?? '',
+      is_listed: stock?.is_listed ?? true,
+    },
+  });
 
   const items = materials.data?.items ?? [];
   const chosen = items.find((item) => item.id === watch('material_id'));
   const base = stock?.base_price ?? chosen?.price;
+  baseRef.current = base;
+
+  // A new material changes the lowest price, so check the typed price again.
+  useEffect(() => {
+    if (watch('price')) void trigger('price');
+  }, [base, trigger, watch]);
 
   async function onSubmit(values: Values) {
     setServerError('');

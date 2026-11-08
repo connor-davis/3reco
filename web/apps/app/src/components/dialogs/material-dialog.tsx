@@ -122,7 +122,7 @@ export function MaterialDialog({ open, onOpenChange, material }: Props) {
       description={
         material
           ? 'Changes show everywhere this material is named.'
-          : 'Add a material you buy or sell, with its CO₂ factor.'
+          : 'Add a material to the catalogue, with its CO₂ factor.'
       }
       footer={
         <Button

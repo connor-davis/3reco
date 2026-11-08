@@ -237,18 +237,21 @@ export function RecordList({
               onChange={setType}
             />
           )}
-          {exportKind && !readOnly && status === 'complete' && (
+          {exportKind && !readOnly && (
+            // Always drawn, so the bar keeps its shape on the Pending tab.
             <>
               <ChoiceSelect
                 label="Export format"
                 value={csv}
                 options={csvOptions}
                 onChange={setCsv}
+                disabled={status !== 'complete'}
               />
               <Button
                 variant="outline"
                 className="h-11"
                 disabled={
+                  status !== 'complete' ||
                   download.isPending ||
                   totals.isFetching ||
                   !totals.data?.count ||

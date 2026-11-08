@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -11,6 +12,7 @@ import { useUploadReceipt, useDownloadReceipt } from '@/lib/api/receipts';
 import { useDownloadInvoice, useTransaction } from '@/lib/api/transactions';
 import type { Transaction } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
+import { cn } from '@/lib/utils';
 import {
   formatDate,
   formatKg,
@@ -161,10 +163,10 @@ export function TransactionDialog({ record, onClose }: Props) {
               </ul>
               {canUpload && shown.receipts.length < maxReceipts && (
                 <Field data-invalid={fileError !== ''}>
-                  <FieldLabel htmlFor="receipt-file">Add a receipt</FieldLabel>
                   <Input
                     id="receipt-file"
                     type="file"
+                    className="peer sr-only"
                     accept="image/png,image/jpeg"
                     disabled={upload.isPending}
                     aria-invalid={fileError !== ''}
@@ -173,6 +175,17 @@ export function TransactionDialog({ record, onClose }: Props) {
                       event.target.value = '';
                     }}
                   />
+                  <FieldLabel
+                    htmlFor="receipt-file"
+                    className={cn(
+                      buttonVariants({ variant: 'outline' }),
+                      'w-fit cursor-pointer peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50',
+                      upload.isPending && 'pointer-events-none opacity-50'
+                    )}
+                  >
+                    <Upload data-icon="inline-start" />
+                    Add a receipt
+                  </FieldLabel>
                   <FieldDescription>
                     PNG or JPEG, up to 5 MB. Up to {maxReceipts} receipts.
                   </FieldDescription>

@@ -7,16 +7,9 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { RequestStatus } from '@/lib/api/types';
+import { requestStatuses } from '@/lib/request-status';
 
 type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
-
-const requestStatuses = {
-  pending: { label: 'Pending', variant: 'secondary' },
-  offered: { label: 'Offer awaiting confirmation', variant: 'secondary' },
-  accepted: { label: 'Complete', variant: 'default' },
-  rejected: { label: 'Rejected', variant: 'destructive' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
-} satisfies Record<RequestStatus, { label: string; variant: BadgeVariant }>;
 
 const statusVariant: Record<string, BadgeVariant> = {
   Paid: 'default',

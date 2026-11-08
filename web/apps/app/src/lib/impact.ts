@@ -25,10 +25,7 @@ export function co2OfWeight(weight: string, carbonFactor: string): number {
 }
 
 /** CO2e written like a weight: "729.4 kg CO₂e", "3 580.11 kg CO₂e". */
-export function formatCo2(
-  value: number | string,
-  options: { wholeKg?: boolean } = {}
-): string {
+export function formatCo2(value: number | string): string {
   const kg = typeof value === 'string' ? toGrams(value) / 1000 : value;
-  return `${formatKgNumber(options.wholeKg ? Math.round(kg) : kg)} kg CO₂e`;
+  return `${formatKgNumber(kg)} kg CO₂e`;
 }

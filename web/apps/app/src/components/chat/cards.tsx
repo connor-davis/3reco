@@ -18,7 +18,7 @@ import {
   lineCents,
   plural,
 } from '@/lib/format';
-import { requestTotal } from './helpers';
+import { offerStatusLine, requestTotal } from './helpers';
 import { useRequest } from '@/lib/api/requests';
 
 export function ThreadMaterials({ requestId }: { requestId: string }) {
@@ -59,10 +59,8 @@ export function OfferCard({
     user?.id !== request.buyer.id && user?.id !== request.seller.id;
   const buyerConfirmed =
     request.buyer_confirmed_version === request.offer_version;
-  const ownConfirmed =
-    user?.id === request.buyer.id
-      ? request.buyer_confirmed_version === request.offer_version
-      : request.seller_confirmed_version === request.offer_version;
+  const sellerConfirmed =
+    request.seller_confirmed_version === request.offer_version;
   return (
     <Card size="sm" className="max-w-sm pt-0">
       <CardHeader className="bg-accent py-3">
@@ -122,39 +120,16 @@ export function OfferCard({
               : 'Not confirmed'}
           </li>
         </ul>
-        {request.status === 'offered' &&
-          request.offer_by === user?.id &&
-          request.buyer_confirmed_version !== request.offer_version &&
-          request.seller_confirmed_version !== request.offer_version && (
+        {onlooker ? (
+          (buyerConfirmed || sellerConfirmed) && (
             <p role="status">
-              Waiting for{' '}
-              {user?.id === request.buyer.id
-                ? request.seller.name
-                : request.buyer.name}{' '}
-              to respond.
+              {buyerConfirmed
+                ? 'Buyer accepted; waiting for the seller.'
+                : 'Seller accepted; waiting for the buyer.'}
             </p>
-          )}
-        {(request.buyer_confirmed_version === request.offer_version ||
-          request.seller_confirmed_version === request.offer_version) && (
-          <p role="status">
-            {onlooker ? (
-              buyerConfirmed ? (
-                'Buyer accepted; waiting for the seller.'
-              ) : (
-                'Seller accepted; waiting for the buyer.'
-              )
-            ) : ownConfirmed ? (
-              <>
-                Waiting for{' '}
-                {user?.id === request.buyer.id
-                  ? request.seller.name
-                  : request.buyer.name}{' '}
-                to confirm.
-              </>
-            ) : (
-              'They accepted this offer. Please confirm to complete the deal.'
-            )}
-          </p>
+          )
+        ) : (
+          <p role="status">{offerStatusLine(request, user?.id)}</p>
         )}
       </CardContent>
       {canRespond && (
@@ -169,6 +144,17 @@ export function OfferCard({
       )}
     </Card>
   );
+}
+
+// Staff are on neither side of the deal, so they open the all-trades list.
+function transactionsPath(
+  request: TradeRequest,
+  user: { id: string; role: string | null } | null | undefined
+): string {
+  if (user?.id === request.seller.id) return '/transactions/sales';
+  if (user?.id === request.buyer.id) return '/transactions/purchases';
+
+  return '/transactions';
 }
 
 export function InvoiceCard({
@@ -212,11 +198,7 @@ export function InvoiceCard({
       </CardContent>
       <CardFooter className="flex-wrap gap-3">
         <LinkButton
-          to={
-            user?.id === request.seller.id
-              ? `/transactions/sales?open=${encodeURIComponent(transactionId ?? '')}`
-              : `/transactions/purchases?open=${encodeURIComponent(transactionId ?? '')}`
-          }
+          to={`${transactionsPath(request, user)}?open=${encodeURIComponent(transactionId ?? '')}`}
           variant="outline"
         >
           View transaction

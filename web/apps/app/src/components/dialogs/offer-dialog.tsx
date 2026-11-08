@@ -7,7 +7,7 @@ import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
 import { useOffer } from '@/lib/api/requests';
 import type { TradeRequest } from '@/lib/api/types';
-import { formatRand, lineCents } from '@/lib/format';
+import { formatKg, formatRand, lineCents, toGrams } from '@/lib/format';
 import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
 
 // The most an offer may ask per kg, in cents. The server refuses the same.
@@ -22,6 +22,13 @@ function priceError(raw: string): string | undefined {
   if (lineCents(price, '1') > MAX_PRICE_CENTS) {
     return 'Price must be R 100000.00 per kg or less.';
   }
+}
+
+// Only a hint: the cap is the stock on hand, so a bigger offer still goes.
+function overAsked(weight?: string, asked?: string | null) {
+  return weight && asked && toGrams(weight) > toGrams(asked)
+    ? `The request was for ${formatKg(asked)}. You can still send this.`
+    : undefined;
 }
 
 // A line carries the stock it has available, so its weight is checked against it.
@@ -150,6 +157,10 @@ function OfferForm({
               label="Weight (kg)"
               counter={weightCounter(
                 request.items[index].available_weight ?? undefined
+              )}
+              description={overAsked(
+                lines[index]?.weight,
+                request.items[index].requested_weight
               )}
             />
             <DecimalField

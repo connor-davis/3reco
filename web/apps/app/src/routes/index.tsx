@@ -155,9 +155,7 @@ function Dashboard() {
               />
               <StatCard
                 label="CO₂e saved (30 days)"
-                value={formatCo2(dashboard.totals.carbon_savings, {
-                  wholeKg: true,
-                })}
+                value={formatCo2(dashboard.totals.carbon_savings)}
                 icon={Leaf}
               />
             </StatGrid>
@@ -182,7 +180,7 @@ function Dashboard() {
                 'From ' + formatDate(dashboard.from) + ' over the last 30 days'
               }
             >
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid items-start gap-6 lg:grid-cols-2">
                 <RecentActivity collector={collector} />
                 <CounterpartyRows rows={dashboard.counterparties} />
                 <MaterialsPanel series={dashboard.series} />
@@ -267,7 +265,7 @@ function CommunityImpact() {
               />
               <StatCard
                 label="CO₂e saved (all time)"
-                value={formatCo2(stats.co2_kg, { wholeKg: true })}
+                value={formatCo2(stats.co2_kg)}
                 icon={Leaf}
               />
               <StatCard

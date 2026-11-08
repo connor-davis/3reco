@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { PersonAvatar } from '@/components/visuals';
 import { useRequests } from '@/lib/api/requests';
 import { useAuth } from '@/lib/auth/use-auth';
-import type { TradeRequest } from '@/lib/api/types';
+import { requestStatuses } from '@/lib/request-status';
+import type { RequestStatus, TradeRequest } from '@/lib/api/types';
 import { formatDate, formatKg, formatRand, formatRate } from '@/lib/format';
 
 export function RequestList({
@@ -68,7 +69,10 @@ export function RequestList({
             'cancelled',
           ].map((value) => ({
             value,
-            label: value === 'all' ? 'All statuses' : value,
+            label:
+              value === 'all'
+                ? 'All statuses'
+                : (requestStatuses[value as RequestStatus]?.label ?? value),
           }))}
         />
       </div>

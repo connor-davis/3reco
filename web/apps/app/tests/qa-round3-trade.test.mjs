@@ -51,7 +51,7 @@ test('first overlay click renders the implementation synchronously', () => {
   assert.equal(ResponsiveOverlay({ open: false }), null);
 });
 
-test('Message seller opens the selected lot and keeps the entered quantity', () => {
+test('Request this material opens the selected lot and keeps the entered quantity', () => {
   let state = false;
   const listing = {
     id: 'lot',
@@ -113,7 +113,9 @@ test('Message seller opens the selected lot and keeps the entered quantity', () 
     '\nexport { ListingDetail };'
   );
   const tree = ListingDetail({ listing });
-  const button = nodes(tree).find((node) => words(node) === 'Message seller');
+  const button = nodes(tree).find(
+    (node) => words(node) === 'Request this material'
+  );
   assert.equal(button.props.disabled, false);
   button.props.onClick();
   const opened = nodes(ListingDetail({ listing })).find(

@@ -274,7 +274,7 @@ test('a fully reserved decimal listing remains visible with both buy controls di
   });
   assert.match(words(tree), /Fully reserved/);
   assert.match(words(tree), /1 review/);
-  for (const label of ['Message seller', 'Add to cart']) {
+  for (const label of ['Request this material', 'Add to cart']) {
     assert.equal(
       nodes(tree).find((node) => words(node) === label).props.disabled,
       true

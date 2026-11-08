@@ -24,6 +24,31 @@ export function requestLabel(request: TradeRequest, userId?: string): string {
   return request.offer_by === userId ? 'Offer sent' : 'Offer received';
 }
 
+/** The one line under an offer: what happens next, naming the other side. */
+export function offerStatusLine(
+  request: TradeRequest,
+  userId?: string
+): string {
+  const other = counterpartyOf(request, userId).name;
+  const own =
+    userId === request.buyer.id
+      ? request.buyer_confirmed_version
+      : request.seller_confirmed_version;
+  const theirs =
+    userId === request.buyer.id
+      ? request.seller_confirmed_version
+      : request.buyer_confirmed_version;
+
+  if (request.status !== 'offered') return `Current status: ${request.status}.`;
+  if (own === request.offer_version) return `Waiting for ${other} to confirm.`;
+  if (theirs === request.offer_version)
+    return `${other} accepted this offer. Please confirm to complete the deal.`;
+  if (request.offer_by === userId)
+    return `Offer sent. Waiting for ${other} to respond.`;
+
+  return `${other} sent this offer. Please confirm or reject it.`;
+}
+
 export function threadSummary(thread: Thread): string {
   if (['accepted', 'cancelled', 'rejected'].includes(thread.status))
     return `${thread.buyer.name} and ${thread.seller.name}`;

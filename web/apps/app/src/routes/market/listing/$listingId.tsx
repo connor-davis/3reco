@@ -187,7 +187,11 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 name="weight"
                 label="Quantity (kg)"
                 counter={weightCounter(listing.weight)}
-                description="Your cart keeps this quantity. You can change it before sending your request."
+                description={
+                  user?.role === 'business'
+                    ? 'Your cart keeps this quantity. You can change it before sending your request.'
+                    : undefined
+                }
               />
               {weight.trim() && problem && !form.formState.errors.weight && (
                 <p role="alert" className="text-sm text-destructive">
@@ -215,7 +219,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
                   disabled={toGrams(listing.weight) === 0}
                   onClick={() => setChatOpen(true)}
                 >
-                  Message seller
+                  Request this material
                 </Button>
                 <Button
                   type="submit"
@@ -230,7 +234,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
             <p className="text-sm text-muted-foreground">
               {own
                 ? 'This is your own lot. Edit it from Stock.'
-                : 'Sign in as a business to message sellers and use the cart.'}
+                : 'Sign in as a business to request materials and use the cart.'}
             </p>
           )}
           {form.formState.errors.root?.message && (
