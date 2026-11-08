@@ -4,6 +4,7 @@ package reviews
 
 import (
 	"context"
+	"fmt"
 	"time"
 	"unicode/utf8"
 
@@ -110,7 +111,7 @@ func (s *Service) Add(
 			trade.SellerID,
 			"message_received",
 			"New trade review",
-			"A buyer reviewed your completed trade.",
+			fmt.Sprintf("%s gave you %d %s.", trade.BuyerName, rating, stars(rating)),
 			"/market/store/"+trade.SellerID,
 		)
 	})
@@ -120,6 +121,14 @@ func (s *Service) Add(
 	}
 
 	return id, err
+}
+
+func stars(rating int) string {
+	if rating == 1 {
+		return "star"
+	}
+
+	return "stars"
 }
 
 // Remove deletes a review. The route is admin-only.

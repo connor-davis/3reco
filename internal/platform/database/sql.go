@@ -21,7 +21,10 @@ func PersonName(alias string) string {
 
 // EffectiveDate is the SQL for the day a transaction row aliased as alias
 // counts on. A collection day is midnight in South Africa; a collection date
-// counts on its South African day; everything else uses the created time.
+// counts on its South African day; everything else counts on the South African
+// day it was created. Every branch is that day's midnight, so rows on the same
+// day tie and the created time (the caller's next sort key) puts the newest
+// first. A raw created time here would sort above same-day midnight rows.
 func EffectiveDate(alias string) string {
 	const zone = "'Africa/Johannesburg'"
 
@@ -31,7 +34,8 @@ func EffectiveDate(alias string) string {
 		"WHEN " + alias + ".type = 'c2b' AND " + alias + ".collection_date IS NOT NULL " +
 		"THEN (((" + alias + ".collection_date AT TIME ZONE " + zone + ")::date)::timestamp " +
 		"AT TIME ZONE " + zone + ") " +
-		"ELSE " + alias + ".created_at END"
+		"ELSE (((" + alias + ".created_at AT TIME ZONE " + zone + ")::date)::timestamp " +
+		"AT TIME ZONE " + zone + ") END"
 }
 
 // Party is a person as other people may see them: an id and a safe name.

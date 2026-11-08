@@ -12,7 +12,7 @@ import (
 )
 
 var exportHeader = []string{
-	"Transaction ID", "Transaction Type", "Transaction Date", "Recorded At", "Collection Day",
+	"Transaction ID", "Transaction Type", "Transaction Date", "Recorded At (Date and Time)", "Collection Day",
 	"Items Count", "Materials", "Total Weight (kg)", "Total Price (R)", "Seller Name", "Seller Email",
 	"Seller Phone", "Seller Address", "Buyer Name", "Buyer Email", "Buyer Phone", "Buyer Address",
 	"Collector Payout Method", "Collector Payout Details",

@@ -27,6 +27,9 @@ var decimalPattern = regexp.MustCompile(`^\d{1,12}(\.\d{1,2})?$`)
 // to the cent after one rounding.
 var pricePattern = regexp.MustCompile(`^\d{1,12}(\.\d{1,2})?$`)
 
+// maxOfferPrice is the most an offer may ask per kg: R 100 000.00.
+var maxOfferPrice = big.NewRat(100000, 1)
+
 func parseDecimal(field, raw string) (*big.Rat, error) {
 	pattern, message := decimalPattern, "Enter a weight with up to 2 decimals, such as 12.50."
 	if field == "price" {
@@ -96,8 +99,14 @@ func CheckPricedItems(items []SaleItem) error {
 	}
 
 	for _, item := range items {
-		if price, _ := new(big.Rat).SetString(item.Price); price.Sign() <= 0 {
+		price, _ := new(big.Rat).SetString(item.Price)
+
+		if price.Sign() <= 0 {
 			return apperr.Field("price", "Enter a price above R 0.00.")
+		}
+
+		if price.Cmp(maxOfferPrice) > 0 {
+			return apperr.Field("price", "Price must be R 100000.00 per kg or less.")
 		}
 	}
 

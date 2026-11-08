@@ -38,7 +38,7 @@ type Reviewable struct {
 }
 
 // Trade is the part of a transaction a review needs to check.
-type Trade struct{ BuyerID, SellerID, Type string }
+type Trade struct{ BuyerID, BuyerName, SellerID, Type string }
 
 // Store runs the review SQL.
 type Store struct{ db *database.DB }
@@ -127,8 +127,10 @@ func (s *Store) Trade(ctx context.Context, transactionID string) (Trade, bool, e
 	var t Trade
 
 	err := s.db.Q(ctx).QueryRow(ctx,
-		`SELECT buyer_id, seller_id, type FROM transactions WHERE status='complete' AND id = $1`,
-		transactionID).Scan(&t.BuyerID, &t.SellerID, &t.Type)
+		`SELECT t.buyer_id, `+database.DisplayName("b")+`, t.seller_id, t.type
+		FROM transactions t JOIN users b ON b.id = t.buyer_id
+		WHERE t.status='complete' AND t.id = $1`,
+		transactionID).Scan(&t.BuyerID, &t.BuyerName, &t.SellerID, &t.Type)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return t, false, nil
 	}
