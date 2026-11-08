@@ -336,7 +336,10 @@ export function CheckboxField<T extends FieldValues>({
               <span>{label}</span>
             </FieldLabel>
           </Field>
-          <FieldError id={errorId} errors={[fieldState.error]} />
+          {/* One line is always kept for the error, so the form never jumps. */}
+          <div className="min-h-5">
+            <FieldError id={errorId} errors={[fieldState.error]} />
+          </div>
         </div>
       )}
     />

@@ -180,7 +180,7 @@ function Dashboard() {
                 'From ' + formatDate(dashboard.from) + ' over the last 30 days'
               }
             >
-              <div className="grid items-start gap-6 lg:grid-cols-2">
+              <div className="grid gap-6 lg:grid-cols-2">
                 <RecentActivity collector={collector} />
                 <CounterpartyRows rows={dashboard.counterparties} />
                 <MaterialsPanel series={dashboard.series} />
@@ -212,7 +212,6 @@ function Dashboard() {
                     label: 'Your sales',
                     icon: Receipt,
                   },
-                  { to: '/profile', label: 'Your profile', icon: Users },
                 ]
               : staff
                 ? [
@@ -257,7 +256,7 @@ function CommunityImpact() {
       >
         {stats && (
           <div className="space-y-6">
-            <StatGrid>
+            <StatGrid threeUp>
               <StatCard
                 label="Materials traded (all time)"
                 value={formatKg(stats.total_kg)}

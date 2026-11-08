@@ -303,7 +303,7 @@ export function RecordList({
               <ItemActions className="flex-wrap">
                 <Badge
                   variant="outline"
-                  className="w-40 shrink-0 justify-center"
+                  className="h-7 w-40 shrink-0 justify-center px-3"
                 >
                   {row.type === 'b2b' ? 'Business trade' : 'Collector purchase'}
                 </Badge>

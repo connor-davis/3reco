@@ -121,7 +121,7 @@ test('SN4: an empty payout reads "None added" only when the reader may see payou
   const page = source('routes/collectors.tsx');
   assert.match(
     page,
-    /collector\.can_view_payout \? 'None added' : 'Not shared'/
+    /collector\.can_view_payout \|\| collector\.can_edit\s*\? 'None added'\s*: 'Not shared'/
   );
 });
 
