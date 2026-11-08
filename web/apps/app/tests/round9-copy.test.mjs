@@ -60,12 +60,9 @@ test('stock dialog dedupes errors and starts neutral', () => {
 });
 
 test('non-numeric prices say to enter a number', () => {
+  // One shared rule now serves the offer, collection and stock dialogs.
   assert.match(
-    source('components/dialogs/offer-dialog.tsx'),
-    /Enter a price as a number, like 22\.80\./
-  );
-  assert.match(
-    source('components/dialogs/collection-dialog.tsx'),
+    source('lib/quantity.ts'),
     /Enter a price as a number, like 22\.80\./
   );
 });

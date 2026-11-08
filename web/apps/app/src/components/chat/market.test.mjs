@@ -42,7 +42,7 @@ const request = {
 
 test('request actions use participant IDs and only API states', () => {
   assert.equal(helpers.canMakeOffer(request, 'seller'), true);
-  assert.equal(helpers.canMakeOffer(request, 'buyer'), true);
+  assert.equal(helpers.canMakeOffer(request, 'buyer'), false);
   assert.equal(helpers.canMakeOffer(request, 'outsider'), false);
   assert.equal(helpers.canRespond(request, 'buyer'), false);
   const offered = {

@@ -11,7 +11,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { RowsSkeleton } from '@/components/data-state';
-import { canOpen, roleLabels, type PageId } from '@/lib/access';
+import { canOpen, roleLabel, type PageId } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
 
 type GuardedProps = {
@@ -52,7 +52,7 @@ export function Guarded({ page, children }: GuardedProps) {
             ? 'Browsing is open to everyone. Everything else needs an account.'
             : role === 'guest'
               ? 'Tell us how you will use 3REco and fill in your details. It takes a few minutes.'
-              : `You're signed in as ${roleLabels[role!].toLowerCase()}. This page belongs to a different role.`}
+              : `You're signed in as ${roleLabel(role)}. This page belongs to a different role.`}
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>

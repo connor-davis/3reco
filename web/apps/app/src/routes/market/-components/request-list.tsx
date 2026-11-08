@@ -8,6 +8,7 @@ import {
 } from '@/components/chat/helpers';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
+import { Link } from '@tanstack/react-router';
 import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -88,34 +89,32 @@ export function RequestList({
           {shown.map((request) => {
             const other = counterpartyOf(request, user?.id);
             return (
-              <li
-                key={request.id}
-                className="flex flex-wrap items-center gap-4 p-4"
-              >
-                <PersonAvatar name={other.name} />
-                <div className="min-w-40 flex-1">
-                  <p className="font-medium">{other.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {request.items.map((item) => item.material_name).join(', ')}{' '}
-                    · {formatDate(request.created_at)}
-                  </p>
-                  {direction === 'incoming' && <Terms request={request} />}
-                </div>
-                <StatusBadge status={request.status} />
-                <p className="tabular-nums">
-                  {request.items.some((item) => item.offer_price !== null)
-                    ? formatRand(requestTotal(request))
-                    : isClosed(request)
-                      ? 'Closed'
-                      : 'Awaiting offer'}
-                </p>
-                <LinkButton
+              <li key={request.id}>
+                <Link
                   to="/market/$requestId"
                   params={{ requestId: request.id }}
-                  variant="outline"
+                  className="flex flex-wrap items-center gap-4 rounded-xl p-4 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
-                  Open chat
-                </LinkButton>
+                  <PersonAvatar name={other.name} />
+                  <div className="min-w-40 flex-1">
+                    <p className="font-medium">{other.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {request.items
+                        .map((item) => item.material_name)
+                        .join(', ')}{' '}
+                      · {formatDate(request.created_at)}
+                    </p>
+                    {direction === 'incoming' && <Terms request={request} />}
+                  </div>
+                  <StatusBadge status={request.status} />
+                  <p className="tabular-nums">
+                    {request.items.some((item) => item.offer_price !== null)
+                      ? formatRand(requestTotal(request))
+                      : isClosed(request)
+                        ? 'Closed'
+                        : 'Awaiting offer'}
+                  </p>
+                </Link>
               </li>
             );
           })}

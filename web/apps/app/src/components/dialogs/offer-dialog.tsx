@@ -8,23 +8,24 @@ import { Button } from '@/components/ui/button';
 import { useOffer } from '@/lib/api/requests';
 import type { TradeRequest } from '@/lib/api/types';
 import { formatKg, formatRand, lineCents, toGrams } from '@/lib/format';
-import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
+import {
+  priceCounter,
+  priceError as priceFormatError,
+  quantityError,
+  weightCounter,
+} from '@/lib/quantity';
 
 // The most an offer may ask per kg, in cents. The server refuses the same.
 const MAX_PRICE_CENTS = 100_000_00;
 
 function priceError(raw: string): string | undefined {
   const price = raw.trim().replace(',', '.');
-  if (!/^-?\d*\.?\d*$/.test(price) || !/\d/.test(price)) {
-    return 'Enter a price as a number, like 22.80.';
-  }
-  if (/^\d{1,12}\.\d{3,}$/.test(price)) return 'Use up to 2 decimals.';
-  if (!/^\d{1,12}(\.\d{1,2})?$/.test(price) || !/[1-9]/.test(price)) {
-    return 'Enter a price above R 0.00.';
-  }
-  if (lineCents(price, '1') > MAX_PRICE_CENTS) {
-    return 'Price must be R 100000.00 per kg or less.';
-  }
+  return (
+    priceFormatError(price) ??
+    (lineCents(price, '1') > MAX_PRICE_CENTS
+      ? 'Price must be R 100000.00 per kg or less.'
+      : undefined)
+  );
 }
 
 // Only a hint: the cap is the stock on hand, so a bigger offer still goes.

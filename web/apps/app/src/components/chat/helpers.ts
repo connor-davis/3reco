@@ -65,9 +65,14 @@ export function threadSummary(thread: Thread, userId?: string): string {
       ? thread.seller
       : null,
   ].filter((side) => side !== null);
-  // Say "you" for the viewer, so a row reads short.
-  const names = waiting.map((side) => (side.id === userId ? 'you' : side.name));
-  return `Offer by ${author} · ${waiting.length ? `Waiting for ${names.join(' and ')}` : 'Both sides confirmed'}`;
+  // Say "you" for the viewer and "both sides" for two, so a row reads short.
+  const who =
+    waiting.length === 2
+      ? 'both sides'
+      : waiting[0]?.id === userId
+        ? 'you'
+        : waiting[0]?.name;
+  return `Offer by ${author} · ${waiting.length ? `Waiting for ${who}` : 'Both sides confirmed'}`;
 }
 
 export function counterpartyOf(request: TradeRequest, userId?: string) {
@@ -89,11 +94,10 @@ export function isClosed(request: TradeRequest): boolean {
 export function canMakeOffer(request: TradeRequest, userId?: string): boolean {
   const participant =
     request.seller.id === userId || request.buyer.id === userId;
-  return (
-    participant &&
-    !isClosed(request) &&
-    (request.status === 'pending' || request.offer_by !== userId)
-  );
+  if (!participant || isClosed(request)) return false;
+  // On a pending request only the seller makes the first offer.
+  if (request.status === 'pending') return request.seller.id === userId;
+  return request.offer_by !== userId;
 }
 
 export function canRespond(request: TradeRequest, userId?: string): boolean {

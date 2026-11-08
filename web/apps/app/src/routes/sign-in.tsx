@@ -79,7 +79,7 @@ function SignInPage() {
 
   return (
     <AuthShell
-      title="Welcome back."
+      title={addingAccount ? 'Add another account.' : 'Welcome back.'}
       description="Sign in to trade, chat and track your stock."
       feedback={
         failure

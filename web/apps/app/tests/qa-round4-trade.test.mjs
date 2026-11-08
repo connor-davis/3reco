@@ -38,7 +38,7 @@ test('privacy events show a time, not just a day', () => {
 test('counter offer checks the price as you type and blocks Send', () => {
   const dialog = source('components/dialogs/offer-dialog.tsx');
   assert.match(dialog, /const price = priceError\(line\.price\)/);
-  assert.match(dialog, /Enter a price above R 0\.00\./);
+  assert.match(source('lib/quantity.ts'), /Enter a price above R 0\.00\./);
   assert.match(dialog, /mode: 'onChange'/);
   assert.match(
     dialog,

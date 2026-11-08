@@ -25,7 +25,12 @@ import {
   toCents,
   today,
 } from '@/lib/format';
-import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
+import {
+  priceCounter,
+  priceError,
+  quantityError,
+  weightCounter,
+} from '@/lib/quantity';
 
 const line = z.object({
   material_id: z.string().min(1, 'Pick a material.'),
@@ -33,22 +38,8 @@ const line = z.object({
     const message = quantityError(value);
     if (message) ctx.addIssue({ code: 'custom', message });
   }),
-  // The sign and zero come first, so "-1" is not told to use 2 decimals.
   price: z.string().superRefine((value, ctx) => {
-    const text = value.trim();
-    const number = /^-?\d*[.,]?\d*$/.test(text) && /\d/.test(text);
-    let message = '';
-
-    if (!number) {
-      message = 'Enter a price as a number, like 22.80.';
-    } else if (number && (text.startsWith('-') || !/[1-9]/.test(text))) {
-      message = 'Enter a price above R 0.00.';
-    } else if (!/^\d{1,12}([.,]\d{1,2})?$/.test(text)) {
-      message = 'Use up to 2 decimals.';
-    } else if (toCents(text) <= 0) {
-      message = 'Enter a price above R 0.00.';
-    }
-
+    const message = priceError(value);
     if (message) ctx.addIssue({ code: 'custom', message });
   }),
 });
