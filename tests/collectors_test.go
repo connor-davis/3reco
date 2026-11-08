@@ -19,6 +19,65 @@ func collectorBody(phone string) map[string]any {
 		"street_address": "Private Street", "city": "Cape Town", "province": "Western Cape", "area_code": 8000}
 }
 
+func TestCollectorBlankPayout(t *testing.T) {
+	for _, role := range []string{"admin", "staff", "business"} {
+		t.Run(role, func(t *testing.T) {
+			app := testutil.Server(t)
+			owner, _ := domainUser(t, app, "business")
+			other, _ := domainUser(t, app, "business")
+			editor := owner
+			if role != "business" {
+				editor, _ = domainUser(t, app, role)
+			}
+
+			body := map[string]any{
+				"name": "No payout", "email": "contact@example.test", "payout_method": "bank",
+				"bank_account_holder_name": "", "bank_name": "", "bank_account_number": "",
+				"bank_branch_code": "", "bank_account_type": "",
+			}
+			id := status(t, owner.Do("POST", "/api/collectors", body), 200).Body["id"].(string)
+			path := "/api/collectors/" + id
+			body["name"] = "Updated contact"
+			edit := body
+			if role == "staff" {
+				// Staff forms omit payout identifiers, which staff cannot change.
+				edit = map[string]any{"name": "Updated contact", "payout_method": "bank"}
+			}
+			status(t, editor.Do("PATCH", path, edit), 200)
+			status(t, other.Do("PATCH", path, body), 404)
+
+			row := status(t, owner.Do("GET", path, nil), 200).Body
+			if row["name"] != "Updated contact" {
+				t.Fatalf("contact edit lost: %v", row)
+			}
+			for _, key := range []string{"payout_method", "bank_account_holder_name", "bank_name",
+				"bank_account_number", "bank_branch_code", "bank_account_type",
+				"ewallet_platform_name", "ewallet_payment_id"} {
+				if value, _ := row[key].(string); value != "" {
+					t.Fatalf("blank payout retained %s: %v", key, row)
+				}
+			}
+
+			// Partial details must fail on both creation and a merged edit.
+			for _, partial := range []map[string]any{
+				{"payout_method": "bank", "bank_name": "Bank"},
+				{"payout_method": "ewallet", "ewallet_platform_name": "Wallet"},
+			} {
+				partial["name"] = "Incomplete payout"
+				partial["email"] = "partial@example.test"
+				status(t, owner.Do("POST", "/api/collectors", partial), 400)
+				status(t, owner.Do("PATCH", path, partial), 400)
+				status(t, other.Do("PATCH", path, partial), 404)
+			}
+
+			// Every role that can create collectors accepts an empty wallet too.
+			body["email"] = "wallet@example.test"
+			body["payout_method"] = "ewallet"
+			status(t, editor.Do("POST", "/api/collectors", body), 200)
+		})
+	}
+}
+
 func TestCollectorOptionalContacts(t *testing.T) {
 	app := testutil.Server(t)
 	creator, _ := domainUser(t, app, "business")

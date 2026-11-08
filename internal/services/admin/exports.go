@@ -22,7 +22,7 @@ import (
 )
 
 var transactionColumns = []string{
-	"Transaction ID", "Transaction Type", "Transaction Date", "Recorded At (Date and Time)", "Collection Day",
+	"Transaction ID", "Transaction Type", "Transaction Date", "Recorded At (SAST)", "Collection Day",
 	"Items Count", "Materials", "Total Weight (kg)", "Total Price (R)", "Seller Name", "Seller Email",
 	"Seller Phone", "Seller Address", "Buyer Name", "Buyer Email", "Buyer Phone", "Buyer Address",
 	"Collector Payout Method", "Collector Payout Details",
@@ -30,7 +30,7 @@ var transactionColumns = []string{
 
 var userColumns = []string{
 	"Email", "Account Type", "First Name", "Last Name", "Business Name", "Business Reg. No.", "Phone",
-	"Street Address", "City", "Area Code", "Province", "Registered At",
+	"Street Address", "City", "Area Code", "Province", "Registered At (SAST)",
 }
 
 // Export is a validated export request. Write streams rows into the HTTP response.
@@ -228,9 +228,9 @@ func exportRows(document tstore.Document, itemised bool) [][]string {
 		day = *trade.CollectionDay
 	}
 
-	// Calendar dates are ISO 8601; recorded instants include seconds and the SAST offset.
+	// The header names SAST so recorded times remain readable without an offset.
 	prefix := []string{trade.ID, invoice.Type, trade.EffectiveAt.In(sast).Format(time.DateOnly),
-		trade.CreatedAt.In(sast).Format(time.RFC3339), day, strconv.Itoa(len(trade.Items))}
+		trade.CreatedAt.In(sast).Format(time.DateTime), day, strconv.Itoa(len(trade.Items))}
 	weight := new(big.Rat)
 	var materials []string
 	for i, line := range trade.Items {

@@ -8,7 +8,7 @@ import (
 	store "github.com/connor-davis/3reco/internal/stores/collectors"
 )
 
-func validate(item store.Collector) error {
+func validate(item *store.Collector) error {
 	if item.Name == "" {
 		return apperr.Field("name", "Enter the collector name.")
 	}
@@ -39,6 +39,11 @@ func validate(item store.Collector) error {
 	}
 
 	ewallet := item.EwalletPlatformName != "" || item.EwalletPaymentID != ""
+	if !bank && !ewallet {
+		// Forms may select a method before any payout details have been entered.
+		item.PayoutMethod = ""
+	}
+
 	switch item.PayoutMethod {
 	case "":
 		if bank || ewallet {

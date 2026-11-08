@@ -103,15 +103,15 @@ func (s *Store) MarkAllRead(ctx context.Context, userID string) error {
 }
 
 // MarkOffersRead retires offer action messages for one request, for every user.
-// A terminal transition also retires the initial request notice and any "Offer withdrawn" notice. Informational
-// completion notices and historical links stay available.
+// A terminal transition retires every request action type, regardless of its wording.
+// Call before inserting the completion notice so it stays unread; history links stay available.
 func (s *Store) MarkOffersRead(ctx context.Context, link string, terminal bool) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `UPDATE notifications SET read = true
 		WHERE link = $1 AND NOT read AND (
-			(type = 'request_accepted' AND title IN
+			(NOT $2 AND type = 'request_accepted' AND title IN
 				('Offer received', 'Offer received!', 'Please confirm the offer'))
-			OR ($2 AND type = 'request_received')
-			OR ($2 AND type = 'request_cancelled' AND title = 'Offer withdrawn'))`, link, terminal)
+			OR ($2 AND type IN ('request_received', 'request_accepted', 'request_rejected',
+				'request_cancelled', 'message_received')))`, link, terminal)
 
 	return err
 }
