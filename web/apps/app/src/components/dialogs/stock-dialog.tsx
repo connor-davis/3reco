@@ -1,3 +1,4 @@
+import { stockLimit } from '@/lib/limits';
 import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -63,19 +64,6 @@ function sameAmount(value: string, original?: string) {
     /^\d+(\.\d+)?$/.test(value.trim().replace(',', '.')) &&
     canonical(value) === canonical(original)
   );
-}
-
-// Compare hundredths exactly, without rounding the typed amount.
-function stockLimit(value: string, maximum: bigint, message: string) {
-  const clean = value.trim().replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return undefined;
-
-  const hundredths = (raw: string) => {
-    const [whole, fraction = ''] = raw.trim().replace(',', '.').split('.');
-    return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
-  };
-  const amount = hundredths(clean);
-  return amount > maximum ? message : undefined;
 }
 
 // Same words as the server, so the message reads the same before and after Save.

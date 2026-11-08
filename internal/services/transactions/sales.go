@@ -230,6 +230,10 @@ func (s *Service) CollectorSale(
 		return "", err
 	}
 
+	if err := checkCollectionLimits(in.Items); err != nil {
+		return "", err
+	}
+
 	if err := checkCollectionTotal(in.Items); err != nil {
 		return "", err
 	}

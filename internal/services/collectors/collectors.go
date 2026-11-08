@@ -297,6 +297,11 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 
 				// Staff can update contact details without replacing private payout identifiers.
 				if !full(user, item, false) {
+					if in.PayoutMethod != nil && strings.TrimSpace(*in.PayoutMethod) != "" &&
+						strings.TrimSpace(*in.PayoutMethod) != item.PayoutMethod {
+						return apperr.Forbidden("You cannot change private payout identifiers.")
+					}
+
 					for _, field := range []struct {
 						sent    *string
 						current string
@@ -311,6 +316,10 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 					}
 				}
 			}
+
+			replacePayout := in.PayoutMethod != nil &&
+				strings.TrimSpace(*in.PayoutMethod) != "" &&
+				strings.TrimSpace(*in.PayoutMethod) != item.PayoutMethod
 
 			if in.Name != nil {
 				item.Name = strings.TrimSpace(*in.Name)
@@ -349,8 +358,13 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				item.BankAccountType = strings.TrimSpace(*in.BankAccountType)
 			}
 
-			if in.PayoutMethod != nil {
-				item.PayoutMethod = strings.TrimSpace(*in.PayoutMethod)
+			if in.PayoutMethod != nil && strings.TrimSpace(*in.PayoutMethod) != "" {
+				method := strings.TrimSpace(*in.PayoutMethod)
+				if method != "bank" && method != "ewallet" && method != "none" {
+					return apperr.Field("payout_method", "Choose bank or ewallet.")
+				}
+
+				item.PayoutMethod = method
 			}
 
 			if in.EwalletPlatformName != nil {
@@ -375,6 +389,24 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 
 			if in.AreaCode != nil {
 				item.AreaCode = in.AreaCode
+			}
+
+			// Only an explicit choice removes saved payout details.
+			if item.PayoutMethod == "none" || (replacePayout && item.PayoutMethod == "ewallet") {
+				item.BankAccountHolderName = ""
+				item.BankName = ""
+				item.BankAccountNumber = ""
+				item.BankBranchCode = ""
+				item.BankAccountType = ""
+			}
+
+			if item.PayoutMethod == "none" || (replacePayout && item.PayoutMethod == "bank") {
+				item.EwalletPlatformName = ""
+				item.EwalletPaymentID = ""
+			}
+
+			if item.PayoutMethod == "none" {
+				item.PayoutMethod = ""
 			}
 
 			if err := validate(&item); err != nil {

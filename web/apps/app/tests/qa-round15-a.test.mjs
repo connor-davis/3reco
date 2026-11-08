@@ -17,9 +17,11 @@ function stockSchema(original) {
   const quantity = load('lib/quantity.ts', {
     '@/lib/format': load('lib/format.ts'),
   });
-  return vm.runInNewContext(`${outputText}; schema`, { z, ...quantity })(
-    original
-  );
+  return vm.runInNewContext(`${outputText}; schema`, {
+    z,
+    ...quantity,
+    ...load('lib/limits.ts'),
+  })(original);
 }
 
 const values = {

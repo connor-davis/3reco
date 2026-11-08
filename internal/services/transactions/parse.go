@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/services/stock"
 )
 
 // SaleItem is one material line of a sale or an offer, as the API receives
@@ -155,6 +156,24 @@ func parseDay(raw string) error {
 func checkCollectionDate(at time.Time) error {
 	if at.In(sast).Format(time.DateOnly) > time.Now().In(sast).Format(time.DateOnly) {
 		return apperr.Field("collection_date", "The collection date cannot be in the future.")
+	}
+
+	return nil
+}
+
+// checkCollectionLimits caps each incoming line, not the accumulated stock row.
+func checkCollectionLimits(items []SaleItem) error {
+	for _, item := range items {
+		weight, _ := new(big.Rat).SetString(item.Weight)
+		price, _ := new(big.Rat).SetString(item.Price)
+
+		if weight.Cmp(big.NewRat(stock.MaxWeightKg, 1)) > 0 {
+			return apperr.Field("weight", stock.WeightLimitMessage)
+		}
+
+		if price.Cmp(big.NewRat(stock.MaxPricePerKg, 1)) > 0 {
+			return apperr.Field("price", stock.PriceLimitMessage)
+		}
 	}
 
 	return nil

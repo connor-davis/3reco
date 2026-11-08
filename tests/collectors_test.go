@@ -31,7 +31,7 @@ func TestCollectorBlankPayout(t *testing.T) {
 			}
 
 			body := map[string]any{
-				"name": "No payout", "email": "contact@example.test", "payout_method": "bank",
+				"name": "No payout", "email": "contact@example.test", "payout_method": "",
 				"bank_account_holder_name": "", "bank_name": "", "bank_account_number": "",
 				"bank_branch_code": "", "bank_account_type": "",
 			}
@@ -41,7 +41,7 @@ func TestCollectorBlankPayout(t *testing.T) {
 			edit := body
 			if role == "staff" {
 				// Staff forms omit payout identifiers, which staff cannot change.
-				edit = map[string]any{"name": "Updated contact", "payout_method": "bank"}
+				edit = map[string]any{"name": "Updated contact"}
 			}
 			status(t, editor.Do("PATCH", path, edit), 200)
 			status(t, other.Do("PATCH", path, body), 404)
@@ -70,10 +70,15 @@ func TestCollectorBlankPayout(t *testing.T) {
 				status(t, other.Do("PATCH", path, partial), 404)
 			}
 
-			// Every role that can create collectors accepts an empty wallet too.
+			// Every creator must complete a chosen payout method.
 			body["email"] = "wallet@example.test"
-			body["payout_method"] = "ewallet"
-			status(t, editor.Do("POST", "/api/collectors", body), 200)
+			for _, method := range []string{"bank", "ewallet"} {
+				body["payout_method"] = method
+				res := status(t, editor.Do("POST", "/api/collectors", body), 400)
+				if fields, ok := res.Body["fields"].(map[string]any); !ok || len(fields) == 0 {
+					t.Fatalf("missing payout field errors: %s", res.Raw)
+				}
+			}
 		})
 	}
 }
@@ -292,7 +297,7 @@ func TestCollectorPatchPreservesOmittedFields(t *testing.T) {
 			map[string]any{"payout_method": "ewallet",
 				"ewallet_platform_name": "Wallet", "ewallet_payment_id": "0821234567"},
 		),
-		400,
+		200,
 	)
 	status(t, creator.Do("PATCH", "/api/collectors/"+id, map[string]any{"province": "Invalid"}), 400)
 	status(t, creator.Do("POST", "/api/collectors", collectorBody("+27 "+phone[1:])), 409)

@@ -1,23 +1,32 @@
+import { format as dateKey } from 'date-fns';
+import { stockLimit } from '@/lib/limits';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2, TriangleAlert } from 'lucide-react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { CalendarIcon, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import {
   ComboboxField,
   DecimalField,
   SelectField,
-  TextField,
 } from '@/components/form-fields';
 import { IconButton } from '@/components/icon-button';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { errorText } from '@/components/transactions/pager-state';
+import { Calendar } from '@/components/ui/calendar';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { useCollectorSelection } from '@/lib/api/collectors';
 import { useMaterials } from '@/lib/api/materials';
 import { useCreateCollection } from '@/lib/api/transactions';
 import {
+  formatDate,
   formatPhone,
   formatRand,
   formatRate,
@@ -35,11 +44,19 @@ import {
 const line = z.object({
   material_id: z.string().min(1, 'Pick a material.'),
   weight: z.string().superRefine((value, ctx) => {
-    const message = quantityError(value);
+    const message =
+      quantityError(value) ??
+      stockLimit(value, 100_000_000n, 'Weight must be 1 000 000 kg or less.');
     if (message) ctx.addIssue({ code: 'custom', message });
   }),
   price: z.string().superRefine((value, ctx) => {
-    const message = priceError(value);
+    const message =
+      priceError(value) ??
+      stockLimit(
+        value,
+        10_000_000n,
+        'Price must be R 100 000.00 per kg or less.'
+      );
     if (message) ctx.addIssue({ code: 'custom', message });
   }),
 });
@@ -88,6 +105,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const materials = useMaterials({ limit: 100 });
   const create = useCreateCollection();
   const [serverError, setServerError] = useState('');
+  const [dateOpen, setDateOpen] = useState(false);
   const { control, handleSubmit, watch, reset, formState } = useForm<Values>({
     resolver: zodResolver(schema),
     // Say why a number is wrong when the user leaves the field, not only on save.
@@ -155,21 +173,75 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
               label: `${item.name} · ${item.phone ? formatPhone(item.phone) : item.email || ''}`,
             }))}
           />
-          <TextField
+          <Controller
             control={control}
             name="collection_day"
-            label="Collection date"
-            type="date"
-            max={today()}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="collection-day">
+                  Collection date
+                </FieldLabel>
+                <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        id="collection-day"
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-between font-normal"
+                        aria-invalid={fieldState.invalid}
+                        aria-describedby={
+                          fieldState.error ? 'collection-day-error' : undefined
+                        }
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                      >
+                        {field.value
+                          ? formatDate(field.value)
+                          : 'Pick the collection date.'}
+                        <CalendarIcon aria-hidden="true" />
+                      </Button>
+                    }
+                  />
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={
+                        field.value
+                          ? new Date(`${field.value}T00:00:00`)
+                          : undefined
+                      }
+                      defaultMonth={
+                        field.value
+                          ? new Date(`${field.value}T00:00:00`)
+                          : undefined
+                      }
+                      disabled={(day) => dateKey(day, 'yyyy-MM-dd') > today()}
+                      onSelect={(day) => {
+                        if (day) {
+                          field.onChange(dateKey(day, 'yyyy-MM-dd'));
+                          field.onBlur();
+                          setDateOpen(false);
+                        }
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FieldError
+                  id="collection-day-error"
+                  errors={[fieldState.error]}
+                />
+              </Field>
+            )}
           />
         </div>
         {fields.map((field, index) => (
           <div
             key={field.id}
-            className="grid items-start gap-3 sm:grid-cols-[1fr_1fr_auto]"
+            className="grid items-start gap-4 sm:grid-cols-2 [&>[data-slot=field]]:min-w-0"
           >
-            {/* Own row: the number fields need the width to show what was typed. */}
-            <div className="sm:col-span-3">
+            {/* Keep removal beside the material so both amounts fill their columns. */}
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:col-span-2">
               <SelectField
                 control={control}
                 name={`lines.${index}.material_id`}
@@ -179,6 +251,14 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
                   label: item.name,
                 }))}
               />
+              <IconButton
+                label={`Remove line ${index + 1}`}
+                disabled={fields.length === 1}
+                className="mt-8"
+                onClick={() => remove(index)}
+              >
+                <Trash2 />
+              </IconButton>
             </div>
             <DecimalField
               control={control}
@@ -192,14 +272,6 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
               label="Price"
               counter={priceCounter()}
             />
-            <IconButton
-              label={`Remove line ${index + 1}`}
-              disabled={fields.length === 1}
-              className="sm:mt-6"
-              onClick={() => remove(index)}
-            >
-              <Trash2 />
-            </IconButton>
           </div>
         ))}
         {lines.map((item, index) => {
