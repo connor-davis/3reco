@@ -237,6 +237,11 @@ func (s *Service) Accept(
 			return err
 		}
 
+		// The chat's last line (and so the inbox preview and time) says it is done.
+		if err := s.store.InsertRequestEvent(ctx, id, user.ID, "The trade is complete."); err != nil {
+			return err
+		}
+
 		name := firstName(r.Items)
 		if len(lines) > 1 {
 			name = fmt.Sprintf("%d materials", len(lines))

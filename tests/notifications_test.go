@@ -156,3 +156,27 @@ func TestNotificationRequestActionsRetired(t *testing.T) {
 		})
 	}
 }
+
+func TestWithdrawnNoticeRetiredOnRejection(t *testing.T) {
+	w := newTradeWorld(t)
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	tradeOffer(t, w.seller, id, w.material, "2", "9")
+	tradeWant(t, "withdraw", w.seller.c.Do("POST", "/api/requests/"+id+"/withdraw", nil), 200)
+
+	unread := `SELECT count(*)::text FROM notifications
+		WHERE link=$1 AND title='Offer withdrawn' AND NOT read`
+	if got := tradeText(t, w.app, unread, "/market/"+id); got != "1" {
+		t.Fatalf("withdrawn notice should stay actionable while negotiating: %s", got)
+	}
+
+	tradeWant(t, "reject", w.seller.c.Do("POST", "/api/requests/"+id+"/reject", nil), 200)
+	if got := tradeText(t, w.app, unread, "/market/"+id); got != "0" {
+		t.Fatalf("withdrawn notice still unread after rejection: %s", got)
+	}
+
+	// History stays as sent.
+	if got := tradeText(t, w.app, `SELECT body FROM notifications
+		WHERE link=$1 AND title='Offer withdrawn'`, "/market/"+id); !strings.Contains(got, "Negotiation continues") {
+		t.Fatalf("stored text was rewritten: %s", got)
+	}
+}

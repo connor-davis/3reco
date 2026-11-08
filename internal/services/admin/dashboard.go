@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
@@ -226,8 +227,17 @@ func fill(days []store.Day, start, end time.Time) ([]store.Day, Totals) {
 		Count:  count,
 		Value:  value.FloatString(2),
 		Weight: weight.FloatString(3),
-		Carbon: carbon.FloatString(0),
+		Carbon: exact(carbon),
 	}
+}
+
+// exact writes a sum with up to five decimals (weight 3 dp times factor 2 dp)
+// and no trailing zeros, so a small carbon total is not rounded to nothing.
+func exact(n *big.Rat) string {
+	text := n.FloatString(5)
+	text = strings.TrimRight(text, "0")
+
+	return strings.TrimSuffix(text, ".")
 }
 
 func add(sum *big.Rat, text string) {
