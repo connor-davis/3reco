@@ -49,13 +49,16 @@ export function DealAside({ request }: { request: TradeRequest }) {
           <Row label="Offer total" value={formatRand(requestTotal(request))} />
         )}
       </dl>
-      <LinkButton
-        to="/market/store/$sellerId"
-        params={{ sellerId: isSeller ? request.buyer.id : request.seller.id }}
-        variant="outline"
-      >
-        Visit {isSeller ? request.buyer.name : request.seller.name}
-      </LinkButton>
+      {(isSeller ? request.buyer.name : request.seller.name) !==
+        'Removed account' && (
+        <LinkButton
+          to="/market/store/$sellerId"
+          params={{ sellerId: isSeller ? request.buyer.id : request.seller.id }}
+          variant="outline"
+        >
+          Visit {isSeller ? request.buyer.name : request.seller.name}
+        </LinkButton>
+      )}
     </div>
   );
 }
@@ -68,7 +71,7 @@ function Availability({ stockId }: { stockId: string }) {
         ` · ${formatKg(listing.data.held_weight)} held`}
     </p>
   ) : (
-    <p className="text-muted-foreground">Availability unavailable</p>
+    <p className="text-muted-foreground">No longer listed</p>
   );
 }
 function Row({ label, value }: { label: string; value: string }) {

@@ -243,8 +243,16 @@ const pageTitles: Record<string, string> = {
 };
 
 /** The page name shown in the top bar and the browser tab. */
-export function pageTitleFor(pathname: string): string {
+export function pageTitleFor(pathname: string, role?: Role | null): string {
   const [first = '', second = ''] = pathname.split('/').filter(Boolean);
+
+  if (
+    first === 'admin' &&
+    second === 'users' &&
+    role !== undefined &&
+    role !== 'admin'
+  )
+    return 'Not available';
 
   if (first === 'market' && second === 'incoming') return 'Incoming requests';
   if (first === 'market' && second === 'outgoing') return 'Outgoing requests';

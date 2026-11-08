@@ -37,19 +37,21 @@ export function Topbar({ onSearch }: TopbarProps) {
         <BreadcrumbList>
           {user &&
             user.role !== 'guest' &&
-            pageTitleFor(pathname) !== 'Page not found' && (
+            pageTitleFor(pathname, user?.role ?? null) !== 'Page not found' && (
               <>
                 <BreadcrumbItem>Workspace</BreadcrumbItem>
                 <BreadcrumbSeparator />
               </>
             )}
           <BreadcrumbItem>
-            <BreadcrumbPage>{pageTitleFor(pathname)}</BreadcrumbPage>
+            <BreadcrumbPage>
+              {pageTitleFor(pathname, user?.role ?? null)}
+            </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <p className="truncate text-sm font-medium sm:hidden">
-        {pageTitleFor(pathname)}
+        {pageTitleFor(pathname, user?.role ?? null)}
       </p>
 
       <div className="ml-auto flex items-center gap-1">

@@ -53,7 +53,8 @@ function CartPage() {
   }, []);
   const [search, setSearch] = useState('');
   const stores = useCartStores();
-  const selectedCart = useCart(selectedSeller ?? '');
+  const sellerId = selectedSeller ?? stores.data?.items[0]?.id ?? '';
+  const selectedCart = useCart(sellerId);
   // Set while a sent request empties the cart, so we don't bounce to /cart.
   const sending = useRef(false);
   useEffect(() => {
@@ -74,7 +75,6 @@ function CartPage() {
     navigate,
   ]);
 
-  const sellerId = selectedSeller ?? stores.data?.items[0]?.id ?? '';
   const options =
     stores.data?.items
       .filter((store) =>
@@ -90,9 +90,19 @@ function CartPage() {
       <PageHeader
         title="Your cart"
         description={
-          selectedSeller
-            ? 'Review quantities before sending your request.'
-            : 'Choose a store to open its saved cart. Review quantities before sending your request.'
+          sellerId
+            ? selectedCart.isPending
+              ? 'Loading your saved cart.'
+              : selectedCart.isError
+                ? 'Your saved cart could not load. Try again.'
+                : selectedCart.data?.items.length
+                  ? 'Review quantities before sending your request.'
+                  : 'Add materials from a listing to start a request.'
+            : stores.isPending
+              ? 'Loading your saved carts.'
+              : stores.data?.items.length === 0
+                ? 'Browse materials to start a request.'
+                : 'Choose a store to open its saved cart.'
         }
       />
       {!stores.data?.items.length && !stores.isPending && !selectedSeller ? (
