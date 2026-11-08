@@ -31,14 +31,16 @@ export function Panel({
   description,
   action,
   children,
+  className,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
@@ -121,7 +123,7 @@ function RecentThreads() {
   const { user } = useAuth();
   const query = useInbox({ limit: 4 });
   return (
-    <Panel title="Recent conversations">
+    <Panel title="Recent conversations" className="gap-3">
       <DataState
         query={query}
         isEmpty={query.data?.items.length === 0}
@@ -135,7 +137,7 @@ function RecentThreads() {
       >
         <ul className="divide-y">
           {query.data?.items.map((thread) => (
-            <li key={thread.request_id} className="py-3">
+            <li key={thread.request_id} className="py-3 first:pt-0">
               <LinkButton
                 className="min-h-11 px-0 text-foreground"
                 to={'/messages/' + thread.request_id}

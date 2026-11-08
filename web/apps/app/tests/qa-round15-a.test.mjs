@@ -83,8 +83,8 @@ test('stock edits preserve unchanged over-cap amounts, including accumulated pre
   );
 });
 
-test('both dialog footers reserve hint space above the last primary action', () => {
-  for (const file of ['stock-dialog.tsx', 'offer-dialog.tsx']) {
+test('the stock footer reserves hint space; offer errors use space only when shown', () => {
+  for (const file of ['stock-dialog.tsx']) {
     const dialog = source(`components/dialogs/${file}`);
     assert.match(dialog, /className="h-10"/);
     assert.equal((dialog.match(/className="min-h-32"/g) ?? []).length, 2);
@@ -96,6 +96,13 @@ test('both dialog footers reserve hint space above the last primary action', () 
       dialog.indexOf('className="h-10"') < dialog.indexOf('<DialogFooter>')
     );
   }
+  const offer = source('components/dialogs/offer-dialog.tsx');
+  assert.doesNotMatch(offer, /className="(?:h-10|min-h-32)"/);
+  assert.match(offer, /errors.root\?\.message &&/);
+  assert.match(
+    offer,
+    /<DialogFooter>\s*<Button[\s\S]*?<\/Button>\s*<\/DialogFooter>/
+  );
 });
 
 test('the stock and offer fields keep their units in labels only', () => {

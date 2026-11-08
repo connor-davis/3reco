@@ -156,7 +156,7 @@ function OfferForm({
             {request.items[index].material_name}
           </legend>
           <div className="grid gap-4">
-            <div className="min-h-32">
+            <div>
               <DecimalField
                 control={form.control}
                 name={`items.${index}.weight`}
@@ -173,7 +173,7 @@ function OfferForm({
                 )}
               />
             </div>
-            <div className="min-h-32">
+            <div>
               <DecimalField
                 control={form.control}
                 name={`items.${index}.price`}
@@ -185,13 +185,11 @@ function OfferForm({
         </fieldset>
       ))}
       <p className="font-medium tabular-nums">Total {totalText}</p>
-      <div className="h-10">
-        {form.formState.errors.root?.message && (
-          <p role="alert" className="text-destructive">
-            {form.formState.errors.root.message}
-          </p>
-        )}
-      </div>
+      {form.formState.errors.root?.message && (
+        <p role="alert" className="text-destructive">
+          {form.formState.errors.root.message}
+        </p>
+      )}
       <DialogFooter>
         <Button
           type="submit"

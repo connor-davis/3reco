@@ -62,6 +62,7 @@ test('same-tick chat submits send once, then allow intentional repeats and retri
       '@/lib/api/messages': { useSendMessage: () => mutation },
       '@/lib/api/requests': {
         useAcceptRequest: () => ({}),
+        useRequest: () => ({}),
         useRequestAction: () => ({}),
       },
       '@/lib/api/client': { ApiError: class extends Error {} },

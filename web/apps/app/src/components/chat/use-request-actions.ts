@@ -6,6 +6,7 @@ import { ApiError } from '@/lib/api/client';
 import {
   useAcceptRequest,
   useCreateRequest,
+  useRequest,
   useRequestAction,
 } from '@/lib/api/requests';
 import { useSendMessage } from '@/lib/api/messages';
@@ -57,6 +58,7 @@ export function useRequestActions(request: TradeRequest) {
   const send = useSendMessage(request.id);
   const sending = useRef(false);
   const accept = useAcceptRequest(request.id);
+  const current = useRequest(request.id);
   const decline = useRequestAction(request.id, 'decline');
   const cancel = useRequestAction(request.id, 'cancel');
   const reject = useRequestAction(request.id, 'reject');
@@ -100,13 +102,22 @@ export function useRequestActions(request: TradeRequest) {
         sending.current = false;
       }
     },
-    accept: () =>
-      run(async () => {
+    accept: async () => {
+      let status: TradeRequest['status'] | undefined;
+      const ok = await run(async () => {
         const result = await accept.mutateAsync({
           offer_version: request.offer_version,
         });
         setTransactionId(result.transaction_id);
-      }),
+
+        // Both confirmations return the same transaction id. Refetch bypasses
+        // cached data and cancels any older in-flight read before checking status.
+        const { data } = await current.refetch({ throwOnError: true });
+        if (!data) throw new Error('Could not refresh this request.');
+        status = data.status;
+      });
+      return ok ? status : false;
+    },
     decline: () => run(() => decline.mutateAsync()),
     cancel: () => run(() => cancel.mutateAsync()),
     reject: () => run(() => reject.mutateAsync()),

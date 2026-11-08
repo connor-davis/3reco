@@ -311,7 +311,7 @@ test('confirmation and cancellation report the action that succeeded', async () 
     },
     './use-request-actions': {
       useRequestActions: () => ({
-        accept: async () => true,
+        accept: async () => 'offered',
         cancel: async () => true,
       }),
     },
