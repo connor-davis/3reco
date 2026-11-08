@@ -51,7 +51,8 @@ func Product(weight, price string) string {
 	return left.Mul(left, right).FloatString(2)
 }
 
-func grouped(value string) string {
+// Grouped puts spaces between thousands, as the invoice prints an amount.
+func Grouped(value string) string {
 	whole, fraction, decimal := strings.Cut(value, ".")
 	sign := ""
 	if strings.HasPrefix(whole, "-") {
@@ -139,7 +140,7 @@ func Render(invoice Invoice) ([]byte, error) {
 		if !strings.Contains(line.Weight, ".") {
 			weight = line.Weight
 		}
-		cells := []string{text(line.Material), grouped(weight), grouped(line.Price), grouped(line.Total)}
+		cells := []string{text(line.Material), Grouped(weight), Grouped(line.Price), Grouped(line.Total)}
 		widths := []float64{76, 34, 34, 34}
 		// Split every cell, including unusually large exact amounts, to avoid overlaps.
 		wrapped := make([][][]byte, len(cells))
@@ -175,7 +176,7 @@ func Render(invoice Invoice) ([]byte, error) {
 
 	doc.Ln(4)
 	doc.SetFont("Helvetica", "B", 12)
-	doc.MultiCell(178, 8, "Grand total: R "+grouped(invoice.Total), "T", "R", false)
+	doc.MultiCell(178, 8, "Grand total: R "+Grouped(invoice.Total), "T", "R", false)
 	doc.Ln(5)
 	doc.SetFont("Helvetica", "B", 10)
 	doc.MultiCell(178, 6, "Payment details", "", "L", false)

@@ -6,7 +6,7 @@ import { api, download } from './client';
 
 export function useTransactions(
   kind: 'mine' | 'purchases' | 'sales' = 'mine',
-  params: Paging = {}
+  params: Paging & { order?: 'recorded' } = {}
 ) {
   return useResource<Page<T.Transaction>>(
     ['transactions', kind, params],

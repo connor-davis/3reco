@@ -236,10 +236,12 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 		body := fmt.Sprintf(
 			"Your invoice is ready\n\nHi %s,\n\n"+
 				"Please find your invoice %s dated %s attached to this email.\n\n"+
+				"Total R %s.\n\n"+
 				"This invoice was generated automatically by 3REco.",
 			Name(document.Buyer),
 			invoice.Number,
 			invoice.Date,
+			pdf.Grouped(invoice.Total),
 		)
 
 		return s.mailer.Send(ctx, mail.Message{
@@ -285,7 +287,8 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 	if auth.HasRole(user, auth.RoleAdmin) &&
 		(projected.Seller.Account != "" || projected.Seller.PaymentID != "") {
 		subject := trade.Seller.ID
-		if err := s.audit.Record(ctx, user.ID, subject, privacy.KindAdminFullView); err != nil {
+		err := s.audit.RecordInvoice(ctx, user.ID, subject, privacy.KindAdminFullView, trade.InvoiceNumber)
+		if err != nil {
 			return nil, "", err
 		}
 	}

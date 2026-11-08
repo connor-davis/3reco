@@ -102,6 +102,17 @@ func (s *Store) MarkAllRead(ctx context.Context, userID string) error {
 	return err
 }
 
+// MarkOffersRead marks the offer messages of one request read, for every user.
+// Once a request ends, "Please confirm the offer" and "Offer received!" no
+// longer ask for anything.
+func (s *Store) MarkOffersRead(ctx context.Context, link string) error {
+	_, err := s.db.Q(ctx).Exec(ctx, `UPDATE notifications SET read = true
+		WHERE link = $1 AND NOT read AND title IN ('Offer received!', 'Please confirm the offer')`,
+		link)
+
+	return err
+}
+
 // Dismiss hides one of the user's messages. It reports false when the user
 // owns no such message.
 func (s *Store) Dismiss(ctx context.Context, userID, id string) (bool, error) {

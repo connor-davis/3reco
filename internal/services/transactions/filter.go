@@ -11,9 +11,10 @@ import (
 )
 
 // ListFilter is the raw search a list request carries: text, a trade type and
-// an inclusive YYYY-MM-DD day range in South African time.
+// an inclusive YYYY-MM-DD day range in South African time. Order "recorded"
+// sorts by when rows were recorded; empty sorts by the effective day.
 type ListFilter struct {
-	Q, Type, From, To, Status string
+	Q, Type, From, To, Status, Order string
 }
 
 // sast is South African time; it has no daylight saving.
@@ -22,6 +23,12 @@ var sast = time.FixedZone("SAST", 2*60*60)
 // parse checks the type and the days, so a bad value is a 400.
 func (f ListFilter) parse() (store.Filter, error) {
 	out := store.Filter{Like: paging.SearchPattern(f.Q), Type: f.Type, Status: f.Status}
+
+	if f.Order != "" && f.Order != "recorded" {
+		return out, apperr.BadRequest("Use recorded for order.", nil)
+	}
+
+	out.Recorded = f.Order == "recorded"
 
 	if f.Status != "" && f.Status != "complete" && f.Status != "pending" {
 		return out, apperr.BadRequest("Use complete or pending for status.", nil)

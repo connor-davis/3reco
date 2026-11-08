@@ -11,9 +11,12 @@ func TestQARound5ACollectorRecentBackdated(t *testing.T) {
 	w := newTradeWorld(t)
 	user := tradeNewUser(t, w.app, "collector")
 	collector := tradeCollector(t, w.app, w.buyer, user.phone)
-	var newest string
+	var newest, newestDay string
 	for i := range 7 {
 		newest = database.NewID()
+		if i == 5 {
+			newestDay = newest
+		}
 		day := "2026-11-01"
 		if i == 6 {
 			day = "2026-10-01"
@@ -28,10 +31,12 @@ func TestQARound5ACollectorRecentBackdated(t *testing.T) {
 			newest, w.material)
 	}
 
-	recent := status(t, user.c.Do("GET", "/api/transactions/sales?limit=4", nil), 200)
+	// The dashboard follows recording order; Sales follows the collection date,
+	// so the backdated row comes last there.
+	recent := status(t, user.c.Do("GET", "/api/transactions/sales?limit=4&order=recorded", nil), 200)
 	sales := status(t, user.c.Do("GET", "/api/transactions/sales?limit=50", nil), 200)
-	if pageItems(t, recent)[0]["id"] != newest || pageItems(t, sales)[0]["id"] != newest {
-		t.Fatalf("newly recorded backdated collection missing from recent: %s", recent.Raw)
+	if pageItems(t, recent)[0]["id"] != newest || pageItems(t, sales)[0]["id"] != newestDay {
+		t.Fatalf("recent or Sales order is wrong: %s", recent.Raw)
 	}
 
 	// Walking the smaller dashboard pages must visit the exact same set as Sales.
@@ -48,7 +53,7 @@ func TestQARound5ACollectorRecentBackdated(t *testing.T) {
 		if cursor == "" {
 			break
 		}
-		recent = status(t, user.c.Do("GET", "/api/transactions/sales?limit=4&cursor="+cursor, nil), 200)
+		recent = status(t, user.c.Do("GET", "/api/transactions/sales?limit=4&order=recorded&cursor="+cursor, nil), 200)
 	}
 	if len(seen) != len(pageItems(t, sales)) {
 		t.Fatalf("recent and Sales differ: %d vs %d", len(seen), len(pageItems(t, sales)))

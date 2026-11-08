@@ -104,12 +104,14 @@ const fromJoins = `
 	LEFT JOIN collectors c ON t.type = 'c2b' AND c.id = t.seller_id`
 
 // Filter narrows a list. Every field is optional. Like is a paging.SearchPattern;
-// From is inclusive and To exclusive, both on the effective day.
+// From is inclusive and To exclusive, both on the effective day. Recorded
+// orders a list by when rows were recorded instead of their effective day.
 type Filter struct {
 	Status   string
 	Like     string
 	Type     string
 	From, To *time.Time
+	Recorded bool
 }
 
 // filterSQL is the shared WHERE tail for $2..$5 (Like, Type, From, To). It
@@ -199,8 +201,8 @@ func (s *Store) List(
 	limit int,
 ) ([]Transaction, error) {
 	orderDate := database.EffectiveDate("t")
-	if scope == ScopeCollectorSales {
-		// Recent collections follow when they were recorded, including backdated sales.
+	if f.Recorded {
+		// The dashboard's recent list follows when a row was recorded, backdated or not.
 		orderDate = "t.created_at"
 	}
 

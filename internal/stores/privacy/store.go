@@ -45,6 +45,21 @@ func (s *Store) Record(ctx context.Context, actor, subject, kind string) error {
 	return err
 }
 
+// RecordInvoice writes an audit line for a read of an invoice and names the
+// invoice number, so an admin can see which invoice showed the full identifier.
+func (s *Store) RecordInvoice(ctx context.Context, actor, subject, kind, number string) error {
+	details, err := json.Marshal(map[string]string{"invoice_number": number})
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Q(ctx).Exec(ctx, `INSERT INTO privacy_events
+		(id,actor_id,subject_id,kind,details) VALUES ($1,$2,NULLIF($3,''),$4,$5::jsonb)`,
+		database.NewID(), actor, subject, kind, details)
+
+	return err
+}
+
 // RecordExport records the download kind and filters once streaming begins.
 func (s *Store) RecordExport(ctx context.Context, actor, subject, kind string, filters map[string]string) error {
 	details, err := json.Marshal(map[string]any{"export_kind": kind, "filters": filters})

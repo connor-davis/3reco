@@ -159,11 +159,7 @@ function UsersPage() {
     {
       accessorKey: 'profile_complete',
       header: 'Profile',
-      cell: ({ row }) => (
-        <Badge variant="secondary">
-          {row.original.profile_complete ? 'Complete' : 'Incomplete'}
-        </Badge>
-      ),
+      cell: ({ row }) => profileBadge(row.original),
     },
     {
       id: 'actions',
@@ -224,9 +220,7 @@ function UsersPage() {
                   {formatDate(user.created_at)}
                 </p>
                 <RoleSelect user={user} />
-                <Badge variant="secondary">
-                  {user.profile_complete ? 'Complete' : 'Incomplete'}
-                </Badge>
+                {profileBadge(user)}
                 {removeButton(user)}
               </CardContent>
             </Card>
@@ -277,6 +271,20 @@ function UsersPage() {
   );
 }
 
+/** Admin and staff need no profile, so their rows never say "Incomplete". */
+function profileBadge(user: {
+  role: string | null;
+  profile_complete: boolean;
+}) {
+  if (user.role === 'admin' || user.role === 'staff') return null;
+
+  return (
+    <Badge variant="secondary">
+      {user.profile_complete ? 'Complete' : 'Incomplete'}
+    </Badge>
+  );
+}
+
 const privacyKinds: Record<string, string> = {
   export: 'Data download',
   delete: 'Account deletion',
@@ -285,6 +293,9 @@ const privacyKinds: Record<string, string> = {
 
 function eventLabel(event: PrivacyEvent) {
   const label = privacyKinds[event.kind] ?? event.kind;
+  const invoice = event.details?.invoice_number;
+  if (invoice) return `${label} · invoice ${invoice}`;
+
   const kind = event.details?.export_kind;
   if (!kind) return label;
 

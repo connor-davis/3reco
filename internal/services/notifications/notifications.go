@@ -34,6 +34,12 @@ func (s *Service) Notify(ctx context.Context, userID, kind, title, body, link st
 	return s.store.Insert(ctx, userID, kind, title, body, link)
 }
 
+// OffersEnded marks a request's offer messages read, in the same transaction
+// as the change that ended the request.
+func (s *Service) OffersEnded(ctx context.Context, requestID string) error {
+	return s.store.MarkOffersRead(ctx, "/market/"+requestID)
+}
+
 // List returns one page of the caller's messages.
 func (s *Service) List(
 	ctx context.Context,

@@ -10,27 +10,45 @@ import type { TradeRequest } from '@/lib/api/types';
 import { formatRand, lineCents } from '@/lib/format';
 import { priceCounter, quantityError, weightCounter } from '@/lib/quantity';
 
+// The most an offer may ask per kg, in cents. The server refuses the same.
+const MAX_PRICE_CENTS = 100_000_00;
+
 function priceError(raw: string): string | undefined {
   const price = raw.trim().replace(',', '.');
+  if (/^\d{1,12}\.\d{3,}$/.test(price)) return 'Use up to 2 decimals.';
   if (!/^\d{1,12}(\.\d{1,2})?$/.test(price) || !/[1-9]/.test(price)) {
-    return 'Enter a price above R 0.00 with up to 2 decimals.';
+    return 'Enter a price above R 0.00.';
+  }
+  if (lineCents(price, '1') > MAX_PRICE_CENTS) {
+    return 'Price must be R 100000.00 per kg or less.';
   }
 }
 
+// A line carries the stock it has available, so its weight is checked against it.
 const schema = z.object({
   items: z
     .array(
-      z.object({
-        material_id: z.string(),
-        weight: z.string().superRefine((value, ctx) => {
-          const message = quantityError(value);
-          if (message) ctx.addIssue({ code: 'custom', message });
-        }),
-        price: z.string().superRefine((value, ctx) => {
-          const message = priceError(value);
-          if (message) ctx.addIssue({ code: 'custom', message });
-        }),
-      })
+      z
+        .object({
+          material_id: z.string(),
+          available: z.string().optional(),
+          weight: z.string(),
+          price: z.string(),
+        })
+        .superRefine((line, ctx) => {
+          const weight = quantityError(
+            line.weight,
+            line.available || undefined
+          );
+          if (weight) {
+            ctx.addIssue({ code: 'custom', message: weight, path: ['weight'] });
+          }
+
+          const price = priceError(line.price);
+          if (price) {
+            ctx.addIssue({ code: 'custom', message: price, path: ['price'] });
+          }
+        })
     )
     .min(1),
 });
@@ -73,6 +91,7 @@ function OfferForm({
     defaultValues: {
       items: request.items.map((item) => ({
         material_id: item.material_id,
+        available: item.available_weight ?? '',
         weight:
           item.offer_weight ??
           item.requested_weight ??
@@ -89,6 +108,8 @@ function OfferForm({
     (sum, line) => sum + lineCents(line.price, line.weight),
     0
   );
+  // A total built on a bad price or weight would mislead, so show a dash.
+  const totalText = validLines ? formatRand(total) : '-';
 
   return (
     <form
@@ -98,7 +119,7 @@ function OfferForm({
         try {
           await offer.mutateAsync({
             items: values.items.map((item) => ({
-              ...item,
+              material_id: item.material_id,
               weight: item.weight.trim().replace(',', '.'),
               price: item.price.trim().replace(',', '.'),
             })),
@@ -140,7 +161,7 @@ function OfferForm({
           </div>
         </fieldset>
       ))}
-      <p className="font-medium tabular-nums">Total {formatRand(total)}</p>
+      <p className="font-medium tabular-nums">Total {totalText}</p>
       {form.formState.errors.root?.message && (
         <p role="alert" className="text-destructive">
           {form.formState.errors.root.message}

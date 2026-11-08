@@ -339,7 +339,11 @@ export interface Dashboard {
   collector_linked?: boolean;
 }
 export interface PrivacyEvent {
-  details: { export_kind?: string; filters?: Record<string, string> };
+  details: {
+    export_kind?: string;
+    filters?: Record<string, string>;
+    invoice_number?: string;
+  };
   id: string;
   actor_id: string;
   subject_id: string | null;

@@ -221,6 +221,10 @@ func (s *Service) Accept(
 			return err
 		}
 
+		if err := s.notes.OffersEnded(ctx, id); err != nil {
+			return err
+		}
+
 		name := firstName(r.Items)
 		if len(lines) > 1 {
 			name = fmt.Sprintf("%d materials", len(lines))
@@ -347,6 +351,11 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 		}
 
 		if err := s.store.SetStatus(ctx, id, step.to); err != nil {
+			return err
+		}
+
+		// Whatever the move, the offer it answers is gone.
+		if err := s.notes.OffersEnded(ctx, id); err != nil {
 			return err
 		}
 

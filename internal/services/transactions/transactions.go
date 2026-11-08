@@ -91,7 +91,7 @@ func (s *Service) List(
 	}
 
 	return paging.Build(rows, limit, func(t store.Transaction) (time.Time, string) {
-		if scope == store.ScopeCollectorSales {
+		if filter.Recorded {
 			return t.CreatedAt, t.ID
 		}
 

@@ -157,7 +157,7 @@ function RecentThreads() {
 }
 
 function RecentCollections() {
-  const query = useTransactions('sales', { limit: 4 });
+  const query = useTransactions('sales', { limit: 4, order: 'recorded' });
   return (
     <Panel title="Your recent collections">
       <DataState
