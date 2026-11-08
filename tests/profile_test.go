@@ -96,7 +96,7 @@ func TestProfileUpdateCannotDesyncEmail(t *testing.T) {
 	)
 	after := status(t, owner.Do("GET", "/api/profile", nil), 200)
 	if after.Body["phone"] != "+27821234567" || after.Body["email"] != before.Body["email"] ||
-		after.Body["name"] != "Updated Name" || after.Body["bank_account_number"] != crypt.Mask("private-account") {
+		after.Body["name"] != "Updated Name" || after.Body["bank_account_number"] != "private-account" {
 		t.Fatalf("profile: %s", after.Raw)
 	}
 
@@ -201,28 +201,32 @@ func TestBusinessProfileRequiresBankDetails(t *testing.T) {
 	)
 }
 
-func TestProfileReadMasksSecretsAndPatchKeepsThem(t *testing.T) {
+func TestProfileReadOwnPayoutAndPatchKeepsIt(t *testing.T) {
 	app := testutil.Server(t)
 	owner, _ := domainUser(t, app, "business")
 	idMask, bankMask := crypt.Mask("private-id"), crypt.Mask("private-account")
 
 	got := status(t, owner.Do("GET", "/api/profile", nil), 200)
-	if got.Body["id_number"] != idMask || got.Body["bank_account_number"] != bankMask ||
-		strings.Contains(string(got.Raw), "private-id") || strings.Contains(string(got.Raw), "private-account") {
-		t.Fatalf("profile not masked: %s", got.Raw)
+	if got.Body["id_number"] != idMask || got.Body["bank_account_number"] != "private-account" ||
+		strings.Contains(string(got.Raw), "private-id") {
+		t.Fatalf("profile id not masked or own account not whole: %s", got.Raw)
 	}
 
 	export := func() map[string]any {
 		return status(t, owner.Do("GET", "/api/privacy/export", nil), 200).Body["profile"].(map[string]any)
 	}
 
-	// The mask sent back keeps what is stored.
+	// The mask sent back keeps what is stored, and so does the whole number or a blank.
 	for _, sent := range []string{idMask} {
 		status(t, owner.Do("PATCH", "/api/profile", map[string]any{"id_number": sent, "bank_account_number": bankMask}), 200)
 		if p := export(); p["id_number"] != "private-id" || p["bank_account_number"] != "private-account" {
 			t.Fatalf("PATCH %q changed a stored value: %v", sent, p)
 		}
 	}
+
+	// Saving other fields, or the whole number as read, keeps the payout.
+	status(t, owner.Do("PATCH", "/api/profile", map[string]any{"city": "Paarl"}), 200)
+	status(t, owner.Do("PATCH", "/api/profile", map[string]any{"bank_account_number": "private-account"}), 200)
 
 	if p := export(); p["id_number"] != "private-id" || p["bank_account_number"] != "private-account" {
 		t.Fatalf("export lost full values: %v", p)
@@ -233,7 +237,7 @@ func TestProfileReadMasksSecretsAndPatchKeepsThem(t *testing.T) {
 	if p := export(); p["bank_account_number"] != "9876543210" || p["id_number"] != "private-id" {
 		t.Fatalf("export after change: %v", p)
 	}
-	if got := status(t, owner.Do("GET", "/api/profile", nil), 200); got.Body["bank_account_number"] != crypt.Mask("9876543210") {
-		t.Fatalf("changed value not masked: %s", got.Raw)
+	if got := status(t, owner.Do("GET", "/api/profile", nil), 200); got.Body["bank_account_number"] != "9876543210" {
+		t.Fatalf("changed value not whole: %s", got.Raw)
 	}
 }

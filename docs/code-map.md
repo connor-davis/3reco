@@ -63,6 +63,10 @@ Never rename a merged migration. Add a new file.
 | Export, self-delete, notice, audit log, hourly retention: SQL, rules, `/api/privacy` routes | `internal/stores/privacy`, `internal/services/privacy`, `internal/api/privacy` |
 | Collector payout masks (including branch code), safe `can_edit` permission, staff contact-only form edits | `internal/services/collectors/collectors.go`, `internal/services/collectors/stats.go`, `web/apps/app/src/components/dialogs/collector-dialog.tsx` |
 | Reuse collector payout access for frozen invoice/CSV snapshots | `internal/services/collectors/payout_access.go` (`CanReadFullPayout`), `internal/services/invoices/invoices.go` (`Project`) |
+| Collector `can_view_payout`, six-digit branch code, phone-digit search, admin full-view audit only when disclosed | `internal/services/collectors/{collectors,validation}.go`, `internal/stores/collectors/collectors.go` (`searchTerms`) |
+| Collection total of at least R 0.01 | `internal/services/transactions/parse.go` (`checkCollectionTotal`), `web/apps/app/src/components/dialogs/collection-dialog.tsx` |
+| Role change is live: `RecheckUser` after commit, guest sockets hear only their own id | `internal/services/realtime/{hub,recheck,routing}.go`, `internal/services/admin/users.go` (`SetRole`) |
+| Removed reason wins over a generic sign-out; a silent socket drop checks the session | `web/apps/app/src/lib/api/auth.ts` (`endSession`), `web/apps/app/src/lib/live/{connection,use-live}.ts` |
 | Privacy tests: ciphertext at rest, mask and full view, export, delete, retention, notice, audit | `tests/privacy_test.go`, `tests/privacy_rights_test.go`, `tests/fieldcrypt_test.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
 | Delete a finished request's action notices for every user at closure (outcome notice stays, chat notices only marked read) | `RequestEnded` in `internal/services/notifications/notifications.go`, `DeleteRequestActions` in `internal/stores/notifications/notifications.go` |

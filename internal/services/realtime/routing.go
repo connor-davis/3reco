@@ -34,9 +34,10 @@ func (h *Hub) route(ch change) {
 
 	heard := map[*Client]struct{}{}
 
-	push := func(set map[*Client]struct{}) {
+	// A guest hears only what is sent to their own id, never a group.
+	push := func(set map[*Client]struct{}, named bool) {
 		for c := range set {
-			if _, ok := heard[c]; ok {
+			if _, ok := heard[c]; ok || (c.guest && !named) {
 				continue
 			}
 
@@ -47,16 +48,16 @@ func (h *Hub) route(ch change) {
 	}
 
 	for _, id := range ch.Users {
-		push(h.byUser[id])
+		push(h.byUser[id], true)
 	}
 
 	switch ch.Aud {
 	case audAll:
-		push(h.clients)
+		push(h.clients, false)
 	case audStaff:
-		push(h.byRole[auth.RoleAdmin])
-		push(h.byRole[auth.RoleStaff])
+		push(h.byRole[auth.RoleAdmin], false)
+		push(h.byRole[auth.RoleStaff], false)
 	case audAdmin:
-		push(h.byRole[auth.RoleAdmin])
+		push(h.byRole[auth.RoleAdmin], false)
 	}
 }

@@ -139,6 +139,7 @@ export type MaterialInput = Omit<Material, 'id' | 'created_at'>;
 export interface Collector {
   id: string;
   can_edit: boolean;
+  can_view_payout: boolean;
   name: string;
   email?: string;
   phone?: string;
@@ -158,7 +159,7 @@ export interface Collector {
   created_at: string;
 }
 export type CollectorInput = Partial<
-  Omit<Collector, 'id' | 'created_at' | 'can_edit'>
+  Omit<Collector, 'id' | 'created_at' | 'can_edit' | 'can_view_payout'>
 >;
 export interface CollectorStats {
   collector: Collector;

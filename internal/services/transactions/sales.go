@@ -230,6 +230,10 @@ func (s *Service) CollectorSale(
 		return "", err
 	}
 
+	if err := checkCollectionTotal(in.Items); err != nil {
+		return "", err
+	}
+
 	if in.CollectionDay != nil {
 		if err := parseDay(*in.CollectionDay); err != nil {
 			return "", err

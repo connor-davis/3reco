@@ -207,13 +207,31 @@ func TestLiveHandshakeIsChecked(t *testing.T) {
 	}
 }
 
-// A guest has not finished setup, so the socket handshake is refused.
-func TestLiveGuestHandshakeIsRefused(t *testing.T) {
+// A guest has not finished setup, but may hold a socket: it hears only events
+// sent to their own id, never a group event.
+func TestLiveGuestSocketIsQuietExceptForSelf(t *testing.T) {
 	app := testutil.Server(t)
 	guest, _ := newGuest(t, app)
+	other := tradeNewUser(t, app, "business")
 
-	if _, resp, err := dial(t, app, guest, testutil.WebOrigin); err == nil || resp == nil || resp.StatusCode != 403 {
-		t.Fatalf("guest handshake: err=%v resp=%v, want a 403", err, resp)
+	sock, _, err := dial(t, app, guest, testutil.WebOrigin)
+	if err != nil {
+		t.Fatalf("guest handshake: %v", err)
+	}
+
+	listener := joinLive(t, app, other)[0]
+
+	payload := `{"kind":"listing","id":"l1","op":"insert","users":[],"aud":"all"}`
+	if _, err := app.DB.Pool.Exec(context.Background(), `SELECT pg_notify('threereco_changes', $1)`, payload); err != nil {
+		t.Fatal(err)
+	}
+
+	listener.hear("listing", "l1")
+	sock.quiet("guest")
+
+	// Someone with no cookie is still refused.
+	if _, resp, err := dial(t, app, app.NewClient(t), testutil.WebOrigin); err == nil || resp == nil || resp.StatusCode != 401 {
+		t.Fatalf("anonymous handshake: err=%v resp=%v, want a 401", err, resp)
 	}
 }
 

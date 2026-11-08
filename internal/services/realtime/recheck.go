@@ -26,12 +26,27 @@ func (h *Hub) recheckLoop(ctx context.Context) {
 // back to guest, and refreshes the role of the rest, so a demoted admin stops
 // hearing admin events. The loop runs it every recheckEvery; tests call it.
 func (h *Hub) Recheck(ctx context.Context) {
+	h.recheck(ctx, "")
+}
+
+// RecheckUser is Recheck for one person's sockets only, so a role change shows
+// at once instead of at the next loop. Call it after the change commits.
+func (h *Hub) RecheckUser(ctx context.Context, userID string) {
+	h.recheck(ctx, userID)
+}
+
+// recheck covers every client, or only userID's when it is not empty.
+func (h *Hub) recheck(ctx context.Context, userID string) {
 	h.mu.Lock()
 
 	all := make([]*Client, 0, len(h.clients))
 	sessionIDs := make([]string, 0, len(h.clients))
 
 	for c := range h.clients {
+		if userID != "" && c.UserID != userID {
+			continue
+		}
+
 		all = append(all, c)
 		sessionIDs = append(sessionIDs, c.SessionID)
 	}
@@ -56,7 +71,10 @@ func (h *Hub) Recheck(ctx context.Context) {
 
 	for _, c := range all {
 		role, ok := live[c.SessionID]
-		if !ok || role == auth.RoleGuest {
+
+		// A guest may hold a socket to hear their role change; only someone who
+		// was not a guest when they joined is dropped for becoming one.
+		if !ok || (role == auth.RoleGuest && !c.guest) {
 			// A failed lookup is not proof: those browsers just reconnect.
 			c.revoked.Store(!failed)
 			h.dropLocked(c)
@@ -69,6 +87,8 @@ func (h *Hub) Recheck(ctx context.Context) {
 			c.role = role
 			addTo(h.byRole, role, c)
 		}
+
+		c.guest = role == auth.RoleGuest
 	}
 }
 

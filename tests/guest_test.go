@@ -48,7 +48,7 @@ func TestGuestIsBlockedUntilSetup(t *testing.T) {
 		{"GET", "/api/market/listings"}, {"GET", "/api/stores"}, {"GET", "/api/materials"},
 		{"GET", "/api/stats"}, {"GET", "/api/messages/inbox"}, {"GET", "/api/admin/users"},
 		{"GET", "/api/admin/dashboard"}, {"GET", "/api/users/" + other.id},
-		{"GET", "/api/users/" + other.id + "/avatar"}, {"GET", "/api/live"},
+		{"GET", "/api/users/" + other.id + "/avatar"},
 	}
 
 	for _, item := range blocked {
@@ -61,6 +61,9 @@ func TestGuestIsBlockedUntilSetup(t *testing.T) {
 	// Their own account stays open.
 	status(t, guest.Do("GET", "/api/auth/me", nil), 200)
 	status(t, guest.Do("GET", "/api/profile", nil), 200)
+
+	// The live socket stays open so a role change reaches them; a plain GET is told to upgrade.
+	status(t, guest.Do("GET", "/api/live", nil), 426)
 	status(t, guest.Do("GET", "/api/profile/optional", nil), 200)
 	status(t, guest.Do("PATCH", "/api/profile", map[string]any{"first_name": "Zanele"}), 200)
 	status(t, guest.Do("GET", "/api/privacy/notice/current", nil), 200)

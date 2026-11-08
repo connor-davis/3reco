@@ -7,10 +7,9 @@ const source = readFileSync(
   'utf8'
 );
 
-test('a guest is rechecked on a timer and signed out, with no guest socket', () => {
-  assert.match(source, /GUEST_RECHECK_MS = 30_000/);
-  assert.match(source, /setInterval\(/);
-  assert.match(source, /readMe\(\)[\s\S]*endSession\(client, 'ended'\)/);
-  // The socket still opens only for a signed-in non-guest.
-  assert.match(source, /if \(!userId \|\| !live\) return;/);
+test('every signed-in person, a guest too, holds a live socket and no timer', () => {
+  assert.doesNotMatch(source, /GUEST_RECHECK_MS|setInterval\(/);
+  assert.match(source, /if \(!userId\) return;/);
+  // A socket that drops without a close reason asks whether the sign-in lives.
+  assert.match(source, /readMe\(\)\.then\(Boolean\)/);
 });

@@ -74,14 +74,19 @@ export class LiveConnection {
   private pending = new Map<string, ReturnType<typeof setTimeout>>();
   private client: QueryClient;
   private onEnded?: (reason: 'ended' | 'removed') => void;
+  private stillSignedIn?: () => Promise<boolean>;
 
-  // onEnded runs when the server says this sign-in is over.
+  // onEnded runs when the server says this sign-in is over. stillSignedIn is
+  // asked when the socket drops without that word, so a sign-in that ended
+  // while the page was cut off is noticed now, not after the next reconnect.
   constructor(
     client: QueryClient,
-    onEnded?: (reason: 'ended' | 'removed') => void
+    onEnded?: (reason: 'ended' | 'removed') => void,
+    stillSignedIn?: () => Promise<boolean>
   ) {
     this.client = client;
     this.onEnded = onEnded;
+    this.stillSignedIn = stillSignedIn;
   }
 
   start() {
@@ -148,6 +153,14 @@ export class LiveConnection {
         );
         return;
       }
+
+      void this.stillSignedIn?.()
+        .then((signedIn) => {
+          if (signedIn || this.stopped) return;
+          this.stop();
+          this.onEnded?.('ended');
+        })
+        .catch(() => undefined);
 
       const delay =
         Math.min(30000, 1000 * 2 ** this.attempts++) + Math.random() * 250;

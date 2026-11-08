@@ -104,6 +104,11 @@ function schemaFor(collector?: Collector, payoutReadOnly = false) {
         }
         if (!values.bank_branch_code.trim()) {
           fail('bank_branch_code', 'Enter the branch code.');
+        } else if (
+          !/^\d{6}$/.test(values.bank_branch_code.trim()) &&
+          !unchanged(values.bank_branch_code, collector?.bank_branch_code)
+        ) {
+          fail('bank_branch_code', 'Enter a 6-digit branch code.');
         }
         if (
           !/^\d{6,16}$/.test(values.bank_account_number) &&

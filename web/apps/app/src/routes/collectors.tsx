@@ -43,7 +43,8 @@ function payoutText(collector: Collector): string {
     return `E-wallet · ${collector.ewallet_platform_name ?? ''}`.trim();
   }
 
-  return 'Not shared';
+  // Empty and hidden look the same in the data, so the server says which.
+  return collector.can_view_payout ? 'None added' : 'Not shared';
 }
 
 type RemoveProps = { collector: Collector | null; onClose: () => void };
