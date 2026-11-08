@@ -21,15 +21,6 @@ func (s *Service) ExpireOffers(ctx context.Context) error {
 		}
 
 		for _, r := range expired {
-			r, err := s.store.Get(ctx, r.ID, false)
-			if err != nil {
-				return err
-			}
-
-			if err := s.reserveRequestedHolds(ctx, r); err != nil {
-				return err
-			}
-
 			for _, userID := range []string{r.Buyer.ID, r.Seller.ID} {
 				err := s.notes.Notify(
 					ctx,

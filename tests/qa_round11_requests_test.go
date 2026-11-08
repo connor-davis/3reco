@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestQARound11RequestedHoldsRestored(t *testing.T) {
+func TestQARound11RequestedHoldsAfterWithdrawAndExpiry(t *testing.T) {
 	for _, action := range []string{"withdraw", "expiry"} {
 		for _, stockGone := range []bool{false, true} {
 			name := action + "/available"
@@ -57,7 +57,7 @@ func TestQARound11RequestedHoldsRestored(t *testing.T) {
 				count := tradeText(t, w.app, `SELECT count(*)::text FROM stock_holds
 					WHERE request_id=$1 AND status='active'`, id)
 				want := "2"
-				if stockGone {
+				if stockGone || action == "expiry" {
 					want = "0"
 				}
 				if count != want {
@@ -66,8 +66,12 @@ func TestQARound11RequestedHoldsRestored(t *testing.T) {
 
 				for _, stockID := range []string{w.stock, stock} {
 					listing := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+stockID, nil), 200)
-					if stockGone {
+					if stockGone || action == "expiry" {
 						holdDecimal(t, listing.Body["held_weight"], "0")
+						if !stockGone {
+							holdDecimal(t, listing.Body["weight"], "100")
+						}
+
 						continue
 					}
 
@@ -77,6 +81,25 @@ func TestQARound11RequestedHoldsRestored(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestQARound11UnansweredRequestHoldExpires(t *testing.T) {
+	w := newTradeWorld(t)
+	id := marketRequest(t, w, "12.5")
+	holdCount(t, w, "active", "1")
+
+	marketExpire(t, w, id)
+	holdCount(t, w, "active", "0")
+	holdCount(t, w, "released", "1")
+
+	request := status(t, w.buyer.c.Do("GET", "/api/requests/"+id, nil), 200)
+	if request.Body["status"] != "pending" {
+		t.Fatalf("unanswered request did not stay pending: %s", request.Raw)
+	}
+
+	listing := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200)
+	holdDecimal(t, listing.Body["held_weight"], "0")
+	holdDecimal(t, listing.Body["weight"], "100")
 }
 
 func TestQARound11TradeCompleteNotice(t *testing.T) {
