@@ -8,6 +8,7 @@ import { useListing } from '@/lib/api/listings';
 
 export function DealAside({ request }: { request: TradeRequest }) {
   const { user } = useAuth();
+  const isSeller = user?.id === request.seller.id;
   const hasOffer = request.items.some((item) => item.offer_price !== null);
   return (
     <div className="space-y-6 text-sm">
@@ -44,7 +45,7 @@ export function DealAside({ request }: { request: TradeRequest }) {
       </dl>
       <LinkButton
         to="/market/store/$sellerId"
-        params={{ sellerId: request.seller.id }}
+        params={{ sellerId: isSeller ? request.buyer.id : request.seller.id }}
         variant="outline"
       >
         Visit store

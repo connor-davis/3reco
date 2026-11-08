@@ -69,11 +69,6 @@ function CartPage() {
       <PageHeader
         title="Your cart"
         description="Choose a store to open its saved cart. Review quantities before sending your request."
-        actions={
-          <LinkButton to="/market" variant="outline">
-            Keep browsing
-          </LinkButton>
-        }
       />
       {!stores.data?.items.length && !stores.isPending && !selectedSeller ? (
         <DataState

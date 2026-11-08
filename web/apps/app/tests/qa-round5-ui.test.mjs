@@ -16,12 +16,15 @@ test('every page has its own tab title, even the 404', () => {
   assert.match(source('components/shell/app-shell.tsx'), /· 3REco/);
 });
 
-test('toasts sit top-right, below the top bar', () => {
+test('toasts sit bottom-right, clear of chat headers', () => {
   assert.match(
     source('components/shell/app-shell.tsx'),
-    /position="top-right"/
+    /position="bottom-right"/
   );
-  assert.match(source('components/ui/sonner.tsx'), /offset=\{\{ top: 72 \}\}/);
+  assert.match(
+    source('components/ui/sonner.tsx'),
+    /mobileOffset=\{\{ bottom: 72 \}\}/
+  );
 });
 
 test('role labels are capitalised, for known and unknown roles', () => {
@@ -41,7 +44,7 @@ test('collectors page has no sort button and says it is sorted A to Z', () => {
 test('collector dialog is neutral for staff and shows a conflict once', () => {
   const dialog = source('components/dialogs/collector-dialog.tsx');
   assert.match(dialog, /'Add a collector'/);
-  assert.match(dialog, /isStaffRole\(user\?\.role\)/);
+  assert.doesNotMatch(dialog, /Add someone you buy from/);
   assert.match(dialog, /if \(!placed\) setServerError/);
 });
 

@@ -65,6 +65,7 @@ test('Message seller opens the selected lot and keeps the entered quantity', () 
     'routes/market/listing/$listingId.tsx',
     {
       react: {
+        useEffect: () => {},
         useState: () => [
           state,
           (value) => {
@@ -143,6 +144,7 @@ test('completed unreviewed trade enables review launch; reviewed trades disable 
     'routes/market/store/$sellerId.tsx',
     {
       react: {
+        useEffect: () => {},
         useState: (initial) => {
           const at = index++;
           if (!(at in state)) state[at] = initial;
@@ -200,7 +202,7 @@ test('completed unreviewed trade enables review launch; reviewed trades disable 
   const exhausted = nodes(render()).find(
     (node) =>
       typeof node.props?.onClick === 'function' &&
-      words(node) === 'You have reviewed all eligible trades.'
+      words(node) === 'Leave a review'
   );
   assert.equal(exhausted.props.disabled, true);
 });

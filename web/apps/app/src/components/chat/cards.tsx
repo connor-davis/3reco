@@ -19,6 +19,26 @@ import {
   plural,
 } from '@/lib/format';
 import { requestTotal } from './helpers';
+import { useRequest } from '@/lib/api/requests';
+
+export function ThreadMaterials({ requestId }: { requestId: string }) {
+  const request = useRequest(requestId);
+
+  return (
+    <span className="block truncate text-sm text-muted-foreground">
+      {request.isPending
+        ? 'Loading materials…'
+        : request.isError
+          ? 'Materials unavailable'
+          : request.data?.items
+              .map((item) => {
+                const weight = item.offer_weight ?? item.requested_weight;
+                return `${item.material_name}${weight ? ` · ${formatKg(weight)}` : ''}`;
+              })
+              .join(', ')}
+    </span>
+  );
+}
 
 export function OfferCard({
   request,

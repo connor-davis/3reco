@@ -72,7 +72,7 @@ export function DataTable<T>({
           ))}
         </ul>
       ) : (
-        <div className="rounded-2xl border">
+        <div className="overflow-hidden rounded-2xl border">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((group) => (

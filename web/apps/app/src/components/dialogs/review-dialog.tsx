@@ -88,8 +88,8 @@ export function ReviewDialog({ open, onOpenChange, storeId }: Props) {
         query={eligible}
         isEmpty={eligible.data?.items.length === 0}
         icon={Star}
-        emptyTitle="You have reviewed all eligible trades."
-        emptyText="You can leave another review after your next completed trade with this store."
+        emptyTitle="No purchases available to review"
+        emptyText="Complete a purchase from this store to leave a review. Each purchase can be reviewed once."
       >
         <form
           onSubmit={handleSubmit(onSubmit)}

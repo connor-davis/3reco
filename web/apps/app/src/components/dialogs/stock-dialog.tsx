@@ -42,20 +42,26 @@ type Props = {
 const exact = (value: string) => value.trim().replace(',', '.');
 
 /** Add or edit one of the business's own stock lines. */
-export function StockDialog({ open, onOpenChange, stock }: Props) {
+export function StockDialog(props: Props) {
+  return props.open ? <StockForm {...props} /> : null;
+}
+
+function StockForm({ open, onOpenChange, stock }: Props) {
   const materials = useMaterials({ limit: 100 });
   const create = useCreateStock();
   const update = useUpdateStock(stock?.id ?? '');
   const [serverError, setServerError] = useState('');
-  const { control, handleSubmit, watch, setValue, setError } = useForm<Values>({
-    resolver: zodResolver(schema),
-    values: {
-      material_id: stock?.material_id ?? '',
-      weight: stock?.weight ?? '',
-      price: stock?.price ?? '',
-      is_listed: stock?.is_listed ?? true,
-    },
-  });
+  const { control, handleSubmit, watch, setValue, setError, formState } =
+    useForm<Values>({
+      resolver: zodResolver(schema),
+      mode: 'onChange',
+      values: {
+        material_id: stock?.material_id ?? '',
+        weight: stock?.weight ?? '',
+        price: stock?.price ?? '',
+        is_listed: stock?.is_listed ?? true,
+      },
+    });
 
   const items = materials.data?.items ?? [];
   const chosen = items.find((item) => item.id === watch('material_id'));
@@ -108,7 +114,10 @@ export function StockDialog({ open, onOpenChange, stock }: Props) {
       title={stock ? 'Edit stock' : 'Add stock'}
       description="Listed stock shows up in the market. Prices are per kg."
       footer={
-        <Button disabled={busy} onClick={handleSubmit(onSubmit)}>
+        <Button
+          disabled={busy || !formState.isValid}
+          onClick={handleSubmit(onSubmit)}
+        >
           {stock ? 'Save changes' : 'Add stock'}
         </Button>
       }

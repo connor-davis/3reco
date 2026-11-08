@@ -12,8 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ApiError } from '@/lib/api/client';
-import { isStaffRole } from '@/lib/access';
-import { useAuth } from '@/lib/auth/use-auth';
 import { useCreateCollector, useUpdateCollector } from '@/lib/api/collectors';
 import type { Collector, CollectorInput } from '@/lib/api/types';
 
@@ -162,10 +160,11 @@ function toInput(values: Values): CollectorInput {
 }
 
 /** Add or edit a collector, with the payout details they get paid to. */
-export function CollectorDialog({ open, onOpenChange, collector }: Props) {
-  const { user } = useAuth();
-  // Admin and staff buy from nobody, so for them it is not "someone you buy from".
-  const staff = isStaffRole(user?.role);
+export function CollectorDialog(props: Props) {
+  return props.open ? <CollectorForm {...props} /> : null;
+}
+
+function CollectorForm({ open, onOpenChange, collector }: Props) {
   const create = useCreateCollector();
   const update = useUpdateCollector(collector?.id ?? '');
   const [serverError, setServerError] = useState('');
@@ -212,9 +211,7 @@ export function CollectorDialog({ open, onOpenChange, collector }: Props) {
       description={
         collector
           ? 'Update this collector’s contact and payout details.'
-          : staff
-            ? 'Add a collector, with how to reach and pay them.'
-            : 'Add someone you buy from, with how to reach and pay them.'
+          : 'Add a collector, with how to reach and pay them.'
       }
       footer={
         <Button

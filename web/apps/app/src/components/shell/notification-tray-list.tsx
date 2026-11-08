@@ -45,7 +45,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
     read.error ?? readAll.error ?? dismiss.error ?? dismissAll.error;
 
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-col">
       <Tabs
         value={tab}
         onValueChange={(next) => setTab(String(next))}
@@ -61,7 +61,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      <div className="max-h-80 min-h-0 overflow-x-hidden overflow-y-auto">
+      <div className="max-h-80 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto p-4 [&_[data-slot=empty]]:p-6 [&_[data-slot=empty-header]]:min-w-0">
         <DataState
           query={[notices, count]}
           isEmpty={shown.length === 0}

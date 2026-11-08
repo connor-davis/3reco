@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { messageText, threadSummary } from './helpers';
+import { ThreadMaterials } from './cards';
 
 export function Inbox({
   activeId,
@@ -161,6 +162,7 @@ export function Inbox({
                         {formatTime(thread.activity_at)}
                       </time>
                     </span>
+                    <ThreadMaterials requestId={thread.request_id} />
                     <span className="block truncate text-sm text-muted-foreground">
                       {thread.latest_message?.system && 'System · '}
                       {messageText(

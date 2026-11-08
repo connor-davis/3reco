@@ -26,6 +26,7 @@ import {
   useSwitchSession,
 } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/use-auth';
+import { ApiError } from '@/lib/api/client';
 
 /** The account button in the top bar: profile, other sessions, theme, sign out. */
 export function AccountMenu() {
@@ -97,7 +98,22 @@ export function AccountMenu() {
                   switchSession.mutate(session.id, {
                     onSuccess: () =>
                       toast.success(`Switched to ${session.email}.`),
-                    onError: () => toast.error('We could not switch account.'),
+                    onError: (error) => {
+                      if (
+                        error instanceof ApiError &&
+                        [401, 404].includes(error.status)
+                      ) {
+                        void navigate({
+                          to: '/sign-in',
+                          search: {
+                            add: true,
+                            email: session.email ?? undefined,
+                          },
+                        });
+                      } else {
+                        toast.error('We could not switch account. Try again.');
+                      }
+                    },
                   });
                 }}
               >
@@ -118,7 +134,11 @@ export function AccountMenu() {
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate({ to: '/sign-in' })}>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({ to: '/sign-in', search: { add: true } })
+              }
+            >
               <Plus />
               Add account
             </DropdownMenuItem>

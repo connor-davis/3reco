@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +35,10 @@ export const Route = createFileRoute('/market/listing/$listingId')({
 function ListingPage() {
   const { listingId } = Route.useParams();
   const query = useListing(listingId);
+  useEffect(() => {
+    if (query.data) document.title = `${query.data.material_name} · 3REco`;
+  }, [query.data]);
+
   return (
     <>
       <LinkButton to="/market" variant="ghost" className="mb-6 px-0">

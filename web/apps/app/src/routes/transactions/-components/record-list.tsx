@@ -174,17 +174,6 @@ export function RecordList({
   return (
     <>
       <PageHeader title={title} description={description} actions={actions} />
-      {!collectionsOnly && (
-        <ChipGroup
-          label="Transaction status"
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: 'complete', label: 'Complete' },
-            { value: 'pending', label: 'Pending' },
-          ]}
-        />
-      )}
       {stats && (
         <div className="mb-8">
           <StatGrid threeUp>
@@ -216,6 +205,17 @@ export function RecordList({
         </div>
       )}
       <div className="mb-6 flex flex-wrap items-center gap-3">
+        {!collectionsOnly && (
+          <ChipGroup
+            label="Transaction status"
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: 'complete', label: 'Complete' },
+              { value: 'pending', label: 'Pending' },
+            ]}
+          />
+        )}
         <SearchBox
           label="Search records"
           value={query}
@@ -283,7 +283,7 @@ export function RecordList({
         }
         skeleton={<RowsSkeleton />}
       >
-        <ItemGroup className="rounded-2xl border">
+        <ItemGroup className="overflow-hidden rounded-2xl border">
           {shown.map((row) => (
             <Item key={row.id}>
               <ItemContent className="min-w-48">
@@ -298,10 +298,13 @@ export function RecordList({
                 </p>
               </ItemContent>
               <ItemActions className="flex-wrap">
-                <Badge variant="outline">
+                <Badge
+                  variant="outline"
+                  className="w-40 shrink-0 justify-center"
+                >
                   {row.type === 'b2b' ? 'Business trade' : 'Collector purchase'}
                 </Badge>
-                <span className="w-28 text-right font-semibold tabular-nums">
+                <span className="w-32 shrink-0 text-right font-semibold tabular-nums">
                   {formatRand(toCents(row.total_price))}
                 </span>
                 {row.status === 'pending' && row.request_id && (

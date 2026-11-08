@@ -181,10 +181,12 @@ function CollectorsPage() {
             : 'The people who bring you material, and how you pay them.'
         }
         actions={
-          <Button onClick={() => openForm()}>
-            <Plus data-icon="inline-start" />
-            Add collector
-          </Button>
+          !directory && (
+            <Button onClick={() => openForm()}>
+              <Plus data-icon="inline-start" />
+              Add collector
+            </Button>
+          )
         }
       />
       <div className="mb-6">
@@ -204,7 +206,11 @@ function CollectorsPage() {
             ? 'No collectors on 3REco yet.'
             : 'Add the people who collect for you.'
         }
-        emptyAction={<Button onClick={() => openForm()}>Add collector</Button>}
+        emptyAction={
+          !directory && (
+            <Button onClick={() => openForm()}>Add collector</Button>
+          )
+        }
         skeleton={<RowsSkeleton />}
       >
         <DataTable

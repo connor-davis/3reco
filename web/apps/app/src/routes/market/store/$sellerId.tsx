@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -53,6 +53,7 @@ function StorePage() {
     >
       {store.data && (
         <>
+          <StoreTitle key={sellerId} name={store.data.name} />
           <NewMessageDialog
             open={chatListing !== null}
             onOpenChange={(open) => {
@@ -156,6 +157,11 @@ function StorePage() {
                   </div>
                 )}
               </DataState>
+              {user?.id === sellerId && (
+                <p className="text-sm text-muted-foreground">
+                  Buyers review your store after a completed trade.
+                </p>
+              )}
               {user?.role === 'business' && user.id !== sellerId && (
                 <>
                   <Button
@@ -167,10 +173,14 @@ function StorePage() {
                       !eligible.data?.items.length
                     }
                   >
-                    {eligible.isSuccess && !eligible.data.items.length
-                      ? 'You have reviewed all eligible trades.'
-                      : 'Leave a review'}
+                    Leave a review
                   </Button>
+                  {eligible.isSuccess && !eligible.data.items.length && (
+                    <p className="text-sm text-muted-foreground">
+                      Reviews are for completed purchases from this store. Each
+                      purchase can be reviewed once.
+                    </p>
+                  )}
                   {eligible.isError && (
                     <p role="alert" className="text-sm text-destructive">
                       Could not check completed trades.{' '}
@@ -251,13 +261,23 @@ function StorePage() {
               setDeleteId(null);
             }}
           />
-          <ReviewDialog
-            open={reviewOpen}
-            onOpenChange={setReviewOpen}
-            storeId={sellerId}
-          />
+          {reviewOpen && (
+            <ReviewDialog
+              open={reviewOpen}
+              onOpenChange={setReviewOpen}
+              storeId={sellerId}
+            />
+          )}
         </>
       )}
     </DataState>
   );
+}
+
+function StoreTitle({ name }: { name: string }) {
+  useEffect(() => {
+    document.title = `${name} · 3REco`;
+  }, [name]);
+
+  return null;
 }

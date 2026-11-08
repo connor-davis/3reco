@@ -22,6 +22,7 @@ import {
   plural,
 } from '@/lib/format';
 import { messageText } from '@/components/chat/helpers';
+import { ThreadMaterials } from '@/components/chat/cards';
 import { ImpactChart } from './impact-chart';
 import { useAuth } from '@/lib/auth/use-auth';
 
@@ -142,6 +143,7 @@ function RecentThreads() {
               >
                 {thread.other.name}
               </LinkButton>
+              <ThreadMaterials requestId={thread.request_id} />
               <p className="line-clamp-2 text-sm text-muted-foreground">
                 {messageText(thread.latest_message?.content ?? 'New request')}
               </p>
