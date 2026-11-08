@@ -303,6 +303,13 @@ func (c *Client) SetCookie(name, value string) {
 	c.HTTP.Jar.SetCookies(u, []*http.Cookie{{Name: name, Value: value, Path: "/"}})
 }
 
+// DropCookie removes a cookie from the jar, as a browser that lost it would.
+func (c *Client) DropCookie(name string) {
+	u, _ := url.Parse(c.app.URL)
+
+	c.HTTP.Jar.SetCookies(u, []*http.Cookie{{Name: name, Path: "/", MaxAge: -1}})
+}
+
 // Mail is one message read back from Mailpit.
 type Mail struct {
 	Subject     string
