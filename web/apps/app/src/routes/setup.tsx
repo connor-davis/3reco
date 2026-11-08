@@ -152,21 +152,17 @@ function Wizard({ fixed }: { fixed: Choice | null }) {
         </>
       }
     >
-      <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">
-          {step === 'type' ? (
-            'Step 1'
-          ) : (
-            <>
-              Step {index + 1} of {total}
-            </>
-          )}
-        </p>
-        <Progress
-          value={step === 'type' ? 0 : ((index + 1) / total) * 100}
-          aria-label="Setup progress"
-        />
-      </div>
+      {step !== 'type' && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Step {index + 1} of {total}
+          </p>
+          <Progress
+            value={((index + 1) / total) * 100}
+            aria-label="Setup progress"
+          />
+        </div>
+      )}
       {step === 'type' ? (
         <div className="grid gap-3" role="group" aria-label="Account type">
           {options.map(({ value, icon: Icon, name, text }) => (

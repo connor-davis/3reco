@@ -161,7 +161,9 @@ function cartHarness({ conflict = false } = {}) {
     },
     '\nexports.CartForm = CartForm;'
   );
-  const tree = nodes(CartForm({ sellerId: 'seller', items }));
+  const tree = nodes(
+    CartForm({ sellerId: 'seller', items, sending: { current: false } })
+  );
   for (const node of tree.filter((node) => node.props?.onValidation)) {
     node.props.onValidation(node.props.stockId, null);
   }

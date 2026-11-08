@@ -51,6 +51,15 @@ func Product(weight, price string) string {
 	return left.Mul(left, right).FloatString(2)
 }
 
+// Weight prints a stored weight with at least two decimals ("13.10"), the same
+// text the dialog and the CSV show. Extra decimals stay as stored, never rounded.
+func Weight(value string) string {
+	whole, fraction, _ := strings.Cut(value, ".")
+	fraction = strings.TrimRight(fraction, "0")
+
+	return whole + "." + fraction + strings.Repeat("0", max(0, 2-len(fraction)))
+}
+
 // Grouped puts spaces between thousands, as the invoice prints an amount.
 func Grouped(value string) string {
 	whole, fraction, decimal := strings.Cut(value, ".")
@@ -136,11 +145,7 @@ func Render(invoice Invoice) ([]byte, error) {
 	tableHeader()
 
 	for _, line := range invoice.Lines {
-		weight := strings.TrimRight(strings.TrimRight(line.Weight, "0"), ".")
-		if !strings.Contains(line.Weight, ".") {
-			weight = line.Weight
-		}
-		cells := []string{text(line.Material), Grouped(weight), Grouped(line.Price), Grouped(line.Total)}
+		cells := []string{text(line.Material), Grouped(Weight(line.Weight)), Grouped(line.Price), Grouped(line.Total)}
 		widths := []float64{76, 34, 34, 34}
 		// Split every cell, including unusually large exact amounts, to avoid overlaps.
 		wrapped := make([][][]byte, len(cells))

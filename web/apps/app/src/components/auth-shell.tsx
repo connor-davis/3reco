@@ -80,14 +80,17 @@ function StoryPanel() {
           Materials find a home. People find a connection.
         </h2>
       </div>
-      {/* Hidden until the numbers load, so a failed load never shows zeros. */}
-      {community.query.isSuccess && (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Leaf className="size-4 text-primary" aria-hidden="true" />
-          {formatKg(community.kgDiverted)} diverted ·{' '}
-          {formatCo2(community.co2Kg)}
-        </p>
-      )}
+      {/* Always one block, so the tagline stays put while the numbers load.
+          Hidden until they do, so a failed load never shows zeros. */}
+      <div className="min-h-5">
+        {community.query.isSuccess && (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Leaf className="size-4 text-primary" aria-hidden="true" />
+            {formatKg(community.kgDiverted)} diverted ·{' '}
+            {formatCo2(community.co2Kg)}
+          </p>
+        )}
+      </div>
     </aside>
   );
 }

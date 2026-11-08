@@ -322,19 +322,22 @@ export function CheckboxField<T extends FieldValues>({
       control={control}
       name={name}
       render={({ field, fieldState }) => (
-        <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-          <Checkbox
-            id={id}
-            checked={Boolean(field.value)}
-            onCheckedChange={field.onChange}
-            aria-invalid={fieldState.invalid}
-            aria-describedby={fieldState.invalid ? errorId : undefined}
-          />
-          <FieldLabel htmlFor={id} className="font-normal">
-            {label}
-          </FieldLabel>
+        <div className="space-y-2">
+          <Field orientation="horizontal" data-invalid={fieldState.invalid}>
+            <Checkbox
+              id={id}
+              checked={Boolean(field.value)}
+              onCheckedChange={field.onChange}
+              aria-invalid={fieldState.invalid}
+              aria-describedby={fieldState.invalid ? errorId : undefined}
+            />
+            {/* One span, so the label's flex layout keeps the sentence whole. */}
+            <FieldLabel htmlFor={id} className="font-normal">
+              <span>{label}</span>
+            </FieldLabel>
+          </Field>
           <FieldError id={errorId} errors={[fieldState.error]} />
-        </Field>
+        </div>
       )}
     />
   );

@@ -8,6 +8,7 @@ test('G17/G20: toasts stay above the composer; role selection promises no total'
     /position="bottom-right"/
   );
   const setup = source('routes/setup.tsx');
-  assert.match(setup, /step === 'type' \?\s*\(\s*'Step 1'/);
+  assert.match(setup, /step !== 'type' && \(/);
+  assert.doesNotMatch(setup, /'Step 1'/);
   assert.doesNotMatch(setup, /detailSteps\.collector\.length \+ 1/);
 });

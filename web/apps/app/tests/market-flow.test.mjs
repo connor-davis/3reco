@@ -90,6 +90,7 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
     '\nexport { CartForm };'
   );
   const tree = CartForm({
+    sending: { current: false },
     sellerId: 'seller',
     name: 'Store',
     items: [

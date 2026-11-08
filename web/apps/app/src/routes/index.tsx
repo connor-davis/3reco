@@ -287,7 +287,7 @@ function CommunityImpact() {
                     {index + 1}. {formatKg(store.kg)}
                   </span>
                   <LinkButton
-                    className="min-h-11"
+                    className="min-h-11 px-0"
                     to={'/market/store/' + store.id}
                     variant="link"
                   >
