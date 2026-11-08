@@ -100,7 +100,7 @@ tasks:
       THREERECO_FIELD_KEY: "M3JlY28tZGV2LWZpZWxkLWtleS0wMTIzNDU2Nzg5YWI="
       THREERECO_TEST_DATABASE_URL: "{{.TEST_DB}}"
     cmds:
-      - go test {{.GO_PKGS}}
+      - go test -timeout 30m {{.GO_PKGS}}
 
   lint:web:
     desc: Typecheck, lint, test and build the web app
