@@ -246,6 +246,7 @@ test('B5: export success and failure have separate feedback', () => {
         useSearch: () => ({}),
         useNavigate: () => () => {},
       },
+      '@/lib/format': format,
       '@/lib/auth/use-auth': { useAuth: () => ({ user: {} }) },
       '@/lib/api/transactions': {
         useTransaction: () => ({}),

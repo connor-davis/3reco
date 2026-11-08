@@ -24,7 +24,7 @@ export function IconButton({
           <Button variant={variant} size={size} aria-label={label} {...props} />
         }
       />
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent side="bottom">{label}</TooltipContent>
     </Tooltip>
   );
 }

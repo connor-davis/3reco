@@ -38,7 +38,7 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
           tickMargin={8}
           tick={{ fill: 'var(--muted-foreground)' }}
           padding={{ left: 24, right: 24 }}
-          interval="preserveStartEnd"
+          interval="equidistantPreserveStart"
         />
         <YAxis
           tickLine={false}

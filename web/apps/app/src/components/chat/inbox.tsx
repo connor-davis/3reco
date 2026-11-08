@@ -15,6 +15,19 @@ import { cn } from '@/lib/utils';
 import { messageText, threadSummary } from './helpers';
 import { ThreadMaterials } from './cards';
 
+// What an empty list says for each filter when nobody typed a search.
+const EMPTY_FILTER: Record<string, { title: string; text: string }> = {
+  unread: { title: 'No unread conversations', text: 'You are all caught up.' },
+  offers: {
+    title: 'No offers yet',
+    text: 'Offers you send or receive show up here.',
+  },
+  done: {
+    title: 'No finished trades yet',
+    text: 'Completed and closed trades show up here.',
+  },
+};
+
 export function Inbox({
   activeId,
   onNew,
@@ -115,18 +128,22 @@ export function Inbox({
           isEmpty={!threads.length}
           icon={MessageSquare}
           emptyTitle={
-            debouncedSearch || filter !== 'all'
+            debouncedSearch
               ? 'No matching conversations'
-              : 'No conversations yet'
+              : filter === 'all'
+                ? 'No conversations yet'
+                : EMPTY_FILTER[filter].title
           }
           emptyText={
-            debouncedSearch || filter !== 'all'
+            debouncedSearch
               ? 'Try another word or filter.'
-              : admin
-                ? 'No conversations on 3REco yet.'
-                : staff
-                  ? 'Staff do not take part in trade chats.'
-                  : 'Ask a seller about a listing to start one.'
+              : filter !== 'all'
+                ? EMPTY_FILTER[filter].text
+                : admin
+                  ? 'No conversations on 3REco yet.'
+                  : staff
+                    ? 'Staff do not take part in trade chats.'
+                    : 'Ask a seller about a listing to start one.'
           }
           skeleton={<RowsSkeleton rows={6} />}
         >

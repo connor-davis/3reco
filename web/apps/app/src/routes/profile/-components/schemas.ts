@@ -18,10 +18,12 @@ export const personalSchema = z.object({
   id_number: z
     .string()
     .regex(/^(\d{13})?$/, 'A South African ID has 13 digits.'),
+  // Spaces are fine: the field shows the number grouped, and save sends digits.
   phone: z
     .string()
-    .regex(
-      /^(?:0\d{9}|\+27\d{9}|27\d{9})$/,
+    .refine(
+      (value) =>
+        /^(?:0\d{9}|\+27\d{9}|27\d{9})$/.test(value.replace(/\s/g, '')),
       'Use a South African phone number, such as 0825550148.'
     ),
 });
