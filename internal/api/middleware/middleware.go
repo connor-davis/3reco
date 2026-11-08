@@ -120,7 +120,15 @@ func SetSession(c fiber.Ctx, cfg config.Config, token string) {
 
 	tokens := []string{token}
 
-	for _, other := range DeviceTokens(c) {
+	// A browser can hold a session cookie but no devices cookie (cleared,
+	// dropped, or from before the list existed). Keep that current token, or
+	// signing in as a second account would lose the first.
+	others := DeviceTokens(c)
+	if current := c.Cookies(SessionCookie); current != "" {
+		others = append([]string{current}, others...)
+	}
+
+	for _, other := range others {
 		if other != token && len(tokens) < maxDevices {
 			tokens = append(tokens, other)
 		}

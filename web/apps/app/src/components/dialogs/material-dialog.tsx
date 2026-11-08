@@ -43,7 +43,7 @@ const schema = z.object({
     )
     .refine(
       (value) => toCents(value) <= 10000000,
-      'Price must be R 100000.00 per kg or less.'
+      'Price must be R 100 000.00 per kg or less.'
     ),
 });
 
