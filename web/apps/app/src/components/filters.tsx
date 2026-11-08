@@ -52,6 +52,7 @@ type ChoiceSelectProps = {
   options: (string | Option)[];
   onChange: (value: string) => void;
   className?: string;
+  disabled?: boolean;
 };
 
 function toOption(option: string | Option): Option {
@@ -65,6 +66,7 @@ export function ChoiceSelect({
   options,
   onChange,
   className,
+  disabled,
 }: ChoiceSelectProps) {
   const items = options.map(toOption);
 
@@ -72,6 +74,7 @@ export function ChoiceSelect({
     <Select
       items={items}
       value={value}
+      disabled={disabled}
       onValueChange={(next) => next && onChange(next)}
     >
       <SelectTrigger aria-label={label} className={cn('min-w-36', className)}>

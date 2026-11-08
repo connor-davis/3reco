@@ -65,7 +65,7 @@ test('G13/G28: sender gets a waiting sentence; completion keeps material terms',
     '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 's' } }) },
     '@/lib/api/transactions': { useDownloadInvoice: () => ({}) },
     '@/lib/format': format,
-    './helpers': { requestTotal: () => 100 },
+    './helpers': { ...helpers, requestTotal: () => 100 },
   });
   const request = {
     ...thread,

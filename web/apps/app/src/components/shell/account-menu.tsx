@@ -118,7 +118,10 @@ export function AccountMenu() {
                 }}
               >
                 <span className="min-w-0">
-                  <span className="block truncate">{session.email}</span>
+                  <span className="block truncate">{session.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {session.email}
+                  </span>
                   <span className="block text-xs text-muted-foreground">
                     {session.current
                       ? 'Current session'

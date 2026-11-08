@@ -176,37 +176,43 @@ export function Conversation({ request }: { request: TradeRequest }) {
           <Info />
         </IconButton>
       </header>
-      <div className="space-y-3 border-b bg-background px-4 py-3 sm:px-6">
-        {!isClosed(request) && <DealStepper request={request} />}
-        {canAct && (
-          <div className="flex flex-wrap gap-2">
-            {canMakeOffer(request, user?.id) && (
-              <Button
-                disabled={actions.isPending}
-                onClick={() => setOfferOpen(true)}
-              >
-                {request.status === 'offered' ? 'Counter offer' : 'Make offer'}
-              </Button>
-            )}
-            {request.offer_by === user?.id && request.status === 'offered' && (
+      {/* A closed deal has no steps or actions, so no band is drawn. */}
+      {!isClosed(request) && (
+        <div className="space-y-3 border-b bg-background px-4 py-3 sm:px-6">
+          <DealStepper request={request} />
+          {canAct && (
+            <div className="flex flex-wrap gap-2">
+              {canMakeOffer(request, user?.id) && (
+                <Button
+                  disabled={actions.isPending}
+                  onClick={() => setOfferOpen(true)}
+                >
+                  {request.status === 'offered'
+                    ? 'Counter offer'
+                    : 'Make offer'}
+                </Button>
+              )}
+              {request.offer_by === user?.id &&
+                request.status === 'offered' && (
+                  <Button
+                    variant="outline"
+                    disabled={actions.isPending}
+                    onClick={() => setConfirm('withdraw')}
+                  >
+                    Withdraw offer
+                  </Button>
+                )}
               <Button
                 variant="outline"
                 disabled={actions.isPending}
-                onClick={() => setConfirm('withdraw')}
+                onClick={() => setConfirm(seller ? 'reject' : 'cancel')}
               >
-                Withdraw offer
+                {seller ? 'Reject request' : 'Cancel request'}
               </Button>
-            )}
-            <Button
-              variant="outline"
-              disabled={actions.isPending}
-              onClick={() => setConfirm(seller ? 'reject' : 'cancel')}
-            >
-              {seller ? 'Reject request' : 'Cancel request'}
-            </Button>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
       <div
         ref={scroll}
         className="min-h-0 flex-1 overflow-y-auto [overflow-anchor:none]"

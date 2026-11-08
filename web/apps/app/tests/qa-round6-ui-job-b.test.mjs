@@ -10,12 +10,9 @@ const { formatCo2 } = load('lib/impact.ts', {
   '@/lib/format': format,
 });
 
-test('qa-round6-ui: both dashboard cards round CO2 to whole kg without changing other displays', () => {
-  assert.equal(formatCo2('1414.1', { wholeKg: true }), '1 414 kg CO₂e');
-  assert.equal(formatCo2('619.5', { wholeKg: true }), '620 kg CO₂e');
-  assert.equal(formatCo2('0.49', { wholeKg: true }), '0 kg CO₂e');
+test('qa-round6-ui: the dashboard shows CO2 with the same decimals as every page', () => {
   assert.equal(formatCo2('1414.1'), '1 414.1 kg CO₂e');
-  assert.equal(source('routes/index.tsx').match(/wholeKg: true/g).length, 2);
+  assert.doesNotMatch(source('routes/index.tsx'), /wholeKg/);
 });
 
 const wrapper = ({ children }) => createElement('div', null, children);

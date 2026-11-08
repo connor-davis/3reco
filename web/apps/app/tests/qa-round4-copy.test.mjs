@@ -66,7 +66,7 @@ test('closed thread detail names the businesses without repeating the badge', ()
   }
   assert.match(
     source('components/chat/conversation.tsx'),
-    /!isClosed\(request\) && <DealStepper/
+    /!isClosed\(request\) && \(\s*<div[^>]*>\s*<DealStepper/
   );
 });
 
