@@ -89,6 +89,7 @@ function CollectorsPage() {
   // Only admin and staff may remove a collector. Businesses add and edit.
   const canRemove = user?.role === 'admin' || user?.role === 'staff';
   const shown = list.data?.items ?? [];
+  const searching = query.trim() !== '';
   // The API adds `total`; until it does, no total is shown rather than a guess.
   const rawTotal = (list.data as { total?: unknown } | undefined)?.total;
   const total = typeof rawTotal === 'number' ? rawTotal : undefined;
@@ -180,7 +181,7 @@ function CollectorsPage() {
         description={
           directory
             ? 'Every collector on 3REco, and how they are paid.'
-            : 'Find collectors, and manage the people you added.'
+            : 'A shared directory of collectors. You can edit the ones you added.'
         }
         actions={
           !directory && (
@@ -202,15 +203,25 @@ function CollectorsPage() {
         query={list}
         isEmpty={shown.length === 0}
         icon={Users}
-        emptyTitle="No collectors found"
+        emptyTitle={
+          searching ? 'No matching collectors' : 'No collectors found'
+        }
         emptyText={
-          directory
-            ? 'No collectors on 3REco yet.'
-            : 'Add the people who collect for you.'
+          searching
+            ? 'Try a different name, email or phone.'
+            : directory
+              ? 'No collectors on 3REco yet.'
+              : 'The shared directory is empty. Add the people who collect for you.'
         }
         emptyAction={
-          !directory && (
-            <Button onClick={() => openForm()}>Add collector</Button>
+          searching ? (
+            <Button variant="outline" onClick={() => setQuery('')}>
+              Clear search
+            </Button>
+          ) : (
+            !directory && (
+              <Button onClick={() => openForm()}>Add collector</Button>
+            )
           )
         }
         skeleton={<RowsSkeleton />}

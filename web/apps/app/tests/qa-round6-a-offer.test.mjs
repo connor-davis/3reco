@@ -22,7 +22,7 @@ test('an offer price gets the right message for each mistake', () => {
   assert.equal(priceError('100000.00'), undefined);
   assert.equal(priceError('12.345'), 'Use up to 2 decimals.');
   assert.equal(priceError('0'), 'Enter a price above R 0.00.');
-  assert.equal(priceError('abc'), 'Enter a price above R 0.00.');
+  assert.equal(priceError('abc'), 'Enter a price as a number, like 22.80.');
   assert.equal(priceError('-5'), 'Enter a price above R 0.00.');
   assert.equal(
     priceError('100000.01'),

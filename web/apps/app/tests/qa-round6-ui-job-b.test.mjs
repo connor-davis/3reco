@@ -11,7 +11,7 @@ const { formatCo2 } = load('lib/impact.ts', {
 });
 
 test('qa-round6-ui: the dashboard shows CO2 with the same decimals as every page', () => {
-  assert.equal(formatCo2('1414.1'), '1 414.1 kg CO₂e');
+  assert.equal(formatCo2('1414.1'), '1 414.10 kg CO₂e');
   assert.doesNotMatch(source('routes/index.tsx'), /wholeKg/);
 });
 

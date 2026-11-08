@@ -70,8 +70,11 @@ const typeOptions = [
   { value: 'c2b', label: 'Collector purchase' },
 ];
 
-const csvOptions = [
-  { value: 'transaction', label: 'One row per trade' },
+const csvOptions = (collectionsOnly: boolean) => [
+  {
+    value: 'transaction',
+    label: collectionsOnly ? 'One row per collection' : 'One row per trade',
+  },
   { value: 'material', label: 'One row per material' },
 ];
 
@@ -240,7 +243,7 @@ export function RecordList({
               <ChoiceSelect
                 label="Export format"
                 value={csv}
-                options={csvOptions}
+                options={csvOptions(collectionsOnly)}
                 onChange={setCsv}
                 disabled={status !== 'complete'}
               />

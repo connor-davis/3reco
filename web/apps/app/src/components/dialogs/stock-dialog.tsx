@@ -139,9 +139,27 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   const busy = create.isPending || update.isPending;
   const values = watch();
   const missing = schema.safeParse(values);
-  const disabledReason = !missing.success
-    ? missing.error.issues.map((issue) => issue.message).join(' ')
-    : belowBase(values.price, base);
+  // One message per field, so a bad weight never says the same thing twice.
+  const firstPerField = !missing.success
+    ? [
+        ...new Set(
+          Object.values(
+            Object.fromEntries(
+              [...missing.error.issues]
+                .reverse()
+                .map((issue) => [issue.path.join('.'), issue.message])
+            )
+          )
+        ),
+      ]
+    : [];
+  // Nothing typed yet: no errors, just what to do.
+  const pristine = !formState.isDirty && !stock;
+  const disabledReason = pristine
+    ? 'Pick a material, then enter a weight and a price.'
+    : firstPerField.length
+      ? firstPerField.join(' ')
+      : belowBase(values.price, base);
 
   return (
     <ResponsiveOverlay
