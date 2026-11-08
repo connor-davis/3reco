@@ -61,12 +61,12 @@ export function TransactionDialog({ record, onClose }: Props) {
     if (!file) return;
 
     if (!kinds.includes(file.type)) {
-      setFileError('Choose a PNG or JPEG picture.');
+      setFileError('Choose a PNG or JPEG image.');
       return;
     }
 
     if (file.size > maxBytes) {
-      setFileError('The picture is over 5 MB.');
+      setFileError('The image is over 5 MB.');
       return;
     }
 
