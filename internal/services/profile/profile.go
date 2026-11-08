@@ -52,8 +52,8 @@ type Input struct {
 	AgreedToTerms              *bool   `json:"agreed_to_terms"`
 }
 
-// Find reads only the profile selected by the session. The ID and bank
-// numbers come back masked; the privacy export reads the store for full values.
+// Find reads only the profile selected by the session. The ID number comes
+// back masked; the bank account number is the caller's own, so it is whole.
 func (service *Service) Find(ctx context.Context, id string) (store.Profile, error) {
 	item, err := service.store.Find(ctx, id, false)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -61,8 +61,6 @@ func (service *Service) Find(ctx context.Context, id string) (store.Profile, err
 	}
 
 	item.IDNumber = crypt.Mask(item.IDNumber)
-	item.BankAccountNumber = crypt.Mask(item.BankAccountNumber)
-
 	return item, err
 }
 

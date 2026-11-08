@@ -41,6 +41,7 @@ type Client struct {
 	SessionID string
 
 	role   string // guarded by Hub.mu; the recheck keeps it current
+	guest  bool   // guarded by Hub.mu; a guest hears only events sent to their own id
 	send   chan []byte
 	closed chan struct{}
 	once   sync.Once
@@ -96,6 +97,8 @@ func (h *Hub) Join(sess auth.Session) *Client {
 	if sess.User.Role != nil {
 		c.role = *sess.User.Role
 	}
+
+	c.guest = c.role == auth.RoleGuest
 
 	h.mu.Lock()
 	h.clients[c] = struct{}{}

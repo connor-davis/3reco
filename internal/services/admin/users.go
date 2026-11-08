@@ -13,6 +13,7 @@ import (
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/invoices"
 	"github.com/connor-davis/3reco/internal/services/privacy"
+	"github.com/connor-davis/3reco/internal/services/realtime"
 	store "github.com/connor-davis/3reco/internal/stores/admin"
 	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
 	tstore "github.com/connor-davis/3reco/internal/stores/transactions"
@@ -30,6 +31,7 @@ type Service struct {
 	privacy  *privacy.Service
 	audit    *pstore.Store
 	invoices *invoices.Service
+	hub      *realtime.Hub
 }
 
 // New builds the service.
@@ -40,8 +42,12 @@ func New(
 	privacyService *privacy.Service,
 	audit *pstore.Store,
 	invoiceService *invoices.Service,
+	hub *realtime.Hub,
 ) *Service {
-	return &Service{db: db, store: s, trades: trades, privacy: privacyService, audit: audit, invoices: invoiceService}
+	return &Service{
+		db: db, store: s, trades: trades, privacy: privacyService, audit: audit,
+		invoices: invoiceService, hub: hub,
+	}
 }
 
 func requireAdmin(user auth.User) error {
@@ -110,7 +116,14 @@ func (s *Service) SetRole(ctx context.Context, user auth.User, id, role string) 
 			return apperr.NotFound("User not found.")
 		}
 
-		return s.store.SetRole(ctx, id, role)
+		if err := s.store.SetRole(ctx, id, role); err != nil {
+			return err
+		}
+
+		// Only after the commit: sockets keep their old rights until it lands.
+		database.AfterCommit(ctx, func() { s.hub.RecheckUser(context.WithoutCancel(ctx), id) })
+
+		return nil
 	})
 }
 

@@ -21,6 +21,12 @@ import (
 	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
 )
 
+// The two duplicate messages read the same way, one per field.
+const (
+	emailTaken = "A collector with that email address already exists."
+	phoneTaken = "A collector with that phone number already exists."
+)
+
 // Service owns collector rules and transactions.
 type Service struct {
 	db    *database.DB
@@ -83,8 +89,9 @@ func full(user auth.User, item store.Collector, own bool) bool {
 
 func redact(user auth.User, item store.Collector, own bool) store.Collector {
 	item.CanEdit = manages(user, item, false)
+	item.CanViewPayout = full(user, item, own)
 
-	if !full(user, item, own) {
+	if !item.CanViewPayout {
 		item.BankAccountNumber = crypt.Mask(item.BankAccountNumber)
 		item.BankBranchCode = crypt.Mask(item.BankBranchCode)
 		item.EwalletPaymentID = crypt.Mask(item.EwalletPaymentID)
@@ -133,15 +140,18 @@ func (service *Service) Find(ctx context.Context, user auth.User, id string) (st
 		return item, err
 	}
 
-	if auth.HasRole(user, "admin") && !creator(user, item) && hasIdentifier(item) {
+	if service.disclosed(user, item, own) {
 		err = service.audit.Record(ctx, user.ID, item.ID, privacy.KindAdminFullView)
 	}
 
 	return redact(user, item, own), err
 }
 
-func hasIdentifier(item store.Collector) bool {
-	return item.BankAccountNumber != "" || item.EwalletPaymentID != ""
+// disclosed is true when an admin is handed someone else's identifier in full:
+// the same decision redact makes, so a masked row never leaves an audit line.
+func (service *Service) disclosed(user auth.User, item store.Collector, own bool) bool {
+	return auth.HasRole(user, "admin") && !creator(user, item) && !own &&
+		full(user, item, own) && (item.BankAccountNumber != "" || item.EwalletPaymentID != "")
 }
 
 // List keeps the legacy directory while gating private fields on every row.
@@ -150,12 +160,7 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		return nil, apperr.Forbidden("You cannot manage collectors.")
 	}
 
-	// Only phone-shaped searches are normalized; names and partial searches stay unchanged.
-	phone := ""
-	raw := strings.Trim(query.Like, "%")
-	if strings.Trim(raw, "+0123456789 ()-") == "" {
-		phone, _ = profile.Phone(raw)
-	}
+	phone := phoneDigits(strings.Trim(query.Like, "%"))
 
 	items, err := service.store.List(ctx, query, after, phone)
 	if err != nil {
@@ -175,8 +180,7 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 			return nil, err
 		}
 
-		if i < shown && auth.HasRole(user, "admin") && !creator(user, items[i]) &&
-			hasIdentifier(items[i]) {
+		if i < shown && service.disclosed(user, items[i], own) {
 			err := service.audit.Record(ctx, user.ID, items[i].ID, privacy.KindAdminFullView)
 			if err != nil {
 				return nil, err
@@ -213,6 +217,34 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		paging.Page[store.Collector]
 		Total int `json:"total"`
 	}{Page: page, Total: total}, nil
+}
+
+// phoneDigits turns a phone-shaped search into the digits stored for a
+// collector, so "082 777", "+27 82 777" and "0827771" all find +27827771234.
+// Anything else, or fewer than three digits, is not treated as a phone.
+func phoneDigits(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if strings.Trim(raw, "+0123456789 ()-") != "" {
+		return ""
+	}
+
+	var digits strings.Builder
+	for _, char := range raw {
+		if char >= '0' && char <= '9' {
+			digits.WriteRune(char)
+		}
+	}
+
+	number := digits.String()
+	if len(number) < 3 {
+		return ""
+	}
+
+	if number[0] == '0' && !strings.HasPrefix(raw, "+") {
+		return "27" + number[1:]
+	}
+
+	return number
 }
 
 // ParseCursor reads a cursor List handed out earlier. Empty means the start.
@@ -378,8 +410,8 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 					return &apperr.Error{
 						Status:  http.StatusConflict,
 						Code:    "conflict",
-						Message: "You already have a collector with that email.",
-						Data:    map[string]string{"email": "You already have a collector with that email."},
+						Message: emailTaken,
+						Data:    map[string]string{"email": emailTaken},
 					}
 				}
 			}
@@ -392,7 +424,7 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 		},
 	)
 	if _, duplicate := database.IsUnique(err); duplicate {
-		err = apperr.Conflict("A collector with that phone number already exists.")
+		err = apperr.Conflict(phoneTaken)
 	}
 
 	return id, err

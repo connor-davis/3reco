@@ -113,6 +113,29 @@ func CheckPricedItems(items []SaleItem) error {
 	return nil
 }
 
+// checkCollectionTotal refuses a collection that would be stored as R 0.00.
+// It rounds each line half up to cents, as SetTotal does, then sums them.
+func checkCollectionTotal(items []SaleItem) error {
+	half := big.NewRat(1, 2)
+	hundred := big.NewRat(100, 1)
+	cents := new(big.Int)
+
+	for _, item := range items {
+		weight, _ := new(big.Rat).SetString(item.Weight)
+		price, _ := new(big.Rat).SetString(item.Price)
+
+		line := new(big.Rat).Mul(weight, price)
+		line.Mul(line, hundred).Add(line, half)
+		cents.Add(cents, new(big.Int).Div(line.Num(), line.Denom()))
+	}
+
+	if cents.Sign() <= 0 {
+		return apperr.Field("items", "The total must be at least R 0.01.")
+	}
+
+	return nil
+}
+
 // parseDay checks a YYYY-MM-DD collection day is a real calendar date.
 func parseDay(raw string) error {
 	day, err := time.Parse("2006-01-02", raw)

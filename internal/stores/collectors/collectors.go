@@ -4,6 +4,7 @@ package collectors
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -17,6 +18,7 @@ import (
 type Collector struct {
 	ID                    string    `json:"id"`
 	CanEdit               bool      `json:"can_edit"`
+	CanViewPayout         bool      `json:"can_view_payout"`
 	Name                  string    `json:"name"`
 	Email                 string    `json:"email,omitempty"`
 	Phone                 string    `json:"phone,omitempty"`
@@ -107,13 +109,23 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 // A nil *After means "from the start".
 type After struct{ Name, ID string }
 
+// searchTerms is the shared search predicate, given the placeholders each
+// query numbers itself: like is the text pattern, phone the phone digits. A
+// phone search matches any part of the stored number and still lets the text
+// match, so a name or email search never loses rows. List and Count use the
+// same terms, so the total always matches the rows.
+func searchTerms(like, phone string) string {
+	return strings.NewReplacer("{like}", like, "{phone}", phone).Replace(
+		`({phone}<>'' AND regexp_replace(COALESCE(normalized_phone,''),'\D','','g') LIKE '%'||{phone}||'%')
+ OR {like}='' OR name ILIKE {like} OR email ILIKE {like} OR phone ILIKE {like}
+ OR normalized_phone ILIKE {like} OR city ILIKE {like} OR province ILIKE {like}`)
+}
+
 // Count returns every matching directory row, independent of the current cursor.
 func (records *Store) Count(ctx context.Context, query paging.Query, phone string) (int, error) {
 	var total int
 	err := records.db.Q(ctx).QueryRow(ctx, `SELECT count(*) FROM collectors
-		WHERE (($2<>'' AND normalized_phone=$2) OR ($2='' AND
-		($1='' OR name ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1 OR normalized_phone ILIKE $1
-		OR city ILIKE $1 OR province ILIKE $1)))`, query.Like, phone).Scan(&total)
+		WHERE (`+searchTerms("$1", "$2")+`)`, query.Like, phone).Scan(&total)
 
 	return total, err
 }
@@ -131,9 +143,7 @@ func (records *Store) List(ctx context.Context, query paging.Query, after *After
 		ctx,
 		`SELECT `+columns+` FROM collectors
  WHERE ($1::text IS NULL OR (lower(name),id)>(lower($1::text),$2::text))
- AND (($5 <> '' AND normalized_phone = $5) OR ($5 = '' AND
- ($4='' OR name ILIKE $4 OR email ILIKE $4 OR phone ILIKE $4 OR normalized_phone ILIKE $4
- OR city ILIKE $4 OR province ILIKE $4)))
+ AND (`+searchTerms("$4", "$5")+`)
  ORDER BY lower(name),id LIMIT NULLIF($3,0)`,
 		name,
 		id,

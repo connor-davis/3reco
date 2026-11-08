@@ -100,9 +100,9 @@ func TestPrivacyFieldsAreCiphertextAtRest(t *testing.T) {
 		}
 	}
 
-	// The owner reads their own values back masked; the export has them in full.
+	// The owner reads their own account number whole and the id masked; the export has both in full.
 	own := status(t, w.seller.c.Do("GET", "/api/profile", nil), 200).Body
-	if own["id_number"] != "******9087" || own["bank_account_number"] != "******4567" {
+	if own["id_number"] != "******9087" || own["bank_account_number"] != "62001234567" {
 		t.Errorf("owner's own profile is not readable: %v", own)
 	}
 }

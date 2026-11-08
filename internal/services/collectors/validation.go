@@ -2,11 +2,15 @@ package collectors
 
 import (
 	"net/mail"
+	"regexp"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	profile "github.com/connor-davis/3reco/internal/services/profile"
 	store "github.com/connor-davis/3reco/internal/stores/collectors"
 )
+
+// branchCode is the universal South African branch code: six digits.
+var branchCode = regexp.MustCompile(`^[0-9]{6}$`)
 
 func validate(item *store.Collector) error {
 	if item.Name == "" {
@@ -36,6 +40,10 @@ func validate(item *store.Collector) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	if bank && !branchCode.MatchString(item.BankBranchCode) {
+		return apperr.Field("bank_branch_code", "Enter a 6-digit branch code.")
 	}
 
 	ewallet := item.EwalletPlatformName != "" || item.EwalletPaymentID != ""

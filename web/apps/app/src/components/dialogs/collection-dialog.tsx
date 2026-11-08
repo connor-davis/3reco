@@ -61,6 +61,14 @@ const schema = z.object({
       (lines) =>
         new Set(lines.map((item) => item.material_id)).size === lines.length,
       'Each material can be on the collection once.'
+    )
+    .refine(
+      (lines) =>
+        lines.reduce(
+          (sum, item) => sum + lineCents(item.price, item.weight),
+          0
+        ) >= 1,
+      'The total must be at least R 0.01.'
     ),
 });
 
@@ -171,13 +179,13 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             <DecimalField
               control={control}
               name={`lines.${index}.weight`}
-              label="Weight (kg)"
+              label="Weight"
               counter={weightCounter()}
             />
             <DecimalField
               control={control}
               name={`lines.${index}.price`}
-              label="R / kg"
+              label="Price"
               counter={priceCounter()}
             />
             <IconButton

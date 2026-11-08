@@ -21,11 +21,21 @@ export async function replaceSession(
   client.setQueryData(authKey, user);
 }
 
-/** Drops the signed-in person and every private cache, then shows sign-in. */
+let endedFor: 'ended' | 'removed' | 'quiet' | undefined;
+
+/**
+ * Drops the signed-in person and every private cache, then shows sign-in.
+ * Several things can notice the end at once (the socket, a 401, a recheck).
+ * The first one starts it; only "removed" may speak after that, so the reason
+ * the person sees is never weakened to "account changed".
+ */
 export async function endSession(
   client: QueryClient,
   reason?: 'ended' | 'removed'
 ) {
+  if (endedFor && !(reason === 'removed' && endedFor !== 'removed')) return;
+  endedFor = reason ?? 'quiet';
+
   await replaceSession(client, null);
 
   if (!window.location.pathname.endsWith('/sign-in'))
