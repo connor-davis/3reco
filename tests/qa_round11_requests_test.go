@@ -120,9 +120,9 @@ func TestQARound11TradeCompleteNotice(t *testing.T) {
 
 			page := status(t, recipient.c.Do("GET", "/api/notifications", nil), 200)
 			found := 0
-			want := "Your trade for 10 kg Glass is complete: R 90.00."
+			want := "Your trade for 10 kg Glass at R 9.00 / kg is complete: R 90.00."
 			if maker == "buyer" {
-				want = "Your trade for 11 kg Glass is complete: R 99.00."
+				want = "Your trade for 11 kg Glass at R 9.00 / kg is complete: R 99.00."
 			}
 			for _, value := range tradeItems(page) {
 				note := value.(map[string]any)

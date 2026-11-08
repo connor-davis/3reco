@@ -37,6 +37,8 @@ type DataTableProps<T> = {
   // On phones every row becomes one card (map section 8.4).
   renderCard: (row: T) => ReactNode;
   footer?: ReactNode;
+  // The server orders the rows: one column, either way round, never unsorted.
+  serverSort?: { id: string; desc: boolean; onChange: (desc: boolean) => void };
 };
 
 /**
@@ -48,15 +50,25 @@ export function DataTable<T>({
   data,
   renderCard,
   footer,
+  serverSort,
 }: DataTableProps<T>) {
   const compact = useIsCompact();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const active: SortingState = serverSort
+    ? [{ id: serverSort.id, desc: serverSort.desc }]
+    : sorting;
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
-    onSortingChange: setSorting,
+    state: { sorting: active },
+    manualSorting: !!serverSort,
+    enableSortingRemoval: !serverSort,
+    onSortingChange: (updater) => {
+      const next = typeof updater === 'function' ? updater(active) : updater;
+      if (serverSort) serverSort.onChange(next[0]?.desc ?? false);
+      else setSorting(next);
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -83,6 +95,15 @@ export function DataTable<T>({
                   {group.headers.map((header) => (
                     <TableHead
                       key={header.id}
+                      aria-sort={
+                        header.column.getCanSort()
+                          ? header.column.getIsSorted() === 'asc'
+                            ? 'ascending'
+                            : header.column.getIsSorted() === 'desc'
+                              ? 'descending'
+                              : 'none'
+                          : undefined
+                      }
                       className={cn(
                         header.column.columnDef.meta?.align === 'right' &&
                           'text-right tabular-nums',

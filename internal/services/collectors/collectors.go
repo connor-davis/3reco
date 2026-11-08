@@ -155,14 +155,14 @@ func (service *Service) disclosed(user auth.User, item store.Collector, own bool
 }
 
 // List keeps the legacy directory while gating private fields on every row.
-func (service *Service) List(ctx context.Context, user auth.User, query paging.Query, after *store.After, selection bool) (any, error) {
+func (service *Service) List(ctx context.Context, user auth.User, query paging.Query, after *store.After, selection, desc bool) (any, error) {
 	if !auth.HasRole(user, "admin", "staff", "business") {
 		return nil, apperr.Forbidden("You cannot manage collectors.")
 	}
 
 	phone := phoneDigits(strings.Trim(query.Like, "%"))
 
-	items, err := service.store.List(ctx, query, after, phone)
+	items, err := service.store.List(ctx, query, after, phone, desc)
 	if err != nil {
 		return nil, err
 	}

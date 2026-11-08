@@ -8,6 +8,7 @@ export interface Paging {
   cursor?: string;
   limit?: number;
   q?: string;
+  order?: string;
   type?: string;
   status?: string;
   role?: string;

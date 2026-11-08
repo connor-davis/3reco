@@ -54,7 +54,7 @@ func (handler *Handler) directory(c fiber.Ctx, selection bool) error {
 	query.Like = paging.SearchPattern(c.Query("q"))
 
 	user, _ := middleware.CurrentUser(c)
-	items, err := handler.svc.List(c.Context(), user, query, after, selection)
+	items, err := handler.svc.List(c.Context(), user, query, after, selection, c.Query("order") == "desc")
 	if err != nil {
 		return err
 	}

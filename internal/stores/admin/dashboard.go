@@ -97,7 +97,9 @@ func (s *Store) Days(
 }
 
 // Counterparties returns the ten biggest other sides of the owner's trades in
-// [from, to). A purchase names its seller and a sale names its buyer. A
+// [from, to). A purchase names its seller and a sale names its buyer, so a
+// partner counts what it sold to the owner plus what it bought. With no owner
+// (admin, staff) every trade counts for both its buyer and its seller. A
 // collector seller shows the collector's name.
 func (s *Store) Counterparties(
 	ctx context.Context,
@@ -117,10 +119,11 @@ func (s *Store) Counterparties(
 		LEFT JOIN collectors col ON col.id = tx.seller_id AND tx.type = 'c2b'
 		JOIN users buyer ON buyer.id = tx.buyer_id
 		CROSS JOIN LATERAL (
-			SELECT CASE WHEN tx.buyer_id = $1 THEN tx.seller_id ELSE tx.buyer_id END AS id,
-				CASE WHEN tx.buyer_id = $1
-					THEN COALESCE(col.name, `+database.DisplayName("seller")+`)
-					ELSE `+database.DisplayName("buyer")+` END AS name
+			SELECT tx.seller_id AS id, COALESCE(col.name, `+database.DisplayName("seller")+`) AS name
+			WHERE $1 = '' OR tx.buyer_id = $1
+			UNION ALL
+			SELECT tx.buyer_id, `+database.DisplayName("buyer")+`
+			WHERE $1 = '' OR tx.buyer_id <> $1
 		) cp
 		WHERE tx.at >= $2 AND tx.at < $3
 		GROUP BY cp.id, cp.name

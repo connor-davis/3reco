@@ -130,10 +130,16 @@ func (records *Store) Count(ctx context.Context, query paging.Query, phone strin
 	return total, err
 }
 
-// List retains the legacy managed directory, A to Z by name then id, so a
-// cursor over (lower(name), id) never skips or repeats a row. Search runs in
-// SQL before LIMIT. Services redact each row by scope.
-func (records *Store) List(ctx context.Context, query paging.Query, after *After, phone string) ([]Collector, error) {
+// List retains the legacy managed directory, A to Z (or Z to A when desc) by
+// name then id, so a cursor over (lower(name), id) never skips or repeats a
+// row. Search runs in SQL before LIMIT. Services redact each row by scope.
+func (records *Store) List(ctx context.Context, query paging.Query, after *After, phone string, desc bool) ([]Collector, error) {
+	// Fixed SQL text, never built from input.
+	past, order := ">", "lower(name),id"
+	if desc {
+		past, order = "<", "lower(name) DESC,id DESC"
+	}
+
 	var name, id *string
 	if after != nil {
 		name, id = &after.Name, &after.ID
@@ -142,9 +148,9 @@ func (records *Store) List(ctx context.Context, query paging.Query, after *After
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT `+columns+` FROM collectors
- WHERE ($1::text IS NULL OR (lower(name),id)>(lower($1::text),$2::text))
+ WHERE ($1::text IS NULL OR (lower(name),id)`+past+`(lower($1::text),$2::text))
  AND (`+searchTerms("$4", "$5")+`)
- ORDER BY lower(name),id LIMIT NULLIF($3,0)`,
+ ORDER BY `+order+` LIMIT NULLIF($3,0)`,
 		name,
 		id,
 		query.Size(),

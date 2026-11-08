@@ -256,6 +256,8 @@ func (s *Service) Accept(
 		name := pdf.Grouped(weight) + " kg " + first.MaterialName
 		if len(trade.Items) > 1 {
 			name += fmt.Sprintf(" and %d more", len(trade.Items)-1)
+		} else {
+			name += " at R " + pdf.Grouped(pdf.Decimal(first.Price)) + " / kg"
 		}
 
 		body := fmt.Sprintf("Your trade for %s is complete: R %s.",

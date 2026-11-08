@@ -32,12 +32,14 @@ export function Panel({
   action,
   children,
   className,
+  contentClassName,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  contentClassName?: string;
 }) {
   return (
     <Card className={className}>
@@ -46,7 +48,7 @@ export function Panel({
         {description && <CardDescription>{description}</CardDescription>}
         {action && <CardAction>{action}</CardAction>}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className={contentClassName}>{children}</CardContent>
     </Card>
   );
 }
@@ -64,11 +66,21 @@ export function MaterialsPanel({ series }: { series: Dashboard['series'] }) {
 
 export function CounterpartyRows({
   rows,
+  tradesTo = '/transactions',
 }: {
   rows: Dashboard['counterparties'];
+  tradesTo?: '/transactions' | '/transactions/sales';
 }) {
+  // Integer cents and counts, so the summary matches the rows exactly.
+  const trades = rows.reduce((sum, party) => sum + party.count, 0);
+  const cents = rows.reduce((sum, party) => sum + toCents(party.value), 0);
   return (
-    <Panel title="Trading partners" description="Settled trades in this period">
+    <Panel
+      className="flex h-full flex-col"
+      contentClassName="flex flex-1 flex-col"
+      title="Trading partners"
+      description="Settled trades in this period, buying and selling"
+    >
       <DataState
         isEmpty={rows.length === 0}
         icon={Users}
@@ -91,6 +103,17 @@ export function CounterpartyRows({
             </li>
           ))}
         </ul>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {plural(trades, 'trade')} · {formatRand(cents)}
+            </span>{' '}
+            across these partners
+          </p>
+          <LinkButton className="min-h-11" to={tradesTo} variant="outline">
+            View all trades
+          </LinkButton>
+        </div>
       </DataState>
     </Panel>
   );
