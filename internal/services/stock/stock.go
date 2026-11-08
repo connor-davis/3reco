@@ -168,7 +168,6 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 				return err
 			}
 
-			oldListed := item.IsListed
 			weightChanged, priceChanged := false, false
 			if in.Weight != nil {
 				amount, err := Decimal(*in.Weight, "weight", false)
@@ -218,15 +217,7 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 				return err
 			}
 
-			if err := service.store.Update(ctx, item); err != nil {
-				return err
-			}
-
-			if oldListed != item.IsListed {
-				return service.notifyListing(ctx, item)
-			}
-
-			return nil
+			return service.store.Update(ctx, item)
 		},
 	)
 }

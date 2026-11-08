@@ -131,6 +131,7 @@ Never rename a merged migration. Add a new file.
 | Round 3 trade regressions: payout roles and mail attachments, weight writes, stock prices, history, export filters and negotiated reviews | `tests/qa_round3_trade_test.go`, `web/apps/app/tests/qa-round3-trade.test.mjs` |
 | Code rules: doc comments, file length | `tests/style_test.go` |
 | Offer holds, races, rollback, expiry, stock safeguards, availability and realtime | `tests/stock_holds_test.go` |
+| Round 19 stock visibility changes leave the actor's bell empty | `tests/qa_round19_a_test.go` |
 | Request terms, dual confirmation, pending isolation, counter/cancellation, privacy and migration backfill | `tests/market_flow_test.go` |
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |
@@ -169,7 +170,6 @@ Never rename a merged migration. Add a new file.
 | Administrator catalog rules and reference protection | `internal/services/materials/materials.go` |
 | Caller-only profile edits, bank completeness and safe directory reads | `internal/services/profile/profile.go` |
 | Shared South African phone, bank and address validation | `internal/services/profile/validation.go` |
-| Stock visibility notification content and atomic insertion | `internal/services/stock/listing.go` |
 | Stock ownership, row locks and exact decimal/base-price validation | `internal/services/stock/stock.go` |
 | Active store visibility and composition with the review service | `internal/services/stores/profile.go` |
 | Store service construction and review dependency | `internal/services/stores/stores.go` |
@@ -180,7 +180,6 @@ Never rename a merged migration. Add a new file.
 | Marketplace store construction | `internal/stores/market/market.go` |
 | Catalog persistence and foreign-key protected deletion SQL | `internal/stores/materials/materials.go` |
 | Private profile and allowlisted public account SQL | `internal/stores/profile/profile.go` |
-| Stock listing notification SQL within the stock transaction | `internal/stores/stock/listing.go` |
 | Owner inventory, stock locks and material base-price SQL | `internal/stores/stock/stock.go` |
 | Safe active business profiles and listed-stock aggregate SQL | `internal/stores/stores/profile.go` |
 | Public store database construction | `internal/stores/stores/stores.go` |
