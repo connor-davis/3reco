@@ -56,7 +56,10 @@ test('the About line shows CO₂e with the one formatter', () => {
 });
 
 test('the removed-account marker shows as words everywhere a message shows', () => {
-  assert.equal(helpers.messageText('[removed]'), 'Message removed');
+  assert.equal(
+    helpers.messageText('[removed]'),
+    'Message from a removed account'
+  );
   assert.equal(helpers.messageText('Hello'), 'Hello');
 
   for (const path of [

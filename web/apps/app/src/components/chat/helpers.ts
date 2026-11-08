@@ -3,7 +3,7 @@ import type { TradeRequest, Message, Thread } from '@/lib/api/types';
 
 /** The server keeps "[removed]" for a deleted person's message; show words. */
 export function messageText(content: string): string {
-  return content === '[removed]' ? 'Message removed' : content;
+  return content === '[removed]' ? 'Message from a removed account' : content;
 }
 
 export function requestLabel(request: TradeRequest, userId?: string): string {

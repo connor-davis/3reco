@@ -39,7 +39,8 @@ const pagePad = cn(
  */
 export function AppShell({ children }: { children: ReactNode }) {
   useLiveEvents();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const role = isLoading ? undefined : (user?.role ?? null);
   const client = useQueryClient();
   const router = useRouter();
   useEffect(
@@ -60,8 +61,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Set the fallback before route effects apply the loaded store or listing name.
   useLayoutEffect(() => {
-    document.title = `${pageTitleFor(pathname, user?.role ?? null)} · 3REco`;
-  }, [pathname, user?.role]);
+    document.title = `${pageTitleFor(pathname, role)} · 3REco`;
+  }, [pathname, role]);
 
   // Keep the shortcut available before the search implementation has loaded.
   useEffect(() => {

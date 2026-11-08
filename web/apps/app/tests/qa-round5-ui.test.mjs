@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { load, source } from './qa-round2-loader.mjs';
 
-const { pageTitleFor } = load('lib/nav.ts');
+const { pageTitleFor } = load('lib/nav.ts', {
+  '@/lib/access': load('lib/access.ts'),
+});
 const { roleLabel } = load('lib/access.ts');
 
 test('every page has its own tab title, even the 404', () => {

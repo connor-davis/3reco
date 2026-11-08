@@ -286,7 +286,7 @@ export function RecordList({
             ? 'Try other dates or words.'
             : status === 'pending'
               ? 'Agreed trades appear here while both sides confirm.'
-              : 'They appear here once a deal is recorded.'
+              : `${title} appear here once one is recorded.`
         }
         skeleton={<RowsSkeleton />}
       >

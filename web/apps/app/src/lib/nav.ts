@@ -20,6 +20,7 @@ import {
   Tag,
   Inbox,
 } from 'lucide-react';
+import { canOpen, type PageId } from '@/lib/access';
 import type { Role } from '@/lib/api/types';
 
 export type NavLink = {
@@ -242,16 +243,40 @@ const pageTitles: Record<string, string> = {
   setup: 'Finish setup',
 };
 
+const guardedPairs: Record<string, PageId> = {
+  'market/incoming': 'incoming',
+  'market/outgoing': 'outgoing',
+  'transactions/purchases': 'purchases',
+  'transactions/sales': 'sales',
+  'admin/users': 'users',
+};
+const guardedSingles: Record<string, PageId> = {
+  '': 'dashboard',
+  messages: 'messages',
+  materials: 'materials',
+  stock: 'stock',
+  collectors: 'collectors',
+  collections: 'collections',
+  transactions: 'transactions',
+  cart: 'cart',
+  profile: 'profile',
+};
+
+/** The guard a path sits behind, if any (the pages `<Guarded>` wraps). */
+export function guardedPageFor(pathname: string): PageId | undefined {
+  const [first = '', second = ''] = pathname.split('/').filter(Boolean);
+  return (
+    guardedPairs[`${first}/${second}`] ??
+    (Object.hasOwn(guardedSingles, first) ? guardedSingles[first] : undefined)
+  );
+}
+
 /** The page name shown in the top bar and the browser tab. */
 export function pageTitleFor(pathname: string, role?: Role | null): string {
   const [first = '', second = ''] = pathname.split('/').filter(Boolean);
 
-  if (
-    first === 'admin' &&
-    second === 'users' &&
-    role !== undefined &&
-    role !== 'admin'
-  )
+  const page = guardedPageFor(pathname);
+  if (page && role !== undefined && !canOpen(role, page))
     return 'Not available';
 
   if (first === 'market' && second === 'incoming') return 'Incoming requests';

@@ -151,8 +151,8 @@ function OfferForm({
       })}
     >
       {fields.map((field, index) => (
-        <fieldset key={field.id} className="space-y-3">
-          <legend className="mb-2 font-medium">
+        <fieldset key={field.id} className="space-y-4">
+          <legend className="font-medium">
             {request.items[index].material_name}
           </legend>
           <div className="grid gap-4">

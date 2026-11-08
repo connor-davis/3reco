@@ -21,7 +21,8 @@ import { cn } from '@/lib/utils';
 type TopbarProps = { onSearch: () => void };
 
 export function Topbar({ onSearch }: TopbarProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const role = isLoading ? undefined : (user?.role ?? null);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -37,21 +38,19 @@ export function Topbar({ onSearch }: TopbarProps) {
         <BreadcrumbList>
           {user &&
             user.role !== 'guest' &&
-            pageTitleFor(pathname, user?.role ?? null) !== 'Page not found' && (
+            pageTitleFor(pathname, role) !== 'Page not found' && (
               <>
                 <BreadcrumbItem>Workspace</BreadcrumbItem>
                 <BreadcrumbSeparator />
               </>
             )}
           <BreadcrumbItem>
-            <BreadcrumbPage>
-              {pageTitleFor(pathname, user?.role ?? null)}
-            </BreadcrumbPage>
+            <BreadcrumbPage>{pageTitleFor(pathname, role)}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <p className="truncate text-sm font-medium sm:hidden">
-        {pageTitleFor(pathname, user?.role ?? null)}
+        {pageTitleFor(pathname, role)}
       </p>
 
       <div className="ml-auto flex items-center gap-1">

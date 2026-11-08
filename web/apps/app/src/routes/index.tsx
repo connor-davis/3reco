@@ -180,7 +180,7 @@ function Dashboard() {
                 'From ' + formatDate(dashboard.from) + ' over the last 30 days'
               }
             >
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid items-start gap-6 lg:grid-cols-2">
                 <RecentActivity collector={collector} />
                 <CounterpartyRows
                   rows={dashboard.counterparties}

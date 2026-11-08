@@ -33,8 +33,7 @@ export function ListingCard({
             : `${formatKg(listing.weight)} available`}
         </p>
         <p className="font-semibold tabular-nums">
-          <span className="font-normal">R</span>
-          {formatRate(listing.price).slice(1)}
+          {formatRate(listing.price)}
         </p>
         {showSeller && (
           <Link

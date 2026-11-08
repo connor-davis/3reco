@@ -94,17 +94,12 @@ function SignInPage() {
       feedback={
         failure
           ? { tone: 'error', text: failure }
-          : reason === 'removed'
+          : ended
             ? {
                 tone: 'info',
-                text: 'This account was removed.',
+                text: 'You were signed out because your account changed.',
               }
-            : ended
-              ? {
-                  tone: 'info',
-                  text: 'You were signed out because your account changed.',
-                }
-              : null
+            : null
       }
       footer={
         <>
