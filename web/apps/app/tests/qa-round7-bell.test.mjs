@@ -8,5 +8,5 @@ test('bell list can grow and scroll while titles wrap above the actions', () => 
   assert.match(list, /overflow-y-auto/);
   assert.match(list, /<ItemContent className="min-w-0">/);
   assert.match(list, /<ItemTitle[^>]*line-clamp-none[^`]*break-words/);
-  assert.match(list, /<ItemActions className="[^"]*w-full[^"]*justify-end/);
+  assert.match(list, /<ItemActions className="[^"]*w-full[^"]*justify-start/);
 });

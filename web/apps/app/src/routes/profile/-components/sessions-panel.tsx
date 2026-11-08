@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { LogIn } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
-import { LinkButton } from '@/components/link-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,8 @@ import { formatDate, formatTime } from '@/lib/format';
 
 export function SessionsPanel() {
   const sessions = useSessions();
+  const navigate = useNavigate();
+  const location = useLocation();
   const revoke = useRevokeSession();
   const signOut = useSignOutAll();
   const revokeOthers = useRevokeOtherSessions();
@@ -81,9 +83,18 @@ export function SessionsPanel() {
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <LinkButton className="min-h-11" to="/sign-in" variant="outline">
+        <Button
+          className="min-h-11"
+          variant="outline"
+          onClick={() =>
+            navigate({
+              to: '/sign-in',
+              search: { add: true, redirect: location.href },
+            })
+          }
+        >
           Add account
-        </LinkButton>
+        </Button>
         <Button
           className="min-h-11"
           variant="outline"
