@@ -60,10 +60,12 @@ Never rename a merged migration. Add a new file.
 | Encrypting ID and bank fields (AES-256-GCM, `v1:` prefix) and the `******1234` mask | `internal/platform/crypt/crypt.go` |
 | Notice version and retention periods (the one place to change them) | `internal/platform/config/privacy.go` |
 | Export, self-delete, notice, audit log, hourly retention: SQL, rules, `/api/privacy` routes | `internal/stores/privacy`, `internal/services/privacy`, `internal/api/privacy` |
-| Who sees a collector's full account number (creator, own login, admin; the rest masked) | `internal/services/collectors/collectors.go` |
+| Collector payout masks (including branch code), safe `can_edit` permission, staff contact-only form edits | `internal/services/collectors/collectors.go`, `internal/services/collectors/stats.go`, `web/apps/app/src/components/dialogs/collector-dialog.tsx` |
 | Reuse collector payout access for frozen invoice/CSV snapshots | `internal/services/collectors/payout_access.go` (`CanReadFullPayout`), `internal/services/invoices/invoices.go` (`Project`) |
 | Privacy tests: ciphertext at rest, mask and full view, export, delete, retention, notice, audit | `tests/privacy_test.go`, `tests/privacy_rights_test.go`, `tests/fieldcrypt_test.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
+| Retire request action notices atomically at closure, retaining history and completion notices | `RequestEnded` in `internal/services/notifications/notifications.go`, `MarkOffersRead` in `internal/stores/notifications/notifications.go` |
+| Offer and counter system events drive inbox preview, activity time and paging | `MakeOffer` in `internal/services/requests/state.go`, `InsertRequestEvent` in `internal/stores/requests/messages.go` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
 | Offer author/version, confirmation resets and live-hold fence | `internal/stores/requests/confirmations.go` |
 | Pending trade creation and completion of the same retained row | `internal/services/transactions/pending.go`, `internal/stores/transactions/pending.go` |

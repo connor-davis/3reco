@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ApiError } from '@/lib/api/client';
 import { useCreateCollector, useUpdateCollector } from '@/lib/api/collectors';
 import type { Collector, CollectorInput } from '@/lib/api/types';
+import { useAuth } from '@/lib/auth/use-auth';
 
 const provinces = [
   'Eastern Cape',
@@ -141,11 +142,15 @@ function toValues(collector?: Collector): Values {
 }
 
 /** The payout side that is not in use is sent empty, so the API accepts it. */
-function toInput(values: Values): CollectorInput {
+function toInput(
+  values: Values,
+  collector?: Collector,
+  payoutReadOnly = false
+): CollectorInput {
   const bank = values.payout_method === 'bank';
   const { area_code, ...rest } = values;
 
-  return {
+  const input: CollectorInput = {
     ...rest,
     name: tidyName(values.name),
     area_code: Number(area_code),
@@ -157,6 +162,24 @@ function toInput(values: Values): CollectorInput {
     ewallet_platform_name: bank ? '' : values.ewallet_platform_name,
     ewallet_payment_id: bank ? '' : values.ewallet_payment_id,
   };
+
+  for (const key of Object.keys(input) as (keyof CollectorInput)[]) {
+    const payout =
+      key.startsWith('bank_') ||
+      key.startsWith('ewallet_') ||
+      key === 'payout_method';
+    const value = input[key];
+    if (
+      (payoutReadOnly && payout) ||
+      (typeof value === 'string' &&
+        value.startsWith('******') &&
+        value === collector?.[key])
+    ) {
+      delete input[key];
+    }
+  }
+
+  return input;
 }
 
 /** Add or edit a collector, with the payout details they get paid to. */
@@ -165,6 +188,8 @@ export function CollectorDialog(props: Props) {
 }
 
 function CollectorForm({ open, onOpenChange, collector }: Props) {
+  const { user } = useAuth();
+  const payoutReadOnly = !!collector && user?.role === 'staff';
   const create = useCreateCollector();
   const update = useUpdateCollector(collector?.id ?? '');
   const [serverError, setServerError] = useState('');
@@ -179,7 +204,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
 
     try {
       if (collector) {
-        await update.mutateAsync(toInput(values));
+        await update.mutateAsync(toInput(values, collector, payoutReadOnly));
         toast.success('Collector updated.');
       } else {
         await create.mutateAsync(toInput(values));
@@ -248,87 +273,102 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
           label="Province"
           options={provinces}
         />
-        <Controller
-          control={control}
-          name="payout_method"
-          render={({ field }) => (
-            <Field className="sm:col-span-2">
-              <FieldLabel id="collector-method-label">Payout method</FieldLabel>
-              <RadioGroup
-                value={field.value}
-                onValueChange={field.onChange}
-                aria-labelledby="collector-method-label"
-                className="flex gap-6"
-              >
-                <Field orientation="horizontal" className="w-auto">
-                  <RadioGroupItem id="collector-bank" value="bank" />
-                  <FieldLabel htmlFor="collector-bank" className="font-normal">
-                    Bank
-                  </FieldLabel>
-                </Field>
-                <Field orientation="horizontal" className="w-auto">
-                  <RadioGroupItem id="collector-ewallet" value="ewallet" />
-                  <FieldLabel
-                    htmlFor="collector-ewallet"
-                    className="font-normal"
-                  >
-                    E-wallet
-                  </FieldLabel>
-                </Field>
-              </RadioGroup>
-            </Field>
+        <fieldset
+          disabled={payoutReadOnly}
+          className="grid gap-4 sm:col-span-2 sm:grid-cols-2"
+        >
+          {payoutReadOnly && (
+            <p className="text-sm text-muted-foreground sm:col-span-2">
+              Payout details are read-only for staff.
+            </p>
           )}
-        />
-        {method === 'bank' ? (
-          <>
-            <TextField
-              control={control}
-              name="bank_account_holder_name"
-              label="Account holder"
-            />
-            <SelectField
-              control={control}
-              name="bank_name"
-              label="Bank"
-              options={banks}
-            />
-            <SelectField
-              control={control}
-              name="bank_account_type"
-              label="Account type"
-              options={accountTypes}
-            />
-            <TextField
-              control={control}
-              name="bank_account_number"
-              label="Account number"
-              inputMode="numeric"
-              autoComplete="off"
-            />
-            <TextField
-              control={control}
-              name="bank_branch_code"
-              label="Branch code"
-              inputMode="numeric"
-            />
-          </>
-        ) : (
-          <>
-            <SelectField
-              control={control}
-              name="ewallet_platform_name"
-              label="Wallet provider"
-              options={walletProviders}
-            />
-            <TextField
-              control={control}
-              name="ewallet_payment_id"
-              label="Wallet phone number"
-              type="tel"
-              autoComplete="off"
-            />
-          </>
-        )}
+          <Controller
+            control={control}
+            name="payout_method"
+            render={({ field }) => (
+              <Field className="sm:col-span-2">
+                <FieldLabel id="collector-method-label">
+                  Payout method
+                </FieldLabel>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  aria-labelledby="collector-method-label"
+                  className="flex gap-6"
+                >
+                  <Field orientation="horizontal" className="w-auto">
+                    <RadioGroupItem id="collector-bank" value="bank" />
+                    <FieldLabel
+                      htmlFor="collector-bank"
+                      className="font-normal"
+                    >
+                      Bank
+                    </FieldLabel>
+                  </Field>
+                  <Field orientation="horizontal" className="w-auto">
+                    <RadioGroupItem id="collector-ewallet" value="ewallet" />
+                    <FieldLabel
+                      htmlFor="collector-ewallet"
+                      className="font-normal"
+                    >
+                      E-wallet
+                    </FieldLabel>
+                  </Field>
+                </RadioGroup>
+              </Field>
+            )}
+          />
+          {method === 'bank' ? (
+            <>
+              <TextField
+                control={control}
+                name="bank_account_holder_name"
+                label="Account holder"
+              />
+              <SelectField
+                control={control}
+                name="bank_name"
+                label="Bank"
+                options={banks}
+              />
+              <SelectField
+                control={control}
+                name="bank_account_type"
+                label="Account type"
+                options={accountTypes}
+              />
+              <TextField
+                control={control}
+                name="bank_account_number"
+                label="Account number"
+                inputMode="numeric"
+                autoComplete="off"
+              />
+              <TextField
+                control={control}
+                name="bank_branch_code"
+                label="Branch code"
+                inputMode="numeric"
+              />
+            </>
+          ) : (
+            <>
+              <SelectField
+                control={control}
+                name="ewallet_platform_name"
+                label="Wallet provider"
+                options={walletProviders}
+              />
+              <TextField
+                control={control}
+                name="ewallet_payment_id"
+                label="Wallet phone number"
+                type="tel"
+                autoComplete="off"
+              />
+            </>
+          )}
+        </fieldset>
         {serverError && (
           <p role="alert" className="text-sm text-destructive sm:col-span-2">
             {serverError}

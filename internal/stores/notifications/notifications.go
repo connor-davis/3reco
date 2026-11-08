@@ -102,13 +102,15 @@ func (s *Store) MarkAllRead(ctx context.Context, userID string) error {
 	return err
 }
 
-// MarkOffersRead marks the offer messages of one request read, for every user.
-// Once a request ends, "Please confirm the offer" and "Offer received!" no
-// longer ask for anything.
-func (s *Store) MarkOffersRead(ctx context.Context, link string) error {
+// MarkOffersRead retires offer action messages for one request, for every user.
+// A terminal transition also retires the initial request notice. Informational
+// completion notices and historical links stay available.
+func (s *Store) MarkOffersRead(ctx context.Context, link string, terminal bool) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `UPDATE notifications SET read = true
-		WHERE link = $1 AND NOT read AND title IN ('Offer received!', 'Please confirm the offer')`,
-		link)
+		WHERE link = $1 AND NOT read AND (
+			(type = 'request_accepted' AND title IN
+				('Offer received', 'Offer received!', 'Please confirm the offer'))
+			OR ($2 AND type = 'request_received'))`, link, terminal)
 
 	return err
 }

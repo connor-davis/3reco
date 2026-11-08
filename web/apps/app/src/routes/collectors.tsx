@@ -101,12 +101,14 @@ function CollectorsPage() {
   function actions(collector: Collector) {
     return (
       <div className="flex gap-1">
-        <IconButton
-          label={`Edit ${collector.name}`}
-          onClick={() => openForm(collector)}
-        >
-          <Pencil />
-        </IconButton>
+        {collector.can_edit && (
+          <IconButton
+            label={`Edit ${collector.name}`}
+            onClick={() => openForm(collector)}
+          >
+            <Pencil />
+          </IconButton>
+        )}
         {canRemove && (
           <IconButton
             label={`Remove ${collector.name}`}
@@ -174,11 +176,11 @@ function CollectorsPage() {
   return (
     <>
       <PageHeader
-        title={directory ? 'Collector directory' : 'Your collector network'}
+        title="Collector directory"
         description={
           directory
             ? 'Every collector on 3REco, and how they are paid.'
-            : 'The people who bring you material, and how you pay them.'
+            : 'Find collectors, and manage the people you added.'
         }
         actions={
           !directory && (

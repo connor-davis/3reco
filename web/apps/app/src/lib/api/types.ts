@@ -138,6 +138,7 @@ export interface Material {
 export type MaterialInput = Omit<Material, 'id' | 'created_at'>;
 export interface Collector {
   id: string;
+  can_edit: boolean;
   name: string;
   email?: string;
   phone?: string;
@@ -156,7 +157,9 @@ export interface Collector {
   area_code?: number | null;
   created_at: string;
 }
-export type CollectorInput = Partial<Omit<Collector, 'id' | 'created_at'>>;
+export type CollectorInput = Partial<
+  Omit<Collector, 'id' | 'created_at' | 'can_edit'>
+>;
 export interface CollectorStats {
   collector: Collector;
   totals: {

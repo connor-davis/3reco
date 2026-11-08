@@ -82,8 +82,11 @@ func full(user auth.User, item store.Collector, own bool) bool {
 }
 
 func redact(user auth.User, item store.Collector, own bool) store.Collector {
+	item.CanEdit = manages(user, item, false)
+
 	if !full(user, item, own) {
 		item.BankAccountNumber = crypt.Mask(item.BankAccountNumber)
+		item.BankBranchCode = crypt.Mask(item.BankBranchCode)
 		item.EwalletPaymentID = crypt.Mask(item.EwalletPaymentID)
 	}
 
@@ -255,6 +258,22 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				if errors.Is(err, pgx.ErrNoRows) || !manages(user, item, false) {
 					return apperr.NotFound("No such collector.")
 				}
+
+				// Staff can update contact details without replacing private payout identifiers.
+				if !full(user, item, false) {
+					for _, field := range []struct {
+						sent    *string
+						current string
+					}{
+						{in.BankAccountNumber, item.BankAccountNumber},
+						{in.BankBranchCode, item.BankBranchCode},
+						{in.EwalletPaymentID, item.EwalletPaymentID},
+					} {
+						if field.sent != nil && !isMask(*field.sent, field.current) {
+							return apperr.Forbidden("You cannot change private payout identifiers.")
+						}
+					}
+				}
 			}
 
 			if in.Name != nil {
@@ -286,7 +305,7 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				item.BankAccountNumber = strings.TrimSpace(*in.BankAccountNumber)
 			}
 
-			if in.BankBranchCode != nil {
+			if in.BankBranchCode != nil && !isMask(*in.BankBranchCode, item.BankBranchCode) {
 				item.BankBranchCode = strings.TrimSpace(*in.BankBranchCode)
 			}
 

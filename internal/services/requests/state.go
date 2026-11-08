@@ -79,13 +79,25 @@ func (s *Service) MakeOffer(
 
 		body := fmt.Sprintf("A new offer was made for %s. Review the terms and confirm or counter.", name)
 
+		actor := r.Seller.Name
+		if user.ID == r.Buyer.ID {
+			actor = r.Buyer.Name
+		}
+		action := " made an offer for "
+		if r.Status == StatusOffered {
+			action = " made a counter-offer for "
+		}
+		if err := s.store.InsertRequestEvent(ctx, id, user.ID, actor+action+name+"."); err != nil {
+			return err
+		}
+
 		other := r.Buyer.ID
 		if user.ID == other {
 			other = r.Seller.ID
 		}
 
 		return s.notes.Notify(ctx, other, notifications.RequestAccepted,
-			"Offer received!", body, "/market/"+id)
+			"Offer received", body, "/market/"+id)
 	})
 }
 
@@ -221,7 +233,7 @@ func (s *Service) Accept(
 			return err
 		}
 
-		if err := s.notes.OffersEnded(ctx, id); err != nil {
+		if err := s.notes.RequestEnded(ctx, id); err != nil {
 			return err
 		}
 
@@ -234,7 +246,7 @@ func (s *Service) Accept(
 			"The transaction is complete.", name)
 
 		return s.notes.Notify(ctx, other, notifications.RequestAccepted,
-			"Offer accepted!", body, "/market/"+id)
+			"Offer accepted", body, "/market/"+id)
 	})
 
 	return transactionID, err
@@ -355,7 +367,11 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 		}
 
 		// Whatever the move, the offer it answers is gone.
-		if err := s.notes.OffersEnded(ctx, id); err != nil {
+		if step.to == StatusRejected || step.to == StatusCancelled {
+			if err := s.notes.RequestEnded(ctx, id); err != nil {
+				return err
+			}
+		} else if err := s.notes.OffersEnded(ctx, id); err != nil {
 			return err
 		}
 

@@ -47,7 +47,7 @@ func TestMarketRequestTermsAndHolds(t *testing.T) {
 	holdCount(t, w, "active", "1")
 
 	body := tradeText(t, w.app, `SELECT body FROM notifications WHERE user_id=$1 AND type='request_received'`, w.seller.id)
-	for _, term := range []string{"Glass", "12.12", "R8/kg"} {
+	for _, term := range []string{"Glass", "12.12", "R 8.00 / kg"} {
 		if !strings.Contains(body, term) {
 			t.Errorf("notification %q lacks %q", body, term)
 		}
