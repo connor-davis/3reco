@@ -8,7 +8,8 @@ const { roleLabel } = load('lib/access.ts');
 test('every page has its own tab title, even the 404', () => {
   assert.equal(pageTitleFor('/'), 'Dashboard');
   assert.equal(pageTitleFor('/transactions'), 'Transactions');
-  assert.equal(pageTitleFor('/admin/users'), 'User management');
+  assert.equal(pageTitleFor('/admin/users', 'admin'), 'User management');
+  assert.equal(pageTitleFor('/admin/users', 'staff'), 'Not available');
   assert.equal(pageTitleFor('/materials'), 'Materials');
   assert.equal(pageTitleFor('/messages'), 'Messages');
   assert.equal(pageTitleFor('/sign-in'), 'Sign in');

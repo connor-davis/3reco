@@ -65,6 +65,7 @@ function AdminPage() {
 
 function RoleSelect({ user }: { user: AdminUser }) {
   const change = useSetUserRole(user.id);
+  const [nextRole, setNextRole] = useState<Role | null>(null);
   return (
     <div className="space-y-2">
       <fieldset disabled={change.isPending}>
@@ -72,14 +73,27 @@ function RoleSelect({ user }: { user: AdminUser }) {
           label={'Role for ' + user.name}
           value={user.role ?? ''}
           options={roleOptions}
-          onChange={(role) =>
-            change.mutate(
-              { role: role as Role },
-              { onSuccess: () => toast.success('Role updated.') }
-            )
-          }
+          onChange={(role) => {
+            if (role !== user.role) setNextRole(role as Role);
+          }}
         />
       </fieldset>
+      <ConfirmDialog
+        open={nextRole !== null}
+        onOpenChange={(open) => !open && setNextRole(null)}
+        title={`Change ${user.name}'s role?`}
+        description={`Change ${user.name} from ${roleLabel(user.role)} to ${roleLabel(nextRole)}? Their access will change straight away.`}
+        confirmLabel="Change role"
+        cancelLabel="Keep current role"
+        onConfirm={() => {
+          if (!nextRole || change.isPending) return;
+          change.mutate(
+            { role: nextRole },
+            { onSuccess: () => toast.success('Role updated.') }
+          );
+          setNextRole(null);
+        }}
+      />
       {change.isError && (
         <p role="alert" className="text-sm text-destructive">
           {change.error.message} Try again.

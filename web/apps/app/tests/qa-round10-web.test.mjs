@@ -261,7 +261,7 @@ test('chart provides endpoint space and kg values; metric and privacy copy remai
   const chart = source('routes/-dashboard/impact-chart.tsx');
   assert.match(chart, /padding=\{\{ left: 24, right: 24 \}\}/);
   assert.match(chart, /interval="equidistantPreserveStart"/);
-  assert.match(chart, /<YAxis[\s\S]*?tickFormatter=\{formatKg\}/);
+  assert.match(chart, /<YAxis[\s\S]*?tickFormatter=\{axisWeight\}/);
   assert.match(chart, /formatKg\(String\(value\)\)/);
   assert.match(source('components/stat-card.tsx'), /whitespace-nowrap/);
   assert.match(

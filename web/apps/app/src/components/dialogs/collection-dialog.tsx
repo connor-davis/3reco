@@ -154,7 +154,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       wide
-      title="Record a collection"
+      title="Record collection"
       description="Materials you bought from a collector. Prices are per kg."
       footer={
         <Button disabled={create.isPending} onClick={handleSubmit(onSubmit)}>

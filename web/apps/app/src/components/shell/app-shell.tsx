@@ -6,7 +6,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRouterState } from '@tanstack/react-router';
+import { useRouter, useRouterState } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -17,6 +18,8 @@ import { Topbar } from './topbar';
 import { isAuthPath, isChatPath, pageTitleFor } from '@/lib/nav';
 import { useLiveEvents } from '@/lib/live/use-live';
 import { GuestOnly } from '@/lib/auth/guest-only';
+import { useAuth } from '@/lib/auth/use-auth';
+import { listenForSessionChanges } from '@/lib/api/auth';
 
 const CommandSearch = lazy(() =>
   import('./command-search').then((module) => ({
@@ -36,6 +39,16 @@ const pagePad = cn(
  */
 export function AppShell({ children }: { children: ReactNode }) {
   useLiveEvents();
+  const { user } = useAuth();
+  const client = useQueryClient();
+  const router = useRouter();
+  useEffect(
+    () =>
+      listenForSessionChanges(client, () => {
+        void router.invalidate();
+      }),
+    [client, router]
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchLoaded, setSearchLoaded] = useState(false);
   const pathname = useRouterState({
@@ -47,8 +60,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Set the fallback before route effects apply the loaded store or listing name.
   useLayoutEffect(() => {
-    document.title = `${pageTitleFor(pathname)} · 3REco`;
-  }, [pathname]);
+    document.title = `${pageTitleFor(pathname, user?.role ?? null)} · 3REco`;
+  }, [pathname, user?.role]);
 
   // Keep the shortcut available before the search implementation has loaded.
   useEffect(() => {
@@ -78,7 +91,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       {bare ? (
         <GuestOnly>{children}</GuestOnly>
       ) : (
-        <SidebarProvider>
+        <SidebarProvider
+          key={`${user?.id ?? 'signed-out'}:${user?.role ?? ''}`}
+        >
           <AppSidebar />
           {/* SidebarInset already renders the page's one <main>. */}
           <SidebarInset

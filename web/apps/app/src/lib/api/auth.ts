@@ -9,6 +9,55 @@ import type { AuthUser, Ok, Session } from './types';
 
 export const authKey = ['auth', 'me'] as const;
 
+const sessionChannelName = '3reco-session';
+let sessionChannel: BroadcastChannel | undefined;
+
+function publishSessionChange() {
+  if (typeof window === 'undefined' || !window.BroadcastChannel) return;
+  const channel =
+    sessionChannel ?? new window.BroadcastChannel(sessionChannelName);
+  channel.postMessage({ type: 'session-changed' });
+  if (channel !== sessionChannel) channel.close();
+}
+
+/** Re-read the shared cookie before any private page is mounted again. */
+export function listenForSessionChanges(
+  client: QueryClient,
+  recheckRoute: () => void
+) {
+  if (!window.BroadcastChannel) return () => {};
+  const channel = new window.BroadcastChannel(sessionChannelName);
+  sessionChannel = channel;
+  let pending: AbortController | undefined;
+
+  channel.onmessage = (event: MessageEvent) => {
+    if (event.data?.type !== 'session-changed') return;
+    pending?.abort();
+    const controller = new AbortController();
+    pending = controller;
+
+    void (async () => {
+      await client.cancelQueries();
+      const user = await readMe(controller.signal);
+      if (controller.signal.aborted) return;
+      await replaceSession(client, user);
+      if (controller.signal.aborted) return;
+      recheckRoute();
+      if (!user && !window.location.pathname.endsWith('/sign-in'))
+        window.location.assign('/sign-in');
+    })().catch(() => {
+      // A failed identity check must not leave another person's data visible.
+      if (!controller.signal.aborted) window.location.reload();
+    });
+  };
+
+  return () => {
+    pending?.abort();
+    channel.close();
+    if (sessionChannel === channel) sessionChannel = undefined;
+  };
+}
+
 export async function replaceSession(
   client: QueryClient,
   user: AuthUser | null
@@ -19,6 +68,7 @@ export async function replaceSession(
       query.queryKey[0] !== 'auth' || query.queryKey[1] !== 'me',
   });
   client.setQueryData(authKey, user);
+  if (user) endedFor = undefined;
 }
 
 let endedFor: 'ended' | 'removed' | 'quiet' | undefined;
@@ -37,6 +87,7 @@ export async function endSession(
   endedFor = reason ?? 'quiet';
 
   await replaceSession(client, null);
+  publishSessionChange();
 
   if (!window.location.pathname.endsWith('/sign-in'))
     window.location.assign(reason ? `/sign-in?reason=${reason}` : '/sign-in');
@@ -84,8 +135,13 @@ function useAuthMutation<Input, Output>(
     onSuccess: async () => {
       // Read the new cookie before publishing the account change. A temporary
       // signed-out state would send a valid dashboard session back to sign-in.
-      const user = await readMe();
-      await replaceSession(client, user);
+      try {
+        const user = await readMe();
+        await replaceSession(client, user);
+      } finally {
+        // The cookie changed even if this tab's identity read failed.
+        publishSessionChange();
+      }
     },
   });
 }

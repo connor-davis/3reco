@@ -86,14 +86,18 @@ function SignInPage() {
             ? 'Account removed.'
             : 'Welcome back.'
       }
-      description="Sign in to trade, chat and track your stock."
+      description={
+        reason === 'removed'
+          ? ''
+          : 'Sign in to trade, chat and track your stock.'
+      }
       feedback={
         failure
           ? { tone: 'error', text: failure }
           : reason === 'removed'
             ? {
                 tone: 'info',
-                text: 'This account was removed. Contact 3REco if this is a mistake.',
+                text: 'This account was removed.',
               }
             : ended
               ? {

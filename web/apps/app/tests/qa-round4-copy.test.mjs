@@ -163,7 +163,7 @@ test('removed and changed accounts receive different sign-in feedback', () => {
     assert.equal(
       Route.component().props.feedback?.text ?? null,
       reason === 'removed'
-        ? 'This account was removed. Contact 3REco if this is a mistake.'
+        ? 'This account was removed.'
         : reason === 'ended'
           ? 'You were signed out because your account changed.'
           : null

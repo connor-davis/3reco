@@ -344,13 +344,20 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                       Payout method
                     </FieldLabel>
                     <RadioGroup
+                      disabled={payoutReadOnly}
                       value={field.value}
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        if (!payoutReadOnly) field.onChange(value);
+                      }}
                       aria-labelledby="collector-method-label"
                       className="flex flex-wrap gap-6"
                     >
                       <Field orientation="horizontal" className="w-auto">
-                        <RadioGroupItem id="collector-none" value="none" />
+                        <RadioGroupItem
+                          disabled={payoutReadOnly}
+                          id="collector-none"
+                          value="none"
+                        />
                         <FieldLabel
                           htmlFor="collector-none"
                           className="font-normal"
@@ -359,7 +366,11 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                         </FieldLabel>
                       </Field>
                       <Field orientation="horizontal" className="w-auto">
-                        <RadioGroupItem id="collector-bank" value="bank" />
+                        <RadioGroupItem
+                          disabled={payoutReadOnly}
+                          id="collector-bank"
+                          value="bank"
+                        />
                         <FieldLabel
                           htmlFor="collector-bank"
                           className="font-normal"
@@ -369,6 +380,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                       </Field>
                       <Field orientation="horizontal" className="w-auto">
                         <RadioGroupItem
+                          disabled={payoutReadOnly}
                           id="collector-ewallet"
                           value="ewallet"
                         />
@@ -388,6 +400,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                   <TextField
                     control={control}
                     name="bank_account_holder_name"
+                    disabled={payoutReadOnly}
                     label="Account holder"
                   />
                   <SelectField
@@ -405,6 +418,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                   <TextField
                     control={control}
                     name="bank_account_number"
+                    disabled={payoutReadOnly}
                     label="Account number"
                     inputMode="numeric"
                     autoComplete="off"
@@ -412,6 +426,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                   <TextField
                     control={control}
                     name="bank_branch_code"
+                    disabled={payoutReadOnly}
                     label="Branch code"
                     inputMode="numeric"
                   />
@@ -427,6 +442,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                   <TextField
                     control={control}
                     name="ewallet_payment_id"
+                    disabled={payoutReadOnly}
                     label="Wallet phone number"
                     type="tel"
                     autoComplete="off"

@@ -56,8 +56,6 @@ test('H1: an empty filter with no search has its own copy', () => {
 
 test('H2: "Choose a store" only shows while no store is chosen', () => {
   const cart = source('routes/cart.tsx');
-  assert.match(
-    cart,
-    /selectedSeller\s*\? 'Review quantities before sending your request\.'\s*: 'Choose a store to open its saved cart\./
-  );
+  assert.match(cart, /sellerId\s*\? selectedCart\.isPending/);
+  assert.match(cart, /selectedCart\.data\?\.items\.length/);
 });

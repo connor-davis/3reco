@@ -15,6 +15,10 @@ const config = {
 /** "12 Oct" for the axis; the tooltip and the rest of the app say "12 Oct 2026". */
 export const axisDay = (day: string) => formatDate(day).replace(/ \d{4}$/, '');
 
+/** Short axis labels leave room for the plot; tooltips keep the full weight. */
+export const axisWeight = (value: number) =>
+  `${new Intl.NumberFormat('en-ZA', { notation: 'compact', maximumFractionDigits: 1 }).format(value)} kg`;
+
 export function ImpactChart({ series }: { series: Dashboard['series'] }) {
   // Chart geometry uses numbers; amounts shown as money never do.
   const points = series.map((day) => ({
@@ -45,7 +49,7 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
           axisLine={false}
           width={80}
           tick={{ fill: 'var(--muted-foreground)' }}
-          tickFormatter={formatKg}
+          tickFormatter={axisWeight}
         />
         <ChartTooltip
           content={
