@@ -39,7 +39,7 @@ test('qa-round7: the receipt picker is a styled label over a hidden input', () =
 });
 
 test('qa-round7: dashboard and Browse show CO2e with the same decimals', () => {
-  assert.equal(formatCo2('167.4'), '167.4 kg CO₂e');
+  assert.equal(formatCo2('167.4'), '167.40 kg CO₂e');
   assert.equal(formatCo2('1236.131'), '1 236.13 kg CO₂e');
   assert.doesNotMatch(source('routes/index.tsx'), /wholeKg/);
   assert.doesNotMatch(source('lib/impact.ts'), /wholeKg/);

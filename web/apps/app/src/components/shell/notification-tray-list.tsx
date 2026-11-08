@@ -76,7 +76,9 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
               <li key={notice.id}>
                 <Item size="sm">
                   <ItemContent className="min-w-0">
-                    <ItemTitle className="block w-full line-clamp-none break-words">
+                    <ItemTitle
+                      className={`block w-full line-clamp-none break-words ${notice.read ? 'font-normal text-muted-foreground' : ''}`}
+                    >
                       {!notice.read && (
                         <span
                           className="mr-2 inline-block size-2 rounded-full bg-primary"
@@ -85,7 +87,11 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       )}
                       {notice.title}
                     </ItemTitle>
-                    <ItemDescription>{notice.body}</ItemDescription>
+                    <ItemDescription
+                      className={notice.read ? 'opacity-70' : undefined}
+                    >
+                      {notice.body}
+                    </ItemDescription>
                     <span className="text-xs text-muted-foreground">
                       {formatDate(notice.created_at)} ·{' '}
                       {formatTime(notice.created_at)}

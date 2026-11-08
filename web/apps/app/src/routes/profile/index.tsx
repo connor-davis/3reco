@@ -131,7 +131,7 @@ function ProfilePage() {
           </TabsContent>
           <TabsContent value="privacy">
             <Section
-              title="Your data"
+              title="Privacy"
               description="Your privacy and account controls."
             >
               <PrivacyPanel />

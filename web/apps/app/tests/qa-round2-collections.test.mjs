@@ -75,6 +75,10 @@ test('a negative or zero price says "Enter a price above R 0.00."', () => {
     );
   }
   assert.equal(
+    message(parse({ line: { price: 'abc' } })),
+    'Enter a price as a number, like 22.80.'
+  );
+  assert.equal(
     message(parse({ line: { price: '1.234' } })),
     'Use up to 2 decimals.'
   );

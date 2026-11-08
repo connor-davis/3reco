@@ -78,8 +78,10 @@ test('request quantity errors wait for touch while Send stays disabled until val
         tree.some((node) => node.props.role === 'alert'),
         touched && invalid
       );
-      assert.ok(
-        tree.some((node) => node.props.description?.includes('above 0 kg'))
+      // The quantity hint shows only while the quantity is wrong.
+      assert.equal(
+        tree.some((node) => node.props.description?.includes('above 0 kg')),
+        invalid
       );
     }
   }
@@ -168,7 +170,7 @@ test('disabled stock submission names missing fields or the base price problem',
             control: {},
             watch: (name) => (name ? values[name] : values),
             handleSubmit: () => () => {},
-            formState: { isValid: false },
+            formState: { isValid: false, isDirty: true },
           }),
         },
         '@/lib/api/materials': {

@@ -39,7 +39,9 @@ const line = z.object({
     const number = /^-?\d*[.,]?\d*$/.test(text) && /\d/.test(text);
     let message = '';
 
-    if (number && (text.startsWith('-') || !/[1-9]/.test(text))) {
+    if (!number) {
+      message = 'Enter a price as a number, like 22.80.';
+    } else if (number && (text.startsWith('-') || !/[1-9]/.test(text))) {
       message = 'Enter a price above R 0.00.';
     } else if (!/^\d{1,12}([.,]\d{1,2})?$/.test(text)) {
       message = 'Use up to 2 decimals.';

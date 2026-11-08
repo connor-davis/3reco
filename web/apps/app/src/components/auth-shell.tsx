@@ -85,7 +85,7 @@ function StoryPanel() {
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Leaf className="size-4 text-primary" aria-hidden="true" />
           {formatKg(community.kgDiverted)} diverted ·{' '}
-          {formatCo2(community.co2Kg)} saved
+          {formatCo2(community.co2Kg)}
         </p>
       )}
     </aside>

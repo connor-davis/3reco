@@ -171,7 +171,7 @@ export function Inbox({
                     </span>
                     <StatusBadge status={thread.status} />
                     <span className="block text-xs text-muted-foreground">
-                      {threadSummary(thread)}
+                      {threadSummary(thread, user?.id)}
                     </span>
                   </span>
                   {thread.unread_count > 0 && (

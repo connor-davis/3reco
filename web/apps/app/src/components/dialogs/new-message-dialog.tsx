@@ -38,7 +38,7 @@ export function NewMessageDialog({
     <ResponsiveOverlay
       open={open}
       onOpenChange={onOpenChange}
-      title="Start a conversation"
+      title="Request this material"
       description="Choose a quantity to send a request. Sending it reserves that weight for 48 hours."
     >
       {open && (
@@ -157,7 +157,11 @@ function NewMessageForm({
             control={form.control}
             name="weight"
             label="Quantity (kg)"
-            description="Enter a quantity above 0 kg, with up to 2 decimals."
+            description={
+              problem
+                ? 'Enter a quantity above 0 kg, with up to 2 decimals.'
+                : undefined
+            }
             counter={weightCounter(selected?.weight)}
           />
           {showProblem && problem && !form.formState.errors.weight && (

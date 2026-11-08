@@ -15,6 +15,9 @@ const MAX_PRICE_CENTS = 100_000_00;
 
 function priceError(raw: string): string | undefined {
   const price = raw.trim().replace(',', '.');
+  if (!/^-?\d*\.?\d*$/.test(price) || !/\d/.test(price)) {
+    return 'Enter a price as a number, like 22.80.';
+  }
   if (/^\d{1,12}\.\d{3,}$/.test(price)) return 'Use up to 2 decimals.';
   if (!/^\d{1,12}(\.\d{1,2})?$/.test(price) || !/[1-9]/.test(price)) {
     return 'Enter a price above R 0.00.';

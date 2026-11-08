@@ -48,8 +48,7 @@ function MarketPage() {
         {stats.data && (
           <p className="rounded-2xl border bg-muted/50 px-4 py-3 text-sm">
             Community impact: {formatKg(stats.data.total_kg)} diverted ·{' '}
-            {formatCo2(stats.data.co2_kg)} saved ·{' '}
-            {plural(stats.data.deals, 'trade')}
+            {formatCo2(stats.data.co2_kg)} · {plural(stats.data.deals, 'trade')}
           </p>
         )}
       </DataState>

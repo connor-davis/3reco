@@ -47,8 +47,7 @@ function AboutPage() {
                 className="size-4 shrink-0 text-primary"
                 aria-hidden="true"
               />
-              {formatKg(stats.total_kg)} diverted · {formatCo2(stats.co2_kg)}{' '}
-              saved
+              {formatKg(stats.total_kg)} diverted · {formatCo2(stats.co2_kg)}
             </p>
           )}
         </DataState>

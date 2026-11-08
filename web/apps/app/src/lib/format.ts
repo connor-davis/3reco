@@ -55,6 +55,14 @@ function spaced(whole: number): string {
   return whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/** Prints a weight with thousands spaces and always 2 decimals ("242.50"). */
+export function formatKgFixed(kg: string | number): string {
+  const grams = typeof kg === 'number' ? Math.round(kg * 1000) : toGrams(kg);
+  const hundredths = Math.round(grams / 10);
+
+  return `${spaced(Math.floor(hundredths / 100))}.${(hundredths % 100).toString().padStart(2, '0')}`;
+}
+
 /** Prints a weight with thousands spaces, no unit, 2 decimals at most. */
 export function formatKgNumber(kg: string | number): string {
   const grams = typeof kg === 'number' ? Math.round(kg * 1000) : toGrams(kg);

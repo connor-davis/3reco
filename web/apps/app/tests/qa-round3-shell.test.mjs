@@ -43,14 +43,14 @@ test('weights and CO₂e use one rule: kg, thousands spaces, 2 decimals at most'
   assert.equal(format.formatKg('4799.25'), '4 799.25 kg');
   assert.equal(format.formatKg('0.5'), '0.5 kg');
   assert.equal(format.formatKg(1231.805), '1 231.81 kg');
-  assert.equal(impact.formatCo2('3500.4'), '3 500.4 kg CO₂e');
-  assert.equal(impact.formatCo2(129.999), '130 kg CO₂e');
+  assert.equal(impact.formatCo2('3500.4'), '3 500.40 kg CO₂e');
+  assert.equal(impact.formatCo2(129.999), '130.00 kg CO₂e');
   assert.equal(impact.formatCo2(1900.123), '1 900.12 kg CO₂e');
 });
 
-test('the About line says "CO₂e saved" with a space and one verb', () => {
+test('the About line shows CO₂e with the one formatter', () => {
   const about = source('../src/routes/about.tsx');
-  assert.match(about, /formatCo2\(stats\.co2_kg\)\}\{' '\}\s+saved/);
+  assert.match(about, /formatCo2\(stats\.co2_kg\)\}/);
   assert.match(about, /diverted/);
   assert.doesNotMatch(about, /traded ·/);
 });

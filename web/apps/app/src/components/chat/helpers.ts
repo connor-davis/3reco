@@ -49,7 +49,7 @@ export function offerStatusLine(
   return `${other} sent this offer. Please confirm or reject it.`;
 }
 
-export function threadSummary(thread: Thread): string {
+export function threadSummary(thread: Thread, userId?: string): string {
   if (['accepted', 'cancelled', 'rejected'].includes(thread.status))
     return `${thread.buyer.name} and ${thread.seller.name}`;
   if (thread.status !== 'offered') return 'Awaiting offer';
@@ -59,13 +59,15 @@ export function threadSummary(thread: Thread): string {
       : thread.seller.name;
   const waiting = [
     thread.buyer_confirmed_version !== thread.offer_version
-      ? `${thread.buyer.name} (buyer)`
+      ? thread.buyer
       : null,
     thread.seller_confirmed_version !== thread.offer_version
-      ? `${thread.seller.name} (seller)`
+      ? thread.seller
       : null,
-  ].filter(Boolean);
-  return `Offer by ${author} · ${waiting.length ? `Waiting for ${waiting.join(' and ')} to confirm` : 'Both sides confirmed'}`;
+  ].filter((side) => side !== null);
+  // Say "you" for the viewer, so a row reads short.
+  const names = waiting.map((side) => (side.id === userId ? 'you' : side.name));
+  return `Offer by ${author} · ${waiting.length ? `Waiting for ${names.join(' and ')}` : 'Both sides confirmed'}`;
 }
 
 export function counterpartyOf(request: TradeRequest, userId?: string) {
