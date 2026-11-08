@@ -87,11 +87,11 @@ export function DataTable<T>({
                         header.column.columnDef.meta?.align === 'right' &&
                           'text-right tabular-nums',
                         header.column.columnDef.meta?.sticky &&
-                          'sticky z-20 bg-[var(--row-background)] border-border',
+                          'sticky z-20 bg-[var(--row-background)]',
                         header.column.columnDef.meta?.sticky === 'left' &&
-                          'left-0 border-r',
+                          'left-0',
                         header.column.columnDef.meta?.sticky === 'right' &&
-                          'right-0 border-l'
+                          'right-0'
                       )}
                     >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
@@ -129,11 +129,11 @@ export function DataTable<T>({
                         cell.column.columnDef.meta?.align === 'right' &&
                           'text-right whitespace-nowrap tabular-nums',
                         cell.column.columnDef.meta?.sticky &&
-                          'sticky z-10 bg-[var(--row-background)] border-border transition-colors',
+                          'sticky z-10 bg-[var(--row-background)] transition-colors',
                         cell.column.columnDef.meta?.sticky === 'left' &&
-                          'left-0 border-r',
+                          'left-0',
                         cell.column.columnDef.meta?.sticky === 'right' &&
-                          'right-0 border-l'
+                          'right-0'
                       )}
                     >
                       {flexRender(

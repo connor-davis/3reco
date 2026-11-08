@@ -79,12 +79,11 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                     <ItemTitle
                       className={`block w-full line-clamp-none break-words ${notice.read ? 'font-normal text-muted-foreground' : ''}`}
                     >
-                      {!notice.read && (
-                        <span
-                          className="mr-2 inline-block size-2 rounded-full bg-primary"
-                          aria-label="Unread"
-                        />
-                      )}
+                      <span
+                        className={`mr-2 inline-block size-2 rounded-full ${notice.read ? 'bg-transparent' : 'bg-primary'}`}
+                        aria-label={notice.read ? undefined : 'Unread'}
+                        aria-hidden={notice.read || undefined}
+                      />
                       {notice.title}
                     </ItemTitle>
                     <ItemDescription
