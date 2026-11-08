@@ -149,6 +149,7 @@ test('receipt remove is restricted and only mutates after confirmation', () => {
         record: {
           id: 't',
           type: 'b2b',
+          can_remove_receipts: ['buyer', 'seller', 'admin'].includes(id),
           buyer: { id: 'buyer' },
           seller: { id: 'seller' },
           receipts: [receipt],

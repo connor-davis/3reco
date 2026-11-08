@@ -90,6 +90,13 @@ func (s *Service) List(
 		return empty, err
 	}
 
+	for i := range rows {
+		rows[i].CanRemoveReceipts, err = s.CanRemoveReceipts(ctx, user, rows[i])
+		if err != nil {
+			return empty, err
+		}
+	}
+
 	return paging.Build(rows, limit, func(t store.Transaction) (time.Time, string) {
 		if filter.Recorded {
 			return t.CreatedAt, t.ID
@@ -150,7 +157,21 @@ func (s *Service) scope(
 // seller of a business trade, or the collector user a collector sale is linked
 // to. It matches what the list scope shows, so a row in a list always opens.
 func (s *Service) canRead(ctx context.Context, user auth.User, t store.Transaction) (bool, error) {
-	if auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) ||
+	if auth.HasRole(user, auth.RoleStaff) {
+		return true, nil
+	}
+
+	return s.CanRemoveReceipts(ctx, user, t)
+}
+
+// CanRemoveReceipts checks the trade's parties, resolving collector record IDs
+// through the caller's linked collector. Admins may also remove receipts.
+func (s *Service) CanRemoveReceipts(
+	ctx context.Context,
+	user auth.User,
+	t store.Transaction,
+) (bool, error) {
+	if auth.HasRole(user, auth.RoleAdmin) ||
 		t.Buyer.ID == user.ID ||
 		(t.Type == "b2b" && t.Seller.ID == user.ID) {
 		return true, nil
@@ -185,6 +206,11 @@ func (s *Service) Detail(ctx context.Context, user auth.User, id string) (store.
 
 	if !ok {
 		return store.Transaction{}, errNotFound
+	}
+
+	t.CanRemoveReceipts, err = s.CanRemoveReceipts(ctx, user, t)
+	if err != nil {
+		return store.Transaction{}, err
 	}
 
 	return t, nil

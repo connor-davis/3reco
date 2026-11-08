@@ -56,6 +56,7 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
         useCallback: (callback) => callback,
         useRef: (current) => ({ current }),
         useState: (value) => [value, () => {}],
+        useEffect: () => {},
       },
       '@tanstack/react-router': {
         createFileRoute: () => (options) => options,
@@ -77,6 +78,7 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
       zod: { z },
       '@/lib/api/cart': {
         useSaveCart: mutation('save'),
+        useCart: () => ({}),
         useClearCart: mutation('clear'),
       },
       '@/lib/api/requests': {
@@ -103,12 +105,12 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
   await find(tree, (node) => node.type === 'form').props.onSubmit();
   assert.equal(
     writes.map((write) => write.name).join(','),
-    'save,create,clear,navigate'
+    'create,clear,navigate'
   );
   assert.equal(writes[0].body.items[0].weight, '9.750001');
-  assert.equal(writes[1].body.items[0].weight, '9.750001');
-  assert.equal(writes[1].body.seller_id, 'seller');
-  assert.equal(Object.hasOwn(writes[1].body.items[0], 'price'), false);
+  assert.equal(writes[0].body.from_cart, true);
+  assert.equal(writes[0].body.seller_id, 'seller');
+  assert.equal(Object.hasOwn(writes[0].body.items[0], 'price'), false);
 });
 
 test('both offer directions enforce recipient-first confirmation and allow counters', () => {

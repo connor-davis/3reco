@@ -164,8 +164,12 @@ func (s *Service) Remove(ctx context.Context, user auth.User, id, receiptID stri
 			return apperr.NotFound("Receipt not found.")
 		}
 
-		party := trade.Buyer.ID == user.ID || (trade.Type == "b2b" && trade.Seller.ID == user.ID)
-		if !party && uploadedBy != user.ID && !auth.HasRole(user, auth.RoleAdmin) {
+		party, err := s.trades.CanRemoveReceipts(ctx, user, trade)
+		if err != nil {
+			return err
+		}
+
+		if !party && uploadedBy != user.ID {
 			return apperr.Forbidden("Only the people on this trade can remove a receipt.")
 		}
 

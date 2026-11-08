@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/platform/pdf"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/transactions"
@@ -242,12 +243,23 @@ func (s *Service) Accept(
 			return err
 		}
 
-		name := firstName(r.Items)
-		if len(lines) > 1 {
-			name = fmt.Sprintf("%d materials", len(lines))
+		trade, err := s.trades.Detail(ctx, user, transactionID)
+		if err != nil {
+			return err
 		}
 
-		body := fmt.Sprintf("Your trade for %s is complete.", name)
+		first := trade.Items[0]
+		weight := first.Weight
+		if strings.Contains(weight, ".") {
+			weight = strings.TrimRight(strings.TrimRight(weight, "0"), ".")
+		}
+		name := pdf.Grouped(weight) + " kg " + first.MaterialName
+		if len(trade.Items) > 1 {
+			name += fmt.Sprintf(" and %d more", len(trade.Items)-1)
+		}
+
+		body := fmt.Sprintf("Your trade for %s is complete: R %s.",
+			name, pdf.Grouped(pdf.Decimal(trade.TotalPrice)))
 
 		return s.notes.Notify(ctx, other, notifications.RequestAccepted,
 			"Trade complete", body, "/market/"+id)
