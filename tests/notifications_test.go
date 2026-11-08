@@ -114,6 +114,20 @@ func TestNotificationRequestActionsRetired(t *testing.T) {
 				t.Fatalf("outsider changed action notices: %s", got)
 			}
 
+			// Old wording must not determine whether a notice is retired.
+			for _, note := range [][2]string{
+				{"request_received", "Legacy request"},
+				{"request_accepted", "Offer ran out"},
+				{"request_rejected", "Offer declined"},
+				{"request_cancelled", "Request cancelled"},
+				{"message_received", "New message"},
+			} {
+				tradeExec(t, w.app, `INSERT INTO notifications (id,user_id,type,title,body,link)
+					VALUES ($1,$2,$3,$4,'Original body',$5)`, "legacy-"+note[0], w.buyer.id,
+					note[0], note[1], "/market/"+id)
+			}
+			tradeNote(t, w, outsider, "outsider-notice")
+
 			actor := w.seller
 			endpoint := action
 			if action == "complete" {
@@ -122,6 +136,15 @@ func TestNotificationRequestActionsRetired(t *testing.T) {
 				actor = w.buyer
 			}
 			tradeWant(t, "close request", actor.c.Do("POST", "/api/requests/"+id+"/"+endpoint, nil), 200)
+
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE id LIKE 'legacy-%' AND read AND body='Original body'`); got != "5" {
+				t.Fatalf("legacy actions were not retired intact: %s", got)
+			}
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE id='outsider-notice' AND NOT read`); got != "1" {
+				t.Fatalf("another owner's notice changed: %s", got)
+			}
 
 			for _, party := range []tradeUser{w.buyer, w.seller} {
 				page := party.c.Do("GET", "/api/notifications", nil)
@@ -178,5 +201,71 @@ func TestWithdrawnNoticeRetiredOnRejection(t *testing.T) {
 	if got := tradeText(t, w.app, `SELECT body FROM notifications
 		WHERE link=$1 AND title='Offer withdrawn'`, "/market/"+id); !strings.Contains(got, "Negotiation continues") {
 		t.Fatalf("stored text was rewritten: %s", got)
+	}
+}
+
+func TestNotificationDeclinedOfferRetired(t *testing.T) {
+	w := newTradeWorld(t)
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	tradeOffer(t, w.seller, id, w.material, "2", "9")
+	tradeWant(t, "decline", w.buyer.c.Do("POST", "/api/requests/"+id+"/decline", nil), 200)
+
+	unread := `SELECT count(*)::text FROM notifications
+		WHERE link=$1 AND type='request_rejected' AND title='Offer declined' AND NOT read`
+	if got := tradeText(t, w.app, unread, "/market/"+id); got != "1" {
+		t.Fatalf("declined notice should remain unread during negotiation: %s", got)
+	}
+
+	outsider := tradeNewUser(t, w.app, "business")
+	tradeWant(
+		t,
+		"outsider cannot reject",
+		outsider.c.Do("POST", "/api/requests/"+id+"/reject", nil),
+		404,
+	)
+	tradeWant(t, "reject", w.seller.c.Do("POST", "/api/requests/"+id+"/reject", nil), 200)
+	if got := tradeText(t, w.app, unread, "/market/"+id); got != "0" {
+		t.Fatalf("declined notice survived closure: %s", got)
+	}
+}
+
+func TestNotificationPrivacyErasureRetiresActions(t *testing.T) {
+	for _, erasedRole := range []string{"buyer", "seller"} {
+		t.Run(erasedRole, func(t *testing.T) {
+			w := newTradeWorld(t)
+			outsider := tradeNewUser(t, w.app, "business")
+			unrelated := tradeRequest(t, outsider, w.seller, w.stock)
+			id := tradeRequest(t, w.buyer, w.seller, w.stock)
+			tradeOffer(t, w.seller, id, w.material, "2", "9")
+			erased, survivor := w.buyer, w.seller
+			if erasedRole == "seller" {
+				erased, survivor = w.seller, w.buyer
+				stock := tradeStock(t, w.app, outsider.id, w.material, "10", "9")
+				unrelated = tradeRequest(t, w.buyer, outsider, stock)
+			}
+
+			tradeWant(
+				t,
+				"outsider cannot erase another user",
+				outsider.c.Do("DELETE", "/api/admin/users/"+erased.id, nil),
+				403,
+			)
+			tradeWant(t, "erase", erased.c.Do("POST", "/api/privacy/delete", map[string]any{
+				"password": goodPassword,
+			}), 200)
+
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE link=$1 AND NOT read`, "/market/"+id); got != "0" {
+				t.Fatalf("erased request still has unread actions: %s", got)
+			}
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE user_id=$1 AND title='Request cancelled' AND NOT read`, survivor.id); got != "1" {
+				t.Fatalf("cancellation notice lost: %s", got)
+			}
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE link=$1 AND NOT read`, "/market/"+unrelated); got != "1" {
+				t.Fatalf("unrelated request notice changed: %s", got)
+			}
+		})
 	}
 }

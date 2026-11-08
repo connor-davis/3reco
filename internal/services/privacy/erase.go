@@ -47,6 +47,10 @@ func (s *Service) Erase(ctx context.Context, actorID, id string) error {
 
 		// The other side lands on the page where their open requests are listed.
 		for _, request := range cancelled {
+			if err := s.notes.RequestEnded(ctx, request.RequestID); err != nil {
+				return err
+			}
+
 			link := "/market/outgoing"
 			if request.ErasedWasBuyer {
 				link = "/market/incoming"

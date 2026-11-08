@@ -93,8 +93,8 @@ func TestQARound5AExportFilenameAndDates(t *testing.T) {
 		t.Fatalf("filename: %v", got.Header)
 	}
 	rows := csvRows(t, w.seller.c, path)
-	if len(rows) != 2 || rows[1][2] != "2026-11-05" || rows[1][3] != "2026-11-05T01:30:00+02:00" {
-		t.Fatalf("SAST ISO dates: %v", rows)
+	if len(rows) != 2 || rows[1][2] != "2026-11-05" || rows[1][3] != "2026-11-05 01:30:00" {
+		t.Fatalf("SAST dates and times: %v", rows)
 	}
 }
 

@@ -33,7 +33,7 @@ func (s *Store) ExportUsers(ctx context.Context, role, like string, visit func([
 			return err
 		}
 
-		values[11] = registered.In(time.FixedZone("SAST", 7200)).Format(time.RFC3339)
+		values[11] = registered.In(time.FixedZone("SAST", 7200)).Format(time.DateTime)
 		if err := visit(values); err != nil {
 			return err
 		}

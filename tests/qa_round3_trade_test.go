@@ -307,7 +307,7 @@ func TestRound3HistoryAndExportFilters(t *testing.T) {
 		if _, err := time.Parse(time.DateOnly, row[2]); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := time.Parse(time.RFC3339, row[3]); err != nil {
+		if _, err := time.Parse(time.DateTime, row[3]); err != nil {
 			t.Fatal(err)
 		}
 	}

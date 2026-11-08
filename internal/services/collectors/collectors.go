@@ -341,7 +341,7 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				item.AreaCode = in.AreaCode
 			}
 
-			if err := validate(item); err != nil {
+			if err := validate(&item); err != nil {
 				return err
 			}
 

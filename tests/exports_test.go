@@ -12,7 +12,7 @@ import (
 )
 
 var exportHeader = []string{
-	"Transaction ID", "Transaction Type", "Transaction Date", "Recorded At (Date and Time)", "Collection Day",
+	"Transaction ID", "Transaction Type", "Transaction Date", "Recorded At (SAST)", "Collection Day",
 	"Items Count", "Materials", "Total Weight (kg)", "Total Price (R)", "Seller Name", "Seller Email",
 	"Seller Phone", "Seller Address", "Buyer Name", "Buyer Email", "Buyer Phone", "Buyer Address",
 	"Collector Payout Method", "Collector Payout Details",
@@ -47,6 +47,7 @@ func TestExportsScopeAndColumns(t *testing.T) {
 	tradeWant(t, "export fixture", collection, 200)
 	c2b := collection.Body["transaction_id"].(string)
 	tradeExec(t, w.app, `UPDATE transactions SET created_at='2026-11-04T23:30:00Z' WHERE id=$1`, id)
+	tradeExec(t, w.app, `UPDATE transactions SET created_at='2026-11-04T23:30:00Z' WHERE id=$1`, c2b)
 	tradeExec(t, w.app, `UPDATE transactions SET collection_day='2026-10-01' WHERE id=$1`, c2b)
 	tradeExec(t, w.app, `UPDATE users SET business_name='=SUM(1,2)',street_address=$2 WHERE id=$1`,
 		w.seller.id, "Street, \"quoted\"\nsecond line")
@@ -73,10 +74,15 @@ func TestExportsScopeAndColumns(t *testing.T) {
 		if !reflect.DeepEqual(rows[0], exportHeader) || len(rows) != test.count+1 {
 			t.Errorf("%s: %v", test.path, rows)
 		}
+		for _, row := range rows[1:] {
+			if row[3] != "2026-11-05 01:30:00" {
+				t.Errorf("%s: timestamp is not readable SAST: %v", test.path, row)
+			}
+		}
 	}
 
 	row := csvRows(t, w.seller.c, "/api/exports/sales")[1]
-	if row[0] != id || row[2] != "2026-11-05" || row[3] != "2026-11-05T01:30:00+02:00" ||
+	if row[0] != id || row[2] != "2026-11-05" || row[3] != "2026-11-05 01:30:00" ||
 		row[7] != "2.50" || row[8] != "20.33" || row[9] != "'=SUM(1,2)" ||
 		row[12] != "Street, \"quoted\"\nsecond line" ||
 		row[6] != "1. Copper, \"clean\"\nwire - 2.50 kg x R 8.13 = R 20.33" {
@@ -113,6 +119,8 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 		"items":       []map[string]any{tradeLine(w.material, "1", "8"), tradeLine(material, "2", "3")},
 	})
 	tradeWant(t, "multiple lines", result, 200)
+	tradeExec(t, w.app, `UPDATE transactions SET created_at='2026-11-04T23:30:00Z'
+		WHERE id=$1`, result.Body["transaction_id"])
 	rows := csvRows(t, w.seller.c, "/api/exports/sales?itemised=true")
 	header := append(append([]string{}, exportHeader[:6]...),
 		"Line No", "Material", "Line Weight (kg)", "Unit Price (R)", "Line Total (R)")
@@ -122,6 +130,9 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 		t.Fatalf("itemised CSV: %v", rows)
 	}
 	for _, row := range rows[1:] {
+		if row[3] != "2026-11-05 01:30:00" {
+			t.Fatalf("itemised timestamp is not readable SAST: %v", row)
+		}
 		if row[7] == "'@danger" && row[10] != "6.00" {
 			t.Fatal("wrong exact line total")
 		}
@@ -145,9 +156,10 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 		first_name='+formula',last_name='-formula' WHERE id=$1`, w.buyer.id,
 		testutil.Seal(t, "never-export-bank"), testutil.Seal(t, "never-export-id"))
 	tradeExec(t, w.app, `UPDATE users SET is_removed=true WHERE id=$1`, w.seller.id)
+	tradeExec(t, w.app, `UPDATE users SET created_at='2026-11-04T23:30:00Z' WHERE id=$1`, w.buyer.id)
 	rows = csvRows(t, admin.c, "/api/admin/exports/users")
 	want := []string{"Email", "Account Type", "First Name", "Last Name", "Business Name", "Business Reg. No.",
-		"Phone", "Street Address", "City", "Area Code", "Province", "Registered At"}
+		"Phone", "Street Address", "City", "Area Code", "Province", "Registered At (SAST)"}
 	if !reflect.DeepEqual(rows[0], want) {
 		t.Fatalf("user export columns: %v", rows[0])
 	}
@@ -157,6 +169,9 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 		}
 		if row[0] == w.buyer.email && (row[2] != "'+formula" || row[3] != "'-formula") {
 			t.Fatal("user formula guard missing")
+		}
+		if row[0] == w.buyer.email && row[11] != "2026-11-05 01:30:00" {
+			t.Fatalf("registration timestamp is not readable SAST: %v", row)
 		}
 	}
 }
