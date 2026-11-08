@@ -77,7 +77,6 @@ export function PrivacyPanel() {
         </DataState>
       </section>
       <section className="space-y-3">
-        <h3 className="font-medium">Download my data</h3>
         <p className="text-sm text-muted-foreground">
           Download your profile, trades, messages and other account records as a
           JSON file.
@@ -88,7 +87,7 @@ export function PrivacyPanel() {
           disabled={download.isPending}
           onClick={() => download.mutate()}
         >
-          {download.isPending ? 'Preparing download…' : 'Download my data'}
+          {download.isPending ? 'Preparing download…' : 'Download'}
         </Button>
         {download.isError && (
           <p role="alert" className="text-sm text-destructive">

@@ -189,7 +189,11 @@ export function InvoiceCard({
           ))}
         </ul>
         <p>Total {formatRand(requestTotal(request))}</p>
-        <p>The transaction and invoice are in your records.</p>
+        <p>
+          {user?.id === request.buyer.id || user?.id === request.seller.id
+            ? 'The transaction and invoice are in your records.'
+            : 'The transaction and invoice are in the trade records.'}
+        </p>
         {download.error && (
           <p role="alert" className="text-destructive">
             {download.error.message}

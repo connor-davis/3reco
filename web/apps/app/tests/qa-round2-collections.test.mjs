@@ -89,4 +89,12 @@ test('a price of R 0.01 saves, with a warning below the base price', () => {
 
 test('materials are sorted by name', () => {
   assert.match(source(dialogPath), /localeCompare/);
+  assert.match(
+    source('../src/routes/materials.tsx'),
+    /Listed by material name, A–Z/
+  );
+  assert.match(
+    source('../../../../internal/stores/materials/materials.go'),
+    /ORDER BY lower\(name\),id/
+  );
 });

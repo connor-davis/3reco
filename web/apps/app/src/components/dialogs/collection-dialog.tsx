@@ -99,6 +99,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     a.name.localeCompare(b.name)
   );
   const lines = watch('lines');
+  const validLines = lines.every((item) => line.safeParse(item).success);
   const total = lines.reduce(
     (sum, item) => sum + lineCents(item.price || '0', item.weight || '0'),
     0
@@ -229,7 +230,9 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
         </Button>
         <p className="text-right font-semibold">
           Collection total:{' '}
-          <span className="tabular-nums">{formatRand(total)}</span>
+          <span className="tabular-nums">
+            {validLines ? formatRand(total) : '-'}
+          </span>
         </p>
         {serverError && (
           <p role="alert" className="text-sm text-destructive">

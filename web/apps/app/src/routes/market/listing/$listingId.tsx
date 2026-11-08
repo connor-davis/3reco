@@ -234,7 +234,11 @@ function ListingDetail({ listing }: { listing: Listing }) {
             <p className="text-sm text-muted-foreground">
               {own
                 ? 'This is your own lot. Edit it from Stock.'
-                : 'Sign in as a business to request materials and use the cart.'}
+                : user
+                  ? user.role === 'admin' || user.role === 'staff'
+                    ? 'You can browse listings, but staff and administrators cannot request materials.'
+                    : 'Only business accounts can request materials and use the cart.'
+                  : 'Sign in as a business to request materials and use the cart.'}
             </p>
           )}
           {form.formState.errors.root?.message && (

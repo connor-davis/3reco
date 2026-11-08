@@ -69,10 +69,11 @@ func (records *Store) List(ctx context.Context, query paging.Query) ([]Material,
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT id,name,carbon_factor::text,gw_code,price::text,created_at
-		FROM materials WHERE ($1='' OR (created_at,id)<($2,$1)) AND ($4='' OR name ILIKE $4)
-		ORDER BY created_at DESC,id DESC LIMIT NULLIF($3,0)`,
+		FROM materials WHERE ($1='' OR (lower(name),id)>(
+			SELECT lower(name),id FROM materials WHERE id=$1
+		)) AND ($3='' OR name ILIKE $3)
+		ORDER BY lower(name),id LIMIT NULLIF($2,0)`,
 		query.ID,
-		query.At,
 		query.Size(),
 		query.Like,
 	)

@@ -21,13 +21,17 @@ const decimal = /^\d{1,12}([.,]\d{1,2})?$/;
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Enter the material name.'),
-  carbon_factor: z
-    .string()
-    .refine(
-      (value) => decimal.test(value.trim()),
-      'Use up to 2 decimals, for example 1.50.'
-    )
-    .refine((value) => /[1-9]/.test(value), 'Enter the kg CO₂ saved per kg.'),
+  carbon_factor: z.string().superRefine((value, ctx) => {
+    const text = value.trim();
+    const positive = /^\d+([.,]\d+)?$/.test(text) && /[1-9]/.test(text);
+    const message = !positive
+      ? 'Enter a number above 0.'
+      : !decimal.test(text)
+        ? 'Use up to 2 decimals, for example 1.50.'
+        : '';
+
+    if (message) ctx.addIssue({ code: 'custom', message });
+  }),
   gw_code: z.string().trim().min(1, 'Enter the GW code, for example GW13.'),
   price: z
     .string()

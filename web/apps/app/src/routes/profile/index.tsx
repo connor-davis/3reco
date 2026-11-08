@@ -125,10 +125,7 @@ function ProfilePage() {
             </>
           )}
           <TabsContent value="location">
-            <Section
-              title="Location"
-              description="Where materials are collected from."
-            >
+            <Section title="Location" description="Your address and area.">
               {profile && <LocationForm profile={profile} />}
             </Section>
           </TabsContent>
