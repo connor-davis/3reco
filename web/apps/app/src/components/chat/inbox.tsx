@@ -170,9 +170,11 @@ export function Inbox({
                       )}
                     </span>
                     <StatusBadge status={thread.status} />
-                    <span className="block text-xs text-muted-foreground">
-                      {threadSummary(thread, user?.id)}
-                    </span>
+                    {!admin && (
+                      <span className="block text-xs text-muted-foreground">
+                        {threadSummary(thread, user?.id)}
+                      </span>
+                    )}
                   </span>
                   {thread.unread_count > 0 && (
                     <Badge aria-label={`${thread.unread_count} unread`}>
