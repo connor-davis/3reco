@@ -202,9 +202,18 @@ func TestStockHoldsReleaseAndReplace(t *testing.T) {
 				}
 			}
 
-			holdCount(t, w, "active", "0")
+			available := "100"
+			if action == "withdraw" {
+				holdCount(t, w, "active", "1")
+				holdDecimal(t, tradeText(t, w.app, `SELECT weight::text FROM stock_holds
+					WHERE request_id=$1 AND status='active'`, id), "1")
+				available = "99"
+			} else {
+				holdCount(t, w, "active", "0")
+			}
+
 			holdDecimal(t, status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200).
-				Body["weight"], "100")
+				Body["weight"], available)
 		})
 	}
 }
@@ -313,7 +322,7 @@ func TestStockHoldsAcceptRollback(t *testing.T) {
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
 	tradeOffer(t, w.seller, id, w.material, "40", "9")
 	tradeExec(t, w.app, `ALTER TABLE notifications ADD CONSTRAINT fail_accept_note
-		CHECK (title<>'Offer accepted')`)
+		CHECK (title<>'Trade complete')`)
 
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 500)
