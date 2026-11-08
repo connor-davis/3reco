@@ -3,6 +3,7 @@
 package middleware
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -129,7 +130,7 @@ func SetSession(c fiber.Ctx, cfg config.Config, token string) {
 	}
 
 	for _, other := range others {
-		if other != token && len(tokens) < maxDevices {
+		if !slices.Contains(tokens, other) && len(tokens) < maxDevices {
 			tokens = append(tokens, other)
 		}
 	}
