@@ -53,6 +53,24 @@ function CartPage() {
   }, []);
   const [search, setSearch] = useState('');
   const stores = useCartStores();
+  const selectedCart = useCart(selectedSeller ?? '');
+  useEffect(() => {
+    if (
+      selectedSeller &&
+      selectedCart.isSuccess &&
+      !selectedCart.isFetching &&
+      selectedCart.data.items.length === 0
+    ) {
+      void navigate({ to: '/cart', search: {}, replace: true });
+    }
+  }, [
+    selectedSeller,
+    selectedCart.isSuccess,
+    selectedCart.isFetching,
+    selectedCart.data,
+    navigate,
+  ]);
+
   const sellerId = selectedSeller ?? stores.data?.items[0]?.id ?? '';
   const options =
     stores.data?.items

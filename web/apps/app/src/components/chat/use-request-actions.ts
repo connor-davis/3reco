@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -55,6 +55,7 @@ export function useStartChat() {
 
 export function useRequestActions(request: TradeRequest) {
   const send = useSendMessage(request.id);
+  const sending = useRef(false);
   const accept = useAcceptRequest(request.id);
   const decline = useRequestAction(request.id, 'decline');
   const cancel = useRequestAction(request.id, 'cancel');
@@ -88,7 +89,17 @@ export function useRequestActions(request: TradeRequest) {
     isPending: [send, accept, decline, cancel, reject, withdraw].some(
       (mutation) => mutation.isPending
     ),
-    send: (content: string) => run(() => send.mutateAsync({ content })),
+    send: async (content: string) => {
+      // React's pending state may not render before another submit arrives.
+      if (sending.current) return false;
+
+      sending.current = true;
+      try {
+        return await run(() => send.mutateAsync({ content }));
+      } finally {
+        sending.current = false;
+      }
+    },
     accept: () =>
       run(async () => {
         const result = await accept.mutateAsync({

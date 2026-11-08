@@ -302,7 +302,10 @@ test('expired offers keep the API conflict message and refresh the request', asy
   const invalidated = [];
   const idle = { isPending: false, mutateAsync: async () => ({}) };
   const hooks = load('./use-request-actions.ts', {
-    react: { useState: () => [null, (value) => errors.push(value)] },
+    react: {
+      useState: () => [null, (value) => errors.push(value)],
+      useRef: (value) => ({ current: value }),
+    },
     '@tanstack/react-router': { useNavigate: () => () => {} },
     '@tanstack/react-query': {
       useQueryClient: () => ({

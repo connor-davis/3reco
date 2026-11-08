@@ -243,7 +243,13 @@ function UsersPage() {
         <Button
           className="min-h-11"
           variant="outline"
-          disabled={!list.data?.has_more || list.isFetching || list.isError}
+          disabled={
+            shown.length === 0 ||
+            !list.data?.has_more ||
+            !list.data.next_cursor ||
+            list.isFetching ||
+            list.isError
+          }
           onClick={() => setCursor(list.data?.next_cursor ?? undefined)}
         >
           Next page
@@ -379,6 +385,8 @@ function PrivacyEvents() {
             name={row.original.subject_name}
             role={row.original.subject_role}
           />
+        ) : row.original.kind === 'export' ? (
+          'Many people (data download)'
         ) : (
           'No individual subject'
         ),
@@ -416,7 +424,11 @@ function PrivacyEvents() {
                     role={event.subject_role}
                   />
                 ) : (
-                  <p>No individual subject</p>
+                  <p>
+                    {event.kind === 'export'
+                      ? 'Many people (data download)'
+                      : 'No individual subject'}
+                  </p>
                 )}
                 <p>{formatDateTime(event.created_at)}</p>
               </CardContent>

@@ -17,7 +17,7 @@ export function exportPath(kind: ExportKind, params: ExportFilters = {}) {
 }
 function exportFilename(kind: ExportKind, params: ExportFilters) {
   const parts: string[] = ['3REco', kind];
-  if (params.type) parts.push(params.type);
+  if (params.type && kind !== 'collections') parts.push(params.type);
   if (params.itemised) parts.push('by-material');
   for (const bound of [params.from, params.to]) {
     if (bound)
