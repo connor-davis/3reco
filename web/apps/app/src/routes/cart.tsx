@@ -1,5 +1,11 @@
 import { toast } from 'sonner';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ShoppingCart, Store as StoreIcon } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -48,9 +54,12 @@ function CartPage() {
   const [search, setSearch] = useState('');
   const stores = useCartStores();
   const selectedCart = useCart(selectedSeller ?? '');
+  // Set while a sent request empties the cart, so we don't bounce to /cart.
+  const sending = useRef(false);
   useEffect(() => {
     if (
       selectedSeller &&
+      !sending.current &&
       selectedCart.isSuccess &&
       !selectedCart.isFetching &&
       selectedCart.data.items.length === 0
@@ -120,7 +129,7 @@ function CartPage() {
             </DataState>
           </div>
           {sellerId ? (
-            <SellerCart key={sellerId} sellerId={sellerId} />
+            <SellerCart key={sellerId} sellerId={sellerId} sending={sending} />
           ) : (
             <DataState
               isEmpty
@@ -137,7 +146,13 @@ function CartPage() {
   );
 }
 
-function SellerCart({ sellerId }: { sellerId: string }) {
+function SellerCart({
+  sellerId,
+  sending,
+}: {
+  sellerId: string;
+  sending: MutableRefObject<boolean>;
+}) {
   const cart = useCart(sellerId);
   const store = useStore(sellerId);
   return (
@@ -149,7 +164,13 @@ function SellerCart({ sellerId }: { sellerId: string }) {
       emptyText="Add materials from a listing to start a request."
       emptyAction={<LinkButton to="/market">Browse materials</LinkButton>}
     >
-      {cart.data && <CartForm sellerId={sellerId} items={cart.data.items} />}
+      {cart.data && (
+        <CartForm
+          sellerId={sellerId}
+          items={cart.data.items}
+          sending={sending}
+        />
+      )}
     </DataState>
   );
 }
@@ -176,9 +197,11 @@ type CartValues = z.infer<ReturnType<typeof createCartSchema>>;
 function CartForm({
   sellerId,
   items,
+  sending,
 }: {
   sellerId: string;
   items: CartItem[];
+  sending: MutableRefObject<boolean>;
 }) {
   const save = useSaveCart(sellerId);
   const cart = useCart(sellerId);
@@ -267,6 +290,7 @@ function CartForm({
       }
       if (sent.current) {
         const id = sent.current;
+        sending.current = true;
         await clear.mutateAsync();
         await navigate({
           to: '/messages/$requestId',
@@ -275,6 +299,7 @@ function CartForm({
         toast.success('Request sent. Stock is reserved for 48 hours.');
       }
     } catch (cause) {
+      sending.current = false;
       setError(
         cause instanceof Error ? cause.message : 'Could not update your cart.'
       );

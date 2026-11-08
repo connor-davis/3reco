@@ -156,7 +156,7 @@ export function MaterialDialog({ open, onOpenChange, material }: Props) {
         <DecimalField
           control={control}
           name="price"
-          label="Base price (R / kg)"
+          label="Base price"
           counter={priceCounter()}
         />
         {serverError && (

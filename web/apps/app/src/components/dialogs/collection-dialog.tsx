@@ -90,6 +90,8 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const [serverError, setServerError] = useState('');
   const { control, handleSubmit, watch, reset, formState } = useForm<Values>({
     resolver: zodResolver(schema),
+    // Say why a number is wrong when the user leaves the field, not only on save.
+    mode: 'onTouched',
     defaultValues: {
       collector_id: '',
       collection_day: today(),

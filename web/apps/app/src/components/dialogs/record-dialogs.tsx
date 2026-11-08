@@ -20,7 +20,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
 import {
   formatDate,
-  formatKg,
+  formatKgFixed,
   formatRand,
   formatRate,
   lineCents,
@@ -122,7 +122,7 @@ export function TransactionDialog({ record, onClose }: Props) {
                       {item.material_name}
                     </span>
                     <span className="text-muted-foreground">
-                      {formatKg(item.weight)} · {formatRate(item.price)}
+                      {formatKgFixed(item.weight)} kg · {formatRate(item.price)}
                     </span>
                   </span>
                   <span className="font-medium tabular-nums">
