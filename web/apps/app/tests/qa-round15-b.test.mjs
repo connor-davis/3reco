@@ -46,10 +46,9 @@ test('qa-round15 SN7: the Listed switch has a real label', () => {
   );
 });
 
-test('qa-round15 SN8: dashboard cards stretch to one height', () => {
+test('qa-round15 SN8 (reversed in round 19 S1): dashboard cards fit their content', () => {
   const index = source('routes/index.tsx');
-  assert.match(index, /grid gap-6 lg:grid-cols-2/);
-  assert.doesNotMatch(index, /grid items-start gap-6 lg:grid-cols-2/);
+  assert.match(index, /grid items-start gap-6 lg:grid-cols-2/);
 });
 
 test('qa-round15 SO2: the collector dashboard has one profile link', () => {

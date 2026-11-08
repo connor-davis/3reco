@@ -37,10 +37,20 @@ const schema = z.object({
   gw_code: z.string().trim().min(1, 'Enter the GW code, for example GW13.'),
   price: z
     .string()
-    .refine(
-      (value) => decimal.test(value.trim()) && toCents(value) > 0,
-      'Enter a price above R 0.00 with up to 2 decimals.'
-    )
+    .superRefine((value, ctx) => {
+      const text = value.trim();
+      const number = Number(text.replace(',', '.'));
+      const message =
+        text === '' || !Number.isFinite(number) || number <= 0
+          ? 'Enter a price above R 0.00.'
+          : !decimal.test(text)
+            ? 'Use up to 2 decimals.'
+            : toCents(text) <= 0
+              ? 'Enter a price above R 0.00.'
+              : '';
+
+      if (message) ctx.addIssue({ code: 'custom', message });
+    })
     .refine(
       (value) => toCents(value) <= 10000000,
       'Price must be R 100 000.00 per kg or less.'

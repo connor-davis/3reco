@@ -4,6 +4,7 @@ import { MessageSquare, Store as StoreIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
 import { ReviewDialog } from '@/components/dialogs/review-dialog';
+import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
@@ -48,8 +49,9 @@ function StorePage() {
       query={store}
       isEmpty={!store.data}
       icon={StoreIcon}
-      emptyTitle="Store not found"
-      emptyText="This store may no longer be available."
+      emptyTitle="This store is no longer on 3REco."
+      emptyText="Browse materials to find other stores."
+      emptyAction={<LinkButton to="/market">Browse materials</LinkButton>}
     >
       {store.data && (
         <>

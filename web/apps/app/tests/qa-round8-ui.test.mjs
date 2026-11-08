@@ -259,8 +259,8 @@ test('verify success confirms once and offers Sign in', () => {
 test('catalogue factors share a formatter and order is explained; row actions keep a stable width', () => {
   const materials = source('routes/materials.tsx');
   assert.match(materials, /Listed by material name, A–Z/);
-  assert.match(materials, /formatKgNumber\(row.original.carbon_factor\)/);
-  assert.match(materials, /formatKgNumber\(material.carbon_factor\)/);
+  assert.match(materials, /formatKgFixed\(row.original.carbon_factor\)/);
+  assert.match(materials, /formatKgFixed\(material.carbon_factor\)/);
   assert.equal(format.formatKgNumber('1.5000'), format.formatKgNumber('1.5'));
   const rows = source('routes/transactions/-components/record-list.tsx');
   assert.match(rows, /className="w-44 shrink-0"[\s\S]*?Invoice and receipts/);

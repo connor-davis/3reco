@@ -83,8 +83,6 @@ export function CounterpartyRows({
     : rows.reduce((sum, party) => sum + toCents(party.value), 0);
   return (
     <Panel
-      className="flex h-full flex-col"
-      contentClassName="flex flex-1 flex-col"
       title="Trading partners"
       description="Settled trades in this period, buying and selling"
     >
@@ -110,7 +108,7 @@ export function CounterpartyRows({
             </li>
           ))}
         </ul>
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">
               {plural(trades, 'trade')} · {formatRand(cents)}

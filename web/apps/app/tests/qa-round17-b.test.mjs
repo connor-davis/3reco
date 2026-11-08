@@ -11,7 +11,8 @@ test('C6: icon button tooltips open below, clear of table headers', () => {
 
 test('C7: chart ticks are spaced evenly', () => {
   const chart = source('routes/-dashboard/impact-chart.tsx');
-  assert.match(chart, /interval="equidistantPreserveStart"/);
+  assert.match(chart, /ticks=\{axisTicks\(/);
+  assert.match(chart, /interval=\{0\}/);
   assert.match(chart, /minTickGap=\{32\}/);
 });
 

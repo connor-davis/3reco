@@ -81,7 +81,7 @@ function RoleSelect({ user }: { user: AdminUser }) {
       <ConfirmDialog
         open={nextRole !== null}
         onOpenChange={(open) => !open && setNextRole(null)}
-        title={`Change ${user.name}'s role?`}
+        title={`Change the role of ${user.name}?`}
         description={`Change ${user.name} from ${roleLabel(user.role)} to ${roleLabel(nextRole)}? Their access will change straight away.`}
         confirmLabel="Change role"
         cancelLabel="Keep current role"

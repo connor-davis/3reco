@@ -89,7 +89,7 @@ test('the stock footer reserves hint space; offer errors use space only when sho
   for (const file of ['stock-dialog.tsx']) {
     const dialog = source(`components/dialogs/${file}`);
     assert.match(dialog, /className="h-10"/);
-    assert.equal((dialog.match(/className="min-h-32"/g) ?? []).length, 2);
+    assert.equal((dialog.match(/className="min-h-32"/g) ?? []).length, 0);
     assert.match(
       dialog,
       /<DialogFooter>\s*<Button[\s\S]*?<\/Button>\s*<\/DialogFooter>/

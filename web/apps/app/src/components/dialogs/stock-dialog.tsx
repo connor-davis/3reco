@@ -222,32 +222,28 @@ function StockForm({ open, onOpenChange, stock }: Props) {
             options={items.map((m) => ({ value: m.id, label: m.name }))}
           />
         )}
-        <div className="min-h-32">
-          <DecimalField
-            control={control}
-            name="weight"
-            label="Weight (kg)"
-            counter={{ ...weightCounter(), unit: undefined }}
-            description={
-              stock && stock.available_weight !== stock.weight
-                ? 'Some of this stock is held for open offers.'
-                : undefined
-            }
-          />
-        </div>
-        <div className="min-h-32">
-          <DecimalField
-            control={control}
-            name="price"
-            label="Price (R / kg)"
-            counter={{ ...priceCounter(base), unit: undefined }}
-            description={
-              base
-                ? `At least ${formatRate(base)}.`
-                : 'Pick a material to see its lowest price.'
-            }
-          />
-        </div>
+        <DecimalField
+          control={control}
+          name="weight"
+          label="Weight (kg)"
+          counter={{ ...weightCounter(), unit: undefined }}
+          description={
+            stock && stock.available_weight !== stock.weight
+              ? 'Some of this stock is held for open offers.'
+              : undefined
+          }
+        />
+        <DecimalField
+          control={control}
+          name="price"
+          label="Price (R / kg)"
+          counter={{ ...priceCounter(base), unit: undefined }}
+          description={
+            base
+              ? `At least ${formatRate(base)}.`
+              : 'Pick a material to see its lowest price.'
+          }
+        />
         <Field orientation="horizontal">
           <Switch
             id="stock-listed"

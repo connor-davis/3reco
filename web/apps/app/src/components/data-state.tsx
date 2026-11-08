@@ -50,12 +50,15 @@ export function DataState({
 }: DataStateProps) {
   const queries = query === undefined ? [] : [query].flat();
   const failed = queries.filter((item) => item.isError);
+  // A missing record is an empty page, not a failure worth retrying.
+  const notFound =
+    failed[0]?.error instanceof ApiError && failed[0].error.status === 404;
 
   if (queries.some((item) => item.isPending)) {
     return <div aria-busy="true">{skeleton ?? <RowsSkeleton />}</div>;
   }
 
-  if (failed.length > 0) {
+  if (failed.length > 0 && !notFound) {
     const error = failed[0]?.error;
 
     return (
@@ -81,7 +84,7 @@ export function DataState({
     );
   }
 
-  if (isEmpty) {
+  if (isEmpty || notFound) {
     return (
       <Empty className="border">
         <EmptyHeader>

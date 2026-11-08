@@ -19,6 +19,16 @@ export const axisDay = (day: string) => formatDate(day).replace(/ \d{4}$/, '');
 export const axisWeight = (value: number) =>
   `${new Intl.NumberFormat('en-ZA', { notation: 'compact', maximumFractionDigits: 1 }).format(value)} kg`;
 
+/** Every 7th day from the first, the first and the last day always, and no
+ * tick within 4 days of the last so two labels never collide. Computed from
+ * the data so the same data gives the same ticks on every load. */
+export function axisTicks(days: string[]): string[] {
+  const last = days.length - 1;
+  return days.filter(
+    (_, i) => i === 0 || i === last || (i % 7 === 0 && last - i >= 4)
+  );
+}
+
 export function ImpactChart({ series }: { series: Dashboard['series'] }) {
   // Chart geometry uses numbers; amounts shown as money never do.
   const points = series.map((day) => ({
@@ -42,7 +52,8 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
           tickMargin={8}
           tick={{ fill: 'var(--muted-foreground)' }}
           padding={{ left: 24, right: 24 }}
-          interval="equidistantPreserveStart"
+          ticks={axisTicks(points.map((p) => p.day))}
+          interval={0}
         />
         <YAxis
           tickLine={false}

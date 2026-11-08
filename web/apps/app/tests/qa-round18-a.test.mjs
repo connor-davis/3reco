@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { source } from './qa-round2-loader.mjs';
 
-test('qa-round18 L1: Trading partners fills its card and pins a summary to the bottom', () => {
+test('qa-round18 L1 (reversed in round 19 S1): Trading partners fits its content, summary under the list', () => {
   const panels = source('routes/-dashboard/panels.tsx');
-  assert.match(panels, /className="flex h-full flex-col"/);
-  assert.match(panels, /mt-auto/);
+  assert.doesNotMatch(panels, /h-full/);
+  assert.doesNotMatch(panels, /mt-auto/);
   // Exact: integer cents and counts summed from the same rows the list shows.
   assert.match(panels, /sum \+ toCents\(party\.value\)/);
   assert.match(panels, /sum \+ party\.count/);

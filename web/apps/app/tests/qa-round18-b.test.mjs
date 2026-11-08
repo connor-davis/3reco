@@ -199,7 +199,7 @@ test('A3: staff cannot change any saved bank or wallet control; contact remains 
 });
 
 test('A5: staff breadcrumb and browser title use the same unavailable label; admins keep the page title', () => {
-  const nav = compile('lib/nav.ts');
+  const nav = compile('lib/nav.ts', { '@/lib/access': access });
   for (const role of ['staff', 'admin', 'business', null]) {
     const { Topbar } = compile('components/shell/topbar.tsx', {
       '@tanstack/react-router': { useRouterState: () => '/admin/users' },
@@ -217,7 +217,7 @@ test('A5: staff breadcrumb and browser title use the same unavailable label; adm
   }
   assert.match(
     source('components/shell/app-shell.tsx'),
-    /pageTitleFor\(pathname, user\?\.role \?\? null\)/
+    /pageTitleFor\(pathname, role\)/
   );
 });
 
@@ -244,8 +244,7 @@ test('A7: removed sign-in has no trade tagline or unsupported contact instructio
       shell.props.description,
       reason === 'removed' ? '' : 'Sign in to trade, chat and track your stock.'
     );
-    if (reason === 'removed')
-      assert.equal(shell.props.feedback.text, 'This account was removed.');
+    if (reason === 'removed') assert.equal(shell.props.feedback, null);
   }
 });
 

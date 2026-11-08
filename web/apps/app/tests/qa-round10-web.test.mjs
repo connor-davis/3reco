@@ -260,7 +260,8 @@ test('add-account return path uses the safe destination and preserves the origin
 test('chart provides endpoint space and kg values; metric and privacy copy remain legible', () => {
   const chart = source('routes/-dashboard/impact-chart.tsx');
   assert.match(chart, /padding=\{\{ left: 24, right: 24 \}\}/);
-  assert.match(chart, /interval="equidistantPreserveStart"/);
+  assert.match(chart, /ticks=\{axisTicks\(/);
+  assert.match(chart, /interval=\{0\}/);
   assert.match(chart, /<YAxis[\s\S]*?tickFormatter=\{axisWeight\}/);
   assert.match(chart, /formatKg\(String\(value\)\)/);
   assert.match(source('components/stat-card.tsx'), /whitespace-nowrap/);

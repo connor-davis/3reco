@@ -20,7 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useDeleteMaterial, useMaterials } from '@/lib/api/materials';
 import type { Material } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
-import { formatKgNumber, formatRate, plural } from '@/lib/format';
+import { formatKgFixed, formatRate, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/materials')({
   component: () => (
@@ -87,7 +87,7 @@ function MaterialsPage() {
       header: 'Carbon factor (kg CO₂ / kg)',
       meta: { align: 'right' },
       enableSorting: false,
-      cell: ({ row }) => formatKgNumber(row.original.carbon_factor),
+      cell: ({ row }) => formatKgFixed(row.original.carbon_factor),
     },
     { accessorKey: 'gw_code', header: 'GW code', enableSorting: false },
     {
@@ -142,7 +142,7 @@ function MaterialsPage() {
               <CardContent className="space-y-2">
                 <p className="font-medium">{material.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {formatKgNumber(material.carbon_factor)} kg CO₂ / kg ·{' '}
+                  {formatKgFixed(material.carbon_factor)} kg CO₂ / kg ·{' '}
                   {material.gw_code}
                 </p>
                 <p className="text-sm">{formatRate(material.price)}</p>
