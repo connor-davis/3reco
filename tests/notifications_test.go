@@ -176,13 +176,13 @@ func TestNotificationRequestActionsRetired(t *testing.T) {
 			// Exactly one outcome notice is left for the other side, whatever page it links to.
 			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
 				WHERE user_id IN ($1,$2) AND NOT read AND NOT dismissed
-				AND title IN ('Offer accepted', 'Request rejected', 'Request cancelled')
+				AND title IN ('Trade complete', 'Request rejected', 'Request cancelled')
 				AND created_at > now() - interval '1 minute'`, w.buyer.id, w.seller.id); got != "1" {
 				t.Fatalf("want one outcome notice, got %s", got)
 			}
 			if action == "complete" {
 				if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
-					WHERE link=$1 AND title='Offer accepted' AND NOT read AND NOT dismissed`, "/market/"+id); got != "1" {
+					WHERE link=$1 AND title='Trade complete' AND NOT read AND NOT dismissed`, "/market/"+id); got != "1" {
 					t.Fatalf("completion notice lost: %s", got)
 				}
 			}

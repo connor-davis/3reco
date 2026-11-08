@@ -2,9 +2,12 @@ package requests
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/connor-davis/3reco/internal/services/notifications"
+	store "github.com/connor-davis/3reco/internal/stores/requests"
 )
 
 const offerHoldLifetime = 48 * time.Hour
@@ -18,6 +21,15 @@ func (s *Service) ExpireOffers(ctx context.Context) error {
 		}
 
 		for _, r := range expired {
+			r, err := s.store.Get(ctx, r.ID, false)
+			if err != nil {
+				return err
+			}
+
+			if err := s.reserveRequestedHolds(ctx, r); err != nil {
+				return err
+			}
+
 			for _, userID := range []string{r.Buyer.ID, r.Seller.ID} {
 				err := s.notes.Notify(
 					ctx,
@@ -35,4 +47,38 @@ func (s *Service) ExpireOffers(ctx context.Context) error {
 
 		return nil
 	})
+}
+
+func (s *Service) reserveRequestedHolds(ctx context.Context, r store.Request) error {
+	// Share creation's material order; ReserveHold locks each material's stock by ID.
+	items := slices.Clone(r.Items)
+	slices.SortFunc(items, func(a, b store.Item) int {
+		return strings.Compare(a.MaterialID, b.MaterialID)
+	})
+
+	for _, item := range items {
+		// Imported requests may have no requested terms to restore.
+		if item.RequestedWeight == nil {
+			continue
+		}
+
+		held, err := s.store.ReserveHold(
+			ctx,
+			r,
+			item.MaterialID,
+			*item.RequestedWeight,
+			offerHoldLifetime,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Stock can sell while the offer holds less than the original request.
+		// Keep negotiation open, but never leave a partially reserved request.
+		if !held {
+			return s.store.ReleaseHolds(ctx, r.ID)
+		}
+	}
+
+	return nil
 }

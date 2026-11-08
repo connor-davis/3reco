@@ -65,7 +65,11 @@ func TestMarketRequestTermsAndHolds(t *testing.T) {
 	}
 
 	marketExpire(t, w, id)
-	holdCount(t, w, "active", "0")
+	holdCount(t, w, "active", "1")
+	holdDecimal(t, tradeText(t, w.app, `SELECT weight::text FROM stock_holds
+		WHERE request_id=$1 AND status='active'`, id), "12.12")
+	holdDecimal(t, status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200).
+		Body["weight"], "87.88")
 	status(t, w.buyer.c.Do("POST", path+"/messages", map[string]any{"content": "Still negotiating"}), 200)
 	tradeOffer(t, w.buyer, id, w.material, "10", "9")
 	holdCount(t, w, "active", "1")
@@ -200,7 +204,13 @@ func TestMarketCounterAndCancellation(t *testing.T) {
 			if request.Body["buyer_confirmed_version"] != nil || request.Body["seller_confirmed_version"] != nil {
 				t.Fatal("old confirmations survived")
 			}
-			if action != "counter" {
+			if action == "withdraw" || action == "expiry" {
+				holdCount(t, w, "active", "1")
+				holdDecimal(t, tradeText(t, w.app, `SELECT weight::text FROM stock_holds
+					WHERE request_id=$1 AND status='active'`, id), "10")
+				holdDecimal(t, status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200).
+					Body["weight"], "90")
+			} else if action != "counter" {
 				holdCount(t, w, "active", "0")
 			}
 			if len(tradeItems(w.buyer.c.Do("GET", "/api/transactions", nil))) != 0 {

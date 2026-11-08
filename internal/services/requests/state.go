@@ -247,11 +247,10 @@ func (s *Service) Accept(
 			name = fmt.Sprintf("%d materials", len(lines))
 		}
 
-		body := fmt.Sprintf("Your offer for %s has been accepted. "+
-			"The transaction is complete.", name)
+		body := fmt.Sprintf("Your trade for %s is complete.", name)
 
 		return s.notes.Notify(ctx, other, notifications.RequestAccepted,
-			"Offer accepted", body, "/market/"+id)
+			"Trade complete", body, "/market/"+id)
 	})
 
 	return transactionID, err
@@ -369,6 +368,12 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 
 		if err := s.store.SetStatus(ctx, id, step.to); err != nil {
 			return err
+		}
+
+		if action == "withdraw" {
+			if err := s.reserveRequestedHolds(ctx, r); err != nil {
+				return err
+			}
 		}
 
 		// Whatever the move, the offer it answers is gone.
