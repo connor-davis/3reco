@@ -61,7 +61,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      <div className="max-h-80 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto p-4 [&_[data-slot=empty]]:p-6 [&_[data-slot=empty-header]]:min-w-0">
+      <div className="max-h-[min(28rem,60dvh)] min-h-0 min-w-0 overflow-x-hidden overflow-y-auto p-4 [&_[data-slot=empty]]:p-6 [&_[data-slot=empty-header]]:min-w-0">
         <DataState
           query={[notices, count]}
           isEmpty={shown.length === 0}
@@ -75,11 +75,11 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
             {shown.map((notice) => (
               <li key={notice.id}>
                 <Item size="sm">
-                  <ItemContent>
-                    <ItemTitle>
+                  <ItemContent className="min-w-0">
+                    <ItemTitle className="block w-full line-clamp-none break-words">
                       {!notice.read && (
                         <span
-                          className="size-2 rounded-full bg-primary"
+                          className="mr-2 inline-block size-2 rounded-full bg-primary"
                           aria-label="Unread"
                         />
                       )}
@@ -91,7 +91,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       {formatTime(notice.created_at)}
                     </span>
                   </ItemContent>
-                  <ItemActions className="flex-wrap justify-end">
+                  <ItemActions className="w-full flex-wrap justify-end">
                     {notice.link?.startsWith('/') &&
                       !notice.link.startsWith('//') && (
                         <Button

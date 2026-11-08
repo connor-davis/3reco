@@ -144,7 +144,7 @@ func TestQARound6AOfferNotificationsAndReviewBody(t *testing.T) {
 
 	unread := func(user tradeUser) string {
 		return tradeText(t, w.app, `SELECT count(*)::text FROM notifications
-			WHERE user_id=$1 AND NOT read AND title IN ('Offer received!','Please confirm the offer')`, user.id)
+			WHERE user_id=$1 AND NOT read AND title IN ('Offer received','Please confirm the offer')`, user.id)
 	}
 
 	if unread(w.buyer) != "1" {

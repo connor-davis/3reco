@@ -16,6 +16,7 @@ import (
 // Collector is an explicit collector DTO. Services remove private fields when access is unprivileged.
 type Collector struct {
 	ID                    string    `json:"id"`
+	CanEdit               bool      `json:"can_edit"`
 	Name                  string    `json:"name"`
 	Email                 string    `json:"email,omitempty"`
 	Phone                 string    `json:"phone,omitempty"`

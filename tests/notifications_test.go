@@ -96,3 +96,63 @@ func TestNotificationsAccess(t *testing.T) {
 		tradeWant(t, "anonymous "+call[0]+" "+call[1], anon.Do(call[0], call[1], nil), 401)
 	}
 }
+
+func TestNotificationRequestActionsRetired(t *testing.T) {
+	for _, action := range []string{"complete", "reject", "cancel"} {
+		t.Run(action, func(t *testing.T) {
+			w := newTradeWorld(t)
+			outsider := tradeNewUser(t, w.app, "business")
+			id := tradeRequest(t, w.buyer, w.seller, w.stock)
+			unrelated := tradeRequest(t, w.buyer, w.seller, w.stock)
+			tradeOffer(t, w.seller, unrelated, w.material, "2", "9")
+			tradeOffer(t, w.seller, id, w.material, "2", "9")
+			tradeWant(t, "first confirmation", w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+
+			tradeWant(t, "outsider cannot close", outsider.c.Do("POST", "/api/requests/"+id+"/cancel", nil), 404)
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE link=$1 AND NOT read`, "/market/"+id); got != "3" {
+				t.Fatalf("outsider changed action notices: %s", got)
+			}
+
+			actor := w.seller
+			endpoint := action
+			if action == "complete" {
+				endpoint = "accept"
+			} else if action == "cancel" {
+				actor = w.buyer
+			}
+			tradeWant(t, "close request", actor.c.Do("POST", "/api/requests/"+id+"/"+endpoint, nil), 200)
+
+			for _, party := range []tradeUser{w.buyer, w.seller} {
+				page := party.c.Do("GET", "/api/notifications", nil)
+				tradeWant(t, "participant notices", page, 200)
+				for _, value := range tradeItems(page) {
+					note := value.(map[string]any)
+					if note["link"] != "/market/"+id {
+						continue
+					}
+					title := note["title"].(string)
+					if strings.Contains(title, "!") {
+						t.Fatalf("exclamation in notification title: %v", note)
+					}
+					if title == "Offer received" || title == "Please confirm the offer" || title == "New request received" {
+						if note["read"] != true {
+							t.Fatalf("closed request still has an unread action: %v", note)
+						}
+					}
+				}
+			}
+
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE link=$1 AND NOT read`, "/market/"+unrelated); got != "2" {
+				t.Fatalf("unrelated notices changed: %s", got)
+			}
+			if action == "complete" {
+				if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+					WHERE link=$1 AND title='Offer accepted' AND NOT read AND NOT dismissed`, "/market/"+id); got != "1" {
+					t.Fatalf("completion notice lost: %s", got)
+				}
+			}
+		})
+	}
+}

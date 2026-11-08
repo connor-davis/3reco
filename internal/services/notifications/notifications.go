@@ -37,7 +37,13 @@ func (s *Service) Notify(ctx context.Context, userID, kind, title, body, link st
 // OffersEnded marks a request's offer messages read, in the same transaction
 // as the change that ended the request.
 func (s *Service) OffersEnded(ctx context.Context, requestID string) error {
-	return s.store.MarkOffersRead(ctx, "/market/"+requestID)
+	return s.store.MarkOffersRead(ctx, "/market/"+requestID, false)
+}
+
+// RequestEnded retires action notices for a closed request, retaining their history links.
+// Call before adding the informational completion notice in the same transaction.
+func (s *Service) RequestEnded(ctx context.Context, requestID string) error {
+	return s.store.MarkOffersRead(ctx, "/market/"+requestID, true)
 }
 
 // List returns one page of the caller's messages.

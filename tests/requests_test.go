@@ -81,6 +81,22 @@ func TestRequestOfferAcceptFlow(t *testing.T) {
 	tradeWant(t, "second accept", w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 409)
 }
 
+func TestRequestNotificationRateFormat(t *testing.T) {
+	w := newTradeWorld(t)
+	tradeExec(t, w.app, `UPDATE stock SET price=22.5 WHERE id=$1`, w.stock)
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	page := w.seller.c.Do("GET", "/api/notifications", nil)
+	tradeWant(t, "seller notification", page, 200)
+	for _, value := range tradeItems(page) {
+		note := value.(map[string]any)
+		if note["link"] == "/market/"+id && strings.Contains(note["body"].(string), "R 22.50 / kg") {
+			return
+		}
+	}
+
+	t.Fatalf("missing formatted rate: %s", page.Raw)
+}
+
 func TestRequestTransitions(t *testing.T) {
 	w := newTradeWorld(t)
 

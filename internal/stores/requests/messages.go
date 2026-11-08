@@ -68,7 +68,7 @@ func (s *Store) Messages(
 	return out, rows.Err()
 }
 
-// InsertRequestEvent records a request creation as a system line, unread by the seller.
+// InsertRequestEvent records a request action as a system line, unread by the other side.
 func (s *Store) InsertRequestEvent(ctx context.Context, requestID, buyerID, content string) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `
 		INSERT INTO transaction_request_messages (id, request_id, sender_id, content, system)

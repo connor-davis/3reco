@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"slices"
 	"strings"
 	"time"
@@ -235,11 +236,16 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 				return apperr.Conflict("Insufficient available stock for this request.")
 			}
 
+			price, ok := new(big.Rat).SetString(*item.RequestedPrice)
+			if !ok {
+				return errors.New("stored request price is invalid")
+			}
+
 			term := fmt.Sprintf(
-				"%s: %s kg at R%s/kg",
+				"%s: %s kg at R %s / kg",
 				item.MaterialName,
 				*item.RequestedWeight,
-				*item.RequestedPrice,
+				price.FloatString(2),
 			)
 			terms = append(terms, term)
 		}

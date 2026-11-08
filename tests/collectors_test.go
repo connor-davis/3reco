@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -325,10 +326,71 @@ func TestCollectorStatsPhoneLeak(t *testing.T) {
 
 	for _, client := range []*testutil.Client{creator, admin, staff} {
 		result := status(t, client.Do("GET", path, nil), 200)
+		collector := result.Body["collector"].(map[string]any)
+		branch := "123456"
+		if client == staff {
+			branch = "******3456"
+		}
+		if collector["bank_branch_code"] != branch || collector["can_edit"] != true {
+			t.Fatalf("stats collector privacy: %v", collector)
+		}
+
 		totals := result.Body["totals"].(map[string]any)
 		if totals["total_revenue"] != "10.123456789" || totals["transaction_count"] != float64(1) ||
 			totals["total_volume"] != "3.50" || result.Body["carbon_savings"] != "7.00" {
 			t.Fatalf("stats: %s", result.Raw)
 		}
+	}
+}
+
+func TestCollectorEditScopeAndBranchPrivacy(t *testing.T) {
+	app := testutil.Server(t)
+	owner, _ := domainUser(t, app, "business")
+	other, _ := domainUser(t, app, "business")
+	staff, _ := domainUser(t, app, "staff")
+	id := status(t, owner.Do("POST", "/api/collectors", collectorBody(domainPhone())), 200).Body["id"].(string)
+
+	for _, viewer := range []struct {
+		client  *testutil.Client
+		canEdit bool
+		branch  string
+	}{{owner, true, "123456"}, {other, false, ""}, {staff, true, "******3456"}} {
+		for _, path := range []string{"/api/collectors/" + id, "/api/collectors", "/api/collectors/selection"} {
+			response := status(t, viewer.client.Do("GET", path, nil), 200)
+			row := response.Body
+			if path == "/api/collectors" {
+				row = pageItems(t, response)[0]
+			} else if path == "/api/collectors/selection" {
+				var selection []map[string]any
+				if err := json.Unmarshal(response.Raw, &selection); err != nil {
+					t.Fatal(err)
+				}
+				row = selection[0]
+			}
+
+			if row["can_edit"] != viewer.canEdit {
+				t.Fatalf("incorrect edit permission: %v", row)
+			}
+			branch, _ := row["bank_branch_code"].(string)
+			if branch != viewer.branch {
+				t.Fatalf("incorrect branch visibility: %v", row)
+			}
+			for _, key := range []string{"created_by_user_id", "created_by_business_id"} {
+				if _, exists := row[key]; exists {
+					t.Fatalf("creator id exposed: %s", key)
+				}
+			}
+		}
+	}
+
+	status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_branch_code": "654321"}), 404)
+	status(t, staff.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_branch_code": "654321"}), 403)
+	status(t, staff.Do("PATCH", "/api/collectors/"+id, map[string]any{
+		"bank_branch_code": "******3456", "bank_account_number": "******6789", "city": "Durban",
+	}), 200)
+	status(t, staff.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "New name"}), 200)
+	row := status(t, owner.Do("GET", "/api/collectors/"+id, nil), 200).Body
+	if row["bank_branch_code"] != "123456" || row["bank_account_number"] != "123456789" || row["city"] != "Durban" {
+		t.Fatalf("staff patch damaged payout or contact: %v", row)
 	}
 }

@@ -95,7 +95,7 @@ test('F20: the chart axis drops the year, the tooltip keeps it', () => {
 
 test('F1: the notification list scrolls inside a bounded box', () => {
   const src = text('../src/components/shell/notification-tray-list.tsx');
-  assert.match(src, /max-h-80[^"]*overflow-y-auto/);
+  assert.match(src, /max-h-\[min\(28rem,60dvh\)\][^"]*overflow-y-auto/);
   assert.match(src, /overflow-x-hidden/);
 });
 

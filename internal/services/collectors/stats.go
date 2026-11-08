@@ -38,6 +38,7 @@ func (service *Service) Stats(ctx context.Context, user auth.User, phone string)
 	}
 
 	result, err := service.store.Stats(ctx, item)
+	result.Collector = redact(user, result.Collector, false)
 
 	return &result, err
 }

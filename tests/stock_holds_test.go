@@ -313,13 +313,17 @@ func TestStockHoldsAcceptRollback(t *testing.T) {
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
 	tradeOffer(t, w.seller, id, w.material, "40", "9")
 	tradeExec(t, w.app, `ALTER TABLE notifications ADD CONSTRAINT fail_accept_note
-		CHECK (title<>'Offer accepted!')`)
+		CHECK (title<>'Offer accepted')`)
 
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 500)
 	holdCount(t, w, "active", "1")
 	holdCount(t, w, "consumed", "0")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "100")
+	if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+		WHERE link=$1 AND NOT read`, "/market/"+id); got != "3" {
+		t.Fatalf("failed settlement retired action notices: %s", got)
+	}
 	if got := tradeText(t, w.app, `SELECT count(*)::text FROM transactions`); got != "1" {
 		t.Fatalf("failed settlement should retain one pending transaction: %s", got)
 	}

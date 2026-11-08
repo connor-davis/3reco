@@ -131,3 +131,50 @@ func TestMessagesNewestPageThenOlder(t *testing.T) {
 		t.Fatalf("got %d messages, want 75", count)
 	}
 }
+
+func TestInboxOfferAndCounterActivity(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	stranger := tradeNewUser(t, w.app, "business")
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	tradeWant(t, "old message", tradeSay(t, w.buyer, id, "Old preview"), 200)
+	newer := tradeRequest(t, w.buyer, w.seller, w.stock)
+
+	for i, actor := range []tradeUser{w.seller, w.buyer} {
+		tradeOffer(t, actor, id, w.material, "2", "9")
+		for _, inbox := range []struct {
+			user tradeUser
+			path string
+		}{{w.buyer, "/api/messages/inbox"}, {w.seller, "/api/messages/inbox"}, {admin, "/api/messages/all"}} {
+			page := inbox.user.c.Do("GET", inbox.path+"?limit=1", nil)
+			tradeWant(t, "latest event page", page, 200)
+			rows := tradeItems(page)
+			if len(rows) != 1 || page.Body["has_more"] != true {
+				t.Fatalf("bad activity page: %s", page.Raw)
+			}
+			row := rows[0].(map[string]any)
+			message := row["latest_message"].(map[string]any)
+			name := tradeText(t, w.app, `SELECT business_name FROM users WHERE id=$1`, actor.id)
+			want := name + " made an offer for Glass."
+			if i == 1 {
+				want = name + " made a counter-offer for Glass."
+			}
+			if row["request_id"] != id || message["system"] != true || message["content"] != want ||
+				message["sender_id"] != actor.id || row["activity_at"] != message["created_at"] {
+				t.Fatalf("offer preview/time stale: %v", row)
+			}
+
+			cursor := url.QueryEscape(page.Body["next_cursor"].(string))
+			older := inbox.user.c.Do("GET", inbox.path+"?limit=1&cursor="+cursor, nil)
+			tradeWant(t, "older activity page", older, 200)
+			if items := tradeItems(older); len(items) != 1 || items[0].(map[string]any)["request_id"] != newer {
+				t.Fatalf("activity cursor duplicated or skipped: %s", older.Raw)
+			}
+		}
+	}
+
+	if rows := tradeItems(stranger.c.Do("GET", "/api/messages/inbox?filter=offers", nil)); len(rows) != 0 {
+		t.Fatalf("stranger saw offer events: %v", rows)
+	}
+	tradeWant(t, "stranger event history", stranger.c.Do("GET", "/api/requests/"+id+"/messages", nil), 404)
+}
