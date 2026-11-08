@@ -18,6 +18,7 @@ import (
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/transactions"
+	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	store "github.com/connor-davis/3reco/internal/stores/requests"
 )
 
@@ -175,6 +176,7 @@ type CreateItem struct {
 
 // CreateInput is a new request: who sells, and which of their stock rows.
 type CreateInput struct {
+	FromCart bool         `json:"from_cart"`
 	SellerID string       `json:"seller_id"`
 	Items    []CreateItem `json:"items"`
 }
@@ -185,13 +187,40 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 		return "", apperr.BadRequest("You cannot request your own listing.", nil)
 	}
 
-	if len(in.Items) == 0 || len(in.Items) > maxRequestItems {
+	if (!in.FromCart && len(in.Items) == 0) || len(in.Items) > maxRequestItems {
 		return "", apperr.Field("items", "Pick between 1 and 50 listings.")
 	}
 
 	id := database.NewID()
 
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
+		if in.FromCart {
+			cart, err := marketstore.New(s.db).Cart(ctx, user.ID, in.SellerID)
+			if err != nil {
+				return err
+			}
+
+			materials := make(map[string]bool, len(cart.Items))
+			for _, item := range cart.Items {
+				materials[item.MaterialID] = true
+			}
+
+			for _, item := range in.Items {
+				if !materials[item.MaterialID] {
+					return apperr.Conflict("Your cart changed. Check it and send again.")
+				}
+				delete(materials, item.MaterialID)
+			}
+
+			if len(materials) != 0 {
+				return apperr.Conflict("Your cart changed. Check it and send again.")
+			}
+		}
+
+		if len(in.Items) == 0 {
+			return apperr.Field("items", "Pick between 1 and 50 listings.")
+		}
+
 		active, err := s.store.ActiveUser(ctx, in.SellerID)
 		if err != nil {
 			return err

@@ -12,13 +12,7 @@ import { DecimalField } from '@/components/form-fields';
 import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import {
   useCart,
   useCartStores,
@@ -155,13 +149,7 @@ function SellerCart({ sellerId }: { sellerId: string }) {
       emptyText="Add materials from a listing to start a request."
       emptyAction={<LinkButton to="/market">Browse materials</LinkButton>}
     >
-      {cart.data && (
-        <CartForm
-          sellerId={sellerId}
-          name={store.data?.name ?? 'Store'}
-          items={cart.data.items}
-        />
-      )}
+      {cart.data && <CartForm sellerId={sellerId} items={cart.data.items} />}
     </DataState>
   );
 }
@@ -187,19 +175,17 @@ type CartValues = z.infer<ReturnType<typeof createCartSchema>>;
 
 function CartForm({
   sellerId,
-  name,
   items,
 }: {
   sellerId: string;
-  name: string;
   items: CartItem[];
 }) {
   const save = useSaveCart(sellerId);
+  const cart = useCart(sellerId);
   const clear = useClearCart(sellerId);
   const create = useCreateRequest();
   const navigate = useNavigate();
-  // Saving invalidates the cart. Keep the form mounted until the whole action
-  // completes so a successful request cannot be submitted a second time.
+  // Keep the created request across retries if clearing the cart fails.
   const sent = useRef<string | null>(null);
   const availability = useRef(new Map<string, string | null>());
   const validateLine = useCallback((id: string, problem: string | null) => {
@@ -224,6 +210,16 @@ function CartForm({
     },
   });
   const fields = useFieldArray({ control: form.control, name: 'items' });
+  const { reset } = form;
+  useEffect(() => {
+    reset({
+      items: items.map((item) => ({
+        stock_id: item.stock_id,
+        material_id: item.material_id,
+        weight: item.weight ?? '',
+      })),
+    });
+  }, [items, reset]);
   const values = form.watch('items');
   const total = values.reduce(
     (sum, item) =>
@@ -257,10 +253,10 @@ function CartForm({
         weight: item.weight.trim().replace(',', '.'),
       }));
       if (!sent.current) {
-        await save.mutateAsync({ items: clean });
         sent.current = (
           await create.mutateAsync({
             seller_id: sellerId,
+            from_cart: true,
             items: clean.map(({ material_id, stock_id, weight }) => ({
               material_id,
               stock_id,
@@ -282,6 +278,12 @@ function CartForm({
       setError(
         cause instanceof Error ? cause.message : 'Could not update your cart.'
       );
+      if (
+        cause instanceof Error &&
+        cause.message === 'Your cart changed. Check it and send again.'
+      ) {
+        await cart.refetch();
+      }
     } finally {
       setBusy(false);
     }
@@ -291,14 +293,14 @@ function CartForm({
     setBusy(true);
     setError(null);
     try {
-      const next = values.filter((_, position) => position !== index);
+      const removedId = values[index].stock_id;
+      const next = items.filter((item) => item.stock_id !== removedId);
       await save.mutateAsync({
         items: next.map((item) => ({
           ...item,
-          weight: item.weight.trim().replace(',', '.'),
+          weight: (item.weight ?? '').trim().replace(',', '.'),
         })),
       });
-      fields.remove(index);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -312,9 +314,6 @@ function CartForm({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{name}</CardTitle>
-      </CardHeader>
       <CardContent>
         <p className="mb-4 text-sm text-muted-foreground">
           Your cart keeps these quantities. Sending your request reserves the

@@ -186,6 +186,13 @@ func TestReceiptRemove(t *testing.T) {
 	staff := tradeNewUser(t, w.app, "staff")
 	admin := tradeNewUser(t, w.app, "admin")
 
+	for _, caller := range []tradeUser{w.buyer, w.seller, admin, staff} {
+		detail := status(t, caller.c.Do("GET", "/api/transactions/"+id, nil), 200)
+		if detail.Body["can_remove_receipts"] != (caller.id != staff.id) {
+			t.Fatalf("receipt permission for %s: %s", caller.id, detail.Raw)
+		}
+	}
+
 	upload := func(seed byte, by tradeUser) string {
 		got := uploadImage(t, w.app, by.c, path, receiptImage(seed))
 		tradeWant(t, "upload", got, 200)
@@ -209,12 +216,12 @@ func TestReceiptRemove(t *testing.T) {
 
 	// Each allowed role removes one receipt: the buyer, the seller who
 	// uploaded it, and an admin.
-	tradeWant(t, "buyer", w.buyer.c.Do("DELETE", first, nil), 204)
+	tradeWant(t, "buyer", w.buyer.c.Do("DELETE", first, nil), 200)
 	tradeWant(t, "gone", w.buyer.c.Do("GET", first, nil), 404)
 	tradeWant(t, "twice", w.buyer.c.Do("DELETE", first, nil), 404)
-	tradeWant(t, "seller", w.seller.c.Do("DELETE", upload(2, w.buyer), nil), 204)
-	tradeWant(t, "uploader", w.buyer.c.Do("DELETE", upload(3, w.buyer), nil), 204)
-	tradeWant(t, "admin", admin.c.Do("DELETE", upload(4, w.seller), nil), 204)
+	tradeWant(t, "seller", w.seller.c.Do("DELETE", upload(2, w.buyer), nil), 200)
+	tradeWant(t, "uploader", w.buyer.c.Do("DELETE", upload(3, w.buyer), nil), 200)
+	tradeWant(t, "admin", admin.c.Do("DELETE", upload(4, w.seller), nil), 200)
 
 	if count := objectCount(t, w.app, "receipts/"); count != 0 {
 		t.Fatalf("removed receipts left %d objects, want 0", count)

@@ -209,6 +209,7 @@ export interface TradeRequest {
   updated_at: string;
 }
 export interface RequestInput {
+  from_cart?: boolean;
   seller_id: string;
   items: { material_id: string; stock_id: string; weight: Decimal }[];
 }
@@ -266,6 +267,7 @@ export interface TransactionTotals {
   value: string;
 }
 export interface Transaction {
+  can_remove_receipts: boolean;
   status: 'pending' | 'complete' | 'cancelled';
   request_id: string | null;
   id: string;

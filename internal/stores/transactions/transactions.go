@@ -41,20 +41,21 @@ type Receipt struct {
 // Transaction is a trade as its participants see it. It never holds the
 // collector snapshot, the invoice key or the upload slots.
 type Transaction struct {
-	ID             string         `json:"id"`
-	Type           string         `json:"type"`
-	Status         string         `json:"status"`
-	RequestID      *string        `json:"request_id"`
-	Seller         database.Party `json:"seller"`
-	Buyer          database.Party `json:"buyer"`
-	TotalPrice     string         `json:"total_price"`
-	CollectionDay  *string        `json:"collection_day"`
-	CollectionDate *time.Time     `json:"collection_date"`
-	EffectiveAt    time.Time      `json:"effective_at"`
-	CreatedAt      time.Time      `json:"created_at"`
-	InvoiceNumber  string         `json:"invoice_number"`
-	Items          []Item         `json:"items"`
-	Receipts       []Receipt      `json:"receipts"`
+	CanRemoveReceipts bool           `json:"can_remove_receipts"`
+	ID                string         `json:"id"`
+	Type              string         `json:"type"`
+	Status            string         `json:"status"`
+	RequestID         *string        `json:"request_id"`
+	Seller            database.Party `json:"seller"`
+	Buyer             database.Party `json:"buyer"`
+	TotalPrice        string         `json:"total_price"`
+	CollectionDay     *string        `json:"collection_day"`
+	CollectionDate    *time.Time     `json:"collection_date"`
+	EffectiveAt       time.Time      `json:"effective_at"`
+	CreatedAt         time.Time      `json:"created_at"`
+	InvoiceNumber     string         `json:"invoice_number"`
+	Items             []Item         `json:"items"`
+	Receipts          []Receipt      `json:"receipts"`
 }
 
 // Scope says which rows a list may return. Each one is a fixed SQL clause on

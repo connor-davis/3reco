@@ -63,5 +63,5 @@ func (h *Handler) receiptRemove(c fiber.Ctx) error {
 		return err
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(fiber.Map{"ok": true})
 }

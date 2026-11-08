@@ -172,9 +172,7 @@ export function TransactionDialog({ record, onClose }: Props) {
                         </Button>
                         {user &&
                           (receipt.uploaded_by === user.id ||
-                            shown.buyer.id === user.id ||
-                            shown.seller.id === user.id ||
-                            user.role === 'admin') && (
+                            shown.can_remove_receipts) && (
                             <Button
                               variant="outline"
                               size="sm"
