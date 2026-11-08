@@ -182,7 +182,11 @@ function Dashboard() {
             >
               <div className="grid gap-6 lg:grid-cols-2">
                 <RecentActivity collector={collector} />
-                <CounterpartyRows rows={dashboard.counterparties} />
+                <CounterpartyRows
+                  rows={dashboard.counterparties}
+                  tradesTo={collector ? '/transactions/sales' : '/transactions'}
+                  platformTotals={staff ? dashboard.totals : undefined}
+                />
                 <MaterialsPanel series={dashboard.series} />
               </div>
             </Section>

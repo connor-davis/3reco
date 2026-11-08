@@ -83,7 +83,11 @@ function CollectorsPage() {
   // Admin and staff see everyone's collectors, so the page is not "yours".
   const directory = isStaffRole(user?.role);
   const [query, setQuery] = useState('');
-  const pager = usePager(50, { q: useDebounced(query.trim(), 150) });
+  const [desc, setDesc] = useState(false);
+  const pager = usePager(50, {
+    q: useDebounced(query.trim(), 150),
+    order: desc ? 'desc' : undefined,
+  });
   const list = useCollectors(pager.params);
   const [editing, setEditing] = useState<Collector | undefined>();
   const [formOpen, setFormOpen] = useState(false);
@@ -129,8 +133,8 @@ function CollectorsPage() {
     {
       accessorKey: 'name',
       header: 'Collector',
-      // The server sorts A to Z and nothing else, so the header is not a button.
-      enableSorting: false,
+      // The server sorts the whole list by name, so the header is a button.
+      enableSorting: true,
       meta: { sticky: 'left' },
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
@@ -232,6 +236,7 @@ function CollectorsPage() {
         <DataTable
           columns={columns}
           data={shown}
+          serverSort={{ id: 'name', desc, onChange: setDesc }}
           renderCard={(collector) => (
             <Card size="sm">
               <CardContent className="space-y-2">
@@ -256,7 +261,7 @@ function CollectorsPage() {
           footer={
             <span>
               {total !== undefined && `${plural(total, 'collector')} · `}
-              Sorted A to Z
+              {desc ? 'Sorted Z to A' : 'Sorted A to Z'}
             </span>
           }
         />

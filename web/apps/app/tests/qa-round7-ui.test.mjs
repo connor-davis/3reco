@@ -124,4 +124,5 @@ test('qa-round7: an offer above the requested kg gets a hint, not a block', () =
 
 test('qa-round7: Trading partners stretches beside Recent conversations (round 15)', () => {
   assert.match(source('routes/index.tsx'), /grid gap-6 lg:grid-cols-2/);
+  assert.doesNotMatch(source('routes/index.tsx'), /items-start/);
 });

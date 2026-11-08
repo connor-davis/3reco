@@ -170,6 +170,9 @@ func TestRound13TradeCompleteNoticeHasTerms(t *testing.T) {
 				name = "1 kg " + first["material_name"].(string)
 			}
 			total := "275.00"
+			if count == 1 {
+				name += " at R 22.00 / kg"
+			}
 			if count > 1 {
 				name += " and 2 more"
 				total = "291.00"
