@@ -17,6 +17,18 @@ import (
 	store "github.com/connor-davis/3reco/internal/stores/stock"
 )
 
+// MaxWeightKg is the maximum weight entered on a stock or collection line.
+const MaxWeightKg = 1000000
+
+// MaxPricePerKg is the maximum price entered per kg.
+const MaxPricePerKg = 100000
+
+// WeightLimitMessage explains the weight entry cap.
+const WeightLimitMessage = "Weight must be 1 000 000 kg or less."
+
+// PriceLimitMessage explains the price entry cap.
+const PriceLimitMessage = "Price must be R 100 000.00 per kg or less."
+
 // Service owns stock rules and transaction boundaries.
 type Service struct {
 	db    *database.DB
@@ -81,8 +93,8 @@ func validate(item store.Item, newWeight, newPrice bool) error {
 	if _, fraction, _ := strings.Cut(item.Weight, "."); newWeight && len(fraction) > 2 {
 		return apperr.Field("weight", "Enter a weight with up to 2 decimals, such as 12.50.")
 	}
-	if newWeight && weight.Cmp(big.NewRat(1000000, 1)) > 0 {
-		return apperr.Field("weight", "Weight must be 1 000 000 kg or less.")
+	if newWeight && weight.Cmp(big.NewRat(MaxWeightKg, 1)) > 0 {
+		return apperr.Field("weight", WeightLimitMessage)
 	}
 
 	price, err := Decimal(item.Price, "price", false)
@@ -93,8 +105,8 @@ func validate(item store.Item, newWeight, newPrice bool) error {
 	if !new(big.Rat).Mul(price, big.NewRat(100, 1)).IsInt() {
 		return apperr.Field("price", "Enter a price with up to 2 decimals, such as 12.50.")
 	}
-	if newPrice && price.Cmp(big.NewRat(100000, 1)) > 0 {
-		return apperr.Field("price", "Price must be R 100 000.00 per kg or less.")
+	if newPrice && price.Cmp(big.NewRat(MaxPricePerKg, 1)) > 0 {
+		return apperr.Field("price", PriceLimitMessage)
 	}
 
 	base, err := Decimal(item.BasePrice, "base_price", false)

@@ -89,7 +89,7 @@ test('staff opening a chat get a plain refusal with no retry', () => {
 test('the R / kg field sits on a row wide enough for what was typed', () => {
   const dialog = source('../src/components/dialogs/collection-dialog.tsx');
   assert.doesNotMatch(dialog, /grid-cols-\[1fr_11rem_12rem_auto\]/);
-  assert.match(dialog, /sm:grid-cols-\[1fr_1fr_auto\]/);
+  assert.match(dialog, /sm:grid-cols-2/);
   assert.match(dialog, /\{material\.name\} is below the base price/);
   assert.match(dialog, /TriangleAlert/);
 });

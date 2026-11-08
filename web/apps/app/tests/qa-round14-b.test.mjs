@@ -171,7 +171,7 @@ test('S8: staff see contact copy and a disabled blank payout state', async () =>
   );
 });
 
-test('S8: saved payout methods remain selected and business defaults to Bank', () => {
+test('S8: saved payout methods remain selected and business starts with no method', () => {
   for (const method of ['bank', 'ewallet']) {
     const form = collectorForm('staff', {
       ...collector,
@@ -188,7 +188,7 @@ test('S8: saved payout methods remain selected and business defaults to Bank', (
     assert.equal(radios.props.value, method);
     assert.doesNotMatch(text(form.tree), /None added/);
   }
-  assert.equal(collectorForm('business').values.payout_method, 'bank');
+  assert.equal(collectorForm('business').values.payout_method, '');
 });
 
 test('S4: table columns retain sticky edges without partial vertical dividers', () => {

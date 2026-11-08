@@ -146,7 +146,7 @@ test('a full payout remains editable for the owner', () => {
   assert.equal(input.bank_branch_code, '654321');
 });
 
-test('blank payouts save for admins and staff; partial payouts require completeness', () => {
+test('picked payout methods require complete details; staff contact edits omit payout', () => {
   const blank = exports.toValues({
     ...collector,
     bank_account_holder_name: '',
@@ -157,7 +157,7 @@ test('blank payouts save for admins and staff; partial payouts require completen
   });
   for (const payout_method of ['bank', 'ewallet']) {
     const values = { ...blank, payout_method };
-    assert.equal(exports.schemaFor().safeParse(values).success, true);
+    assert.equal(exports.schemaFor().safeParse(values).success, false);
     const partial =
       payout_method === 'bank'
         ? { ...values, bank_name: 'FNB' }

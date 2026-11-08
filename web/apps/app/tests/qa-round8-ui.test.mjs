@@ -145,6 +145,7 @@ test('collection total is absent for invalid weight and returns after correction
         '@/lib/api/transactions': { useCreateCollection: () => ({}) },
         '@/lib/format': format,
         '@/lib/quantity': quantity,
+        '@/lib/limits': compile('lib/limits.ts'),
       }
     );
     const tree = nodes(CollectionDialog({ open: true }));

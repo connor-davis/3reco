@@ -64,7 +64,7 @@ function schemaFor(collector?: Collector, payoutReadOnly = false) {
       city: z.string().min(2, 'Enter the city or suburb.'),
       area_code: z.string().regex(/^\d{4}$/, 'The area code is 4 digits.'),
       province: z.string().min(1, 'Pick a province.'),
-      payout_method: z.enum(['bank', 'ewallet']),
+      payout_method: z.enum(['', 'none', 'bank', 'ewallet']),
       bank_account_holder_name: z.string(),
       bank_name: z.string(),
       bank_account_type: z.string(),
@@ -81,18 +81,18 @@ function schemaFor(collector?: Collector, payoutReadOnly = false) {
         fail('email', 'Add an email or a phone number.');
       }
 
-      const payoutFields =
-        values.payout_method === 'bank'
-          ? [
-              values.bank_account_holder_name,
-              values.bank_name,
-              values.bank_account_type,
-              values.bank_account_number,
-              values.bank_branch_code,
-            ]
-          : [values.ewallet_platform_name, values.ewallet_payment_id];
-      if (payoutReadOnly || payoutFields.every((value) => !value.trim()))
+      if (payoutReadOnly || values.payout_method === 'none') return;
+      if (values.payout_method === '') {
+        if (
+          Object.entries(values).some(
+            ([key, value]) =>
+              (key.startsWith('bank_') || key.startsWith('ewallet_')) &&
+              value.trim()
+          )
+        )
+          fail('payout_method', 'Choose a payout method.');
         return;
+      }
 
       if (values.payout_method === 'bank') {
         if (!values.bank_account_holder_name.trim()) {
@@ -148,7 +148,11 @@ function toValues(collector?: Collector): Values {
     city: collector?.city ?? '',
     area_code: collector?.area_code ? String(collector.area_code) : '',
     province: collector?.province ?? '',
-    payout_method: collector?.payout_method === 'ewallet' ? 'ewallet' : 'bank',
+    payout_method:
+      collector?.payout_method === 'bank' ||
+      collector?.payout_method === 'ewallet'
+        ? collector.payout_method
+        : '',
     bank_account_holder_name: collector?.bank_account_holder_name ?? '',
     bank_name: collector?.bank_name ?? '',
     bank_account_type: collector?.bank_account_type ?? '',
@@ -159,7 +163,7 @@ function toValues(collector?: Collector): Values {
   };
 }
 
-/** The payout side that is not in use is sent empty, so the API accepts it. */
+/** Omit an untouched payout; only an explicit none clears saved details. */
 function toInput(
   values: Values,
   collector?: Collector,
@@ -178,8 +182,10 @@ function toInput(
     bank_account_type: bank ? values.bank_account_type : '',
     bank_account_number: bank ? values.bank_account_number : '',
     bank_branch_code: bank ? values.bank_branch_code : '',
-    ewallet_platform_name: bank ? '' : values.ewallet_platform_name,
-    ewallet_payment_id: bank ? '' : values.ewallet_payment_id,
+    ewallet_platform_name:
+      values.payout_method === 'ewallet' ? values.ewallet_platform_name : '',
+    ewallet_payment_id:
+      values.payout_method === 'ewallet' ? values.ewallet_payment_id : '',
   };
 
   for (const key of Object.keys(input) as (keyof CollectorInput)[]) {
@@ -189,7 +195,7 @@ function toInput(
       key === 'payout_method';
     const value = input[key];
     if (
-      (payoutReadOnly && payout) ||
+      ((payoutReadOnly || values.payout_method === '') && payout) ||
       (typeof value === 'string' &&
         value.startsWith('******') &&
         value === collector?.[key])
@@ -341,8 +347,17 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                       value={field.value}
                       onValueChange={field.onChange}
                       aria-labelledby="collector-method-label"
-                      className="flex gap-6"
+                      className="flex flex-wrap gap-6"
                     >
+                      <Field orientation="horizontal" className="w-auto">
+                        <RadioGroupItem id="collector-none" value="none" />
+                        <FieldLabel
+                          htmlFor="collector-none"
+                          className="font-normal"
+                        >
+                          None added
+                        </FieldLabel>
+                      </Field>
                       <Field orientation="horizontal" className="w-auto">
                         <RadioGroupItem id="collector-bank" value="bank" />
                         <FieldLabel
@@ -401,7 +416,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                     inputMode="numeric"
                   />
                 </>
-              ) : (
+              ) : method === 'ewallet' ? (
                 <>
                   <SelectField
                     control={control}
@@ -417,7 +432,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
                     autoComplete="off"
                   />
                 </>
-              )}
+              ) : null}
             </>
           )}
         </fieldset>

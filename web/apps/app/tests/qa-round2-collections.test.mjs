@@ -31,11 +31,17 @@ function compile(path, dependencies = {}, suffix = '') {
 
 const source = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const format = compile('../src/lib/format.ts');
+const limits = compile('../src/lib/limits.ts');
 const quantity = compile('../src/lib/quantity.ts', { '@/lib/format': format });
 const dialogPath = '../src/components/dialogs/collection-dialog.tsx';
 const dialog = compile(
   dialogPath,
-  { zod: { z }, '@/lib/format': format, '@/lib/quantity': quantity },
+  {
+    zod: { z },
+    '@/lib/format': format,
+    '@/lib/quantity': quantity,
+    '@/lib/limits': limits,
+  },
   '\nexports.schema = schema;'
 );
 const parse = (patch) =>
@@ -62,8 +68,11 @@ test('a collection date after today is refused, today is fine', () => {
   assert.ok(!parse({ top: { collection_day: tomorrow } }).success);
 });
 
-test('the date input has a max of today', () => {
-  assert.match(source(dialogPath), /max=\{today\(\)\}/);
+test('the date picker disables days after today', () => {
+  assert.match(
+    source(dialogPath),
+    /disabled=\{\(day\) => dateKey\(day, 'yyyy-MM-dd'\) > today\(\)\}/
+  );
 });
 
 test('a negative or zero price says "Enter a price above R 0.00."', () => {

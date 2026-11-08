@@ -27,6 +27,7 @@ function collectionSchema() {
       if (id === 'zod') return { z };
       if (id === '@/lib/format') return format;
       if (id === '@/lib/quantity') return quantity;
+      if (id === '@/lib/limits') return load('lib/limits.ts');
       return {};
     },
   });
