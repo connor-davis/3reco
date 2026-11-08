@@ -44,7 +44,9 @@ function payoutText(collector: Collector): string {
   }
 
   // Empty and hidden look the same in the data, so the server says which.
-  return collector.can_view_payout ? 'None added' : 'Not shared';
+  return collector.can_view_payout || collector.can_edit
+    ? 'None added'
+    : 'Not shared';
 }
 
 type RemoveProps = { collector: Collector | null; onClose: () => void };

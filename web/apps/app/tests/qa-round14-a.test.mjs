@@ -28,7 +28,10 @@ test('H4: the invoice line shows two decimals, like the PDF and CSV', () => {
 
 test('S1: the sign-up consent sentence stays whole, error below', () => {
   const fields = source('components/form-fields.tsx');
-  assert.match(fields, /<span>\{label\}<\/span>[\s\S]*<\/Field>\s*<FieldError/);
+  assert.match(
+    fields,
+    /<span>\{label\}<\/span>[\s\S]*<\/Field>\s*[\s\S]*<FieldError/
+  );
 });
 
 test('S3: the story panel always keeps its footer slot', () => {

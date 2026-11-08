@@ -325,7 +325,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
           )}
           {payoutReadOnly && !collector?.payout_method ? (
             <p className="text-sm text-muted-foreground sm:col-span-2">
-              No payout details saved
+              None added
             </p>
           ) : (
             <>

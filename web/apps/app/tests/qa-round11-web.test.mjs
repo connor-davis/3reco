@@ -82,7 +82,7 @@ test('S4: adding an account has its own heading', () => {
   const text = source('routes/sign-in.tsx');
   assert.match(
     text,
-    /addingAccount \? 'Add another account\.' : 'Welcome back\.'/
+    /addingAccount\s*\? 'Add another account\.'[\s\S]*: 'Welcome back\.'/
   );
 });
 

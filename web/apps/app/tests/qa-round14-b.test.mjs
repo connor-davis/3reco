@@ -155,7 +155,7 @@ test('S8: staff see contact copy and a disabled blank payout state', async () =>
   );
   const fieldset = nodes(form.tree).find((node) => node.type === 'fieldset');
   assert.equal(fieldset.props.disabled, true);
-  assert.match(text(fieldset), /No payout details saved/);
+  assert.match(text(fieldset), /None added/);
   assert.equal(
     nodes(fieldset).some((node) => node.props.name === 'payout_method'),
     false
@@ -186,7 +186,7 @@ test('S8: saved payout methods remain selected and business defaults to Bank', (
     });
     const radios = nodes(choices).find((node) => node.type === 'RadioGroup');
     assert.equal(radios.props.value, method);
-    assert.doesNotMatch(text(form.tree), /No payout details saved/);
+    assert.doesNotMatch(text(form.tree), /None added/);
   }
   assert.equal(collectorForm('business').values.payout_method, 'bank');
 });
