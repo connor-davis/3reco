@@ -292,18 +292,40 @@ const privacyKinds: Record<string, string> = {
 };
 
 function eventLabel(event: PrivacyEvent) {
-  const label = privacyKinds[event.kind] ?? event.kind;
+  const label = privacyKinds[event.kind] ?? 'Privacy activity';
   const invoice = event.details?.invoice_number;
   if (invoice) return `${label} · invoice ${invoice}`;
 
   const kind = event.details?.export_kind;
   if (!kind) return label;
 
-  const filters = Object.entries(event.details.filters ?? {})
-    .filter(([, value]) => value !== '')
-    .map(([key, value]) => `${key}: ${value}`)
-    .join(', ');
-  return `${label} · ${kind}${filters ? ` (${filters})` : ''}`;
+  const exportLabels: Record<string, string> = {
+    transactions: 'Transactions',
+    collections: 'Collections',
+    purchases: 'Purchases',
+    sales: 'Sales',
+    users: 'Users',
+  };
+  const filters = event.details.filters ?? {};
+  const descriptions: string[] = [];
+  if (kind !== 'users') {
+    descriptions.push(
+      filters.itemised === 'true' ? 'one row per material' : 'one row per trade'
+    );
+  }
+  if (filters.type === 'c2b') descriptions.push('Collector purchases');
+  if (filters.type === 'b2b') descriptions.push('Business trades');
+  if (filters.q) descriptions.push(`Search: ${filters.q}`);
+  if (
+    filters.role &&
+    roleOptions.some((option) => option.value === filters.role)
+  ) {
+    descriptions.push(`Role: ${roleLabel(filters.role)}`);
+  }
+  if (filters.from) descriptions.push(`From ${formatDateTime(filters.from)}`);
+  if (filters.to) descriptions.push(`To ${formatDateTime(filters.to)}`);
+
+  return `${label} · ${exportLabels[kind] ?? 'Account records'}${descriptions.length ? ` (${descriptions.join(', ')})` : ''}`;
 }
 
 /** Privacy event rows identify people by name and role. */

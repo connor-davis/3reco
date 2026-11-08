@@ -58,7 +58,7 @@ function RemoveCollector({ collector, onClose }: RemoveProps) {
       open={collector !== null}
       onOpenChange={(open) => !open && onClose()}
       title={`Remove ${collector?.name ?? 'collector'}?`}
-      description="Their collections stay on record, but they leave your network."
+      description="Their collections stay on record, but they leave the directory."
       confirmLabel="Remove collector"
       typedName={confirmation}
       onConfirm={() => {

@@ -57,7 +57,7 @@ function VerifyEmailPage() {
       }
       description={
         verify.isSuccess
-          ? 'Your email is confirmed. Sign in to continue.'
+          ? 'Sign in to continue.'
           : failure
             ? 'Enter your email below to request a new link.'
             : token
@@ -66,13 +66,7 @@ function VerifyEmailPage() {
                 ? `We sent a verification link to ${email}.`
                 : 'We sent you a verification link.'
       }
-      feedback={
-        verify.isSuccess
-          ? { tone: 'info', text: 'Email verified. You can now sign in.' }
-          : failure
-            ? { tone: 'error', text: failure }
-            : null
-      }
+      feedback={failure ? { tone: 'error', text: failure } : null}
       footer={
         <p>
           <Link

@@ -42,7 +42,7 @@ const walletProviders = [
   'ABSA CashSend',
 ];
 
-function schemaFor(collector?: Collector) {
+function schemaFor(collector?: Collector, payoutReadOnly = false) {
   // The API sends account numbers masked. A masked value left as it is means
   // "keep what is saved", so it passes; anything new must be real digits.
   const unchanged = (value: string, saved?: string) =>
@@ -80,6 +80,19 @@ function schemaFor(collector?: Collector) {
         fail('email', 'Add an email or a phone number.');
         fail('phone', 'Add an email or a phone number.');
       }
+
+      const payoutFields =
+        values.payout_method === 'bank'
+          ? [
+              values.bank_account_holder_name,
+              values.bank_name,
+              values.bank_account_type,
+              values.bank_account_number,
+              values.bank_branch_code,
+            ]
+          : [values.ewallet_platform_name, values.ewallet_payment_id];
+      if (payoutReadOnly || payoutFields.every((value) => !value.trim()))
+        return;
 
       if (values.payout_method === 'bank') {
         if (!values.bank_account_holder_name.trim()) {
@@ -194,7 +207,7 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
   const update = useUpdateCollector(collector?.id ?? '');
   const [serverError, setServerError] = useState('');
   const { control, handleSubmit, watch, setError } = useForm<Values>({
-    resolver: zodResolver(schemaFor(collector)),
+    resolver: zodResolver(schemaFor(collector, payoutReadOnly)),
     values: toValues(collector),
   });
   const method = watch('payout_method');
@@ -215,7 +228,15 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
       // A message placed under its field is not repeated at the bottom.
       let placed = false;
 
-      if (error instanceof ApiError && error.fields) {
+      if (
+        error instanceof ApiError &&
+        /phone.*already|already.*phone/i.test(error.message)
+      ) {
+        setError('phone', { message: error.message });
+        placed = true;
+      }
+
+      if (!placed && error instanceof ApiError && error.fields) {
         for (const [name, message] of Object.entries(error.fields)) {
           if (name in values) {
             setError(name as keyof Values, { message });

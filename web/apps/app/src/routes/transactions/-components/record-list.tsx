@@ -5,10 +5,7 @@ import type { DateRange } from 'react-day-picker';
 import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
-import {
-  maxReceipts,
-  TransactionDialog,
-} from '@/components/dialogs/record-dialogs';
+import { TransactionDialog } from '@/components/dialogs/record-dialogs';
 import { LinkButton } from '@/components/link-button';
 import { ChipGroup } from '@/components/filters';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
@@ -325,9 +322,10 @@ export function RecordList({
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-44 shrink-0"
                     onClick={() => setOpen(row)}
                   >
-                    {`Invoice and receipts (${row.receipts.length} of ${maxReceipts})`}
+                    Invoice and receipts
                   </Button>
                 )}
               </ItemActions>

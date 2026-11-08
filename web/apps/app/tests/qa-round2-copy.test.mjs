@@ -74,6 +74,6 @@ test('a request with no messages reads "New request" on the dashboard', () => {
 test('the receipt button names the invoice', () => {
   assert.match(
     source('../src/routes/transactions/-components/record-list.tsx'),
-    /Invoice and receipts \(\$\{row\.receipts\.length\} of \$\{maxReceipts\}\)/
+    /Invoice and receipts/
   );
 });

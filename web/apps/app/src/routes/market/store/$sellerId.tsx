@@ -199,7 +199,7 @@ function StorePage() {
                 isEmpty={!reviews.data?.items.length}
                 icon={MessageSquare}
                 emptyTitle="No reviews yet"
-                emptyText="Reviews appear after a completed trade."
+                emptyText="Be the first to review this store."
               >
                 <ul className="space-y-4">
                   {reviews.data?.items.map((review) => (

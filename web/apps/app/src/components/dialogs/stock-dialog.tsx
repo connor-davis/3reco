@@ -137,6 +137,11 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   }
 
   const busy = create.isPending || update.isPending;
+  const values = watch();
+  const missing = schema.safeParse(values);
+  const disabledReason = !missing.success
+    ? missing.error.issues.map((issue) => issue.message).join(' ')
+    : belowBase(values.price, base);
 
   return (
     <ResponsiveOverlay
@@ -145,12 +150,19 @@ function StockForm({ open, onOpenChange, stock }: Props) {
       title={stock ? 'Edit stock' : 'Add stock'}
       description="Listed stock shows up in the market. Prices are per kg."
       footer={
-        <Button
-          disabled={busy || !formState.isValid}
-          onClick={handleSubmit(onSubmit)}
-        >
-          {stock ? 'Save changes' : 'Add stock'}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            disabled={busy || !formState.isValid}
+            onClick={handleSubmit(onSubmit)}
+          >
+            {stock ? 'Save changes' : 'Add stock'}
+          </Button>
+          {!formState.isValid && disabledReason && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {disabledReason}
+            </p>
+          )}
+        </div>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>

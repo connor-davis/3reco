@@ -169,7 +169,7 @@ test('message seller starts with empty weight and sends only the explicit exact 
             watch: (key) => values[key],
             handleSubmit: (fn) => () => fn(values),
             setError: (field, error) => writes.push({ field, error }),
-            formState: { errors: {} },
+            formState: { errors: {}, touchedFields: {} },
           };
         },
       },

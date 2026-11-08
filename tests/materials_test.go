@@ -1,10 +1,42 @@
 package tests
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/connor-davis/3reco/tests/testutil"
 )
+
+func TestMaterialsAlphabeticalPaging(t *testing.T) {
+	app := testutil.Server(t)
+	admin, _ := domainUser(t, app, "admin")
+	for index, name := range []string{"Zinc", "aluminium", "Copper"} {
+		status(t, admin.Do("POST", "/api/admin/materials", map[string]any{
+			"name": name, "price": "2.12", "carbon_factor": "2.25",
+			"gw_code": []string{"GW1", "GW2", "GW3"}[index],
+		}), 200)
+	}
+
+	client := app.NewClient(t)
+	path := "/api/materials?limit=1"
+	for _, want := range []string{"aluminium", "Copper", "Zinc"} {
+		result := status(t, client.Do("GET", path, nil), 200)
+		items := pageItems(t, result)
+		if len(items) != 1 || items[0]["name"] != want || items[0]["carbon_factor"] != "2.25" {
+			t.Fatalf("wanted %s with unchanged factor: %s", want, result.Raw)
+		}
+
+		if cursor, ok := result.Body["next_cursor"].(string); ok {
+			path = "/api/materials?limit=1&cursor=" + url.QueryEscape(cursor)
+		}
+	}
+
+	result := status(t, client.Do("GET", "/api/materials?q=opp", nil), 200)
+	items := pageItems(t, result)
+	if len(items) != 1 || items[0]["name"] != "Copper" {
+		t.Fatalf("name filter: %s", result.Raw)
+	}
+}
 
 func TestMaterialsAdminOnly(t *testing.T) {
 	app := testutil.Server(t)

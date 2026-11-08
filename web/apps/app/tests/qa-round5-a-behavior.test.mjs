@@ -210,6 +210,6 @@ test('admin cannot remove their own account; export audit shows kind and filters
         filters: { q: 'Glass', role: '' },
       },
     }),
-    'Data download · transactions (q: Glass)'
+    'Data download · Transactions (one row per trade, Search: Glass)'
   );
 });

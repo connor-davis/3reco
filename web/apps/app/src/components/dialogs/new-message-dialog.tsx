@@ -75,6 +75,8 @@ function NewMessageForm({
     listing ??
     query.data?.items.find((item) => item.id === form.watch('listingId'));
   const problem = quantityError(form.watch('weight'), selected?.weight);
+  const showProblem =
+    form.formState.touchedFields.weight || form.formState.isSubmitted;
   return (
     <div className="space-y-4">
       {!listing && (
@@ -155,9 +157,10 @@ function NewMessageForm({
             control={form.control}
             name="weight"
             label="Quantity (kg)"
+            description="Enter a quantity above 0 kg, with up to 2 decimals."
             counter={weightCounter(selected?.weight)}
           />
-          {problem && (
+          {showProblem && problem && !form.formState.errors.weight && (
             <p role="alert" className="text-sm text-destructive">
               {problem}
             </p>
@@ -167,7 +170,10 @@ function NewMessageForm({
               {form.formState.errors.root.message}
             </p>
           )}
-          <Button type="submit" disabled={create.isPending || !!problem}>
+          <Button
+            type="submit"
+            disabled={create.isPending || !selected || !!problem}
+          >
             Send request
           </Button>
         </form>
