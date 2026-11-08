@@ -23,3 +23,15 @@ export function useDownloadReceipt(id: string) {
       ),
   });
 }
+
+export function useDeleteReceipt(transactionId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (receiptId: string) =>
+      api<void>(
+        `/transactions/${idPath(transactionId)}/receipts/${idPath(receiptId)}`,
+        { method: 'DELETE' }
+      ),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['transactions'] }),
+  });
+}

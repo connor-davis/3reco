@@ -23,12 +23,14 @@ const schema = z.object({
   name: z.string().trim().min(1, 'Enter the material name.'),
   carbon_factor: z.string().superRefine((value, ctx) => {
     const text = value.trim();
-    const positive = /^\d+([.,]\d+)?$/.test(text) && /[1-9]/.test(text);
-    const message = !positive
-      ? 'Enter a number above 0.'
-      : !decimal.test(text)
-        ? 'Use up to 2 decimals, for example 1.50.'
-        : '';
+    const numeric = /^-?\d+([.,]\d+)?$/.test(text);
+    const message = !numeric
+      ? 'Enter a number.'
+      : Number(text.replace(',', '.')) <= 0
+        ? 'Enter a number above 0.'
+        : !decimal.test(text)
+          ? 'Use up to 2 decimals, for example 1.50.'
+          : '';
 
     if (message) ctx.addIssue({ code: 'custom', message });
   }),

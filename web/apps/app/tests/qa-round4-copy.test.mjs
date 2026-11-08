@@ -185,7 +185,7 @@ test('material validation accepts commas and explains truly invalid numbers', ()
   assert.equal(schema.safeParse(material).success, true);
   const result = schema.safeParse({ ...material, carbon_factor: '1x5' });
   assert.equal(result.success, false);
-  assert.equal(result.error.issues[0].message, 'Enter a number above 0.');
+  assert.equal(result.error.issues[0].message, 'Enter a number.');
 });
 
 test('not-found has a recovery link and request headings never use the raw id', () => {

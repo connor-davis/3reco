@@ -55,7 +55,8 @@ test('collectors page says shared directory and has a no-match state', () => {
 test('stock dialog dedupes errors and starts neutral', () => {
   const text = source('components/dialogs/stock-dialog.tsx');
   assert.match(text, /Pick a material, then enter a weight and a price\./);
-  assert.match(text, /firstPerField/);
+  assert.doesNotMatch(text, /firstPerField|disabledReason/);
+  assert.match(text, /\{pristine &&/);
 });
 
 test('non-numeric prices say to enter a number', () => {

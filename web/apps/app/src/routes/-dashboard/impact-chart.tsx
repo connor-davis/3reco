@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   type ChartConfig,
   ChartContainer,
@@ -6,7 +6,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { Dashboard } from '@/lib/api/types';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatKg } from '@/lib/format';
 
 const config = {
   kg: { label: 'Materials traded (kg)', color: 'var(--chart-1)' },
@@ -23,7 +23,11 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
   }));
   return (
     <ChartContainer config={config} className="h-56 w-full">
-      <BarChart accessibilityLayer data={points}>
+      <BarChart
+        accessibilityLayer
+        data={points}
+        margin={{ top: 8, right: 24, bottom: 8, left: 8 }}
+      >
         <CartesianGrid vertical={false} />
         <XAxis
           dataKey="day"
@@ -32,11 +36,26 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
           tickFormatter={axisDay}
           minTickGap={32}
           tickMargin={8}
+          tick={{ fill: 'var(--muted-foreground)' }}
+          padding={{ left: 24, right: 24 }}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          width={80}
+          tick={{ fill: 'var(--muted-foreground)' }}
+          tickFormatter={formatKg}
         />
         <ChartTooltip
           content={
             <ChartTooltipContent
               labelFormatter={(label) => formatDate(String(label))}
+              formatter={(value) => (
+                <span className="font-medium tabular-nums">
+                  {formatKg(String(value))}
+                </span>
+              )}
             />
           }
         />

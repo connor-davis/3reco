@@ -217,7 +217,19 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
 
     try {
       if (collector) {
-        await update.mutateAsync(toInput(values, collector, payoutReadOnly));
+        const input = toInput(values, collector, payoutReadOnly);
+        const initial = toInput(toValues(collector), collector, payoutReadOnly);
+        if (
+          Object.entries(input).every(
+            ([key, value]) => value === initial[key as keyof CollectorInput]
+          )
+        ) {
+          toast.info('No changes to save.');
+          onOpenChange(false);
+          return;
+        }
+
+        await update.mutateAsync(input);
         toast.success('Collector updated.');
       } else {
         await create.mutateAsync(toInput(values));

@@ -252,6 +252,7 @@ export interface AdminThread {
 }
 export interface Receipt {
   id: string;
+  uploaded_by?: string | null;
   file_name: string;
   content_type: string;
   size: number;

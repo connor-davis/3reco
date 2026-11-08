@@ -16,7 +16,10 @@ import { authDestination } from '@/lib/auth/redirect';
 export const Route = createFileRoute('/sign-in')({
   validateSearch: (search: Record<string, unknown>) => ({
     ...(typeof search.email === 'string' ? { email: search.email } : {}),
-    ...(search.add === true || search.add === 1 || search.add === '1'
+    ...(search.add === true ||
+    search.add === 'true' ||
+    search.add === 1 ||
+    search.add === '1'
       ? { add: true }
       : {}),
     ...(typeof search.redirect === 'string'
@@ -40,6 +43,7 @@ function SignInPage() {
   const navigate = useNavigate();
   // The live socket names why access ended so people know what happened.
   const params = new URLSearchParams(window.location.search);
+  const addingAccount = ['true', '1'].includes(params.get('add') ?? '');
   const reason = params.get('reason');
   const ended = reason === 'ended';
   const signIn = useSignIn();
@@ -94,6 +98,16 @@ function SignInPage() {
       }
       footer={
         <>
+          {addingAccount && (
+            <p>
+              <Link
+                to={authDestination(params.get('redirect'))}
+                className="inline-flex min-h-11 items-center font-medium text-foreground underline"
+              >
+                Cancel and go back
+              </Link>
+            </p>
+          )}
           <p>
             New to 3REco?{' '}
             <Link

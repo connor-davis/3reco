@@ -137,29 +137,12 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   }
 
   const busy = create.isPending || update.isPending;
-  const values = watch();
-  const missing = schema.safeParse(values);
-  // One message per field, so a bad weight never says the same thing twice.
-  const firstPerField = !missing.success
-    ? [
-        ...new Set(
-          Object.values(
-            Object.fromEntries(
-              [...missing.error.issues]
-                .reverse()
-                .map((issue) => [issue.path.join('.'), issue.message])
-            )
-          )
-        ),
-      ]
-    : [];
-  // Nothing typed yet: no errors, just what to do.
-  const pristine = !formState.isDirty && !stock;
-  const disabledReason = pristine
-    ? 'Pick a material, then enter a weight and a price.'
-    : firstPerField.length
-      ? firstPerField.join(' ')
-      : belowBase(values.price, base);
+  // Once someone interacts, only the fields explain what needs fixing.
+  const pristine =
+    !stock &&
+    !formState.isDirty &&
+    Object.keys(formState.touchedFields).length === 0 &&
+    Object.keys(formState.errors).length === 0;
 
   return (
     <ResponsiveOverlay
@@ -175,9 +158,9 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           >
             {stock ? 'Save changes' : 'Add stock'}
           </Button>
-          {!formState.isValid && disabledReason && (
+          {pristine && (
             <p role="status" className="text-sm text-muted-foreground">
-              {disabledReason}
+              Pick a material, then enter a weight and a price.
             </p>
           )}
         </div>
@@ -223,7 +206,9 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           <Switch
             id="stock-listed"
             checked={watch('is_listed')}
-            onCheckedChange={(checked) => setValue('is_listed', checked)}
+            onCheckedChange={(checked) =>
+              setValue('is_listed', checked, { shouldDirty: true })
+            }
           />
           <FieldLabel htmlFor="stock-listed" className="font-normal">
             Show in the market
