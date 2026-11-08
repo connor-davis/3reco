@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ChevronsUpDown, LogOut, Plus, UserCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme';
@@ -31,6 +31,7 @@ import { ApiError } from '@/lib/api/client';
 /** The account button in the top bar: profile, other sessions, theme, sign out. */
 export function AccountMenu() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const sessions = useSessions();
@@ -107,6 +108,7 @@ export function AccountMenu() {
                           to: '/sign-in',
                           search: {
                             add: true,
+                            redirect: location.href,
                             email: session.email ?? undefined,
                           },
                         });
@@ -139,7 +141,10 @@ export function AccountMenu() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() =>
-                navigate({ to: '/sign-in', search: { add: true } })
+                navigate({
+                  to: '/sign-in',
+                  search: { add: true, redirect: location.href },
+                })
               }
             >
               <Plus />

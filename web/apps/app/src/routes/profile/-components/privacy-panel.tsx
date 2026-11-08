@@ -96,7 +96,7 @@ export function PrivacyPanel() {
         )}
       </section>
       <section className="space-y-3">
-        <h3 className="font-medium">Delete my account</h3>
+        <h3 className="font-medium">Delete account</h3>
         <p className="text-sm text-muted-foreground">
           Your account and profile will be removed, open requests cancelled, and
           you will be signed out. Trade records stay because they must be kept

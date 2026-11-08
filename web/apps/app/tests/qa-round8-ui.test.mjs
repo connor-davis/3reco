@@ -96,7 +96,7 @@ test('material carbon errors distinguish invalid/nonpositive numbers from excess
     '\nexports.schema = schema;'
   );
   for (const [carbon_factor, message] of [
-    ['abc', 'Enter a number above 0.'],
+    ['abc', 'Enter a number.'],
     ['-1', 'Enter a number above 0.'],
     ['0', 'Enter a number above 0.'],
     ['0.000', 'Enter a number above 0.'],
@@ -156,7 +156,7 @@ test('collection total is absent for invalid weight and returns after correction
   }
 });
 
-test('disabled stock submission names missing fields or the base price problem', () => {
+test('disabled stock submission leaves field errors out of the footer', () => {
   for (const values of [
     { material_id: '', weight: '', price: '', is_listed: true },
     { material_id: 'm', weight: '1', price: '1', is_listed: true },
@@ -187,10 +187,7 @@ test('disabled stock submission names missing fields or the base price problem',
     );
     const footer = StockForm({ open: true }).props.footer;
     const hint = nodes(footer).find((node) => node.props.role === 'status');
-    assert.match(
-      hint.props.children,
-      values.material_id ? /at least R 2.00/ : /Pick a material/
-    );
+    assert.equal(hint, undefined);
     assert.ok(nodes(footer).some((node) => node.props.disabled));
   }
 });
