@@ -148,6 +148,7 @@ test('renaming a collector preserves server totals and distinct partners with id
 test('profile patches omit saved masked identifiers and preserve exact replacement text', async () => {
   const writes = [];
   const profile = {
+    phone: '+27825550148',
     id_number: '******1234',
     bank_account_number: '******5678',
     bank_account_type: 'Savings',
@@ -219,7 +220,7 @@ test('a rejected profile save keeps the form dirty and never reports success', a
       }),
     },
   });
-  const element = forms.PersonalForm({ profile: {} });
+  const element = forms.PersonalForm({ profile: { phone: '' } });
   const form = element.type(element.props);
   await form.props.onSubmit();
   assert.equal(resets, 0);

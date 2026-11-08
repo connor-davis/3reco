@@ -89,7 +89,11 @@ function CartPage() {
     <>
       <PageHeader
         title="Your cart"
-        description="Choose a store to open its saved cart. Review quantities before sending your request."
+        description={
+          selectedSeller
+            ? 'Review quantities before sending your request.'
+            : 'Choose a store to open its saved cart. Review quantities before sending your request.'
+        }
       />
       {!stores.data?.items.length && !stores.isPending && !selectedSeller ? (
         <DataState

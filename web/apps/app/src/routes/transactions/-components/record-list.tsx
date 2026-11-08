@@ -40,6 +40,7 @@ import {
   formatKg,
   formatRand,
   formatRate,
+  plural,
   toCents,
   toGrams,
 } from '@/lib/format';
@@ -339,6 +340,11 @@ export function RecordList({
           ))}
         </ItemGroup>
       </DataState>
+      {totals.data !== undefined && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span>{plural(totals.data.count, 'record')}</span>
+        </div>
+      )}
       <Pager pager={pager} page={list.data} total={totals.data?.count} />
       <TransactionDialog
         key={(open ?? linkedRow)?.id}

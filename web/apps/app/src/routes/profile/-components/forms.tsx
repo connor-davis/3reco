@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/client';
 import { useUpdateProfile } from '@/lib/api/profile';
 import type { Profile } from '@/lib/api/types';
+import { formatPhone } from '@/lib/format';
 import { tidyName } from '@/lib/names';
 import {
   bankSchema,
@@ -126,7 +127,7 @@ export function PersonalForm({ profile, onSaved, wizard }: Props) {
         profile.first_name || (profile.name ?? '').split(' ')[0] || '',
       last_name:
         profile.last_name || (profile.name ?? '').split(' ').slice(1).join(' '),
-      phone: profile.phone,
+      phone: formatPhone(profile.phone),
       id_number: '',
     },
   });
@@ -139,6 +140,7 @@ export function PersonalForm({ profile, onSaved, wizard }: Props) {
         const last_name = tidyName(values.last_name);
         await save.mutateAsync({
           ...values,
+          phone: values.phone.replace(/\s/g, ''),
           first_name,
           last_name,
           name: first_name + ' ' + last_name,

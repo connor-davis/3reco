@@ -279,6 +279,6 @@ test('listing distinguishes signed-in browsers and remaining copy is role neutra
   assert.match(privacy, /'Preparing download…' : 'Download'/);
   assert.match(
     source('routes/market/store/$sellerId.tsx'),
-    /emptyText="Be the first to review this store\."/
+    /'Be the first to review this store\.'/
   );
 });
