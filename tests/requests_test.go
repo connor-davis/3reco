@@ -70,10 +70,11 @@ func TestRequestOfferAcceptFlow(t *testing.T) {
 		t.Errorf("total %s, want 360", got)
 	}
 
-	// The seller hears about the new request and about the accepted offer.
+	// The seller's request prompt is deleted once the trade is done; the
+	// outcome notice goes to the other side.
 	kinds := tradeText(t, w.app, `
 		SELECT string_agg(type, ',' ORDER BY type) FROM notifications WHERE user_id = $1`, w.seller.id)
-	if kinds != "request_accepted,request_received" {
+	if kinds != "" {
 		t.Errorf("seller notifications %q", kinds)
 	}
 

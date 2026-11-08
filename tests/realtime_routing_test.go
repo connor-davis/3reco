@@ -278,3 +278,20 @@ func TestLiveRoleChangeTakesEffectAfterRecheck(t *testing.T) {
 	demoted.quiet("demoted admin")
 	rising.hear("user", w.stranger.id)
 }
+
+// Deleting a notification wakes its owner's open bell, so the row drops
+// without a reload.
+func TestLiveNotificationDeleteReachesItsOwner(t *testing.T) {
+	w := newLiveWorld(t)
+	socks := joinLive(t, w.app, w.seller, w.buyer)
+
+	tradeExec(t, w.app, `
+		INSERT INTO notifications (id, user_id, type, title, body)
+		VALUES ('n2', $1, 'request_received', 'New request received', 'x')`, w.seller.id)
+	socks[0].hear("notification", "n2")
+
+	tradeExec(t, w.app, `DELETE FROM notifications WHERE id = 'n2'`)
+
+	socks[0].hear("notification", "n2")
+	socks[1].quiet("another business")
+}

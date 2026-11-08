@@ -346,3 +346,32 @@ func TestPrivacyDeleteReleasesTheSellersHold(t *testing.T) {
 	holdCount(t, w, "active", "0")
 	holdCount(t, w, "released", "2")
 }
+
+// Opening the collector list leaves no "No individual subject" line. A named
+// line is written only for a collector whose full identifier an admin sees.
+func TestPrivacyCollectorListAuditsOnlyNamedFullViews(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	staff := tradeNewUser(t, w.app, "staff")
+	collector := privacyCollector(t, w.buyer.c)
+
+	anonymous := len(privacyKinds(t, admin, ""))
+
+	status(t, w.buyer.c.Do("GET", "/api/collectors", nil), 200)
+	status(t, staff.c.Do("GET", "/api/collectors", nil), 200)
+	status(t, w.seller.c.Do("GET", "/api/collectors", nil), 200)
+
+	if len(privacyKinds(t, admin, collector)) != 0 {
+		t.Error("creator, staff or another business left a full-view line")
+	}
+
+	status(t, admin.c.Do("GET", "/api/collectors", nil), 200)
+
+	if !slices.Contains(privacyKinds(t, admin, collector), "admin_full_view") {
+		t.Error("admin list showing a full identifier was not logged for that collector")
+	}
+
+	if len(privacyKinds(t, admin, "")) != anonymous {
+		t.Error("a line with no subject was written")
+	}
+}

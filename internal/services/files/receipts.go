@@ -143,3 +143,38 @@ func (s *Service) Download(
 
 	return reader, receipt, err
 }
+
+// Remove deletes one receipt. The caller must be able to read the trade
+// (anyone else gets a 404) and be the uploader, its buyer or seller, or an
+// admin (a staff reader gets a 403). The stored file goes only after the
+// commit, so a rolled-back delete keeps it.
+func (s *Service) Remove(ctx context.Context, user auth.User, id, receiptID string) error {
+	trade, err := s.trades.Detail(ctx, user, id)
+	if err != nil {
+		return err
+	}
+
+	return s.db.InTx(ctx, func(ctx context.Context) error {
+		key, uploadedBy, found, err := s.store.LockReceipt(ctx, id, receiptID)
+		if err != nil {
+			return err
+		}
+
+		if !found {
+			return apperr.NotFound("Receipt not found.")
+		}
+
+		party := trade.Buyer.ID == user.ID || (trade.Type == "b2b" && trade.Seller.ID == user.ID)
+		if !party && uploadedBy != user.ID && !auth.HasRole(user, auth.RoleAdmin) {
+			return apperr.Forbidden("Only the people on this trade can remove a receipt.")
+		}
+
+		if err := s.store.DeleteReceipt(ctx, receiptID); err != nil {
+			return err
+		}
+
+		s.objects.RemoveAfterCommit(ctx, key)
+
+		return nil
+	})
+}

@@ -43,6 +43,7 @@ func (h *Handler) Register(api fiber.Router) {
 	r.Get("/:id/invoice", h.invoice)
 	r.Post("/:id/receipts", h.receiptAttach)
 	r.Get("/:id/receipts/:receipt_id", h.receiptDownload)
+	r.Delete("/:id/receipts/:receipt_id", h.receiptRemove)
 }
 
 func caller(c fiber.Ctx) auth.User {

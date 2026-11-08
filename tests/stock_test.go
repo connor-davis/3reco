@@ -129,7 +129,7 @@ func TestStockUpdateZeroPrice(t *testing.T) {
 		`SELECT count(*) FROM notifications
 		WHERE user_id=$1 AND NOT read AND NOT dismissed AND
 		((type='stock_listed' AND title='Stock listed on market' AND body='Your Copper stock is now visible on the market.')
-		OR (type='stock_unlisted' AND title='Stock removed from market' AND body='Your Copper stock is now hidden from the market.'))
+		OR (type='stock_unlisted' AND title='Stock hidden from the market' AND body='Your Copper stock is now hidden from the market.'))
 		AND link='/stock'`,
 		ownerID,
 	).Scan(

@@ -35,6 +35,7 @@ line when you add an owner.
 | `0014_realtime_recipients.sql` | `notify_change()` and `notify_stock_hold()` send kind, id, op and recipients; `realtime` triggers on collectors, store_reviews and transaction_receipts; narrower users trigger |
 | `0015_market_flow.sql` | Cart quantities, requested terms, versioned offers, dual confirmation and retained transaction status |
 | `0016_request_system_messages.sql` | Explicit system request events sharing message unread tracking |
+| `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
 
 Never rename a merged migration. Add a new file.
 
@@ -64,7 +65,7 @@ Never rename a merged migration. Add a new file.
 | Reuse collector payout access for frozen invoice/CSV snapshots | `internal/services/collectors/payout_access.go` (`CanReadFullPayout`), `internal/services/invoices/invoices.go` (`Project`) |
 | Privacy tests: ciphertext at rest, mask and full view, export, delete, retention, notice, audit | `tests/privacy_test.go`, `tests/privacy_rights_test.go`, `tests/fieldcrypt_test.go` |
 | Notifications: SQL, rules, `/api/notifications` routes | `internal/stores/notifications`, `internal/services/notifications`, `internal/api/notifications` |
-| Retire request action notices atomically at closure, retaining history and completion notices | `RequestEnded` in `internal/services/notifications/notifications.go`, `MarkOffersRead` in `internal/stores/notifications/notifications.go` |
+| Delete a finished request's action notices for every user at closure (outcome notice stays, chat notices only marked read) | `RequestEnded` in `internal/services/notifications/notifications.go`, `DeleteRequestActions` in `internal/stores/notifications/notifications.go` |
 | Offer and counter system events drive inbox preview, activity time and paging | `MakeOffer` in `internal/services/requests/state.go`, `InsertRequestEvent` in `internal/stores/requests/messages.go` |
 | Requests, offers, accept and the other moves, messages, inbox | `internal/stores/requests`, `internal/services/requests`, `internal/api/requests` |
 | Offer author/version, confirmation resets and live-hold fence | `internal/stores/requests/confirmations.go` |
@@ -84,6 +85,7 @@ Never rename a merged migration. Add a new file.
 | Authorized multipart receipt upload and streamed receipt/invoice downloads | `internal/api/transactions/receipts.go` |
 | Bounded image sniffing, receipt participation, SHA duplicates, five-file lock and failed-write cleanup | `internal/services/files/receipts.go` |
 | Receipt metadata, transaction row lock and scoped object lookup SQL | `internal/stores/files/files.go` |
+| Receipt removal (`DELETE /api/transactions/:id/receipts/:receipt_id`: access rule, row delete, file removed after commit) | `Remove` in `internal/services/files/receipts.go`, `receiptRemove` in `internal/api/transactions/receipts.go` |
 | Snapshot-first private document reads, invoice key locking/replacement and bounded export ID pages | `internal/stores/transactions/documents.go` |
 | After-commit invoice hook, document composition, storage replacement, attached buyer mail and on-demand recovery | `internal/services/invoices/invoices.go` |
 | CSV download routes and response streaming | `internal/api/admin/exports.go` |

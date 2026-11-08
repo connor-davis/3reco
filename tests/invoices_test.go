@@ -267,3 +267,23 @@ func TestInvoicePaginationAndExactDecimals(t *testing.T) {
 		}
 	}
 }
+
+func TestInvoicePartyPhoneIsSpaced(t *testing.T) {
+	document := tstore.Document{
+		Seller: tstore.Contact{Name: "Seller", Phone: "+27820001009"},
+		Buyer:  tstore.Contact{Name: "Buyer", Phone: "+441234567890"},
+	}
+	invoice := invoices.Compose(document)
+
+	if !strings.Contains(invoice.Seller, "+27 82 000 1009") {
+		t.Errorf("seller phone not spaced: %q", invoice.Seller)
+	}
+
+	if !strings.Contains(invoice.Buyer, "+441234567890") {
+		t.Errorf("foreign phone should print as stored: %q", invoice.Buyer)
+	}
+
+	if invoices.Compose(tstore.Document{Seller: tstore.Contact{Name: "Seller"}}).Seller != "Seller" {
+		t.Error("a missing phone should add nothing")
+	}
+}
