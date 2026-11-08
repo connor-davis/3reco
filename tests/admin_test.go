@@ -135,3 +135,26 @@ func TestRemovedUserTransactionLeak(t *testing.T) {
 	// The removed buyer's session cannot read the trade any more.
 	tradeWant(t, "removed buyer detail", w.buyer.c.Do("GET", "/api/transactions/"+tx, nil), 401)
 }
+
+func TestDashboardCarbonKeepsDecimals(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	stranger := tradeNewUser(t, w.app, "business")
+	collector := tradeCollector(t, w.app, w.buyer, "+27800000088")
+
+	// 10 kg at 0.25 is 2.5 kg of CO2e; whole-kg rounding would show 3.
+	tradeExec(t, w.app, `UPDATE materials SET carbon_factor = 0.25 WHERE id = $1`, w.material)
+	tradeOldSale(t, w.app, collector, w.buyer, w.material, "2026-03-01T10:00:00Z", nil, nil)
+
+	path := "/api/admin/dashboard?from=2026-03-01&to=2026-03-02"
+	totals, _ := tradeDash(t, admin, path)["totals"].(map[string]any)
+	if totals["carbon_savings"] != "2.5" {
+		t.Errorf("admin carbon %v, want 2.5", totals["carbon_savings"])
+	}
+
+	// Someone else's trade stays out of a stranger's totals.
+	other, _ := tradeDash(t, stranger, "/api/dashboard/business?from=2026-03-01&to=2026-03-02")["totals"].(map[string]any)
+	if other["carbon_savings"] != "0" {
+		t.Errorf("stranger carbon %v, want 0", other["carbon_savings"])
+	}
+}

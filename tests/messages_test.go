@@ -212,3 +212,25 @@ func TestFreshRequestSystemEventAndOfferInbox(t *testing.T) {
 		t.Fatalf("missing inbox offer/confirmation state: %v", row)
 	}
 }
+
+func TestCompletionIsLatestInboxEvent(t *testing.T) {
+	w := newTradeWorld(t)
+	outsider := tradeNewUser(t, w.app, "business")
+	id := tradeRequest(t, w.buyer, w.seller, w.stock)
+	tradeOffer(t, w.seller, id, w.material, "2", "9")
+	tradeWant(t, "buyer confirms", w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+	tradeWant(t, "seller completes", w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
+
+	for _, party := range []tradeUser{w.buyer, w.seller} {
+		row := tradeItems(party.c.Do("GET", "/api/messages/inbox", nil))[0].(map[string]any)
+		latest := row["latest_message"].(map[string]any)
+		if latest["system"] != true || latest["content"] != "The trade is complete." {
+			t.Fatalf("inbox preview for %s: %v", party.id, latest)
+		}
+	}
+
+	tradeWant(t, "outsider read", outsider.c.Do("GET", "/api/requests/"+id+"/messages", nil), 404)
+	if rows := tradeItems(outsider.c.Do("GET", "/api/messages/inbox", nil)); len(rows) != 0 {
+		t.Fatalf("outsider inbox holds %v", rows)
+	}
+}
