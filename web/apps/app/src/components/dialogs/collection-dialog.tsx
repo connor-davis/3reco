@@ -64,6 +64,8 @@ const schema = z.object({
     )
     .refine(
       (lines) =>
+        // Bad numbers already show their own message; judge the total after.
+        !lines.every((item) => line.safeParse(item).success) ||
         lines.reduce(
           (sum, item) => sum + lineCents(item.price, item.weight),
           0

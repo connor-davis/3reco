@@ -4,7 +4,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { formatKg, formatRate, toGrams } from '@/lib/format';
 import type { Listing } from '@/lib/api/types';
 
-export function ListingCard({ listing }: { listing: Listing }) {
+/** `showSeller` is off on the seller's own store page, where it is redundant. */
+export function ListingCard({
+  listing,
+  showSeller = true,
+}: {
+  listing: Listing;
+  showSeller?: boolean;
+}) {
   return (
     <Card className="group/card relative gap-0 bg-transparent py-0 shadow-none ring-0">
       <div className="relative flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-muted-foreground">
@@ -28,13 +35,15 @@ export function ListingCard({ listing }: { listing: Listing }) {
         <p className="font-semibold tabular-nums">
           {formatRate(listing.price)}
         </p>
-        <Link
-          className="relative z-10 inline-flex min-h-11 items-center text-sm hover:underline"
-          to="/market/store/$sellerId"
-          params={{ sellerId: listing.seller_id }}
-        >
-          {listing.seller_name}
-        </Link>
+        {showSeller && (
+          <Link
+            className="relative z-10 inline-flex min-h-11 items-center text-sm hover:underline"
+            to="/market/store/$sellerId"
+            params={{ sellerId: listing.seller_id }}
+          >
+            {listing.seller_name}
+          </Link>
+        )}
       </CardContent>
     </Card>
   );

@@ -84,7 +84,13 @@ function SetupPage() {
     return <Navigate to="/" replace />;
   }
 
-  return <Wizard fixed={guest ? null : (user.role as Choice)} />;
+  // Keyed by role, so a live role change remounts it with the right flow.
+  return (
+    <Wizard
+      key={guest ? 'guest' : user.role}
+      fixed={guest ? null : (user.role as Choice)}
+    />
+  );
 }
 
 /** `fixed` is the role someone already has; a guest picks theirs on step one. */

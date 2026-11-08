@@ -97,7 +97,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       {formatTime(notice.created_at)}
                     </span>
                   </ItemContent>
-                  <ItemActions className="w-full flex-wrap justify-end">
+                  <ItemActions className="w-full flex-wrap justify-start">
                     {notice.link?.startsWith('/') &&
                       !notice.link.startsWith('//') && (
                         <Button

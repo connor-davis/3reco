@@ -114,7 +114,11 @@ function StorePage() {
               >
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {listings.data?.items.map((item) => (
-                    <ListingCard key={item.id} listing={item} />
+                    <ListingCard
+                      key={item.id}
+                      listing={item}
+                      showSeller={false}
+                    />
                   ))}
                 </div>
               </DataState>
