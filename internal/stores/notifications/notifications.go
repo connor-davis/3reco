@@ -102,16 +102,29 @@ func (s *Store) MarkAllRead(ctx context.Context, userID string) error {
 	return err
 }
 
-// MarkOffersRead retires offer action messages for one request, for every user.
-// A terminal transition retires every request action type, regardless of its wording.
-// Call before inserting the completion notice so it stays unread; history links stay available.
-func (s *Store) MarkOffersRead(ctx context.Context, link string, terminal bool) error {
+// MarkOffersRead retires the offer prompts of a request that is still going,
+// for every user. History stays; only the unread flag goes.
+func (s *Store) MarkOffersRead(ctx context.Context, link string) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `UPDATE notifications SET read = true
-		WHERE link = $1 AND NOT read AND (
-			(NOT $2 AND type = 'request_accepted' AND title IN
-				('Offer received', 'Offer received!', 'Please confirm the offer'))
-			OR ($2 AND type IN ('request_received', 'request_accepted', 'request_rejected',
-				'request_cancelled', 'message_received')))`, link, terminal)
+		WHERE link = $1 AND NOT read AND type = 'request_accepted' AND title IN
+			('Offer received', 'Offer received!', 'Please confirm the offer')`, link)
+
+	return err
+}
+
+// DeleteRequestActions removes every prompt a finished request left behind,
+// for every user: they ask for something that can no longer be done. Chat
+// notices stay as history and are only marked read. Call it before inserting
+// the outcome notice, so that one survives.
+func (s *Store) DeleteRequestActions(ctx context.Context, link string) error {
+	_, err := s.db.Q(ctx).Exec(ctx, `DELETE FROM notifications WHERE link = $1 AND type IN
+		('request_received', 'request_accepted', 'request_rejected', 'request_cancelled')`, link)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Q(ctx).Exec(ctx, `UPDATE notifications SET read = true
+		WHERE link = $1 AND NOT read AND type = 'message_received'`, link)
 
 	return err
 }

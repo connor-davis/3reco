@@ -140,12 +140,22 @@ func populated(parts []string, separator string) string {
 	return strings.Join(out, separator)
 }
 
+// spacedPhone groups a canonical +27 number the way the app shows it; anything
+// else is printed as stored.
+func spacedPhone(phone string) string {
+	if len(phone) != 12 || !strings.HasPrefix(phone, "+27") {
+		return phone
+	}
+
+	return phone[:3] + " " + phone[3:5] + " " + phone[5:8] + " " + phone[8:]
+}
+
 // Compose makes the immutable PDF input from the authorized internal read model.
 func Compose(document store.Document) pdf.Invoice {
 	trade := document.Trade
 	_, payment := Payment(document.Seller)
 	party := func(contact store.Contact) string {
-		return populated([]string{Name(contact), contact.Email, contact.Phone, Address(contact)}, "\n")
+		return populated([]string{Name(contact), contact.Email, spacedPhone(contact.Phone), Address(contact)}, "\n")
 	}
 
 	kind := "Business to Business"

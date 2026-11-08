@@ -137,9 +137,14 @@ func TestNotificationRequestActionsRetired(t *testing.T) {
 			}
 			tradeWant(t, "close request", actor.c.Do("POST", "/api/requests/"+id+"/"+endpoint, nil), 200)
 
+			// The four prompt types are deleted for everyone; chat history is only read.
 			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
-				WHERE id LIKE 'legacy-%' AND read AND body='Original body'`); got != "5" {
-				t.Fatalf("legacy actions were not retired intact: %s", got)
+				WHERE id LIKE 'legacy-request%'`); got != "0" {
+				t.Fatalf("legacy actions were not deleted: %s", got)
+			}
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE id='legacy-message_received' AND read AND body='Original body'`); got != "1" {
+				t.Fatalf("chat notice was not kept as read history: %s", got)
 			}
 			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
 				WHERE id='outsider-notice' AND NOT read`); got != "1" {
@@ -159,9 +164,7 @@ func TestNotificationRequestActionsRetired(t *testing.T) {
 						t.Fatalf("exclamation in notification title: %v", note)
 					}
 					if title == "Offer received" || title == "Please confirm the offer" || title == "New request received" {
-						if note["read"] != true {
-							t.Fatalf("closed request still has an unread action: %v", note)
-						}
+						t.Fatalf("closed request still shows an action: %v", note)
 					}
 				}
 			}
@@ -169,6 +172,13 @@ func TestNotificationRequestActionsRetired(t *testing.T) {
 			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
 				WHERE link=$1 AND NOT read`, "/market/"+unrelated); got != "2" {
 				t.Fatalf("unrelated notices changed: %s", got)
+			}
+			// Exactly one outcome notice is left for the other side, whatever page it links to.
+			if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+				WHERE user_id IN ($1,$2) AND NOT read AND NOT dismissed
+				AND title IN ('Offer accepted', 'Request rejected', 'Request cancelled')
+				AND created_at > now() - interval '1 minute'`, w.buyer.id, w.seller.id); got != "1" {
+				t.Fatalf("want one outcome notice, got %s", got)
 			}
 			if action == "complete" {
 				if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
@@ -197,10 +207,10 @@ func TestWithdrawnNoticeRetiredOnRejection(t *testing.T) {
 		t.Fatalf("withdrawn notice still unread after rejection: %s", got)
 	}
 
-	// History stays as sent.
-	if got := tradeText(t, w.app, `SELECT body FROM notifications
-		WHERE link=$1 AND title='Offer withdrawn'`, "/market/"+id); !strings.Contains(got, "Negotiation continues") {
-		t.Fatalf("stored text was rewritten: %s", got)
+	// The withdrawn prompt is deleted, not kept as history.
+	if got := tradeText(t, w.app, `SELECT count(*)::text FROM notifications
+		WHERE link=$1 AND title='Offer withdrawn'`, "/market/"+id); got != "0" {
+		t.Fatalf("withdrawn notice survived the rejection: %s", got)
 	}
 }
 

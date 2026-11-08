@@ -31,7 +31,6 @@ func TestTransactionsCannotBeDeleted(t *testing.T) {
 	for _, sql := range []string{
 		`DELETE FROM transactions WHERE id = '` + id + `'`,
 		`DELETE FROM transaction_items WHERE transaction_id = '` + id + `'`,
-		`DELETE FROM transaction_receipts WHERE transaction_id = '` + id + `'`,
 		`TRUNCATE transactions CASCADE`,
 		`TRUNCATE transaction_items`,
 		`TRUNCATE transaction_receipts`,

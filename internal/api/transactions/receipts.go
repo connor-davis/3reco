@@ -56,3 +56,12 @@ func (h *Handler) receiptAttach(c fiber.Ctx) error {
 
 	return c.JSON(receipt)
 }
+
+func (h *Handler) receiptRemove(c fiber.Ctx) error {
+	err := h.files.Remove(c.Context(), caller(c), c.Params("id"), c.Params("receipt_id"))
+	if err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

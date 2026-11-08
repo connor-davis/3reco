@@ -8,7 +8,7 @@ import (
 )
 
 func (service *Service) notifyListing(ctx context.Context, item store.Item) error {
-	kind, title, visibility := "stock_unlisted", "Stock removed from market", "hidden from"
+	kind, title, visibility := "stock_unlisted", "Stock hidden from the market", "hidden from"
 	if item.IsListed {
 		kind, title, visibility = "stock_listed", "Stock listed on market", "visible on"
 	}

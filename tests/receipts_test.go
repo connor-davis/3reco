@@ -177,3 +177,50 @@ func TestReceiptConcurrentSixthFails(t *testing.T) {
 		t.Fatalf("stored receipts %d, want 5", count)
 	}
 }
+
+func TestReceiptRemove(t *testing.T) {
+	w := newTradeWorld(t)
+	id := tradeSale(t, w.seller, w.buyer, w.material, "5", "8")
+	path := "/api/transactions/" + id + "/receipts"
+	stranger := tradeNewUser(t, w.app, "business")
+	staff := tradeNewUser(t, w.app, "staff")
+	admin := tradeNewUser(t, w.app, "admin")
+
+	upload := func(seed byte, by tradeUser) string {
+		got := uploadImage(t, w.app, by.c, path, receiptImage(seed))
+		tradeWant(t, "upload", got, 200)
+
+		return path + "/" + got.Body["id"].(string)
+	}
+
+	first := upload(1, w.seller)
+	other := tradeSale(t, w.seller, w.buyer, w.material, "1", "8")
+
+	tradeWant(t, "anonymous", w.app.NewClient(t).Do("DELETE", first, nil), 401)
+	tradeWant(t, "stranger", stranger.c.Do("DELETE", first, nil), 404)
+	tradeWant(t, "other transaction", w.buyer.c.Do("DELETE",
+		"/api/transactions/"+other+"/receipts/"+first[len(path)+1:], nil), 404)
+	tradeWant(t, "missing receipt", w.buyer.c.Do("DELETE", path+"/missing", nil), 404)
+	tradeWant(t, "staff can read but not remove", staff.c.Do("DELETE", first, nil), 403)
+
+	if count := objectCount(t, w.app, "receipts/"); count != 1 {
+		t.Fatalf("refused deletes left %d objects, want 1", count)
+	}
+
+	// Each allowed role removes one receipt: the buyer, the seller who
+	// uploaded it, and an admin.
+	tradeWant(t, "buyer", w.buyer.c.Do("DELETE", first, nil), 204)
+	tradeWant(t, "gone", w.buyer.c.Do("GET", first, nil), 404)
+	tradeWant(t, "twice", w.buyer.c.Do("DELETE", first, nil), 404)
+	tradeWant(t, "seller", w.seller.c.Do("DELETE", upload(2, w.buyer), nil), 204)
+	tradeWant(t, "uploader", w.buyer.c.Do("DELETE", upload(3, w.buyer), nil), 204)
+	tradeWant(t, "admin", admin.c.Do("DELETE", upload(4, w.seller), nil), 204)
+
+	if count := objectCount(t, w.app, "receipts/"); count != 0 {
+		t.Fatalf("removed receipts left %d objects, want 0", count)
+	}
+
+	// The slot is free again and the trade itself is untouched.
+	tradeWant(t, "re-upload", uploadImage(t, w.app, w.buyer.c, path, receiptImage(1)), 200)
+	tradeWant(t, "trade kept", w.buyer.c.Do("GET", "/api/transactions/"+id, nil), 200)
+}

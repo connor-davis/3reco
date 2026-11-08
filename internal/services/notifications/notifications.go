@@ -35,15 +35,16 @@ func (s *Service) Notify(ctx context.Context, userID, kind, title, body, link st
 }
 
 // OffersEnded marks a request's offer messages read, in the same transaction
-// as the change that ended the request.
+// as the change that ended the offer but not the request.
 func (s *Service) OffersEnded(ctx context.Context, requestID string) error {
-	return s.store.MarkOffersRead(ctx, "/market/"+requestID, false)
+	return s.store.MarkOffersRead(ctx, "/market/"+requestID)
 }
 
-// RequestEnded retires action notices for a closed request, retaining their history links.
-// Call before adding the informational completion notice in the same transaction.
+// RequestEnded deletes the prompts of a request that completed, was rejected,
+// cancelled or erased. Call it before adding the outcome notice, in the same
+// transaction. The delete fires the realtime trigger, so an open bell updates.
 func (s *Service) RequestEnded(ctx context.Context, requestID string) error {
-	return s.store.MarkOffersRead(ctx, "/market/"+requestID, true)
+	return s.store.DeleteRequestActions(ctx, "/market/"+requestID)
 }
 
 // List returns one page of the caller's messages.

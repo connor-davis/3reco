@@ -3,6 +3,9 @@ package files
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
 	tstore "github.com/connor-davis/3reco/internal/stores/transactions"
@@ -59,4 +62,27 @@ func (s *Store) ReceiptObject(
 		&key, &receipt.ID, &receipt.FileName, &receipt.ContentType, &receipt.Size, &receipt.UploadedAt)
 
 	return key, receipt, err
+}
+
+// LockReceipt finds a receipt inside its transaction and locks the row, so two
+// removals cannot both pass the access check. found is false when it is absent.
+func (s *Store) LockReceipt(
+	ctx context.Context,
+	id, receiptID string,
+) (key, uploadedBy string, found bool, err error) {
+	err = s.db.Q(ctx).QueryRow(ctx, `SELECT object_key, COALESCE(uploaded_by, '')
+		FROM transaction_receipts WHERE transaction_id=$1 AND id=$2 FOR UPDATE`,
+		id, receiptID).Scan(&key, &uploadedBy)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", "", false, nil
+	}
+
+	return key, uploadedBy, err == nil, err
+}
+
+// DeleteReceipt removes the metadata row of one receipt.
+func (s *Store) DeleteReceipt(ctx context.Context, receiptID string) error {
+	_, err := s.db.Q(ctx).Exec(ctx, `DELETE FROM transaction_receipts WHERE id=$1`, receiptID)
+
+	return err
 }

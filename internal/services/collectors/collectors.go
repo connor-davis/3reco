@@ -162,8 +162,12 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		return nil, err
 	}
 
-	// An admin reading the directory sees full identifiers: one audit line per call.
-	audited := false
+	// Each row an admin sees with a full identifier is one audit line naming
+	// that collector; rows cut off by the page limit are never shown.
+	shown := min(len(items), query.Limit)
+	if selection {
+		shown = min(len(items), 200)
+	}
 
 	for i := range items {
 		own, err := service.own(ctx, user, items[i])
@@ -171,10 +175,10 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 			return nil, err
 		}
 
-		if !audited && auth.HasRole(user, "admin") && hasIdentifier(items[i]) {
-			audited = true
-
-			if err := service.audit.Record(ctx, user.ID, "", privacy.KindAdminFullView); err != nil {
+		if i < shown && auth.HasRole(user, "admin") && !creator(user, items[i]) &&
+			hasIdentifier(items[i]) {
+			err := service.audit.Record(ctx, user.ID, items[i].ID, privacy.KindAdminFullView)
+			if err != nil {
 				return nil, err
 			}
 		}
