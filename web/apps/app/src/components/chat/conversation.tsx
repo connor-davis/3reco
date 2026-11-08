@@ -78,6 +78,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
   );
   const newest = messages.at(-1)?.id;
   const scroll = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const older = useRef<HTMLDivElement>(null);
   const prepend = useRef<{ height: number; top: number } | null>(null);
   const lastNewest = useRef<string | undefined>(undefined);
@@ -119,6 +120,22 @@ export function Conversation({ request }: { request: TradeRequest }) {
     lastNewest.current = newest;
   }, [newest, messages.length]);
 
+  useLayoutEffect(() => {
+    const viewport = scroll.current;
+    const body = content.current;
+    if (!viewport || !body) return;
+
+    // A live confirmation can grow the offer without adding a message.
+    // Follow that resize only while the person is reading the latest content.
+    const observer = new ResizeObserver(() => {
+      if (atBottom.current && !prepend.current)
+        viewport.scrollTop = viewport.scrollHeight;
+    });
+    observer.observe(body);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     const viewport = scroll.current;
     if (
@@ -155,7 +172,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
-      <header className="flex min-h-20 items-center gap-3 border-b bg-background px-4 py-3 sm:px-6">
+      <header className="flex min-h-20 shrink-0 items-center gap-3 border-b bg-background px-4 py-3 sm:px-6">
         <Link
           to="/messages"
           aria-label="Back to messages"
@@ -178,10 +195,10 @@ export function Conversation({ request }: { request: TradeRequest }) {
       </header>
       {/* A closed deal has no steps or actions, so no band is drawn. */}
       {!isClosed(request) && (
-        <div className="space-y-3 border-b bg-background px-4 py-3 sm:px-6">
+        <div className="shrink-0 space-y-3 border-b bg-background px-4 py-3 sm:px-6">
           <DealStepper request={request} />
           {canAct && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               {request.status === 'pending' && !seller && (
                 <p className="text-sm text-muted-foreground">
                   Waiting for {request.seller.name} to make an offer.
@@ -231,7 +248,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
               100;
         }}
       >
-        <div className="space-y-4 px-4 py-6 sm:px-6">
+        <div ref={content} className="space-y-4 px-4 py-6 sm:px-6">
           <div ref={older}>
             {hasNextPage && (
               <Button
@@ -316,8 +333,13 @@ export function Conversation({ request }: { request: TradeRequest }) {
               request={request}
               canRespond={canAct && canRespond(request, user?.id)}
               onAccept={() =>
-                void actions.accept().then((ok) => {
-                  if (ok) toast.success('Confirmation saved.');
+                void actions.accept().then((status) => {
+                  if (status)
+                    toast.success(
+                      status === 'accepted'
+                        ? 'Trade complete. Invoice created.'
+                        : 'Confirmation saved.'
+                    );
                 })
               }
               onDecline={() => setConfirm('reject')}
@@ -332,7 +354,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
           )}
         </div>
       </div>
-      <footer className="space-y-3 border-t bg-background px-4 py-4 sm:px-6">
+      <footer className="shrink-0 space-y-3 border-t bg-background px-4 py-4 sm:px-6">
         {actions.error && (
           <p role="alert" className="text-sm text-destructive">
             {actions.error}

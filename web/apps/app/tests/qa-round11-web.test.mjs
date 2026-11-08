@@ -49,7 +49,7 @@ test('S1/L1: a bad weight or price gets the right reason', () => {
   assert.equal(quantityError('-5'), above);
   assert.equal(quantityError('0'), above);
   assert.equal(quantityError('abc'), 'Enter a weight as a number, like 12.5.');
-  assert.equal(quantityError(''), 'Enter a weight as a number, like 12.5.');
+  assert.equal(quantityError(''), 'Enter a weight.');
   assert.equal(quantityError('1.234'), 'Use up to 2 decimals.');
   assert.equal(quantityError('12.5'), null);
   assert.equal(priceError('-1'), 'Enter a price above R 0.00.');

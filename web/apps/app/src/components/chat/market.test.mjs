@@ -189,6 +189,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
     { current: viewport },
     { current: null },
     { current: null },
+    { current: null },
     { current: undefined },
     { current: true },
     { current: null },
@@ -315,6 +316,7 @@ test('expired offers keep the API conflict message and refresh the request', asy
     '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 'buyer' } }) },
     '@/lib/api/client': { ApiError },
     '@/lib/api/requests': {
+      useRequest: () => ({}),
       useAcceptRequest: () => ({
         ...idle,
         mutateAsync: async () => {

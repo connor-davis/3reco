@@ -18,7 +18,7 @@ export function ListingCard({
         <Package className="size-16" strokeWidth={1.25} aria-hidden="true" />
       </div>
       <CardContent className="mt-3.5 space-y-1.5 px-0">
-        <h3 className="line-clamp-2 min-h-12 font-semibold tracking-tight">
+        <h3 className="line-clamp-2 font-semibold tracking-tight">
           <Link
             className="rounded outline-none after:absolute after:inset-0 hover:underline focus-visible:after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring focus-visible:after:ring-inset"
             to="/market/listing/$listingId"
@@ -33,7 +33,8 @@ export function ListingCard({
             : `${formatKg(listing.weight)} available`}
         </p>
         <p className="font-semibold tabular-nums">
-          {formatRate(listing.price)}
+          <span className="font-normal">R</span>
+          {formatRate(listing.price).slice(1)}
         </p>
         {showSeller && (
           <Link

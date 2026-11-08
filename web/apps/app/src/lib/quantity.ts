@@ -105,6 +105,7 @@ export function quantityError(
   availableKg?: string
 ): string | null {
   const clean = value.trim().replace(',', '.');
+  if (!clean) return 'Enter a weight.';
   const isNumber = /^-?\d*\.?\d*$/.test(clean) && /\d/.test(clean);
 
   // The sign and zero come first, so "-5" is not told to use 2 decimals.

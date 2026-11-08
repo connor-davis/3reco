@@ -118,6 +118,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
   });
   const weight = form.watch('weight');
   const problem = quantityError(weight, listing.weight);
+  const orderDisabled = save.isPending || cart.isFetching || !!problem;
 
   async function add(values: { weight: string }) {
     if (!cart.data) return;
@@ -216,7 +217,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
               <div className="flex flex-wrap gap-3">
                 <Button
                   type="button"
-                  disabled={toGrams(listing.weight) === 0}
+                  disabled={orderDisabled}
                   onClick={() => setChatOpen(true)}
                 >
                   Request this material
@@ -224,7 +225,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 <Button
                   type="submit"
                   variant="outline"
-                  disabled={save.isPending || cart.isFetching || !!problem}
+                  disabled={orderDisabled}
                 >
                   Add to cart
                 </Button>

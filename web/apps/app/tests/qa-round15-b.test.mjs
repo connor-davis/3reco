@@ -33,7 +33,10 @@ test('qa-round15 HK4: a removed account gets its own title', () => {
 
 test('qa-round15 SN6: the trade pill has room around its words', () => {
   const list = source('routes/transactions/-components/record-list.tsx');
-  assert.match(list, /className="h-7 w-40 shrink-0 justify-center px-3"/);
+  assert.match(
+    list,
+    /className="h-8 w-40 shrink-0 justify-center px-3 text-sm"/
+  );
 });
 
 test('qa-round15 SN7: the Listed switch has a real label', () => {

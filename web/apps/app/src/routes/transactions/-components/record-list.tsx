@@ -167,7 +167,10 @@ export function RecordList({
         type: filters.type,
         q,
       },
-      { onError: (error) => toast.error(errorText(error)) }
+      {
+        onSuccess: () => toast.success('Export downloaded.'),
+        onError: (error) => toast.error(errorText(error)),
+      }
     );
   }
 
@@ -303,7 +306,7 @@ export function RecordList({
               <ItemActions className="flex-wrap">
                 <Badge
                   variant="outline"
-                  className="h-7 w-40 shrink-0 justify-center px-3"
+                  className="h-8 w-40 shrink-0 justify-center px-3 text-sm"
                 >
                   {row.type === 'b2b' ? 'Business trade' : 'Collector purchase'}
                 </Badge>
