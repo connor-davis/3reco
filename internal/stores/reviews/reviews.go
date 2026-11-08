@@ -20,6 +20,7 @@ type Review struct {
 	Rating       int       `json:"rating"`
 	Comment      *string   `json:"comment"`
 	ReviewerName string    `json:"reviewer_name"`
+	Materials    string    `json:"materials"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -54,7 +55,10 @@ func (s *Store) BySeller(
 	limit int,
 ) ([]Review, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT r.id, r.rating, r.comment, `+database.DisplayName("u")+`, r.created_at
+		SELECT r.id, r.rating, r.comment, `+database.DisplayName("u")+`, r.created_at,
+			COALESCE((SELECT string_agg(m.name, '; ' ORDER BY m.name)
+				FROM transaction_items i JOIN materials m ON m.id=i.material_id
+				WHERE i.transaction_id=r.transaction_id), '')
 		FROM store_reviews r JOIN users u ON u.id = r.buyer_id
 		WHERE r.seller_id = $1 AND ($2::timestamptz IS NULL OR (r.created_at, r.id) < ($2, $3))
 		ORDER BY r.created_at DESC, r.id DESC
@@ -69,7 +73,14 @@ func (s *Store) BySeller(
 	for rows.Next() {
 		var r Review
 
-		if err := rows.Scan(&r.ID, &r.Rating, &r.Comment, &r.ReviewerName, &r.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&r.ID,
+			&r.Rating,
+			&r.Comment,
+			&r.ReviewerName,
+			&r.CreatedAt,
+			&r.Materials,
+		); err != nil {
 			return nil, err
 		}
 

@@ -32,11 +32,11 @@ test('an offer price gets the right message for each mistake', () => {
   assert.equal(priceError('-5'), 'Enter a price above R 0.00.');
   assert.equal(
     priceError('100000.01'),
-    'Price must be R 100000.00 per kg or less.'
+    'Price must be R 100 000.00 per kg or less.'
   );
   assert.equal(
     priceError('999999999'),
-    'Price must be R 100000.00 per kg or less.'
+    'Price must be R 100 000.00 per kg or less.'
   );
 });
 

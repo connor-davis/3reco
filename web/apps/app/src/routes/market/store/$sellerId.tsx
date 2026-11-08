@@ -209,6 +209,9 @@ function StorePage() {
                   {reviews.data?.items.map((review) => (
                     <li key={review.id} className="space-y-2 border-b pb-4">
                       <p className="font-medium">{review.reviewer_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {review.materials}
+                      </p>
                       <Stars value={review.rating} />
                       <p>{review.comment}</p>
                       <p className="text-sm text-muted-foreground">

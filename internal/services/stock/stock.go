@@ -73,12 +73,16 @@ func (service *Service) Find(ctx context.Context, id, caller string) (store.Item
 	return item, err
 }
 
-func validate(item store.Item, newWeight bool) error {
-	if _, err := Decimal(item.Weight, "weight", true); err != nil {
+func validate(item store.Item, newWeight, newPrice bool) error {
+	weight, err := Decimal(item.Weight, "weight", true)
+	if err != nil {
 		return err
 	}
 	if _, fraction, _ := strings.Cut(item.Weight, "."); newWeight && len(fraction) > 2 {
 		return apperr.Field("weight", "Enter a weight with up to 2 decimals, such as 12.50.")
+	}
+	if newWeight && weight.Cmp(big.NewRat(1000000, 1)) > 0 {
+		return apperr.Field("weight", "Weight must be 1 000 000 kg or less.")
 	}
 
 	price, err := Decimal(item.Price, "price", false)
@@ -88,6 +92,9 @@ func validate(item store.Item, newWeight bool) error {
 
 	if !new(big.Rat).Mul(price, big.NewRat(100, 1)).IsInt() {
 		return apperr.Field("price", "Enter a price with up to 2 decimals, such as 12.50.")
+	}
+	if newPrice && price.Cmp(big.NewRat(100000, 1)) > 0 {
+		return apperr.Field("price", "Price must be R 100 000.00 per kg or less.")
 	}
 
 	base, err := Decimal(item.BasePrice, "base_price", false)
@@ -124,7 +131,7 @@ func (service *Service) Create(ctx context.Context, owner string, in Input) (str
 			}
 
 			item.BasePrice = base
-			if err := validate(item, true); err != nil {
+			if err := validate(item, true, true); err != nil {
 				return err
 			}
 
@@ -150,11 +157,26 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 			}
 
 			oldListed := item.IsListed
+			weightChanged, priceChanged := false, false
 			if in.Weight != nil {
+				amount, err := Decimal(*in.Weight, "weight", false)
+				if err != nil {
+					return err
+				}
+
+				previous, _ := new(big.Rat).SetString(item.Weight)
+				weightChanged = amount.Cmp(previous) != 0
 				item.Weight = *in.Weight
 			}
 
 			if in.Price != nil {
+				amount, err := Decimal(*in.Price, "price", false)
+				if err != nil {
+					return err
+				}
+
+				previous, _ := new(big.Rat).SetString(item.Price)
+				priceChanged = amount.Cmp(previous) != 0
 				item.Price = *in.Price
 			}
 
@@ -179,7 +201,8 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 				}
 			}
 
-			if err := validate(item, in.Weight != nil); err != nil {
+			// Collections and trades can accumulate stock beyond the manual entry caps.
+			if err := validate(item, weightChanged, priceChanged); err != nil {
 				return err
 			}
 

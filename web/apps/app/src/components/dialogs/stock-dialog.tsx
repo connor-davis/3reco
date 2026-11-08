@@ -7,6 +7,7 @@ import { DecimalField, SelectField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useMaterials } from '@/lib/api/materials';
@@ -23,20 +24,59 @@ import {
 
 const decimal = /^\d{1,12}([.,]\d{1,2})?$/;
 
-const schema = z.object({
-  material_id: z.string().min(1, 'Pick a material.'),
-  weight: z.string().superRefine((value, ctx) => {
-    const message = quantityError(value);
-    if (message) ctx.addIssue({ code: 'custom', message });
-  }),
-  price: z.string().superRefine((value, ctx) => {
-    const message = priceError(value);
-    if (message) ctx.addIssue({ code: 'custom', message });
-  }),
-  is_listed: z.boolean(),
-});
+const schema = (stock?: StockItem) =>
+  z.object({
+    material_id: z.string().min(1, 'Pick a material.'),
+    weight: z.string().superRefine((value, ctx) => {
+      if (sameAmount(value, stock?.weight)) return;
+      const message =
+        quantityError(value) ??
+        stockLimit(value, 100_000_000n, 'Weight must be 1 000 000 kg or less.');
+      if (message) ctx.addIssue({ code: 'custom', message });
+    }),
+    price: z.string().superRefine((value, ctx) => {
+      if (sameAmount(value, stock?.price)) return;
+      const message =
+        priceError(value) ??
+        stockLimit(
+          value,
+          10_000_000n,
+          'Price must be R 100 000.00 per kg or less.'
+        );
+      if (message) ctx.addIssue({ code: 'custom', message });
+    }),
+    is_listed: z.boolean(),
+  });
 
-type Values = z.infer<typeof schema>;
+type Values = z.infer<ReturnType<typeof schema>>;
+
+function sameAmount(value: string, original?: string) {
+  const canonical = (raw: string) =>
+    raw
+      .trim()
+      .replace(',', '.')
+      .replace(/^0+(?=\d)/, '')
+      .replace(/(\.\d*?)0+$/, '$1')
+      .replace(/\.$/, '');
+  return (
+    original !== undefined &&
+    /^\d+(\.\d+)?$/.test(value.trim().replace(',', '.')) &&
+    canonical(value) === canonical(original)
+  );
+}
+
+// Compare hundredths exactly, without rounding the typed amount.
+function stockLimit(value: string, maximum: bigint, message: string) {
+  const clean = value.trim().replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return undefined;
+
+  const hundredths = (raw: string) => {
+    const [whole, fraction = ''] = raw.trim().replace(',', '.').split('.');
+    return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
+  };
+  const amount = hundredths(clean);
+  return amount > maximum ? message : undefined;
+}
 
 // Same words as the server, so the message reads the same before and after Save.
 function belowBase(price: string, base?: string) {
@@ -75,7 +115,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
     formState,
   } = useForm<Values>({
     resolver: async (values, context, options) => {
-      const result = await zodResolver(schema)(values, context, options);
+      const result = await zodResolver(schema(stock))(values, context, options);
       const message = belowBase(values.price, baseRef.current);
       if (!message || 'price' in result.errors) return result;
 
@@ -111,8 +151,8 @@ function StockForm({ open, onOpenChange, stock }: Props) {
     try {
       if (stock) {
         await update.mutateAsync({
-          weight,
-          price,
+          weight: sameAmount(weight, stock.weight) ? undefined : weight,
+          price: sameAmount(price, stock.price) ? undefined : price,
           is_listed: values.is_listed,
         });
         // Say what changed about the market when the switch moved.
@@ -156,18 +196,27 @@ function StockForm({ open, onOpenChange, stock }: Props) {
       title={stock ? 'Edit stock' : 'Add stock'}
       description="Listed stock shows up in the market. Prices are per kg."
       footer={
-        <div className="space-y-2">
-          <Button
-            disabled={busy || !formState.isValid}
-            onClick={handleSubmit(onSubmit)}
-          >
-            {stock ? 'Save changes' : 'Add stock'}
-          </Button>
-          {pristine && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Pick a material, then enter a weight and a price.
-            </p>
-          )}
+        <div className="w-full space-y-2">
+          <div className="h-10">
+            {serverError && (
+              <p role="alert" className="text-sm text-destructive">
+                {serverError}
+              </p>
+            )}
+            {pristine && (
+              <p role="status" className="text-sm text-muted-foreground">
+                Pick a material, then enter a weight and a price.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={busy || !formState.isValid}
+              onClick={handleSubmit(onSubmit)}
+            >
+              {stock ? 'Save changes' : 'Add stock'}
+            </Button>
+          </DialogFooter>
         </div>
       }
     >
@@ -185,28 +234,32 @@ function StockForm({ open, onOpenChange, stock }: Props) {
             options={items.map((m) => ({ value: m.id, label: m.name }))}
           />
         )}
-        <DecimalField
-          control={control}
-          name="weight"
-          label="Weight (kg)"
-          counter={weightCounter()}
-          description={
-            stock && stock.available_weight !== stock.weight
-              ? 'Some of this stock is held for open offers.'
-              : undefined
-          }
-        />
-        <DecimalField
-          control={control}
-          name="price"
-          label="Price (R / kg)"
-          counter={priceCounter(base)}
-          description={
-            base
-              ? `At least ${formatRate(base)}.`
-              : 'Pick a material to see its lowest price.'
-          }
-        />
+        <div className="min-h-32">
+          <DecimalField
+            control={control}
+            name="weight"
+            label="Weight (kg)"
+            counter={{ ...weightCounter(), unit: undefined }}
+            description={
+              stock && stock.available_weight !== stock.weight
+                ? 'Some of this stock is held for open offers.'
+                : undefined
+            }
+          />
+        </div>
+        <div className="min-h-32">
+          <DecimalField
+            control={control}
+            name="price"
+            label="Price (R / kg)"
+            counter={{ ...priceCounter(base), unit: undefined }}
+            description={
+              base
+                ? `At least ${formatRate(base)}.`
+                : 'Pick a material to see its lowest price.'
+            }
+          />
+        </div>
         <Field orientation="horizontal">
           <Switch
             id="stock-listed"
@@ -219,11 +272,6 @@ function StockForm({ open, onOpenChange, stock }: Props) {
             Show in the market
           </FieldLabel>
         </Field>
-        {serverError && (
-          <p role="alert" className="text-sm text-destructive">
-            {serverError}
-          </p>
-        )}
       </form>
     </ResponsiveOverlay>
   );

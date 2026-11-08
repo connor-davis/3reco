@@ -169,7 +169,7 @@ func checkAmount(raw, field string, capped bool) error {
 		return apperr.Field(field, "Enter a positive amount with up to 2 decimals.")
 	}
 	if capped && number.Cmp(big.NewRat(100000, 1)) > 0 {
-		return apperr.Field(field, "Price must be R 100000.00 per kg or less.")
+		return apperr.Field(field, "Price must be R 100 000.00 per kg or less.")
 	}
 
 	return nil

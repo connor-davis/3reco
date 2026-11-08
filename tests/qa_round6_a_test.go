@@ -37,7 +37,7 @@ func TestQARound6AOfferPriceAndWeightLimits(t *testing.T) {
 	}
 
 	capped := w.seller.c.Do("POST", path, offer("10", "100000.01"))
-	if !strings.Contains(string(capped.Raw), "R 100000.00 per kg or less") {
+	if !strings.Contains(string(capped.Raw), "R 100 000.00 per kg or less") {
 		t.Fatalf("cap message: %s", capped.Raw)
 	}
 
