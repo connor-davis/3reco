@@ -100,7 +100,15 @@ func TestReviewsPublicProjection(t *testing.T) {
 
 	row, _ := items[0].(map[string]any)
 
-	want := map[string]bool{"id": true, "rating": true, "comment": true, "reviewer_name": true, "created_at": true}
+	want := map[string]bool{
+		"id": true, "rating": true, "comment": true, "reviewer_name": true,
+		"created_at": true, "materials": true,
+	}
+	for key := range want {
+		if _, ok := row[key]; !ok {
+			t.Errorf("public review is missing the field %q", key)
+		}
+	}
 	for key := range row {
 		if !want[key] {
 			t.Errorf("public review has the extra field %q", key)

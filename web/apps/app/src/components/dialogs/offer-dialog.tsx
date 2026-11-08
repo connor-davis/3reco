@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { DecimalField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { useOffer } from '@/lib/api/requests';
 import type { TradeRequest } from '@/lib/api/types';
 import { formatKg, formatRand, lineCents, toGrams } from '@/lib/format';
@@ -23,7 +24,7 @@ function priceError(raw: string): string | undefined {
   return (
     priceFormatError(price) ??
     (lineCents(price, '1') > MAX_PRICE_CENTS
-      ? 'Price must be R 100000.00 per kg or less.'
+      ? 'Price must be R 100 000.00 per kg or less.'
       : undefined)
   );
 }
@@ -155,39 +156,50 @@ function OfferForm({
             {request.items[index].material_name}
           </legend>
           <div className="grid gap-4">
-            <DecimalField
-              control={form.control}
-              name={`items.${index}.weight`}
-              label="Weight (kg)"
-              counter={weightCounter(
-                request.items[index].available_weight ?? undefined
-              )}
-              description={overAsked(
-                lines[index]?.weight,
-                request.items[index].requested_weight
-              )}
-            />
-            <DecimalField
-              control={form.control}
-              name={`items.${index}.price`}
-              label="Price per kg (R)"
-              counter={priceCounter()}
-            />
+            <div className="min-h-32">
+              <DecimalField
+                control={form.control}
+                name={`items.${index}.weight`}
+                label="Weight (kg)"
+                counter={{
+                  ...weightCounter(
+                    request.items[index].available_weight ?? undefined
+                  ),
+                  unit: undefined,
+                }}
+                description={overAsked(
+                  lines[index]?.weight,
+                  request.items[index].requested_weight
+                )}
+              />
+            </div>
+            <div className="min-h-32">
+              <DecimalField
+                control={form.control}
+                name={`items.${index}.price`}
+                label="Price (R / kg)"
+                counter={{ ...priceCounter(), unit: undefined }}
+              />
+            </div>
           </div>
         </fieldset>
       ))}
       <p className="font-medium tabular-nums">Total {totalText}</p>
-      {form.formState.errors.root?.message && (
-        <p role="alert" className="text-destructive">
-          {form.formState.errors.root.message}
-        </p>
-      )}
-      <Button
-        type="submit"
-        disabled={offer.isPending || !validLines || !form.formState.isValid}
-      >
-        {request.status === 'offered' ? 'Send counter offer' : 'Send offer'}
-      </Button>
+      <div className="h-10">
+        {form.formState.errors.root?.message && (
+          <p role="alert" className="text-destructive">
+            {form.formState.errors.root.message}
+          </p>
+        )}
+      </div>
+      <DialogFooter>
+        <Button
+          type="submit"
+          disabled={offer.isPending || !validLines || !form.formState.isValid}
+        >
+          {request.status === 'offered' ? 'Send counter offer' : 'Send offer'}
+        </Button>
+      </DialogFooter>
     </form>
   );
 }

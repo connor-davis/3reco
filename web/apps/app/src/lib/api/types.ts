@@ -310,6 +310,7 @@ export interface Review {
   rating: number;
   comment: string | null;
   reviewer_name: string;
+  materials: string;
   created_at: string;
 }
 export interface ReviewSummary {

@@ -106,7 +106,7 @@ func CheckPricedItems(items []SaleItem) error {
 		}
 
 		if price.Cmp(maxOfferPrice) > 0 {
-			return apperr.Field("price", "Price must be R 100000.00 per kg or less.")
+			return apperr.Field("price", "Price must be R 100 000.00 per kg or less.")
 		}
 	}
 
