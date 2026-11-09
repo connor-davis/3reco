@@ -1,0 +1,42 @@
+# Transactions
+
+A transaction is the record of a completed trade: who sold to whom, which materials, what weight and what price, plus an invoice and optional receipts.
+
+## Types
+
+| Type | Meaning | How it is made |
+|---|---|---|
+| `c2b` | Collector to business | A business records a collection from one of its collectors |
+| `b2b` | Business to business | A request is accepted, or a direct sale is recorded |
+
+## Making one
+
+```typescript
+// A business records a collection
+await fetch('/api/transactions/collections', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    collector_id, business_id,
+    items: [{ material_id, weight: '125', price: '6.50' }],
+    collection_day: '2026-11-05',
+  }),
+})
+
+// A direct business-to-business sale
+await fetch('/api/transactions/sales', { /* same shape: { business_id, items } */ })
+```
+
+Weights and prices are decimal strings, never JSON numbers. A trade has up to 100 lines and no repeated material. Stock is checked and moved in the same database transaction, so a trade either happens completely or not at all.
+
+## Invoice and receipts
+
+- A PDF invoice is made for every trade and downloaded from `GET /api/transactions/:id/invoice`. See [Invoices](/docs/features/invoices).
+- Either side can attach up to five receipt images (PNG or JPEG, 5 MiB each) with `POST /api/transactions/:id/receipts`.
+
+## Seeing them
+
+`GET /api/transactions/` lists your trades, `/purchases` the ones where you bought and `/sales` the business-to-business ones where you sold. Admins and staff see everything on their dashboard and exports. Each person only ever reads trades they took part in.
+
+The total value of a trade is the sum of `weight × price` over its lines, worked out exactly on the server. See [Transactions API](/docs/api/transactions) for the full shape.

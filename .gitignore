@@ -3,3 +3,6 @@ node_modules
 .mongodb
 .zip
 app/dist.zip
+
+# Local scratch (maps, design mockups)
+mystuff/

@@ -1,0 +1,48 @@
+# Users API
+
+Profiles, the public directory and admin user management. All routes are under `/api`.
+
+## Your profile
+
+### `GET /api/profile`
+
+Your full profile, in `snake_case`: `id, email, role, name, image, avatar_url, phone, first_name, last_name, id_number, business_name, business_registration_number, bank_*, street_address, city, province, area_code, profile_complete, agreed_to_terms`.
+
+**Access:** signed in
+
+### `PATCH /api/profile`
+
+Send only the keys you change. Unknown keys are refused. Your email is not editable here.
+
+```json
+{ "first_name": "Thandi", "city": "Durban", "profile_complete": true }
+```
+
+**Returns:** `{ "ok": true }`. ID numbers, bank account numbers and e-wallet ids are stored encrypted.
+
+### Avatar
+
+| Method | Path | What |
+|---|---|---|
+| POST | `/api/profile/avatar` | Upload: multipart field `file`, PNG, JPEG or WEBP, up to 2 MiB. Returns the profile |
+| DELETE | `/api/profile/avatar` | Remove it. Returns the profile |
+| GET | `/api/users/:id/avatar` | The image (public, cached for 5 minutes) |
+
+## Directory
+
+| Method | Path | What |
+|---|---|---|
+| GET | `/api/users?role=collector` | A page of people with that role (`role` is required; signed in) |
+| GET | `/api/users/:id` | One public profile: `id, name, image, avatar_url, business_name, role, created_at` |
+| GET | `/api/stores` | A page of stores (`q`, `cursor`, `limit`; your own is left out) |
+| GET | `/api/stores/:id` | One store with `average_rating` and `review_count` |
+
+## Admin
+
+| Method | Path | What |
+|---|---|---|
+| GET | `/api/admin/users` | A page of users with `email`, `role`, `profile_complete` |
+| PATCH | `/api/admin/users/:id/role` | Set the role: `{ "role": "admin" \| "staff" \| "business" \| "collector" }` |
+| DELETE | `/api/admin/users/:id` | Erase the account (same erase as a person deleting their own) |
+
+Admin routes need the `admin` role (`403 forbidden` otherwise). Live updates: the `admin:users` topic.

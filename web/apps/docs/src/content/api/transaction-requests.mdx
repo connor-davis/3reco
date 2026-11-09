@@ -1,0 +1,49 @@
+# Requests API
+
+A request is how a buyer asks a seller for stock. The seller offers a weight and price, the buyer accepts, and a transaction is recorded. All routes are under `/api` and need a signed-in user. You only see requests where you are the buyer or the seller.
+
+## Status
+
+```
+pending → offered → accepted
+   ▲         │
+   └─────────┘ (buyer declines, or seller withdraws)
+pending or offered → rejected (seller) | cancelled (buyer)
+```
+
+Statuses are `pending`, `offered`, `accepted`, `rejected` and `cancelled`. An offer reserves the stock for 48 hours.
+
+A request is `{ id, seller:{id,name}, buyer:{id,name}, status, items, created_at, updated_at }`. Each item has `material_id`, `material_name`, `stock_id`, `offer_weight`, `offer_price` and `available_weight`.
+
+## Lists
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/requests/incoming` | Requests where you are the seller (page: `cursor`, `limit`) |
+| GET | `/api/requests/outgoing` | Requests where you are the buyer |
+| GET | `/api/requests/:id` | One request (`404 not_found` if you are not a party) |
+
+## Actions
+
+| Method | Path | Who | Body | Result |
+|---|---|---|---|---|
+| POST | `/api/requests/` | buyer | `{ "seller_id", "items": [{ "material_id", "stock_id" }] }` (1 to 50 items) | `{ id }` |
+| POST | `/api/requests/:id/offer` | seller | `{ "items": [{ "material_id", "weight", "price" }] }` | `{ ok }` |
+| POST | `/api/requests/:id/accept` | buyer | none | `{ transaction_id }` |
+| POST | `/api/requests/:id/decline` | buyer | none | `{ ok }` (back to pending) |
+| POST | `/api/requests/:id/withdraw` | seller | none | `{ ok }` (back to pending) |
+| POST | `/api/requests/:id/reject` | seller | none | `{ ok }` |
+| POST | `/api/requests/:id/cancel` | buyer | none | `{ ok }` |
+
+Weights and prices are decimal strings. If the stock no longer covers the offer, the call fails with `409 conflict`. Accepting an offer that ran out or expired is also a `409`.
+
+## Messages
+
+| Method | Path | What |
+|---|---|---|
+| GET | `/api/requests/:id/messages` | A page of messages, oldest first |
+| POST | `/api/requests/:id/messages` | Send `{ "content" }` (1 to 2000 characters, only while the request is `pending`) |
+| POST | `/api/requests/:id/messages/read` | Mark the thread read |
+| GET | `/api/messages/inbox` | One row per thread: `request_id`, `status`, `other`, `latest_message`, `unread_count` |
+
+Live updates: `requests:<your user id>` for the lists and `request:<id>` for one request and its messages.

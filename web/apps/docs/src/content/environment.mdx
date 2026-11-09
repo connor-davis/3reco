@@ -1,0 +1,53 @@
+# Environment Variables
+
+The server reads every setting from environment variables. Locally the defaults work with `task up`. The full list is `EnvVars` in `internal/platform/config/config.go`, and [docs/operate.md](https://github.com/connor-davis/3reco/blob/master/docs/operate.md) keeps the same table.
+
+## Server
+
+| Variable | Default | What it does |
+|---|---|---|
+| `THREERECO_ADDR` | `:8180` | Address the API listens on |
+| `THREERECO_DATABASE_URL` | local Postgres on `localhost:5441` | Postgres connection string |
+| `THREERECO_WEB_ORIGIN` | `http://localhost:5173` | Origin of the web app. Used for CORS, CSRF, WebSockets and email links |
+| `THREERECO_WEB_DIST` | `web/apps/app/dist` | Folder with the built web app. If it is missing, only the API runs |
+| `THREERECO_DEV` | `false` | Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set |
+| `THREERECO_COOKIE_SECURE` | `false` | Set `true` in production so session cookies are HTTPS only |
+| `THREERECO_TRUSTED_PROXIES` | empty | Proxy addresses whose `X-Forwarded-For` is believed |
+| `THREERECO_AUTH_RATE_LIMIT` | `20` | Requests per minute, per address, on each auth route |
+| `THREERECO_DB_MAX_CONNS` | `25` | Largest Postgres pool |
+| `THREERECO_SHUTDOWN_TIMEOUT` | `15s` | How long to wait for requests to finish on stop |
+| `THREERECO_BODY_LIMIT` | `10485760` | Largest request body in bytes |
+
+## Encryption key
+
+| Variable | Default | What it does |
+|---|---|---|
+| `THREERECO_FIELD_KEY` | none, **required** | Base64 of 32 random bytes. Encrypts ID numbers, bank account numbers and e-wallet ids |
+
+<Callout type="warning">
+  Make the key once with `openssl rand -base64 32` and keep a copy apart from the database backups. If it is lost, those fields cannot be read again.
+</Callout>
+
+## Email
+
+| Variable | Default | What it does |
+|---|---|---|
+| `RESEND_API_KEY` | empty | When set, mail goes through Resend |
+| `AUTH_FROM_EMAIL` | `3rEco <no-reply@localhost>` | The From address on every email. Must be a sender verified in Resend |
+| `THREERECO_SMTP_HOST` | empty | SMTP host (Mailpit locally) |
+| `THREERECO_SMTP_PORT` | `1026` | SMTP port |
+
+## File storage
+
+| Variable | Default | What it does |
+|---|---|---|
+| `THREERECO_S3_ENDPOINT` | `localhost:9010` | MinIO or S3 host and port, with no scheme |
+| `THREERECO_S3_BUCKET` | `threereco` | Bucket for uploaded files |
+| `THREERECO_S3_ACCESS_KEY` | `threereco` | S3 access key |
+| `THREERECO_S3_SECRET_KEY` | `threereco-secret` | S3 secret key |
+| `THREERECO_S3_REGION` | `us-east-1` | S3 region |
+| `THREERECO_S3_TLS` | `false` | Use HTTPS to reach S3 |
+
+## Production
+
+`deploy.sh` writes a `.env` with the production values and makes the database, file store and encryption secrets. See [Deployment](/docs/dev/deployment).

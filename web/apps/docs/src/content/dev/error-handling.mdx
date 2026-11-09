@@ -1,0 +1,40 @@
+# Error Handling
+
+The Go API turns every error into JSON, so the web app has one way to read them.
+
+## Error body
+
+```json
+{ "code": "invalid", "message": "Please fix the highlighted field.", "fields": { "weight": "Weight must be more than zero." } }
+```
+
+`fields` is `null` unless the error is about specific inputs.
+
+| HTTP | `code` | Meaning |
+|---|---|---|
+| 400 | `invalid` | A rule failed; `fields` says which input |
+| 401 | `unauthorized` | Not signed in, or wrong email or password |
+| 403 | `forbidden` | Signed in, but not allowed (wrong role, someone else's data, or a request from another origin) |
+| 403 | `email_not_verified` | Sign-in with an email that is not verified yet |
+| 404 | `not_found` | Missing, or a row you may not see |
+| 409 | `conflict` | The data changed under you (for example an offer ran out of stock) |
+| 429 | `rate_limited` | Too many requests; `Retry-After: 60` |
+| 500 | `internal` | A bug on our side. The message is always the same plain text; details go to the server log |
+
+An unknown `/api/...` path is a JSON `404`, never the web app's `index.html`.
+
+## In the server
+
+Expected errors are made with the helpers in `internal/platform/apperr` (`BadRequest`, `Field`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `TooMany`). A handler returns one and the error handler in `internal/api/server.go` writes the JSON. Anything else is logged with the request id and shown as a plain `500`, so no internals leak.
+
+## In the web app
+
+Every call goes through the API client in `web/apps/app/src/lib/api`. It throws a typed error carrying `status`, `code`, `message` and `fields`, so a screen can:
+
+- show `message` in a toast,
+- map `fields` onto form inputs,
+- branch on `code` (`email_not_verified` offers to resend the email, `unauthorized` goes to sign-in, `conflict` refetches).
+
+## Streams
+
+An error before the first byte of a CSV, PDF or file download is JSON. A failure in the middle cuts the stream, so the browser sees a broken download.

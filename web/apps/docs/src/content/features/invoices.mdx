@@ -1,0 +1,33 @@
+# Invoices
+
+3rEco makes a PDF invoice for every completed transaction. Both the buyer and the seller can download it.
+
+## Flow
+
+```
+A request is accepted, or a collection or sale is recorded
+        │
+        ▼
+The transaction and its items are written in one database transaction
+        │
+        ▼
+The server builds an A4 invoice (exact decimals, wrapped lines, pages)
+and stores it in S3-compatible storage (MinIO locally)
+        │
+        ▼
+GET /api/transactions/:id/invoice streams the PDF to a participant
+```
+
+## Download
+
+`GET /api/transactions/:id/invoice` returns `application/pdf` as a download named `3rEco-Invoice-<NUMBER>.pdf`. The number is the last 8 characters of the transaction id, upper case, and is also in the transaction as `invoice_number`.
+
+Only the buyer and the seller can read it; anyone else gets `404 not_found`. If the stored file is missing, the server builds it again on request.
+
+## Storage
+
+The PDFs live in the S3 bucket (`THREERECO_S3_BUCKET`), not in the database. Back the bucket up with the database: a database backup alone loses the files. The PDF is built with an MIT-licensed Go library, so there is no external service.
+
+## Privacy
+
+When an account is erased, the person's name becomes "Removed account" on finished trades and their invoices are rebuilt. Trades older than five years are anonymised, and their invoice is then gone (`404`).

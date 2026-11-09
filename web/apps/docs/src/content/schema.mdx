@@ -1,0 +1,45 @@
+# Database Schema
+
+3rEco keeps everything in Postgres. The schema is plain SQL in `internal/platform/database/migrations/`, applied in file-name order when the server starts. A migration that has been merged is never renamed or rewritten.
+
+## Tables
+
+| Table | Holds |
+|---|---|
+| `users` | Accounts, profile, role, encrypted ID and bank fields |
+| `sessions` | Hashed session tokens |
+| `auth_tokens` | Email verification and password reset tokens |
+| `rate_counts` | Request counts for the rate limit |
+| `collectors` | Collectors a business manages, with payout details |
+| `materials` | The catalogue: name, carbon factor, code, base price |
+| `stock` | What a user holds: material, weight, price, listed or not |
+| `stock_holds` | Weight reserved by an open offer (48 hours) |
+| `transaction_requests` | A buyer's request to a seller, and its status |
+| `transaction_request_items` | The materials in a request and the offered weight and price |
+| `transaction_request_messages` | Chat messages on a request |
+| `request_message_reads` | Who has read which message |
+| `transactions` | Completed trades (`c2b` collector to business, `b2b` business to business) |
+| `transaction_items` | The materials, weights and prices of a trade |
+| `transaction_receipts` | Receipt files attached to a trade |
+| `notifications` | The in-app feed |
+| `carts`, `cart_items` | A buyer's cart per seller |
+| `store_reviews` | Ratings of a seller after a trade |
+| `privacy_notice_acceptances` | Which privacy notice version a user accepted |
+| `privacy_events` | Audit log of exports, erasures and full reads of sensitive fields |
+
+## Rules that matter
+
+- **Exact numbers.** Money and weights are `numeric`. The API sends them as decimal strings.
+- **Encrypted fields.** ID numbers, bank account numbers and e-wallet ids are sealed with `THREERECO_FIELD_KEY` before they are stored.
+- **Available weight** of a stock line is its weight minus active, unexpired holds, never below zero. The market shows available weight only.
+- **Request status:**
+
+```
+pending → offered → accepted
+   │         │
+   │         ├→ pending   (buyer declines or seller withdraws)
+   └─────────┴→ rejected | cancelled
+```
+
+- **Live tables** have a trigger that sends a `NOTIFY` so the realtime hub can tell the right connected clients to refetch. The trigger is named `realtime`; `notify_change()` (migration `0014`) sends the kind, the id and who may hear it, never row data.
+- **Indexes** match the list screens: each list is sorted by time and id, and read with a cursor.

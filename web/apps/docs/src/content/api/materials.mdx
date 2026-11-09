@@ -1,0 +1,42 @@
+# Materials API
+
+The materials catalogue lists the types of recyclable material. Anyone can read it; only admins change it. All routes are under `/api`.
+
+## Read
+
+### `GET /api/materials`
+
+A page of materials. Query: `cursor`, `limit` (default 20, most 100). With `all=true` it returns every material as a plain array.
+
+```typescript
+const res = await fetch('/api/materials?limit=20', { credentials: 'include' })
+const { items, next_cursor, has_more } = await res.json()
+```
+
+**Access:** anyone
+
+### `GET /api/materials/:id`
+
+One material. `404 not_found` if it does not exist.
+
+A material is `{ id, name, carbon_factor, gw_code, price, ... }`. `carbon_factor` is the kg of CO₂ saved per kg recycled and `price` is the base price. Both are decimal strings.
+
+## Change (admin only)
+
+### `POST /api/admin/materials`
+
+```json
+{ "name": "PET Plastic", "carbon_factor": "1.5", "gw_code": "PET-01", "price": "6.50" }
+```
+
+**Returns:** `{ "id": "..." }`
+
+### `PATCH /api/admin/materials/:id`
+
+The same keys, all optional. **Returns:** `{ "ok": true }`
+
+### `DELETE /api/admin/materials/:id`
+
+**Returns:** `{ "ok": true }`. A material that stock or a trade still uses cannot be deleted (`409 conflict`).
+
+Live updates: the `materials` topic tells signed-in clients to refetch the catalogue.

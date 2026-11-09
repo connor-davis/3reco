@@ -1,0 +1,63 @@
+# Authentication
+
+3rEco signs people in with an email and password, and keeps them signed in with a cookie session. The Go server owns all of it: there is no separate auth service.
+
+## How It Works
+
+```
+Browser                         Go server
+  │── POST /api/auth/sign-in ──▶│
+  │                        check password (argon2id)
+  │                        store a hashed session token
+  │◀── Set-Cookie: threereco_session (HttpOnly)
+  │                             │
+  │── any /api request + cookie▶│
+  │                        load the session, load the user
+  │◀── data ────────────────────│
+```
+
+## Sessions
+
+| Item | Value |
+|---|---|
+| Cookie | `threereco_session`, HttpOnly, `SameSite=Lax`, `Secure` when `THREERECO_COOKIE_SECURE=true` |
+| Token | 256 random bits; only its hash is stored in the `sessions` table |
+| Lifetime | 7 days, renewed when used after 24 hours |
+| Several accounts | `threereco_devices` lists the accounts signed in on this browser (up to 10); the account menu switches between them |
+
+The web app sends `credentials: "include"` on every request. There is no CSRF token: on `POST`, `PUT`, `PATCH` and `DELETE` the server checks that the `Origin` header equals `THREERECO_WEB_ORIGIN`.
+
+## Routes
+
+| Method | Path | What it does |
+|---|---|---|
+| POST | `/api/auth/sign-up` | Make an account. Needs `accepted_terms_version` (the current privacy notice). Always answers `{ok:true}`, so it never reveals whether an email exists |
+| POST | `/api/auth/sign-in` | Sign in. An unverified email gets `403 email_not_verified` |
+| POST | `/api/auth/sign-out` | Sign out (switches to the next signed-in account if there is one) |
+| GET | `/api/auth/me` | The signed-in user |
+| POST | `/api/auth/verify-email/send` | Send the verification email again |
+| POST | `/api/auth/verify-email` | Confirm the email with the token from the link |
+| POST | `/api/auth/forgot-password` | Send a reset link |
+| POST | `/api/auth/reset-password` | Set a new password with the token from the link |
+| GET | `/api/auth/sessions` | The accounts signed in on this browser |
+| POST | `/api/auth/sessions/:id/switch` | Switch to one of them |
+| DELETE | `/api/auth/sessions/:id` | Sign one of them out |
+| POST | `/api/auth/sessions/revoke-others` | Sign out every other session of this account |
+| POST | `/api/auth/sessions/sign-out-all` | Sign out every account on this browser |
+
+Auth routes are rate limited per address (`THREERECO_AUTH_RATE_LIMIT`, default 20 a minute). Passwords are 8 to 128 characters.
+
+## Roles
+
+| Role | What it is |
+|---|---|
+| `admin` | Full access; sets roles; reads the audit log |
+| `staff` | Back-office: dashboards and exports, no user management |
+| `business` | Buys and sells; manages its collectors |
+| `collector` | Lists and sells stock |
+
+A new account has no role until the profile is completed. Roles are checked on every route: a call with the wrong role gets `403 forbidden`.
+
+## Passwords from the first 3rEco
+
+People who joined before the move keep their password. The old scrypt hash is still checked once, then replaced by an argon2id hash on the first good sign-in.

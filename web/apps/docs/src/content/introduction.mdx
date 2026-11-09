@@ -1,0 +1,52 @@
+# Introduction
+
+**3rEco** is a real-time marketplace for recyclable materials. Businesses and collectors open stores, list materials, chat, trade and invoice each other.
+
+## What is 3rEco?
+
+The name stands for **3R** (Reduce, Reuse, Recycle) + **Eco**. The platform's goal is to formalise and digitise the secondary materials market, making it easier for businesses to source recyclables from collectors and for collectors to find reliable buyers.
+
+## Key Features
+
+- **Role-based access** — four user types (Admin, Staff, Business, Collector), each with their own dashboard and abilities
+- **Live updates** — requests, messages, stock and notifications update over a WebSocket, with no polling
+- **Offer and negotiation flow** — a buyer asks for stock, the seller offers a weight and price, the buyer accepts and the trade is recorded
+- **Automatic PDF invoices** — built by the server for every completed transaction and stored in S3-compatible file storage
+- **Carbon savings tracking** — every material has a carbon factor; transactions add up to a carbon savings figure on dashboards and on the public stats
+- **Data exports** — role-scoped CSV exports for users, transactions, collections, purchases and sales
+- **Notifications** — a live, dismissible feed for every event that concerns you
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, TanStack Router and Query |
+| Styling | Tailwind CSS v4, shadcn/ui |
+| Backend | Go, Fiber v3 |
+| Database | Postgres 18 (pgx, embedded SQL migrations) |
+| Live data | Postgres LISTEN/NOTIFY to a WebSocket hub |
+| Files | MinIO locally, any S3-compatible store in production |
+| Email | Resend (Mailpit locally) |
+| Authentication | Cookie sessions, argon2id passwords |
+| Package manager | npm (web), Go modules |
+
+## Project Layout
+
+```
+cmd/3reco/        the binary: serve, migrate, admin create, import-convex, version
+internal/         API handlers, services, database stores, shared platform code
+web/apps/app/     the React app (built into dist/ and served by the Go binary)
+web/apps/docs/    this documentation site
+deployments/      Dockerfile and local services
+tests/            Go API tests against a real Postgres
+```
+
+## Quick Start
+
+```bash
+task up        # Postgres, Mailpit and MinIO
+task install   # web app packages
+task dev       # API on :8180, web app on http://localhost:5173
+```
+
+See [Setup & Installation](/docs/setup) for prerequisites and configuration.

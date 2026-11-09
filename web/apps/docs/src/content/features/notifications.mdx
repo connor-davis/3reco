@@ -1,0 +1,35 @@
+# Notifications
+
+Notifications are rows in the `notifications` table, delivered live over the WebSocket. When a new one is written, the app is told and refetches the feed, so it appears with no polling.
+
+```typescript
+// The bell badge
+const res = await fetch('/api/notifications/unread-count', { credentials: 'include' })
+const { count } = await res.json()
+```
+
+## What triggers a notification
+
+| Event | Who is told | Type |
+|---|---|---|
+| A buyer sends a request | The seller | `request_received` |
+| An offer is accepted | The other party | `request_accepted` |
+| A request is rejected or an offer declined | The other party | `request_rejected` |
+| A request is cancelled or an offer withdrawn | The other party | `request_cancelled` |
+| A message arrives in a request chat | The recipient | `message_received` |
+| Stock is listed or unlisted | The owner | `stock_listed` / `stock_unlisted` |
+
+## Routes
+
+| Method | Path | What |
+|---|---|---|
+| GET | `/api/notifications/` | The feed (cursor paging) |
+| GET | `/api/notifications/unread-count` | `{ count }` |
+| PATCH | `/api/notifications/:id/read` | Mark one read |
+| POST | `/api/notifications/read-all` | Mark all read |
+| DELETE | `/api/notifications/:id` | Dismiss one |
+| DELETE | `/api/notifications/` | Dismiss all |
+
+You only ever see your own notifications. The live topic is `notifications:<your user id>`, and a client that asks for anyone else's is refused.
+
+Notifications older than 90 days are deleted automatically. See [Notifications Pattern](/docs/dev/notifications) for how to add a type.
