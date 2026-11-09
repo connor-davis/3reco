@@ -1,6 +1,10 @@
 package privacy
 
-import "context"
+import (
+	"context"
+
+	"github.com/connor-davis/3reco/internal/platform/database"
+)
 
 // Cancelled is an open request that was closed because one side was erased.
 type Cancelled struct {
@@ -119,8 +123,15 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) (string, error)
 		`DELETE FROM notifications WHERE user_id = $1`,
 		`DELETE FROM carts WHERE buyer_id = $1 OR seller_id = $1`,
 		`DELETE FROM stock WHERE owner_id = $1`,
+		// Chat lines the app wrote for their actions ("X made an offer") keep
+		// the event and lose only the name, so the other side can still follow
+		// the trade. This runs before the user row is blanked below.
+		`UPDATE transaction_request_messages m
+			SET content = replace(m.content, n.name, 'Removed account')
+			FROM (SELECT ` + database.DisplayName("u") + ` AS name FROM users u WHERE u.id = $1) n
+			WHERE m.sender_id = $1 AND m.system`,
 		// Free text they wrote. The conversation and the review stay.
-		`UPDATE transaction_request_messages SET content = '[removed]' WHERE sender_id = $1`,
+		`UPDATE transaction_request_messages SET content = '[removed]' WHERE sender_id = $1 AND NOT system`,
 		`UPDATE store_reviews SET comment = NULL WHERE buyer_id = $1`,
 		// A business's own collector records go, unless an older trade has no
 		// frozen copy of the collector and still needs the row for its invoice.
