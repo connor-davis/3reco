@@ -39,18 +39,24 @@ const react = {
 };
 
 test('receipt removal follows the server permission, including linked collectors', () => {
-  for (const [role, permission, uploaded, allowed] of [
-    ['collector', true, false, true],
-    ['collector', false, false, false],
-    ['business', false, false, false],
-    ['staff', false, false, false],
-    ['admin', true, false, true],
-    ['staff', false, true, true],
+  for (const [role, permission, uploaded, allowed, canUpload] of [
+    ['collector', true, false, true, false],
+    ['collector', false, false, false, false],
+    ['business', false, false, false, false],
+    ['staff', false, false, false, true],
+    ['admin', true, false, true, true],
+    ['staff', false, true, true, true],
   ]) {
     const { TransactionDialog } = compile(
       'components/dialogs/record-dialogs.tsx',
       {
         react,
+        '@/components/ui/button-variants': {
+          buttonVariants: () => '',
+        },
+        '@/lib/utils': {
+          cn: (...classes) => classes.filter(Boolean).join(' '),
+        },
         '@/lib/auth/use-auth': {
           useAuth: () => ({ user: { id: 'caller', role } }),
         },
@@ -71,6 +77,7 @@ test('receipt removal follows the server permission, including linked collectors
         record: {
           id: 'trade',
           type: 'c2b',
+          status: 'complete',
           can_remove_receipts: permission,
           buyer: { id: 'buyer' },
           seller: { id: 'collector-record' },
@@ -95,7 +102,7 @@ test('receipt removal follows the server permission, including linked collectors
     );
     assert.equal(
       tree.some((node) => node.props?.id === 'receipt-file'),
-      false
+      canUpload
     );
   }
 });

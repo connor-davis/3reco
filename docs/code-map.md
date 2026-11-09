@@ -125,7 +125,7 @@ Never rename a merged migration. Add a new file.
 | --- | --- |
 | Fresh database per test, running API, cookie client, Mailpit reader | `tests/testutil/testutil.go` |
 | Unique MinIO test bucket, required-service gate and object/bucket cleanup | `tests/testutil/storage.go` |
-| Receipt sniffing, access leaks, SHA duplicate cleanup and concurrent sixth upload | `tests/receipts_test.go` |
+| Receipt sniffing, access leaks, SHA duplicate cleanup, concurrent sixth upload and upload/removal role rules | `tests/receipts_test.go`, `tests/receipts_roles_test.go` |
 | Invoice authorization, exact decimals, pagination, snapshots, regeneration, rollback and attached Mailpit messages | `tests/invoices_test.go` |
 | Five CSV schemas, role/owner scope, effective date bounds, escaping and formula guard | `tests/exports_test.go` |
 | Round 3 trade regressions: payout roles and mail attachments, weight writes, stock prices, history, export filters and negotiated reviews | `tests/qa_round3_trade_test.go`, `web/apps/app/tests/qa-round3-trade.test.mjs` |

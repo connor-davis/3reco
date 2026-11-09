@@ -71,7 +71,7 @@ function MarketPage() {
         emptyText="Try a different search."
         skeleton={<CardsSkeleton />}
       >
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {results.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}

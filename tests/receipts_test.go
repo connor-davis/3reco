@@ -105,7 +105,7 @@ func TestReceiptAccessLeak(t *testing.T) {
 	data := receiptJPEG()
 
 	tradeWant(t, "stranger before parsing", stranger.c.Do("POST", path, nil), 404)
-	tradeWant(t, "staff upload", uploadImage(t, w.app, staff.c, path, data), 404)
+	tradeWant(t, "staff upload", uploadImage(t, w.app, staff.c, path, receiptImage(1)), 200)
 	tradeWant(t, "anonymous", uploadImage(t, w.app, w.app.NewClient(t), path, data), 401)
 	tradeWant(t, "deleted upload route", w.buyer.c.Do("POST", path+"/upload", nil), 404)
 
@@ -137,8 +137,8 @@ func TestReceiptAccessLeak(t *testing.T) {
 	tradeWant(t, "other transaction attachment", w.buyer.c.Do("GET",
 		"/api/transactions/"+other+"/receipts/"+receiptID, nil), 404)
 	tradeWant(t, "duplicate SHA", uploadImage(t, w.app, w.buyer.c, path, data), 409)
-	if count := objectCount(t, w.app, "receipts/"); count != 1 {
-		t.Fatalf("failed uploads left %d objects, want 1", count)
+	if count := objectCount(t, w.app, "receipts/"); count != 2 {
+		t.Fatalf("uploads left %d objects, want 2", count)
 	}
 }
 
