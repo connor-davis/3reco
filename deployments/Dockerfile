@@ -26,6 +26,8 @@ RUN CGO_ENABLED=0 go build -trimpath \
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/3reco /3reco
+COPY --from=web /src/web/apps/app/dist /web
+ENV THREERECO_WEB_DIST=/web
 EXPOSE 8180
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD ["/3reco", "health"]
 ENTRYPOINT ["/3reco"]
