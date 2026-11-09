@@ -38,14 +38,9 @@ test('export activity uses plain export, row and trade labels without raw keys',
       'transactions',
       'true',
       'c2b',
-      'Transactions (one row per material, Collector purchases)',
+      'Transactions (one row per material, Collections)',
     ],
-    [
-      'collections',
-      'false',
-      'c2b',
-      'Collections (one row per trade, Collector purchases)',
-    ],
+    ['collections', 'false', 'c2b', 'Collections (one row per trade)'],
   ]) {
     const text = exports.eventLabel({
       kind: 'export',

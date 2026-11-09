@@ -19,9 +19,11 @@ function CollectionsPage() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
-  // A business buys for itself. Staff would have to pick a business, and the
-  // API has no list of businesses for that, so only businesses record here.
-  const canRecord = user?.role === 'business';
+  // A business buys for itself; admin and staff pick the business in the dialog.
+  const canRecord =
+    user?.role === 'business' ||
+    user?.role === 'admin' ||
+    user?.role === 'staff';
   const description = canRecord
     ? 'Record materials bought from collectors. Keep every receipt in one place.'
     : 'Review collections across the marketplace and their paperwork.';

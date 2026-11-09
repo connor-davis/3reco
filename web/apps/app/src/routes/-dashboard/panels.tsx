@@ -25,6 +25,7 @@ import { messageText } from '@/components/chat/helpers';
 import { ThreadMaterials } from '@/components/chat/cards';
 import { ImpactChart } from './impact-chart';
 import { useAuth } from '@/lib/auth/use-auth';
+import { cn } from '@/lib/utils';
 
 export function Panel({
   title,
@@ -42,20 +43,31 @@ export function Panel({
   contentClassName?: string;
 }) {
   return (
-    <Card className={className}>
+    <Card className={cn('h-full', className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
         {action && <CardAction>{action}</CardAction>}
       </CardHeader>
-      <CardContent className={contentClassName}>{children}</CardContent>
+      <CardContent
+        className={cn('flex min-h-0 flex-1 flex-col', contentClassName)}
+      >
+        {children}
+      </CardContent>
     </Card>
   );
 }
 
-export function MaterialsPanel({ series }: { series: Dashboard['series'] }) {
+export function MaterialsPanel({
+  series,
+  className,
+}: {
+  series: Dashboard['series'];
+  className?: string;
+}) {
   return (
     <Panel
+      className={className}
       title="Materials on the move"
       description="Daily weight traded, in kg"
     >
@@ -92,7 +104,7 @@ export function CounterpartyRows({
         emptyTitle="No trading partners yet"
         emptyText="Partners will appear when a trade settles."
       >
-        <ul className="divide-y">
+        <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
           {rows.map((party) => (
             <li
               key={party.id}
@@ -108,7 +120,7 @@ export function CounterpartyRows({
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t pt-4">
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">
               {plural(trades, 'trade')} · {formatRand(cents)}
@@ -163,7 +175,7 @@ function RecentThreads() {
             : 'Ask a seller about a listing to start one.'
         }
       >
-        <ul className="divide-y">
+        <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
           {query.data?.items.map((thread) => (
             <li key={thread.request_id} className="py-3 first:pt-0">
               <LinkButton
@@ -199,7 +211,7 @@ function RecentCollections() {
         emptyTitle="No collections yet"
         emptyText="Your settled collections will appear here."
       >
-        <ul className="divide-y">
+        <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
           {query.data?.items.map((trade) => (
             <li key={trade.id} className="space-y-1 py-3">
               <p className="font-medium">{trade.buyer.name}</p>
@@ -218,7 +230,11 @@ function RecentCollections() {
           ))}
         </ul>
       </DataState>
-      <LinkButton className="min-h-11" to="/transactions/sales" variant="link">
+      <LinkButton
+        className="mt-auto min-h-11 self-start"
+        to="/transactions/sales"
+        variant="link"
+      >
         View all sales
       </LinkButton>
     </Panel>

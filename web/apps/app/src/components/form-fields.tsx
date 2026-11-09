@@ -240,7 +240,8 @@ export function ComboboxField<T extends FieldValues>({
   description,
   options,
   placeholder = 'Search…',
-}: SelectFieldProps<T>) {
+  onSearch,
+}: SelectFieldProps<T> & { onSearch?: (text: string) => void }) {
   const ids = useFieldIds();
   const items = options.map((option) =>
     typeof option === 'string' ? { value: option, label: option } : option
@@ -262,6 +263,7 @@ export function ComboboxField<T extends FieldValues>({
               items={items}
               value={items.find((item) => item.value === field.value) ?? null}
               onValueChange={(item) => field.onChange(item?.value ?? '')}
+              onInputValueChange={onSearch}
             >
               <ComboboxInput placeholder={placeholder} {...aria} />
               <ComboboxContent>

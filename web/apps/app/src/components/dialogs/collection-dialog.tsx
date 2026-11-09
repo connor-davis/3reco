@@ -1,6 +1,6 @@
 import { format as dateKey } from 'date-fns';
 import { stockLimit } from '@/lib/limits';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CalendarIcon, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
@@ -24,7 +24,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCollectorSelection } from '@/lib/api/collectors';
 import { useMaterials } from '@/lib/api/materials';
+import { useStores } from '@/lib/api/stores';
 import { useCreateCollection } from '@/lib/api/transactions';
+import { useAuth } from '@/lib/auth/use-auth';
 import {
   formatDate,
   formatPhone,
@@ -62,6 +64,8 @@ const line = z.object({
 });
 
 const schema = z.object({
+  // Only admin and staff pick one; the dialog sends it for them alone.
+  business_id: z.string().optional(),
   collector_id: z.string().min(1, 'Pick the collector.'),
   collection_day: z
     .string()
@@ -99,24 +103,78 @@ const emptyLine = { material_id: '', weight: '', price: '' };
 
 const exact = (value: string) => value.trim().replace(',', '.');
 
+/** Admin and staff record for a business they pick; a business records for itself. */
+const picksBusiness = (role?: string | null) =>
+  role === 'admin' || role === 'staff';
+
+const businessMessage = 'Select the business that bought this.';
+
+const businessMissing = (values: { business_id?: string }, picks: boolean) =>
+  picks && !values.business_id;
+
+/** The POST body; business_id goes only when admin or staff picked one. */
+function collectionBody(values: Values, picks: boolean) {
+  return {
+    ...(picks && { business_id: values.business_id }),
+    collector_id: values.collector_id,
+    collection_day: values.collection_day,
+    items: values.lines.map((item) => ({
+      material_id: item.material_id,
+      weight: exact(item.weight),
+      price: exact(item.price),
+    })),
+  };
+}
+
 /** Record a collection: one collector, a date and one or more material lines. */
 export function CollectionDialog({ open, onOpenChange }: Props) {
+  const { user } = useAuth();
+  const chooseBusiness = picksBusiness(user?.role);
   const collectors = useCollectorSelection();
   const materials = useMaterials({ limit: 100 });
   const create = useCreateCollection();
   const [serverError, setServerError] = useState('');
   const [dateOpen, setDateOpen] = useState(false);
-  const { control, handleSubmit, watch, reset, formState } = useForm<Values>({
-    resolver: zodResolver(schema),
-    // Say why a number is wrong when the user leaves the field, not only on save.
-    mode: 'onTouched',
-    defaultValues: {
-      collector_id: '',
-      collection_day: today(),
-      lines: [emptyLine],
-    },
-  });
+  const [businessQuery, setBusinessQuery] = useState('');
+  // Searching swaps the list, so remember every business seen to keep the pick.
+  const seen = useRef(new Map<string, string>());
+  const businesses = useStores(
+    { limit: 50, q: businessQuery.trim() || undefined },
+    // ponytail: one request per keystroke; add a debounce if it gets chatty.
+    chooseBusiness && open
+  );
+  const { control, handleSubmit, watch, reset, formState, setError } =
+    useForm<Values>({
+      resolver: zodResolver(schema),
+      // Say why a number is wrong when the user leaves the field, not only on save.
+      mode: 'onTouched',
+      defaultValues: {
+        business_id: '',
+        collector_id: '',
+        collection_day: today(),
+        lines: [emptyLine],
+      },
+    });
   const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
+
+  for (const store of businesses.data?.items ?? []) {
+    seen.current.set(store.id, store.name);
+  }
+  const picked = watch('business_id');
+  const businessOptions = (businesses.data?.items ?? []).map((store) => ({
+    value: store.id,
+    label: store.name,
+  }));
+  if (
+    chooseBusiness &&
+    picked &&
+    !businessOptions.some((item) => item.value === picked)
+  ) {
+    businessOptions.push({
+      value: picked,
+      label: seen.current.get(picked) ?? '',
+    });
+  }
 
   const sorted = [...(materials.data?.items ?? [])].sort((a, b) =>
     a.name.localeCompare(b.name)
@@ -131,16 +189,13 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   async function onSubmit(values: Values) {
     setServerError('');
 
+    if (businessMissing(values, chooseBusiness)) {
+      setError('business_id', { message: businessMessage });
+      return;
+    }
+
     try {
-      await create.mutateAsync({
-        collector_id: values.collector_id,
-        collection_day: values.collection_day,
-        items: values.lines.map((item) => ({
-          material_id: item.material_id,
-          weight: exact(item.weight),
-          price: exact(item.price),
-        })),
-      });
+      await create.mutateAsync(collectionBody(values, chooseBusiness));
       toast.success('Collection recorded.');
       reset();
       onOpenChange(false);
@@ -155,7 +210,11 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
       onOpenChange={onOpenChange}
       wide
       title="Record collection"
-      description="Materials you bought from a collector. Prices are per kg."
+      description={
+        (chooseBusiness
+          ? 'Materials a business bought from a collector.'
+          : 'Materials you bought from a collector.') + ' Prices are per kg.'
+      }
       footer={
         <Button disabled={create.isPending} onClick={handleSubmit(onSubmit)}>
           Record collection
@@ -163,6 +222,16 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        {chooseBusiness && (
+          <ComboboxField
+            control={control}
+            name="business_id"
+            label="Business"
+            description="The business that bought these materials."
+            onSearch={setBusinessQuery}
+            options={businessOptions}
+          />
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <ComboboxField
             control={control}

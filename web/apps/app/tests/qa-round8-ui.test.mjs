@@ -142,6 +142,10 @@ test('collection total is absent for invalid weight and returns after correction
         },
         '@/lib/api/materials': { useMaterials: () => ({}) },
         '@/lib/api/collectors': { useCollectorSelection: () => ({}) },
+        '@/lib/api/stores': { useStores: () => ({}) },
+        '@/lib/auth/use-auth': {
+          useAuth: () => ({ user: { role: 'business' } }),
+        },
         '@/lib/api/transactions': { useCreateCollection: () => ({}) },
         '@/lib/format': format,
         '@/lib/quantity': quantity,
