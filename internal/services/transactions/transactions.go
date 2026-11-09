@@ -216,8 +216,8 @@ func (s *Service) Detail(ctx context.Context, user auth.User, id string) (store.
 	return t, nil
 }
 
-// Participant is Detail for actions only the two sides of a trade may take
-// (receipts): staff may read a transaction but never attach to one.
+// Participant allows receipt uploads by the buyer, a business seller, admins
+// and staff once the trade is complete.
 func (s *Service) Participant(
 	ctx context.Context,
 	user auth.User,
@@ -228,7 +228,8 @@ func (s *Service) Participant(
 		return t, err
 	}
 
-	if t.Buyer.ID != user.ID && !(t.Type == "b2b" && t.Seller.ID == user.ID) {
+	if !auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) &&
+		t.Buyer.ID != user.ID && !(t.Type == "b2b" && t.Seller.ID == user.ID) {
 		return store.Transaction{}, errNotFound
 	}
 

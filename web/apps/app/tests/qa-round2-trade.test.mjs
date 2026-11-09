@@ -10,7 +10,9 @@ test('the collector sees Download invoice and the receipts, never an upload', ()
   assert.doesNotMatch(dialog, /readOnly/);
   assert.match(dialog, /Download invoice/);
   assert.match(dialog, /aria-label="Receipts"/);
-  // Only the buyer, or the seller of a business trade, may add a receipt.
+  // The buyer, business seller, admins and staff may add a receipt.
+  assert.match(dialog, /user\.role === 'admin'/);
+  assert.match(dialog, /user\.role === 'staff'/);
   assert.match(dialog, /shown\.buyer\.id === user\.id/);
   assert.match(
     dialog,

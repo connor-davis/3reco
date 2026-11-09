@@ -28,8 +28,9 @@ const CommandSearch = lazy(() =>
 );
 
 const chatPad = 'pb-[3.25rem] min-[781px]:pb-0';
+// Pages use the full width beside the sidebar; wide screens just get more room.
 const pagePad = cn(
-  'mx-auto max-w-[1200px] px-4 pt-8 pb-28 sm:px-6',
+  'px-4 pt-8 pb-28 sm:px-6 lg:px-8',
   'min-[781px]:pb-24 lg:pt-10'
 );
 

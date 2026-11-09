@@ -30,7 +30,7 @@ func TestTransactionAccess(t *testing.T) {
 
 	for _, p := range []string{path + "/receipts"} {
 		tradeWant(t, "seller adds "+p, w.seller.c.Do("POST", p, map[string]any{}), 400)
-		tradeWant(t, "staff adds "+p, staff.c.Do("POST", p, map[string]any{}), 404)
+		tradeWant(t, "staff adds without file "+p, staff.c.Do("POST", p, map[string]any{}), 400)
 		tradeWant(t, "outsider adds "+p, outsider.c.Do("POST", p, map[string]any{}), 404)
 		tradeWant(t, "anonymous adds "+p, anon.Do("POST", p, map[string]any{}), 401)
 	}

@@ -116,7 +116,7 @@ export function RowsSkeleton({ rows = 5 }: { rows?: number }) {
 /** Placeholder cards for grids while data loads. */
 export function CardsSkeleton({ cards = 6 }: { cards?: number }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {Array.from({ length: cards }, (_, index) => (
         <div key={index} aria-hidden="true">
           <Skeleton className="aspect-[4/3] rounded-2xl" />

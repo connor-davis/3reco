@@ -84,7 +84,7 @@ function RelatedListings({ listing }: { listing: Listing }) {
         emptyTitle="No similar materials listed"
         emptyText="Browse the marketplace for more materials."
       >
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {items.map((item) => (
             <ListingCard key={item.id} listing={item} />
           ))}

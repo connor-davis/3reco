@@ -114,7 +114,7 @@ function StorePage() {
                 emptyTitle="Nothing listed right now"
                 emptyText="This store has no materials listed."
               >
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {listings.data?.items.map((item) => (
                     <ListingCard
                       key={item.id}

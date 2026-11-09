@@ -48,12 +48,14 @@ export function TransactionDialog({ record, onClose }: Props) {
   const [fileError, setFileError] = useState('');
   const shown = fresh.data ?? record;
 
-  // Anyone who can open the trade may see its invoice and receipts, but only
-  // the people in it add receipts: not staff, and not the collector.
+  // The buyer, a business seller, admins and staff may add receipts.
+  // The collector may view receipts but never upload them.
   const canUpload =
     !!shown &&
     !!user &&
-    (shown.buyer.id === user.id ||
+    (user.role === 'admin' ||
+      user.role === 'staff' ||
+      shown.buyer.id === user.id ||
       (shown.type === 'b2b' && shown.seller.id === user.id));
 
   function pick(file: File | undefined) {

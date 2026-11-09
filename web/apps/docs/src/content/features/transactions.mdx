@@ -33,10 +33,10 @@ Weights and prices are decimal strings, never JSON numbers. A trade has up to 10
 ## Invoice and receipts
 
 - A PDF invoice is made for every trade and downloaded from `GET /api/transactions/:id/invoice`. See [Invoices](/docs/features/invoices).
-- Either side can attach up to five receipt images (PNG or JPEG, 5 MiB each) with `POST /api/transactions/:id/receipts`.
+- The buyer, a business seller, admins and staff can attach up to five receipt images once the trade is complete (PNG or JPEG, 5 MiB each) with `POST /api/transactions/:id/receipts`. Staff can remove only receipts they added; admins can remove any.
 
 ## Seeing them
 
-`GET /api/transactions/` lists your trades, `/purchases` the ones where you bought and `/sales` the business-to-business ones where you sold. Admins and staff see everything on their dashboard and exports. Each person only ever reads trades they took part in.
+`GET /api/transactions/` lists your trades, `/purchases` the ones where you bought and `/sales` the business-to-business ones where you sold. Admins and staff can read every trade and see everything on their dashboard and exports. Other users can read only trades they took part in.
 
 The total value of a trade is the sum of `weight × price` over its lines, worked out exactly on the server. See [Transactions API](/docs/api/transactions) for the full shape.

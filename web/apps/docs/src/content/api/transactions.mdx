@@ -1,6 +1,6 @@
 # Transactions API
 
-A transaction is a completed trade. Accepting a request makes one, and a business can also record a collection from a collector or a direct sale. All routes are under `/api` and need a signed-in user. You only see trades where you are the buyer or the seller.
+A transaction is a completed trade. Accepting a request makes one, and a business can also record a collection from a collector or a direct sale. All routes are under `/api` and need a signed-in user. You only see trades where you are the buyer or the seller, unless you are an admin or staff member, who can read every trade.
 
 A transaction is:
 
@@ -24,7 +24,7 @@ A transaction is:
 | GET | `/api/transactions/` | Your trades (page: `cursor`, `limit`; `all=true` returns up to 1000 as a plain array) |
 | GET | `/api/transactions/purchases` | Trades where you are the buyer |
 | GET | `/api/transactions/sales` | Business-to-business trades where you are the seller |
-| GET | `/api/transactions/:id` | One trade (participants only) |
+| GET | `/api/transactions/:id` | One trade (participants, admins and staff) |
 
 ## Record
 
@@ -55,7 +55,8 @@ Weights and prices match `^\d{1,12}(\.\d{1,6})?$`. A trade has at most 100 lines
 | GET | `/api/transactions/:id/invoice` | The PDF invoice, as a download |
 | POST | `/api/transactions/:id/receipts` | Upload a receipt: multipart field `file`, PNG or JPEG, up to 5 MiB, at most five per trade |
 | GET | `/api/transactions/:id/receipts/:receipt_id` | Download a receipt |
+| DELETE | `/api/transactions/:id/receipts/:receipt_id` | Remove a receipt; staff can remove only receipts they added, while admins can remove any |
 
-A receipt that is already attached to the trade gets `409 conflict`.
+The buyer, a business seller, admins and staff can attach up to five receipts once the trade is complete. Other callers get `404`; a pending trade or a receipt already attached to the trade gets `409 conflict`. A missing file or invalid image gets `400`.
 
 Live updates: `transactions:<your user id>`.
