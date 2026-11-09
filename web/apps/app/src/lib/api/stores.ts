@@ -2,10 +2,15 @@ import { useResource, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
 
-export function useStores(params: Paging & { q?: string } = {}) {
+export function useStores(
+  params: Paging & { q?: string } = {},
+  enabled = true
+) {
   return useResource<Page<T.Store>>(
     ['stores', params],
-    `/stores${queryString(params)}`
+    `/stores${queryString(params)}`,
+    false,
+    enabled
   );
 }
 export function useStore(id: string) {

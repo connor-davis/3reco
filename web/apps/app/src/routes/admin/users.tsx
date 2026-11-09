@@ -333,7 +333,9 @@ function eventLabel(event: PrivacyEvent) {
       filters.itemised === 'true' ? 'one row per material' : 'one row per trade'
     );
   }
-  if (filters.type === 'c2b') descriptions.push('Collections');
+  // A Collections export is c2b already; saying it twice reads oddly.
+  if (filters.type === 'c2b' && kind !== 'collections')
+    descriptions.push('Collections');
   if (filters.type === 'b2b') descriptions.push('Business trades');
   if (filters.q) descriptions.push(`Search: ${filters.q}`);
   if (

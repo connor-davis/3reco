@@ -176,14 +176,14 @@ test('H7: carbon factors always show 2 decimals', () => {
   assert.doesNotMatch(source('routes/materials.tsx'), /formatKgNumber/);
 });
 
-test('S1: Trading partners fits its content, summary sits under the list', () => {
+test('S1 (round 21): panels share one height, lists scroll inside', () => {
   const panels = source('routes/-dashboard/panels.tsx');
-  assert.doesNotMatch(panels, /h-full|mt-auto|flex-1/);
-  assert.match(panels, /mt-4 flex flex-wrap/);
+  assert.match(panels, /min-h-0 flex-1 divide-y overflow-y-auto/);
+  assert.match(panels, /mt-auto flex flex-wrap/);
   assert.match(panels, /sum \+ toCents\(party\.value\)/);
   assert.match(
     source('routes/index.tsx'),
-    /grid items-start gap-6 lg:grid-cols-2/
+    /grid gap-6 lg:auto-rows-\[30rem\] lg:grid-cols-2/
   );
 });
 
