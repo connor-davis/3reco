@@ -68,7 +68,7 @@ type Props = {
 const typeOptions = [
   { value: 'all', label: 'All types' },
   { value: 'b2b', label: 'Business trade' },
-  { value: 'c2b', label: 'Collector purchase' },
+  { value: 'c2b', label: 'Collection' },
 ];
 
 const csvOptions = (collectionsOnly: boolean) => [
@@ -309,7 +309,7 @@ export function RecordList({
                   variant="outline"
                   className="h-8 w-40 shrink-0 justify-center px-3 text-sm"
                 >
-                  {row.type === 'b2b' ? 'Business trade' : 'Collector purchase'}
+                  {row.type === 'b2b' ? 'Business trade' : 'Collection'}
                 </Badge>
                 <span className="w-32 shrink-0 text-right font-semibold tabular-nums">
                   {formatRand(toCents(row.total_price))}

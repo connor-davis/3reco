@@ -333,7 +333,7 @@ function eventLabel(event: PrivacyEvent) {
       filters.itemised === 'true' ? 'one row per material' : 'one row per trade'
     );
   }
-  if (filters.type === 'c2b') descriptions.push('Collector purchases');
+  if (filters.type === 'c2b') descriptions.push('Collections');
   if (filters.type === 'b2b') descriptions.push('Business trades');
   if (filters.q) descriptions.push(`Search: ${filters.q}`);
   if (
