@@ -14,13 +14,17 @@ export function ListingCard({
 }) {
   return (
     <Card className="group/card relative gap-0 bg-transparent py-0 shadow-none ring-0">
-      <div className="relative flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-        <Package className="size-16" strokeWidth={1.25} aria-hidden="true" />
+      <div className="relative flex aspect-[4/3] items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <Package
+          className="size-10 sm:size-16"
+          strokeWidth={1.25}
+          aria-hidden="true"
+        />
       </div>
       <CardContent className="mt-3.5 space-y-1.5 px-0">
         <h3 className="line-clamp-2 font-semibold tracking-tight">
           <Link
-            className="rounded outline-none after:absolute after:inset-0 hover:underline focus-visible:after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+            className="rounded outline-none after:absolute after:inset-0 hover:underline focus-visible:after:rounded-lg focus-visible:after:ring-3 focus-visible:after:ring-ring focus-visible:after:ring-inset"
             to="/market/listing/$listingId"
             params={{ listingId: listing.id }}
           >

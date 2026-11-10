@@ -74,7 +74,7 @@ function AboutPage() {
           </Button>
         </div>
       </div>
-      <div className="space-y-4 rounded-3xl bg-muted p-6 sm:p-10">
+      <div className="space-y-4 rounded-lg bg-muted p-6 sm:p-10">
         <Card>
           <CardHeader>
             <CardTitle>A collection that counts</CardTitle>

@@ -43,10 +43,10 @@ function MarketPage() {
         icon={Leaf}
         emptyTitle="Community impact"
         emptyText="Completed trades appear here."
-        skeleton={<Skeleton className="h-[46px] rounded-2xl" />}
+        skeleton={<Skeleton className="h-[46px] rounded-lg" />}
       >
         {stats.data && (
-          <p className="rounded-2xl border bg-muted/50 px-4 py-3 text-sm">
+          <p className="rounded-lg border bg-muted/50 px-4 py-3 text-sm">
             Community impact: {formatKg(stats.data.total_kg)} diverted ·{' '}
             {formatCo2(stats.data.co2_kg)} · {plural(stats.data.deals, 'trade')}
           </p>
@@ -71,7 +71,7 @@ function MarketPage() {
         emptyText="Try a different search."
         skeleton={<CardsSkeleton />}
       >
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
           {results.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}

@@ -43,11 +43,11 @@ export default function ResponsiveOverlayBody({
     return (
       <Drawer open={open} onOpenChange={handleChange} showSwipeHandle>
         <DrawerContent className="max-h-[92dvh]">
-          <DrawerHeader className="text-left">
+          <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
             {<DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
-          <div className="overflow-y-auto px-4 pb-2">{children}</div>
+          <div className="overflow-y-auto px-4 pt-4 pb-2">{children}</div>
           {footer && <DrawerFooter>{footer}</DrawerFooter>}
         </DrawerContent>
       </Drawer>

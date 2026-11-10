@@ -4,7 +4,7 @@ import { Package } from 'lucide-react';
 export function Gallery() {
   return (
     <div
-      className="flex aspect-square items-center justify-center rounded-3xl bg-muted text-muted-foreground"
+      className="flex aspect-square items-center justify-center rounded-lg bg-muted text-muted-foreground"
       role="img"
       aria-label="Material placeholder"
     >

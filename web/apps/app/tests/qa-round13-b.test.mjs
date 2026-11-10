@@ -99,5 +99,5 @@ test('A1: the setup wizard is keyed by role', () => {
 test('S3: bell action row is left aligned', () => {
   const text = source('components/shell/notification-tray-list.tsx');
   assert.doesNotMatch(text, /justify-end/);
-  assert.match(text, /<ItemActions className="w-full flex-wrap justify-start"/);
+  assert.match(text, /<ItemActions className="w-full flex-wrap justify-start/);
 });

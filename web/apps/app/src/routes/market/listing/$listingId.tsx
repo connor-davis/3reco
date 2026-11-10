@@ -84,7 +84,7 @@ function RelatedListings({ listing }: { listing: Listing }) {
         emptyTitle="No similar materials listed"
         emptyText="Browse the marketplace for more materials."
       >
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
           {items.map((item) => (
             <ListingCard key={item.id} listing={item} />
           ))}
@@ -248,7 +248,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
             </p>
           )}
         </form>
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border p-4">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4">
           <PersonAvatar name={listing.seller_name} />
           <div className="min-w-0 flex-1">
             <p className="font-medium">{listing.seller_name}</p>

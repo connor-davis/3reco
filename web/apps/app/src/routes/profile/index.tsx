@@ -69,7 +69,7 @@ function ProfilePage() {
         skeleton={<RowsSkeleton rows={4} />}
       >
         <Tabs defaultValue="personal" className="gap-6">
-          <TabsList className="h-auto w-full justify-start p-1.5 max-md:overflow-x-auto max-md:overflow-y-hidden max-md:pb-2.5">
+          <TabsList className="h-auto w-full justify-start p-1.5 group-data-horizontal/tabs:h-auto max-md:flex-wrap max-md:gap-x-4 max-md:gap-y-2 max-md:group-data-horizontal/tabs:h-auto max-md:pb-2.5">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             {role !== 'collector' && !staff && (
               <TabsTrigger value="business">Business</TabsTrigger>

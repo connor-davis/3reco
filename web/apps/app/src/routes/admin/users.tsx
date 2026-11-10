@@ -64,13 +64,25 @@ function AdminPage() {
   );
 }
 
-function RoleSelect({ user }: { user: AdminUser }) {
+function RoleSelect({
+  user,
+  labelled = false,
+}: {
+  user: AdminUser;
+  labelled?: boolean;
+}) {
   const change = useSetUserRole(user.id);
   const [nextRole, setNextRole] = useState<Role | null>(null);
   return (
     <div className="space-y-2">
-      <fieldset disabled={change.isPending}>
+      <fieldset disabled={change.isPending} className="space-y-1.5">
+        {labelled && (
+          <span aria-hidden="true" className="block text-sm font-medium">
+            Role
+          </span>
+        )}
         <ChoiceSelect
+          className={labelled ? 'w-full' : undefined}
           label={'Role for ' + user.name}
           value={user.role ?? ''}
           options={roleOptions}
@@ -231,7 +243,14 @@ function UsersPage() {
             <ListRow
               media={<PersonAvatar name={user.name} className="size-10" />}
               title={user.name}
-              subtitle={`${user.email ?? 'No email'} · Joined ${formatDate(user.created_at)}`}
+              subtitle={
+                <>
+                  {user.email ?? 'No email'}
+                  <span className="max-sm:hidden">
+                    {' · Joined ' + formatDate(user.created_at)}
+                  </span>
+                </>
+              }
               status={profileBadge(user)}
               actions={
                 user.id === currentUser?.id
@@ -286,7 +305,7 @@ function UsersPage() {
         title={`Change role for ${roleUser?.name ?? 'user'}`}
         description="Choose a role, then confirm the change."
       >
-        {roleUser && <RoleSelect key={roleUser.id} user={roleUser} />}
+        {roleUser && <RoleSelect key={roleUser.id} user={roleUser} labelled />}
       </ResponsiveOverlay>
       <ConfirmDialog
         key={removing?.id ?? 'none'}

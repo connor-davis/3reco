@@ -179,7 +179,7 @@ function RecentThreads() {
           {query.data?.items.map((thread) => (
             <li key={thread.request_id} className="py-3 first:pt-0">
               <LinkButton
-                className="min-h-11 px-0 text-foreground"
+                className="min-h-11 min-w-0 max-w-full justify-start px-0 text-left whitespace-normal text-foreground"
                 to={'/messages/' + thread.request_id}
                 variant="link"
               >

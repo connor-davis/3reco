@@ -101,7 +101,7 @@ function Dashboard() {
         dashboard?.collector_linked === false &&
         !query.isError &&
         !query.isPending && (
-          <p className="mb-6 rounded-xl border p-4 text-sm">
+          <p className="mb-6 rounded-lg border p-4 text-sm">
             Your account is not linked to a collector record yet. Check the
             phone number on your profile matches the number your business uses
             for collections.{' '}
@@ -290,7 +290,7 @@ function CommunityImpact() {
             </div>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {stats.top_stores.map((store, index) => (
-                <li key={store.id} className="rounded-2xl border p-4">
+                <li key={store.id} className="rounded-lg border p-4">
                   <span className="block text-sm text-muted-foreground">
                     {index + 1}. {formatKg(store.kg)}
                   </span>

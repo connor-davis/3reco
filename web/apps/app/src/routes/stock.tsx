@@ -70,7 +70,10 @@ function ListingSwitch({ item }: { item: StockItem }) {
         onCheckedChange={toggle}
         aria-label={`Listed: ${item.material_name}`}
       />
-      <FieldLabel htmlFor={`listed-${item.id}`} className="font-normal">
+      <FieldLabel
+        htmlFor={`listed-${item.id}`}
+        className="font-normal max-sm:sr-only"
+      >
         <span className="sr-only">{item.material_name}: </span>
         {item.is_listed ? 'Listed' : 'Unlisted'}
       </FieldLabel>

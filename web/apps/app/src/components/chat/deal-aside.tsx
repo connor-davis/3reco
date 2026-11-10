@@ -21,7 +21,7 @@ export function DealAside({ request }: { request: TradeRequest }) {
       <div className="flex flex-wrap justify-between gap-2">
         <StatusBadge status={requestLabel(request, user?.id)} />
       </div>
-      <ul className="space-y-3 rounded-xl border p-4">
+      <ul className="space-y-3 rounded-lg border p-4">
         {request.items.map((item, index) => (
           <li key={`${item.material_id}-${index}`} className="space-y-1">
             <p className="font-medium">{item.material_name}</p>

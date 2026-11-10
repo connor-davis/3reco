@@ -9,9 +9,9 @@ type PageHeaderProps = {
 /** h1, one line of help, and the page's actions on the right (map section 1). */
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
-      <div className="min-w-0 space-y-2">
-        <h1 className="text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+    <header className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-8 sm:gap-6">
+      <div className="min-w-0 space-y-1 sm:space-y-2">
+        <h1 className="text-2xl font-semibold tracking-[-0.035em] sm:text-4xl">
           {title}
         </h1>
         {description && (

@@ -157,7 +157,7 @@ export function Inbox({
                     activeId === thread.request_id ? 'page' : undefined
                   }
                   className={cn(
-                    'flex min-h-28 items-start gap-3 rounded-xl p-4 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
+                    'flex min-h-28 items-start gap-3 rounded-lg p-4 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
                     activeId === thread.request_id && 'bg-accent'
                   )}
                 >
