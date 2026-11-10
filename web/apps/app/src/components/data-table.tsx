@@ -34,7 +34,7 @@ declare module '@tanstack/react-table' {
 type DataTableProps<T> = {
   columns: ColumnDef<T>[];
   data: T[];
-  // On phones every row becomes one card (map section 8.4).
+  // Compact lists share one divided surface.
   renderCard: (row: T) => ReactNode;
   footer?: ReactNode;
   // The server orders the rows: one column, either way round, never unsorted.
@@ -43,7 +43,7 @@ type DataTableProps<T> = {
 
 /**
  * The shadcn Table with TanStack Table doing columns and sorting. Below
- * 1100px the same rows render as cards, so nothing scrolls sideways.
+ * 1100px the same data renders as list rows, so nothing scrolls sideways.
  */
 export function DataTable<T>({
   columns,
@@ -78,7 +78,7 @@ export function DataTable<T>({
   return (
     <div className="space-y-3">
       {compact ? (
-        <ul className="grid gap-3">
+        <ul className="divide-y overflow-hidden rounded-2xl border">
           {rows.map((row: Row<T>) => (
             <li key={row.id}>{renderCard(row.original)}</li>
           ))}

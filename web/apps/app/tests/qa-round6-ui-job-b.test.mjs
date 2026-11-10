@@ -156,8 +156,11 @@ test('qa-round6-ui: transaction status shares the wrapping records filter bar', 
     records.slice(start, search),
     /value=\{status\}\s*onChange=\{setStatus\}/
   );
-  assert.match(records, /w-40 shrink-0 justify-center/);
-  assert.match(records, /w-32 shrink-0 text-right/);
+  assert.match(records, /shrink-0 justify-center px-3 text-sm sm:w-40/);
+  assert.match(
+    records,
+    /shrink-0 text-right font-semibold tabular-nums sm:ml-0 sm:w-32/
+  );
 });
 
 test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded border', () => {
@@ -167,6 +170,6 @@ test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded b
   );
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /<ItemGroup className="overflow-hidden rounded-2xl border"/
+    /<ItemGroup className="gap-0 overflow-hidden rounded-2xl border sm:gap-4"/
   );
 });

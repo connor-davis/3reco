@@ -353,7 +353,7 @@ test('S3/S4: local dashboard spacing and readable trade pill override inherited 
   assert.match(source('routes/-dashboard/panels.tsx'), /py-3 first:pt-0/);
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /h-8 w-40 shrink-0 justify-center px-3 text-sm/
+    /h-8 shrink-0 justify-center px-3 text-sm sm:w-40/
   );
 });
 

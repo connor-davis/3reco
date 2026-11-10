@@ -208,6 +208,7 @@ Never rename a merged migration. Add a new file.
 | Session-ended socket close code 4401 (revoked, removed or guest) | `internal/services/realtime/hub.go` (`CloseSessionEnded`), `internal/api/sockets/handler.go`, tests in `tests/realtime_revoked_test.go` |
 | Admin/staff see a person's real name, not the business name (`PersonName`) | `internal/platform/database/sql.go`, tests in `tests/admin_names_test.go` |
 | Finished chats stay in the inbox (`done` filter) | `internal/stores/requests/messages.go`, tests in `tests/inbox_done_test.go` |
+| Compact divided list rows, primary taps and sibling More menus | `web/apps/app/src/components/list-row.tsx` |
 | Deferred desktop dialog / phone drawer implementation | `web/apps/app/src/components/responsive-overlay-body.tsx` (loaded by `responsive-overlay.tsx`) |
 | Deferred notification list, paging and actions | `web/apps/app/src/components/shell/notification-tray-list.tsx` (bell in `notification-tray.tsx`) |
 | Signed-in user context and auth query cache | `web/apps/app/src/lib/auth/`, `src/lib/api/auth.ts` |

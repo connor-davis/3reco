@@ -268,7 +268,10 @@ test('catalogue factors share a formatter and order is explained; row actions ke
   assert.match(materials, /formatKgFixed\(material.carbon_factor\)/);
   assert.equal(format.formatKgNumber('1.5000'), format.formatKgNumber('1.5'));
   const rows = source('routes/transactions/-components/record-list.tsx');
-  assert.match(rows, /className="w-44 shrink-0"[\s\S]*?Invoice and receipts/);
+  assert.match(
+    rows,
+    /className="w-full shrink-0 sm:w-44"[\s\S]*?Invoice and receipts/
+  );
   assert.doesNotMatch(rows, /Invoice and receipts \(/);
 });
 

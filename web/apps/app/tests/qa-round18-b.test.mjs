@@ -82,7 +82,68 @@ test('A1/A6: removed counterparties have no Visit link; live parties and quantit
   }
 });
 
-test('A2: selecting a role proposes it; cancel writes nothing and confirm writes once', () => {
+test('A2: phone role menu opens the picker; cancel writes nothing and confirm writes once', () => {
+  const states = [];
+  let stateIndex = 0;
+  const person = {
+    id: 'person',
+    name: 'Zanele',
+    role: 'collector',
+    created_at: '2026-11-08',
+  };
+  const { UsersPage } = compile(
+    'routes/admin/users.tsx',
+    {
+      react: {
+        useState: (initial) => {
+          const index = stateIndex++;
+          if (!(index in states)) states[index] = initial;
+          return [
+            states[index],
+            (value) => {
+              states[index] = value;
+            },
+          ];
+        },
+      },
+      '@tanstack/react-router': { createFileRoute: () => (route) => route },
+      '@/lib/use-debounced': { useDebounced: (value) => value },
+      '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 'self' } }) },
+      '@/lib/access': access,
+      '@/lib/api/admin': {
+        useAdminUsers: () => ({ data: { items: [person] } }),
+        useDeleteUser: () => ({}),
+      },
+      '@/lib/api/exports': { useExport: () => ({}) },
+      '@/lib/format': format,
+    },
+    '\nexports.UsersPage = UsersPage;'
+  );
+  const page = () => {
+    stateIndex = 0;
+    return nodes(UsersPage());
+  };
+  const table = () => page().find((node) => node.type === 'DataTable');
+  const phone = table().props.renderCard(person);
+  assert.equal(phone.type, 'ListRow');
+  assert.equal(
+    table().props.renderCard({ ...person, id: 'self' }).props.actions.length,
+    0
+  );
+  const roleAction = phone.props.actions.find(
+    (action) => action.label === 'Change role for Zanele'
+  );
+  assert.ok(roleAction);
+  roleAction.onSelect();
+  const picker = page().find((node) => node.type === 'ResponsiveOverlay');
+  assert.equal(picker.props.open, true);
+  assert.equal(picker.props.children.props.user, person);
+  picker.props.onOpenChange(false);
+  assert.equal(
+    page().find((node) => node.type === 'ResponsiveOverlay').props.open,
+    false
+  );
+
   let pending = null;
   const writes = [];
   const { RoleSelect } = compile(

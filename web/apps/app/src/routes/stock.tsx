@@ -15,7 +15,7 @@ import { PageHeader } from '@/components/page-header';
 import { MaterialMark, Pager } from '@/components/transactions/list-tools';
 import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { ListRow } from '@/components/list-row';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { useDeleteStock, useStock, useUpdateStock } from '@/lib/api/stock';
@@ -213,17 +213,24 @@ function StockPage() {
           columns={columns}
           data={shown}
           renderCard={(item) => (
-            <Card size="sm">
-              <CardContent className="space-y-2">
-                <p className="font-medium">{item.material_name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatRate(item.price)}
-                </p>
-                <Weights item={item} />
-                <ListingSwitch item={item} />
-                {actions(item)}
-              </CardContent>
-            </Card>
+            <ListRow
+              title={item.material_name}
+              subtitle={formatRate(item.price)}
+              meta={<Weights item={item} />}
+              onOpen={() => openForm(item)}
+              trailing={<ListingSwitch item={item} />}
+              actions={[
+                {
+                  label: `Edit ${item.material_name}, ${formatKg(item.weight)} at ${formatRate(item.price)}`,
+                  onSelect: () => openForm(item),
+                },
+                {
+                  label: `Remove ${item.material_name}, ${formatKg(item.weight)} at ${formatRate(item.price)}`,
+                  onSelect: () => setRemoving(item),
+                  destructive: true,
+                },
+              ]}
+            />
           )}
           footer={
             <>

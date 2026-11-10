@@ -16,7 +16,7 @@ import { Pager } from '@/components/transactions/list-tools';
 import { errorText, usePager } from '@/components/transactions/pager-state';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { ListRow } from '@/components/list-row';
 import { useCollectors, useDeleteCollector } from '@/lib/api/collectors';
 import type { Collector } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -238,25 +238,42 @@ function CollectorsPage() {
           data={shown}
           serverSort={{ id: 'name', desc, onChange: setDesc }}
           renderCard={(collector) => (
-            <Card size="sm">
-              <CardContent className="space-y-2">
-                <span className="flex items-center gap-3">
-                  <PersonAvatar name={collector.name} />
-                  <span className="font-medium">{collector.name}</span>
-                </span>
-                <p className="text-sm text-muted-foreground">
-                  {[
-                    collector.phone && formatPhone(collector.phone),
-                    collector.email,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ') || 'Not shared'}{' '}
-                  · {collector.city}
-                </p>
-                <p className="text-sm">{payoutText(collector)}</p>
-                {actions(collector)}
-              </CardContent>
-            </Card>
+            <ListRow
+              media={<PersonAvatar name={collector.name} className="size-10" />}
+              title={collector.name}
+              subtitle={
+                [
+                  collector.phone && formatPhone(collector.phone),
+                  collector.email,
+                  collector.city,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'Not shared'
+              }
+              meta={`Payout: ${payoutText(collector)}`}
+              onOpen={
+                collector.can_edit ? () => openForm(collector) : undefined
+              }
+              actions={[
+                ...(collector.can_edit
+                  ? [
+                      {
+                        label: `Edit ${collector.name}`,
+                        onSelect: () => openForm(collector),
+                      },
+                    ]
+                  : []),
+                ...(canRemove
+                  ? [
+                      {
+                        label: `Remove ${collector.name}`,
+                        onSelect: () => setRemoving(collector),
+                        destructive: true,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           )}
           footer={
             <span>

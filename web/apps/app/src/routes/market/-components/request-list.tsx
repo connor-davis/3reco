@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Inbox } from 'lucide-react';
+import { ChevronRight, Inbox } from 'lucide-react';
 import { StatusBadge } from '@/components/badges';
 import {
   counterpartyOf,
@@ -93,7 +93,7 @@ export function RequestList({
                 <Link
                   to="/market/$requestId"
                   params={{ requestId: request.id }}
-                  className="flex flex-wrap items-center gap-4 rounded-xl p-4 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="flex min-h-14 flex-wrap items-center gap-3 rounded-xl px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   <PersonAvatar name={other.name} />
                   <div className="min-w-40 flex-1">
@@ -114,6 +114,10 @@ export function RequestList({
                         ? 'Closed'
                         : 'Awaiting offer'}
                   </p>
+                  <ChevronRight
+                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
                 </Link>
               </li>
             );
