@@ -35,7 +35,7 @@ test('qa-round15 SN6: the trade pill has room around its words', () => {
   const list = source('routes/transactions/-components/record-list.tsx');
   assert.match(
     list,
-    /className="h-8 w-40 shrink-0 justify-center px-3 text-sm"/
+    /className="h-8 shrink-0 justify-center px-3 text-sm sm:w-40"/
   );
 });
 

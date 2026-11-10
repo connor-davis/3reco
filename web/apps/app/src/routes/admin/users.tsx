@@ -13,7 +13,8 @@ import { PageHeader } from '@/components/page-header';
 import { PersonAvatar } from '@/components/visuals';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { ListRow } from '@/components/list-row';
+import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useAdminUsers,
@@ -123,6 +124,7 @@ function UsersPage() {
   });
   const remove = useDeleteUser();
   const download = useExport('users');
+  const [roleUser, setRoleUser] = useState<AdminUser | null>(null);
   const [removing, setRemoving] = useState<AdminUser | null>(null);
   const shown = list.data?.items ?? [];
 
@@ -226,18 +228,27 @@ function UsersPage() {
           columns={columns}
           data={shown}
           renderCard={(user) => (
-            <Card size="sm">
-              <CardContent className="space-y-3">
-                <p className="font-medium">{user.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {user.email ?? 'No email'} · Joined{' '}
-                  {formatDate(user.created_at)}
-                </p>
-                <RoleSelect user={user} />
-                {profileBadge(user)}
-                {removeButton(user)}
-              </CardContent>
-            </Card>
+            <ListRow
+              media={<PersonAvatar name={user.name} className="size-10" />}
+              title={user.name}
+              subtitle={`${user.email ?? 'No email'} · Joined ${formatDate(user.created_at)}`}
+              status={profileBadge(user)}
+              actions={
+                user.id === currentUser?.id
+                  ? []
+                  : [
+                      {
+                        label: `Change role for ${user.name}`,
+                        onSelect: () => setRoleUser(user),
+                      },
+                      {
+                        label: 'Remove user',
+                        onSelect: () => setRemoving(user),
+                        destructive: true,
+                      },
+                    ]
+              }
+            />
           )}
         />
       </DataState>
@@ -269,6 +280,14 @@ function UsersPage() {
           Next page
         </Button>
       </div>
+      <ResponsiveOverlay
+        open={roleUser !== null}
+        onOpenChange={(open) => !open && setRoleUser(null)}
+        title={`Change role for ${roleUser?.name ?? 'user'}`}
+        description="Choose a role, then confirm the change."
+      >
+        {roleUser && <RoleSelect key={roleUser.id} user={roleUser} />}
+      </ResponsiveOverlay>
       <ConfirmDialog
         key={removing?.id ?? 'none'}
         open={removing !== null}
@@ -430,25 +449,31 @@ function PrivacyEvents() {
           columns={columns}
           data={query.data?.items ?? []}
           renderCard={(event) => (
-            <Card size="sm">
-              <CardContent className="space-y-2 break-all text-sm">
-                <p className="font-medium">{eventLabel(event)}</p>
+            <ListRow
+              title={eventLabel(event)}
+              subtitle={
                 <PartyCell name={event.actor_name} role={event.actor_role} />
-                {event.subject_id ? (
-                  <PartyCell
-                    name={event.subject_name}
-                    role={event.subject_role}
-                  />
-                ) : (
-                  <p>
-                    {event.kind === 'export'
-                      ? 'Many people (data download)'
-                      : 'No individual subject'}
-                  </p>
-                )}
-                <p>{formatDateTime(event.created_at)}</p>
-              </CardContent>
-            </Card>
+              }
+              meta={
+                <>
+                  <span className="block truncate">
+                    {event.subject_id ? (
+                      <PartyCell
+                        name={event.subject_name}
+                        role={event.subject_role}
+                      />
+                    ) : event.kind === 'export' ? (
+                      'Many people (data download)'
+                    ) : (
+                      'No individual subject'
+                    )}
+                  </span>
+                  <span className="block truncate">
+                    {formatDateTime(event.created_at)}
+                  </span>
+                </>
+              }
+            />
           )}
         />
       </DataState>

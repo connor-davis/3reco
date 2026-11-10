@@ -174,11 +174,16 @@ test('desktop and mobile export events explain the many people subject', () => {
     const event = { kind, subject_id: null };
     assert.equal(subject.cell({ row: { original: event } }), expected);
     const card = table.props.renderCard(event);
-    const mobile = elements(card).find(
+    assert.equal(card.type, 'ListRow');
+    assert.equal(card.props.actions, undefined);
+    const mobile = elements(card.props.meta).find(
       (node) => node.props?.children === expected
     );
     assert.ok(mobile);
-    assert.equal(renderToStaticMarkup(mobile), `<p>${expected}</p>`);
+    assert.equal(
+      renderToStaticMarkup(mobile),
+      `<span class="block truncate">${expected}</span>`
+    );
   }
   assert.equal(
     subject.cell({

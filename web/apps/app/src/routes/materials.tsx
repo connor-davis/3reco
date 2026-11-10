@@ -16,7 +16,7 @@ import { MaterialMark, Pager } from '@/components/transactions/list-tools';
 import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { ListRow } from '@/components/list-row';
 import { useDeleteMaterial, useMaterials } from '@/lib/api/materials';
 import type { Material } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -138,17 +138,27 @@ function MaterialsPage() {
           columns={columns}
           data={shown}
           renderCard={(material) => (
-            <Card size="sm">
-              <CardContent className="space-y-2">
-                <p className="font-medium">{material.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatKgFixed(material.carbon_factor)} kg CO₂ / kg ·{' '}
-                  {material.gw_code}
-                </p>
-                <p className="text-sm">{formatRate(material.price)}</p>
-                {actionsFor(material)}
-              </CardContent>
-            </Card>
+            <ListRow
+              title={material.name}
+              subtitle={`${formatKgFixed(material.carbon_factor)} kg CO₂ / kg · ${material.gw_code}`}
+              value={formatRate(material.price)}
+              onOpen={isAdmin ? () => openForm(material) : undefined}
+              actions={
+                isAdmin
+                  ? [
+                      {
+                        label: `Edit ${material.name}`,
+                        onSelect: () => openForm(material),
+                      },
+                      {
+                        label: `Remove ${material.name}`,
+                        onSelect: () => setRemoving(material),
+                        destructive: true,
+                      },
+                    ]
+                  : []
+              }
+            />
           )}
           footer={
             <>

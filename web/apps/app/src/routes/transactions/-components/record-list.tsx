@@ -6,6 +6,7 @@ import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { TransactionDialog } from '@/components/dialogs/record-dialogs';
+import { ListRow } from '@/components/list-row';
 import { LinkButton } from '@/components/link-button';
 import { ChipGroup } from '@/components/filters';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
@@ -290,53 +291,87 @@ export function RecordList({
         }
         skeleton={<RowsSkeleton />}
       >
-        <ItemGroup className="overflow-hidden rounded-2xl border">
+        <ItemGroup className="gap-0 overflow-hidden rounded-2xl border sm:gap-4">
           {shown.map((row) => (
-            <Item key={row.id}>
-              <ItemContent className="min-w-48">
-                <ItemTitle>{titleOf(row)}</ItemTitle>
-                <ItemDescription>
-                  {row.seller.name} → {row.buyer.name}
-                </ItemDescription>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(dayOf(row))} · {row.invoice_number}
-                  {row.items.length === 1 &&
-                    ` · ${formatRate(row.items[0].price)}`}
-                </p>
-              </ItemContent>
-              <ItemActions className="flex-wrap">
-                <Badge
-                  variant="outline"
-                  className="h-8 w-40 shrink-0 justify-center px-3 text-sm"
-                >
-                  {row.type === 'b2b' ? 'Business trade' : 'Collection'}
-                </Badge>
-                <span className="w-32 shrink-0 text-right font-semibold tabular-nums">
-                  {formatRand(toCents(row.total_price))}
-                </span>
-                {row.status === 'pending' && row.request_id && (
-                  <WaitingTag requestId={row.request_id} />
-                )}
-                {row.status === 'pending' && row.request_id ? (
-                  <LinkButton
-                    to="/messages/$requestId"
-                    params={{ requestId: row.request_id }}
+            <div
+              key={row.id}
+              role="listitem"
+              className="border-b last:border-b-0 sm:border-0"
+            >
+              <div className="sm:hidden">
+                <ListRow
+                  title={titleOf(row)}
+                  subtitle={`${row.seller.name} → ${row.buyer.name}`}
+                  meta={`${formatDate(dayOf(row))} · ${row.invoice_number}${row.items.length === 1 ? ` · ${formatRate(row.items[0].price)}` : ''}`}
+                  value={formatRand(toCents(row.total_price))}
+                  status={
+                    <>
+                      <Badge variant="outline">
+                        {row.type === 'b2b' ? 'Business trade' : 'Collection'}
+                      </Badge>
+                      {row.status === 'pending' && row.request_id && (
+                        <WaitingTag requestId={row.request_id} />
+                      )}
+                    </>
+                  }
+                  {...(row.status === 'pending' && row.request_id
+                    ? {
+                        to: '/messages/$requestId' as const,
+                        params: { requestId: row.request_id },
+                        'aria-label': `View request: ${titleOf(row)}`,
+                      }
+                    : {
+                        onOpen: () => setOpen(row),
+                        'aria-label': `Invoice and receipts: ${titleOf(row)}`,
+                      })}
+                />
+              </div>
+              <Item className="hidden sm:flex">
+                <ItemContent className="min-w-48">
+                  <ItemTitle>{titleOf(row)}</ItemTitle>
+                  <ItemDescription>
+                    {row.seller.name} → {row.buyer.name}
+                  </ItemDescription>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(dayOf(row))} · {row.invoice_number}
+                    {row.items.length === 1 &&
+                      ` · ${formatRate(row.items[0].price)}`}
+                  </p>
+                </ItemContent>
+                <ItemActions className="w-full flex-wrap sm:w-auto">
+                  <Badge
                     variant="outline"
+                    className="h-8 shrink-0 justify-center px-3 text-sm sm:w-40"
                   >
-                    View request
-                  </LinkButton>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-44 shrink-0"
-                    onClick={() => setOpen(row)}
-                  >
-                    Invoice and receipts
-                  </Button>
-                )}
-              </ItemActions>
-            </Item>
+                    {row.type === 'b2b' ? 'Business trade' : 'Collection'}
+                  </Badge>
+                  <span className="ml-auto shrink-0 text-right font-semibold tabular-nums sm:ml-0 sm:w-32">
+                    {formatRand(toCents(row.total_price))}
+                  </span>
+                  {row.status === 'pending' && row.request_id && (
+                    <WaitingTag requestId={row.request_id} />
+                  )}
+                  {row.status === 'pending' && row.request_id ? (
+                    <LinkButton
+                      to="/messages/$requestId"
+                      params={{ requestId: row.request_id }}
+                      variant="outline"
+                    >
+                      View request
+                    </LinkButton>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full shrink-0 sm:w-44"
+                      onClick={() => setOpen(row)}
+                    >
+                      Invoice and receipts
+                    </Button>
+                  )}
+                </ItemActions>
+              </Item>
+            </div>
           ))}
         </ItemGroup>
       </DataState>
