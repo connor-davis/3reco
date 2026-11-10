@@ -297,7 +297,10 @@ test('receipt validation calls wrong-type and oversized files images', () => {
         useDownloadInvoice: () => ({}),
       },
       '@/lib/api/receipts': {
-        useUploadReceipt: () => ({ mutate: (file) => uploads.push(file) }),
+        kinds: ['image/png', 'image/jpeg'],
+        maxBytes: 5 * 1024 * 1024,
+        maxReceipts: 5,
+        useUploadReceipt: () => ({ mutate: ({ file }) => uploads.push(file) }),
         useDownloadReceipt: () => ({}),
         useDeleteReceipt: () => ({}),
       },

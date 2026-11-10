@@ -10,6 +10,9 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import {
+  kinds,
+  maxBytes,
+  maxReceipts,
   useUploadReceipt,
   useDownloadReceipt,
   useDeleteReceipt,
@@ -32,15 +35,11 @@ type Props = {
   onClose: () => void;
 };
 
-export const maxReceipts = 5;
-const maxBytes = 5 * 1024 * 1024;
-const kinds = ['image/png', 'image/jpeg'];
-
 /** One trade: who, when, every line, the invoice and its receipts. */
 export function TransactionDialog({ record, onClose }: Props) {
   const { user } = useAuth();
   const fresh = useTransaction(record?.id ?? '');
-  const upload = useUploadReceipt(record?.id ?? '');
+  const upload = useUploadReceipt();
   const download = useDownloadReceipt(record?.id ?? '');
   const remove = useDeleteReceipt(record?.id ?? '');
   const [removing, setRemoving] = useState<Receipt | null>(null);
@@ -72,10 +71,13 @@ export function TransactionDialog({ record, onClose }: Props) {
       return;
     }
 
-    upload.mutate(file, {
-      onSuccess: () => toast.success('Receipt added.'),
-      onError: (error) => setFileError(errorText(error)),
-    });
+    upload.mutate(
+      { id: record?.id ?? '', file },
+      {
+        onSuccess: () => toast.success('Receipt added.'),
+        onError: (error) => setFileError(errorText(error)),
+      }
+    );
   }
 
   return (
