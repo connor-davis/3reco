@@ -2,7 +2,13 @@ import { format as dateKey } from 'date-fns';
 import { stockLimit } from '@/lib/limits';
 import { useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarIcon, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import {
+  CalendarIcon,
+  Plus,
+  Trash2,
+  TriangleAlert,
+  Upload,
+} from 'lucide-react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -15,7 +21,14 @@ import { IconButton } from '@/components/icon-button';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { errorText } from '@/components/transactions/pager-state';
 import { Calendar } from '@/components/ui/calendar';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { buttonVariants } from '@/components/ui/button-variants';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
@@ -24,9 +37,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCollectorSelection } from '@/lib/api/collectors';
 import { useMaterials } from '@/lib/api/materials';
+import {
+  kinds,
+  maxBytes,
+  maxReceipts,
+  useUploadReceipt,
+} from '@/lib/api/receipts';
 import { useStores } from '@/lib/api/stores';
 import { useCreateCollection } from '@/lib/api/transactions';
 import { useAuth } from '@/lib/auth/use-auth';
+import { cn } from '@/lib/utils';
 import {
   formatDate,
   formatPhone,
@@ -133,7 +153,11 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const collectors = useCollectorSelection();
   const materials = useMaterials({ limit: 100 });
   const create = useCreateCollection();
+  const upload = useUploadReceipt();
   const [serverError, setServerError] = useState('');
+  const [receipts, setReceipts] = useState<File[]>([]);
+  const [receiptError, setReceiptError] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [businessQuery, setBusinessQuery] = useState('');
   // Searching swaps the list, so remember every business seen to keep the pick.
@@ -186,6 +210,27 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     0
   );
 
+  /** Bad files are refused here, so only good ones wait for the save. */
+  function pickReceipts(picked: File[]) {
+    const next = [...receipts];
+    let message = '';
+
+    for (const file of picked) {
+      if (!kinds.includes(file.type)) {
+        message = 'Choose a PNG or JPEG image.';
+      } else if (file.size > maxBytes) {
+        message = 'The image is over 5 MB.';
+      } else if (next.length >= maxReceipts) {
+        message = `A collection holds at most ${maxReceipts} receipts.`;
+      } else {
+        next.push(file);
+      }
+    }
+
+    setReceiptError(message);
+    setReceipts(next);
+  }
+
   async function onSubmit(values: Values) {
     setServerError('');
 
@@ -194,14 +239,48 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
       return;
     }
 
+    let id: string;
+
     try {
-      await create.mutateAsync(collectionBody(values, chooseBusiness));
-      toast.success('Collection recorded.');
-      reset();
-      onOpenChange(false);
+      const created = await create.mutateAsync(
+        collectionBody(values, chooseBusiness)
+      );
+      id = created.transaction_id;
     } catch (error) {
       setServerError(errorText(error));
+      return;
     }
+
+    // The collection is saved now; a receipt that fails must not undo that.
+    const failed: string[] = [];
+    setUploading(true);
+
+    for (const file of receipts) {
+      try {
+        await upload.mutateAsync({ id, file });
+      } catch {
+        failed.push(file.name);
+      }
+    }
+
+    setUploading(false);
+
+    if (failed.length > 0) {
+      toast.warning(
+        `Collection recorded, but ${failed.join(', ')} did not upload. Add them from Invoice and receipts.`
+      );
+    } else if (receipts.length > 0) {
+      toast.success(
+        `Collection recorded with ${receipts.length} ${receipts.length === 1 ? 'receipt' : 'receipts'}.`
+      );
+    } else {
+      toast.success('Collection recorded.');
+    }
+
+    reset();
+    setReceipts([]);
+    setReceiptError('');
+    onOpenChange(false);
   }
 
   return (
@@ -216,7 +295,10 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
           : 'Materials you bought from a collector.') + ' Prices are per kg.'
       }
       footer={
-        <Button disabled={create.isPending} onClick={handleSubmit(onSubmit)}>
+        <Button
+          disabled={create.isPending || uploading}
+          onClick={handleSubmit(onSubmit)}
+        >
           Record collection
         </Button>
       }
@@ -380,6 +462,62 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             {validLines ? formatRand(total) : '-'}
           </span>
         </p>
+        <Field data-invalid={receiptError !== ''}>
+          <FieldLabel>Receipts</FieldLabel>
+          <ul className="space-y-2">
+            {receipts.map((file, index) => (
+              <li
+                key={`${file.name}-${index}`}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <span className="min-w-0 truncate">{file.name}</span>
+                <IconButton
+                  label={`Remove receipt ${file.name}`}
+                  disabled={create.isPending || uploading}
+                  onClick={() =>
+                    setReceipts(receipts.filter((_, i) => i !== index))
+                  }
+                >
+                  <Trash2 />
+                </IconButton>
+              </li>
+            ))}
+          </ul>
+          {receipts.length < maxReceipts && (
+            <>
+              <Input
+                id="collection-receipts"
+                type="file"
+                multiple
+                className="peer sr-only"
+                accept="image/png,image/jpeg"
+                aria-invalid={receiptError !== ''}
+                onChange={(event) => {
+                  pickReceipts(Array.from(event.target.files ?? []));
+                  event.target.value = '';
+                }}
+              />
+              <FieldLabel
+                htmlFor="collection-receipts"
+                className={cn(
+                  buttonVariants({ variant: 'outline' }),
+                  'w-fit cursor-pointer peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50'
+                )}
+              >
+                <Upload data-icon="inline-start" />
+                Add receipts
+              </FieldLabel>
+            </>
+          )}
+          <FieldDescription>
+            PNG or JPEG, up to 5 MB. Up to {maxReceipts} receipts.
+          </FieldDescription>
+          {receiptError && (
+            <p role="alert" className="text-sm text-destructive">
+              {receiptError}
+            </p>
+          )}
+        </Field>
         {serverError && (
           <p role="alert" className="text-sm text-destructive">
             {serverError}

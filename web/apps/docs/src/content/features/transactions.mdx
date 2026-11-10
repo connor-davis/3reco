@@ -33,6 +33,7 @@ Weights and prices are decimal strings, never JSON numbers. A trade has up to 10
 ## Invoice and receipts
 
 - A PDF invoice is made for every trade and downloaded from `GET /api/transactions/:id/invoice`. See [Invoices](/docs/features/invoices).
+- When you record a collection in the app you can add up to five receipt images in the same dialog. They upload right after the collection is saved. If one fails to upload, the collection is still recorded and you can add the receipt later from Invoice and receipts.
 - The buyer, a business seller, admins and staff can attach up to five receipt images once the trade is complete (PNG or JPEG, 5 MiB each) with `POST /api/transactions/:id/receipts`. Staff can remove only receipts they added; admins can remove any.
 
 ## Seeing them

@@ -3,13 +3,19 @@ import type * as T from './types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, upload, download } from './client';
 
+/** What one trade holds: five PNG or JPEG images of 5 MB each. */
+export const maxReceipts = 5;
+export const maxBytes = 5 * 1024 * 1024;
+export const kinds = ['image/png', 'image/jpeg'];
+
 export function receiptUrl(transactionId: string, receiptId: string) {
   return `/api/transactions/${idPath(transactionId)}/receipts/${idPath(receiptId)}`;
 }
-export function useUploadReceipt(id: string) {
+export function useUploadReceipt() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (file: File) =>
+    // The id goes in the variables: a new collection has none until it is saved.
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
       api<T.Receipt>(`/transactions/${idPath(id)}/receipts`, upload(file)),
     onSuccess: () => client.invalidateQueries({ queryKey: ['transactions'] }),
   });

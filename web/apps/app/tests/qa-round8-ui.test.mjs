@@ -147,6 +147,7 @@ test('collection total is absent for invalid weight and returns after correction
           useAuth: () => ({ user: { role: 'business' } }),
         },
         '@/lib/api/transactions': { useCreateCollection: () => ({}) },
+        '@/lib/api/receipts': { useUploadReceipt: () => ({}) },
         '@/lib/format': format,
         '@/lib/quantity': quantity,
         '@/lib/limits': compile('lib/limits.ts'),

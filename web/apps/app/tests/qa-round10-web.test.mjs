@@ -137,6 +137,9 @@ test('receipt remove is restricted and only mutates after confirmation', () => {
           useDownloadInvoice: () => ({}),
         },
         '@/lib/api/receipts': {
+          kinds: ['image/png', 'image/jpeg'],
+          maxBytes: 5 * 1024 * 1024,
+          maxReceipts: 5,
           useUploadReceipt: () => ({}),
           useDownloadReceipt: () => ({}),
           useDeleteReceipt: () => ({ mutate: (id) => calls.push(id) }),
