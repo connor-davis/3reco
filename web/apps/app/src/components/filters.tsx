@@ -122,7 +122,7 @@ export function ChipGroup({
           key={item.value}
           value={item.value}
           className={cn(
-            'px-4 aria-pressed:bg-foreground aria-pressed:text-background',
+            'min-h-11 min-w-11 px-4 aria-pressed:bg-foreground aria-pressed:text-background',
             outlined ? 'border-border bg-card' : 'bg-muted'
           )}
         >

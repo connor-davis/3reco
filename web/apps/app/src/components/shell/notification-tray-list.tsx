@@ -52,7 +52,9 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
         className="px-4 pt-3"
       >
         <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="all" className="min-w-11">
+            All
+          </TabsTrigger>
           <TabsTrigger value="unread">
             Unread
             {!count.isError && count.data && (
@@ -96,7 +98,7 @@ export default function TrayList({ onNavigate }: { onNavigate: () => void }) {
                       {formatTime(notice.created_at)}
                     </span>
                   </ItemContent>
-                  <ItemActions className="w-full flex-wrap justify-start">
+                  <ItemActions className="w-full flex-wrap justify-start gap-x-4 gap-y-2">
                     {notice.link?.startsWith('/') &&
                       !notice.link.startsWith('//') && (
                         <Button

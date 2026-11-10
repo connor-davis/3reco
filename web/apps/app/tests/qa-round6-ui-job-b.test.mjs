@@ -166,10 +166,10 @@ test('qa-round6-ui: transaction status shares the wrapping records filter bar', 
 test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded border', () => {
   assert.match(
     source('components/data-table.tsx'),
-    /className="overflow-hidden rounded-2xl border"/
+    /className="overflow-hidden rounded-lg border"/
   );
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /<ItemGroup className="gap-0 overflow-hidden rounded-2xl border sm:gap-4"/
+    /<ItemGroup className="gap-0 overflow-hidden rounded-lg border sm:gap-4"/
   );
 });

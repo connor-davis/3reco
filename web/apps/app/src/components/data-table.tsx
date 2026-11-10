@@ -78,13 +78,13 @@ export function DataTable<T>({
   return (
     <div className="space-y-3">
       {compact ? (
-        <ul className="divide-y overflow-hidden rounded-2xl border">
+        <ul className="divide-y overflow-hidden rounded-lg border">
           {rows.map((row: Row<T>) => (
             <li key={row.id}>{renderCard(row.original)}</li>
           ))}
         </ul>
       ) : (
-        <div className="overflow-hidden rounded-2xl border">
+        <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((group) => (

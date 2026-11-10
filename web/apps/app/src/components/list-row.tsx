@@ -89,7 +89,7 @@ export function ListRow({
             {value}
           </span>
         )}
-        {interactive && (
+        {interactive && !trailing && (
           <ChevronRight
             className="size-4 shrink-0 text-muted-foreground"
             aria-hidden="true"

@@ -107,7 +107,7 @@ export function RowsSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: rows }, (_, index) => (
-        <Skeleton key={index} className="h-14 w-full rounded-xl" />
+        <Skeleton key={index} className="h-14 w-full rounded-lg" />
       ))}
     </div>
   );
@@ -116,10 +116,10 @@ export function RowsSkeleton({ rows = 5 }: { rows?: number }) {
 /** Placeholder cards for grids while data loads. */
 export function CardsSkeleton({ cards = 6 }: { cards?: number }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
       {Array.from({ length: cards }, (_, index) => (
         <div key={index} aria-hidden="true">
-          <Skeleton className="aspect-[4/3] rounded-2xl" />
+          <Skeleton className="aspect-[4/3] rounded-lg" />
           <div className="mt-3.5 space-y-1.5">
             <div className="min-h-12 space-y-2 py-1">
               <Skeleton className="h-4 w-4/5" />

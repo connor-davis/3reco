@@ -65,7 +65,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
       description="Jump to a page, a material or a store."
     >
       <CommandInput
-        placeholder="Search pages, materials and stores"
+        placeholder="Search pages and materials"
         value={text}
         onValueChange={setText}
       />

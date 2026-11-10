@@ -28,13 +28,13 @@ export function StatCard({
   unavailable = false,
 }: StatCardProps) {
   return (
-    <Card className="@container gap-1 bg-muted py-5 ring-0">
+    <Card className="@container gap-1 bg-muted py-5 ring-0 max-sm:[--card-spacing:--spacing(3)]">
       <CardHeader>
         <CardDescription className="flex items-center gap-2">
           {Icon && <Icon className="size-4" aria-hidden="true" />}
           {label}
         </CardDescription>
-        <CardTitle className="text-[clamp(1rem,6cqi,1.875rem)] font-semibold tracking-tight whitespace-nowrap tabular-nums">
+        <CardTitle className="text-[clamp(0.75rem,6cqi,1.875rem)] font-semibold tracking-tight whitespace-nowrap tabular-nums">
           {isLoading ? (
             <Skeleton className="h-8 w-24" />
           ) : unavailable ? (
@@ -68,8 +68,8 @@ export function StatGrid({
     <div
       className={
         threeUp
-          ? 'grid gap-4 lg:grid-cols-3'
-          : 'grid gap-4 min-[480px]:grid-cols-2 xl:grid-cols-4'
+          ? 'grid grid-cols-2 gap-2 sm:gap-4 max-lg:[&>:last-child:nth-child(odd)]:col-span-2 lg:grid-cols-3'
+          : 'grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4'
       }
     >
       {children}

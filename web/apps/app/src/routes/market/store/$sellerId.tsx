@@ -63,7 +63,7 @@ function StorePage() {
             }}
             listing={chatListing ?? undefined}
           />
-          <header className="flex flex-wrap items-center gap-4 rounded-3xl bg-muted p-6">
+          <header className="flex flex-wrap items-center gap-4 rounded-lg bg-muted p-6">
             <PersonAvatar name={store.data.name} className="size-16" />
             <div className="min-w-0 flex-1 space-y-1">
               <h1 className="text-2xl font-semibold">{store.data.name}</h1>
@@ -114,7 +114,7 @@ function StorePage() {
                 emptyTitle="Nothing listed right now"
                 emptyText="This store has no materials listed."
               >
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
                   {listings.data?.items.map((item) => (
                     <ListingCard
                       key={item.id}

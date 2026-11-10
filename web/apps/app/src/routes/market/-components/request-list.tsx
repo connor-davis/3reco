@@ -85,7 +85,7 @@ export function RequestList({
         emptyText="Requests appear here when you start trading."
         skeleton={<RowsSkeleton />}
       >
-        <ul className="divide-y rounded-2xl border">
+        <ul className="divide-y rounded-lg border">
           {shown.map((request) => {
             const other = counterpartyOf(request, user?.id);
             return (
@@ -93,7 +93,7 @@ export function RequestList({
                 <Link
                   to="/market/$requestId"
                   params={{ requestId: request.id }}
-                  className="flex min-h-14 flex-wrap items-center gap-3 rounded-xl px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="flex min-h-14 flex-wrap items-center gap-3 rounded-lg px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   <PersonAvatar name={other.name} />
                   <div className="min-w-40 flex-1">

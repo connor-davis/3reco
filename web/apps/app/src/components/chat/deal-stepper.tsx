@@ -19,7 +19,7 @@ export function DealStepper({ request }: { request: TradeRequest }) {
           key={step}
           aria-current={index === current ? 'step' : undefined}
           className={cn(
-            'rounded-full border px-3 py-2',
+            'rounded-md border px-3 py-2',
             index === current && 'border-primary bg-primary/15 font-medium',
             index > current && 'text-muted-foreground'
           )}

@@ -129,7 +129,7 @@ export function TransactionDialog({ record, onClose }: Props) {
                       {formatKgFixed(item.weight)} kg · {formatRate(item.price)}
                     </span>
                   </span>
-                  <span className="font-medium tabular-nums">
+                  <span className="text-right font-medium whitespace-nowrap tabular-nums">
                     {formatRand(lineCents(item.price, item.weight))}
                   </span>
                 </li>

@@ -176,7 +176,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
         <Link
           to="/messages"
           aria-label="Back to messages"
-          className="inline-flex size-11 items-center justify-center rounded-full hover:bg-muted min-[781px]:hidden"
+          className="inline-flex size-11 items-center justify-center rounded-md hover:bg-muted min-[781px]:hidden"
         >
           <ArrowLeft className="size-5" />
         </Link>
@@ -308,7 +308,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
                   <div
                     key={message.id}
                     className={cn(
-                      'w-fit max-w-[min(85%,75ch)] rounded-2xl px-4 py-3 text-sm shadow-xs',
+                      'w-fit max-w-[min(85%,75ch)] rounded-lg px-4 py-3 text-sm shadow-xs',
                       message.sender_id === user?.id
                         ? 'ml-auto bg-outgoing'
                         : 'bg-card'
