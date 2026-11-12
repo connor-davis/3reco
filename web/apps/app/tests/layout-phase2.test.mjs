@@ -72,14 +72,13 @@ test('DataTable owns one Panel, a wide table, transparent divided compact rows a
       },
     });
     const tree = DataTable({
-      fit: true,
       columns: [],
       data: [original],
       renderCard: () => 'Compact row',
       onRowClick: (row) => clicks.push(row),
       rowLabel: () => 'Invoice and receipts',
     });
-    assert.equal(tree.type, 'Panel');
+    assert.equal(tree.type, compact ? 'Panel' : 'section');
     const all = nodes(tree);
     assert.equal(
       all.some((node) => node.type === 'table'),
@@ -90,10 +89,6 @@ test('DataTable owns one Panel, a wide table, transparent divided compact rows a
       compact
     );
     if (!compact) {
-      assert.equal(
-        all.find((node) => node.type === 'table').props.className,
-        'table-fixed'
-      );
       const row = all.find((node) => node.type === 'tr');
       row.props.onClick();
       let prevented = false;

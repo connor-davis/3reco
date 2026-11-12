@@ -12,7 +12,7 @@ test('admin users page marks and changes business verification', () => {
   assert.match(page, /Verify business/);
   assert.match(page, /Remove verification/);
   // Desktop actions cell, phone row status and phone menu all use them.
-  assert.match(page, /verifyButton\(row\.original\)/);
+  assert.match(page, /rowActions\(row\.original\)/);
   assert.match(page, /verifiedBadge\(user\)/);
   assert.match(page, /onSelect: \(\) => setVerifying\(user\)/);
   assert.match(page, /toast\.error\(error\.message\)/);

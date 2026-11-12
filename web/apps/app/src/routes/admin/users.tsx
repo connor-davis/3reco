@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Download, Trash2, Users, ShieldCheck } from 'lucide-react';
+import { Download, ShieldCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Guarded } from '@/components/access-guard';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -15,6 +15,7 @@ import { PersonAvatar } from '@/components/visuals';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ListRow } from '@/components/list-row';
+import { RowActions, type RowAction } from '@/components/row-actions';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -144,52 +145,46 @@ function UsersPage() {
   const [verifying, setVerifying] = useState<AdminUser | null>(null);
   const shown = list.data?.items ?? [];
 
-  function removeButton(user: AdminUser) {
-    if (user.id === currentUser?.id) return null;
-
-    return (
-      <Button
-        className="min-h-11"
-        variant="destructive"
-        disabled={remove.isPending}
-        onClick={() => setRemoving(user)}
-      >
-        <Trash2 data-icon="inline-start" />
-        Remove user
-      </Button>
-    );
-  }
-
-  function verifyButton(user: AdminUser) {
-    if (user.role !== 'business') return null;
-
-    return (
-      <Button
-        className="min-h-11"
-        variant="outline"
-        disabled={verify.isPending}
-        onClick={() => setVerifying(user)}
-      >
-        <ShieldCheck data-icon="inline-start" />
-        {user.business_verified ? 'Remove verification' : 'Verify business'}
-      </Button>
-    );
+  function rowActions(user: AdminUser): RowAction[] {
+    return [
+      ...(user.role === 'business'
+        ? [
+            {
+              label: user.business_verified
+                ? 'Remove verification'
+                : 'Verify business',
+              disabled: verify.isPending,
+              onSelect: () => setVerifying(user),
+            },
+          ]
+        : []),
+      ...(user.id === currentUser?.id
+        ? []
+        : [
+            {
+              label: 'Remove user',
+              destructive: true,
+              disabled: remove.isPending,
+              onSelect: () => setRemoving(user),
+            },
+          ]),
+    ];
   }
 
   const columns: ColumnDef<AdminUser>[] = [
     {
       accessorKey: 'name',
       header: 'Person',
-      meta: { sticky: 'left' },
+      meta: { main: true },
       cell: ({ row }) => (
-        <span className="flex items-center gap-3">
+        <span className="flex min-w-0 items-center gap-3">
           <PersonAvatar name={row.original.name} />
-          <span>
-            <span className="block font-medium">
+          <span className="min-w-0">
+            <span className="block truncate font-medium">
               {row.original.name}
               {verifiedBadge(row.original)}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="block truncate text-xs text-muted-foreground">
               {row.original.email ?? 'No email'}
             </span>
           </span>
@@ -215,20 +210,13 @@ function UsersPage() {
     {
       id: 'actions',
       header: 'Actions',
-      meta: { sticky: 'right' },
       enableSorting: false,
-      cell: ({ row }) => {
-        const verifying = verifyButton(row.original);
-        const removing = removeButton(row.original);
-        if (!verifying && !removing) return null;
-
-        return (
-          <span className="flex w-max flex-col gap-2 2xl:flex-row">
-            {verifying}
-            {removing}
-          </span>
-        );
-      },
+      cell: ({ row }) => (
+        <RowActions
+          name={row.original.name}
+          actions={rowActions(row.original)}
+        />
+      ),
     },
   ];
 

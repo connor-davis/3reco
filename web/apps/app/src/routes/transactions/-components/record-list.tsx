@@ -9,6 +9,7 @@ import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { TradeParties, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { ListRow } from '@/components/list-row';
+import { RowActions } from '@/components/row-actions';
 import { ChoiceSelect, FilterTabs } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
 import { PageHeader } from '@/components/page-header';
@@ -20,7 +21,11 @@ import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useExport, type ExportKind } from '@/lib/api/exports';
 import { useRequest } from '@/lib/api/requests';
-import { useTransactions, useTransactionTotals } from '@/lib/api/transactions';
+import {
+  useDownloadInvoice,
+  useTransactions,
+  useTransactionTotals,
+} from '@/lib/api/transactions';
 import type { Transaction } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useDebounced } from '@/lib/use-debounced';
@@ -117,6 +122,7 @@ export function RecordList({
   const [range, setRange] = useState<DateRange | undefined>();
   const [type, setType] = useState('all');
   const [csv, setCsv] = useState('transaction');
+  const invoice = useDownloadInvoice();
 
   // A link such as /transactions/purchases?open=<id> redirects to that trade page.
   const { open: openId } = useSearch({ strict: false }) as { open?: string };
@@ -154,26 +160,19 @@ export function RecordList({
     {
       id: 'date',
       header: 'Date / Invoice',
-      meta: { className: 'w-32' },
       cell: ({ row }) => (
-        <div className="space-y-1 text-xs">
+        <div>
           <span className="block">{formatDate(dayOf(row.original))}</span>
-          <span className="block break-all">{row.original.invoice_number}</span>
-          <StatusBadge
-            status={
-              row.original.status === 'complete'
-                ? 'Complete'
-                : row.original.status === 'pending'
-                  ? 'Pending'
-                  : 'Cancelled'
-            }
-          />
+          <span className="block text-xs text-muted-foreground">
+            {row.original.invoice_number}
+          </span>
         </div>
       ),
     },
     {
       id: 'materials',
       header: 'Materials',
+      meta: { main: true },
       cell: ({ row }) => (
         <span
           className="block truncate"
@@ -189,14 +188,11 @@ export function RecordList({
       id: 'parties',
       header: 'From → To',
       cell: ({ row }) => (
-        <div className="space-y-2 text-xs">
-          <div>
+        <div className="max-w-80 min-w-48 space-y-1 whitespace-normal">
+          <div className="line-clamp-2">
             <Parties row={row.original} />
           </div>
-          <Badge
-            variant="outline"
-            className="max-w-full whitespace-normal 2xl:hidden"
-          >
+          <Badge variant="outline" className="max-w-full whitespace-normal">
             <TradeTypeLabel
               type={row.original.type}
               verified={row.original.business_verified}
@@ -206,29 +202,52 @@ export function RecordList({
       ),
     },
     {
-      id: 'type',
-      header: 'Type',
-      meta: { className: 'hidden w-44 2xl:table-cell' },
+      id: 'status',
+      header: 'Status',
       cell: ({ row }) => (
-        <Badge variant="outline" className="max-w-full whitespace-normal">
-          <TradeTypeLabel
-            type={row.original.type}
-            verified={row.original.business_verified}
-          />
-        </Badge>
+        <StatusBadge
+          status={
+            row.original.status === 'complete'
+              ? 'Complete'
+              : row.original.status === 'pending'
+                ? 'Pending'
+                : 'Cancelled'
+          }
+        />
       ),
     },
     {
       id: 'weight',
       header: 'Weight (kg)',
-      meta: { align: 'right', className: 'w-28 text-xs' },
+      meta: { align: 'right' },
       cell: ({ row }) => formatKgNumber(weightOf(row.original) / 1000),
     },
     {
       id: 'amount',
       header: 'Amount',
-      meta: { align: 'right', className: 'w-36 text-xs' },
+      meta: { align: 'right' },
       cell: ({ row }) => formatRand(toCents(row.original.total_price)),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <RowActions
+          name={row.original.invoice_number}
+          actions={[
+            { label: 'Open', onSelect: () => openRow(row.original) },
+            {
+              label: 'Download invoice',
+              disabled: invoice.isPending,
+              onSelect: () =>
+                invoice.mutate(row.original, {
+                  onError: (error) => toast.error(errorText(error)),
+                }),
+            },
+          ]}
+        />
+      ),
     },
   ];
 
@@ -405,7 +424,6 @@ export function RecordList({
         skeleton={<RowsSkeleton />}
       >
         <DataTable
-          fit
           columns={columns}
           data={shown}
           onRowClick={openRow}

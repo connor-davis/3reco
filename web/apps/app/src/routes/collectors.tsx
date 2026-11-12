@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Plus, ShieldCheck, Trash2, Users } from 'lucide-react';
+import { Plus, ShieldCheck, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Guarded } from '@/components/access-guard';
@@ -11,7 +11,7 @@ import { DataState, RowsSkeleton } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
 import { CollectorDialog } from '@/components/dialogs/collector-dialog';
 import { Toolbar } from '@/components/toolbar';
-import { IconButton } from '@/components/icon-button';
+import { RowActions } from '@/components/row-actions';
 import { PageHeader } from '@/components/page-header';
 import { Pager } from '@/components/transactions/list-tools';
 import { errorText, usePager } from '@/components/transactions/pager-state';
@@ -22,7 +22,7 @@ import { useCollectors, useDeleteCollector } from '@/lib/api/collectors';
 import type { Collector } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { isStaffRole } from '@/lib/access';
-import { formatPhone, plural } from '@/lib/format';
+import { formatPhone, maskAccount, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/collectors')({
   component: () => (
@@ -32,10 +32,9 @@ export const Route = createFileRoute('/collectors')({
   ),
 });
 
-// Account numbers arrive masked. They are printed as sent, never rebuilt.
 function payoutText(collector: Collector): string {
   if (collector.payout_method === 'bank') {
-    const account = collector.bank_account_number ?? '';
+    const account = maskAccount(collector.bank_account_number ?? '');
 
     return `Bank · ${collector.bank_name ?? ''} ${account}`.trim();
   }
@@ -111,24 +110,23 @@ function CollectorsPage() {
 
   function actions(collector: Collector) {
     return (
-      <div className="flex gap-1">
-        {collector.can_edit && (
-          <IconButton
-            label={`Edit ${collector.name}`}
-            onClick={() => openForm(collector)}
-          >
-            <Pencil />
-          </IconButton>
-        )}
-        {canRemove && (
-          <IconButton
-            label={`Remove ${collector.name}`}
-            onClick={() => setRemoving(collector)}
-          >
-            <Trash2 />
-          </IconButton>
-        )}
-      </div>
+      <RowActions
+        name={collector.name}
+        actions={[
+          ...(collector.can_edit
+            ? [{ label: 'Edit', onSelect: () => openForm(collector) }]
+            : []),
+          ...(canRemove
+            ? [
+                {
+                  label: 'Remove',
+                  destructive: true,
+                  onSelect: () => setRemoving(collector),
+                },
+              ]
+            : []),
+        ]}
+      />
     );
   }
 
@@ -138,30 +136,27 @@ function CollectorsPage() {
       header: 'Collector',
       // The server sorts the whole list by name, so the header is a button.
       enableSorting: true,
-      meta: { sticky: 'left' },
+      meta: { main: true },
       cell: ({ row }) => (
-        <span className="flex items-center gap-3">
-          <PersonAvatar name={row.original.name} />
-          <span className="font-medium">{row.original.name}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          <PersonAvatar name={row.original.name} className="size-8" />
+          <span className="min-w-0">
+            <span className="block truncate font-medium">
+              {row.original.name}
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              {row.original.email || 'No email'}
+            </span>
+          </span>
         </span>
       ),
     },
     {
-      id: 'contact',
-      header: 'Contact',
+      id: 'phone',
+      header: 'Phone',
       enableSorting: false,
-      cell: ({ row }) => (
-        <span>
-          <span className="block">
-            {row.original.phone
-              ? formatPhone(row.original.phone)
-              : row.original.email || 'Not shared'}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {row.original.phone && row.original.email}
-          </span>
-        </span>
-      ),
+      cell: ({ row }) =>
+        row.original.phone ? formatPhone(row.original.phone) : 'Not shared',
     },
     {
       id: 'location',
@@ -171,14 +166,13 @@ function CollectorsPage() {
     },
     {
       id: 'payout',
-      header: 'Payout details',
+      header: 'Payout',
       enableSorting: false,
       cell: ({ row }) => payoutText(row.original),
     },
     {
       id: 'actions',
       header: 'Actions',
-      meta: { sticky: 'right' },
       enableSorting: false,
       cell: ({ row }) => actions(row.original),
     },

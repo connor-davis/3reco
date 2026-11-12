@@ -252,6 +252,7 @@ test('B5: export success and failure have separate feedback', () => {
       '@/lib/auth/use-auth': { useAuth: () => ({ user: {} }) },
       '@/lib/api/transactions': {
         useTransaction: () => ({}),
+        useDownloadInvoice: () => ({}),
         useTransactions: () => ({ data: { items: [] } }),
         useTransactionTotals: () => ({ data: { count: 1 } }),
       },

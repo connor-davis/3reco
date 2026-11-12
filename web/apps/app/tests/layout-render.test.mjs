@@ -193,7 +193,7 @@ with sync_playwright() as p:
                                     box = cell.bounding_box()
                                     assert box['x'] + box['width'] <= container.bounding_box()['x'] + container.bounding_box()['width'] + 1
                             if route.startswith('/transactions'):
-                                expect(page.get_by_role('columnheader', name='Type', exact=True)).to_have_count(1 if width >= 1536 else 0)
+                                expect(page.get_by_role('columnheader', name='Type', exact=True)).to_have_count(0)
                                 for cell in page.locator('tbody tr').nth(1).locator('td').all()[-2:]:
                                     assert cell.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'numeric cell clipped {route} {width}'
                         else:
@@ -212,14 +212,9 @@ with sync_playwright() as p:
                     if route == '/admin/users' and width >= 1024:
                         container = page.locator('[data-slot="table-container"]')
                         assert container.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'admin table scrolls {width}'
-                        remove_verification = page.get_by_role('button', name='Remove verification', exact=True)
+                        page.get_by_role('button', name='Actions for Naledi Jacobs', exact=True).click()
+                        remove_verification = page.get_by_role('menuitem', name='Remove verification', exact=True)
                         expect(remove_verification).to_have_count(1)
-                        action_group = remove_verification.locator('..')
-                        buttons = action_group.get_by_role('button')
-                        expect(buttons).to_have_count(2)
-                        boxes = [button.bounding_box() for button in buttons.all()]
-                        assert all(box['height'] >= 44 for box in boxes)
-                        if width < 1536: assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height']
                         remove_verification.click()
                         dialog = page.get_by_role('alertdialog')
                         expect(dialog).to_be_visible()

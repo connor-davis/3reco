@@ -109,7 +109,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 setSearchOpen(true);
               }}
             />
-            <div className={cn('w-full flex-1', chat ? chatPad : pagePad)}>
+            <div
+              className={cn(
+                'mx-auto w-full max-w-screen-2xl flex-1',
+                chat ? chatPad : pagePad
+              )}
+            >
               {children}
             </div>
           </SidebarInset>

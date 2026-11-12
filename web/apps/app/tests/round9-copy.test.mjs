@@ -49,7 +49,7 @@ test('collectors page says shared directory and has a no-match state', () => {
   assert.match(text, /A shared directory of collectors/);
   assert.match(text, /No matching collectors/);
   assert.match(text, /Clear search/);
-  assert.match(text, /collector\.can_edit &&/);
+  assert.match(text, /collector\.can_edit/);
 });
 
 test('stock dialog dedupes errors and starts neutral', () => {

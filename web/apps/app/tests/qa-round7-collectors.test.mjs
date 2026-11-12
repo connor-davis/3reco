@@ -7,7 +7,7 @@ import { source } from './qa-round2-loader.mjs';
 
 test('collector edit uses the server permission in table and phone actions', () => {
   const page = source('routes/collectors.tsx');
-  assert.match(page, /collector.can_edit &&/);
+  assert.match(page, /collector.can_edit/);
   assert.match(page, /cell: \(\{ row \}\) => actions\(row.original\)/);
   assert.match(page, /<ListRow/);
   assert.match(page, /title="Collector directory"/);
@@ -62,8 +62,8 @@ test('phone menus and primary taps follow collector permissions; desktop keeps i
     for (const can_edit of [true, false, undefined]) {
       const row = { name: 'Nomsa', can_edit, city: 'Soweto' };
       const rendered = actions.cell({ row: { original: row } });
-      const edit = nodes(rendered).find(
-        (node) => node.props.label === 'Edit Nomsa'
+      const edit = rendered.props.actions.find(
+        (action) => action.label === 'Edit'
       );
       assert.equal(!!edit, can_edit === true);
       const phone = table.props.renderCard(row);
