@@ -119,10 +119,11 @@ func (s *Store) Inbox(
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		WITH page AS (
 		SELECT r.id, r.status, o.id AS other_id, `+database.DisplayName("o")+` AS other_name,
+			`+database.Verified("o")+` AS other_ok,
 			lm.id AS lm_id, lm.sender_id AS lm_sender, lm.content AS lm_content,
 			lm.created_at AS lm_at, lm.system AS lm_system, r.activity_at AS activity,
-            r.buyer_id, `+database.DisplayName("b")+` AS buyer_name,
-            r.seller_id, `+database.DisplayName("sl")+` AS seller_name,
+            r.buyer_id, `+database.DisplayName("b")+` AS buyer_name, `+database.Verified("b")+` AS buyer_ok,
+            r.seller_id, `+database.DisplayName("sl")+` AS seller_name, `+database.Verified("sl")+` AS seller_ok,
             r.offer_by, r.offer_version, r.buyer_confirmed_version, r.seller_confirmed_version
 		FROM transaction_requests r
 		JOIN users b ON b.id = r.buyer_id
@@ -144,9 +145,9 @@ func (s *Store) Inbox(
 			AND ($2::timestamptz IS NULL OR (r.activity_at, r.id) < ($2, $3))
 		ORDER BY activity DESC, r.id DESC
 		LIMIT $4)
-		SELECT page.id, page.status, page.other_id, page.other_name, page.lm_id, page.lm_sender,
+		SELECT page.id, page.status, page.other_id, page.other_name, page.other_ok, page.lm_id, page.lm_sender,
 			page.lm_content, page.lm_at, COALESCE(un.n, 0), page.activity, page.lm_system,
-            page.buyer_id, page.buyer_name, page.seller_id, page.seller_name,
+            page.buyer_id, page.buyer_name, page.buyer_ok, page.seller_id, page.seller_name, page.seller_ok,
             page.offer_by, page.offer_version, page.buyer_confirmed_version, page.seller_confirmed_version
 		FROM page
 		LEFT JOIN (SELECT m.request_id, count(*) AS n FROM transaction_request_messages m
@@ -173,9 +174,10 @@ func (s *Store) Inbox(
 
 		var lastSystem *bool
 
-		err := rows.Scan(&t.RequestID, &t.Status, &t.Other.ID, &t.Other.Name,
+		err := rows.Scan(&t.RequestID, &t.Status, &t.Other.ID, &t.Other.Name, &t.Other.Verified,
 			&lastID, &lastSender, &lastContent, &lastAt, &t.UnreadCount, &t.ActivityAt,
-			&lastSystem, &t.Buyer.ID, &t.Buyer.Name, &t.Seller.ID, &t.Seller.Name,
+			&lastSystem, &t.Buyer.ID, &t.Buyer.Name, &t.Buyer.Verified, &t.Seller.ID, &t.Seller.Name,
+			&t.Seller.Verified,
 			&t.OfferBy, &t.OfferVersion, &t.BuyerConfirmedVersion, &t.SellerConfirmedVersion)
 		if err != nil {
 			return nil, err
@@ -218,8 +220,8 @@ func (s *Store) AllThreads(
 	search, filter string,
 ) ([]AdminThread, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT r.id, r.status, b.id, `+database.DisplayName("b")+`,
-			sl.id, `+database.DisplayName("sl")+`,
+		SELECT r.id, r.status, b.id, `+database.DisplayName("b")+`, `+database.Verified("b")+`,
+			sl.id, `+database.DisplayName("sl")+`, `+database.Verified("sl")+`,
 			lm.id, lm.sender_id, lm.content, lm.created_at,
 			r.activity_at AS activity, lm.system,
             r.offer_by, r.offer_version, r.buyer_confirmed_version, r.seller_confirmed_version
@@ -255,8 +257,8 @@ func (s *Store) AllThreads(
 
 		var lastSystem *bool
 
-		err := rows.Scan(&t.RequestID, &t.Status, &t.Buyer.ID, &t.Buyer.Name,
-			&t.Seller.ID, &t.Seller.Name, &lastID, &lastSender, &lastContent, &lastAt, &t.ActivityAt,
+		err := rows.Scan(&t.RequestID, &t.Status, &t.Buyer.ID, &t.Buyer.Name, &t.Buyer.Verified,
+			&t.Seller.ID, &t.Seller.Name, &t.Seller.Verified, &lastID, &lastSender, &lastContent, &lastAt, &t.ActivityAt,
 			&lastSystem, &t.OfferBy, &t.OfferVersion, &t.BuyerConfirmedVersion, &t.SellerConfirmedVersion)
 		if err != nil {
 			return nil, err

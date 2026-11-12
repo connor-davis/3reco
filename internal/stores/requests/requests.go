@@ -55,7 +55,8 @@ type Store struct{ db *database.DB }
 func New(db *database.DB) *Store { return &Store{db: db} }
 
 var selectRequest = `
-	SELECT r.id, r.seller_id, ` + database.DisplayName("s") + `, r.buyer_id, ` + database.DisplayName("b") + `,
+	SELECT r.id, r.seller_id, ` + database.DisplayName("s") + `, ` + database.Verified("s") + `,
+		r.buyer_id, ` + database.DisplayName("b") + `, ` + database.Verified("b") + `,
 		r.status, r.created_at, r.updated_at, r.offer_by, r.offer_version,
 		r.buyer_confirmed_version, r.seller_confirmed_version,
         (SELECT t.id FROM transactions t WHERE t.request_id=r.id AND t.status='complete' LIMIT 1)
@@ -70,8 +71,10 @@ func scan(row pgx.Row) (Request, error) {
 		&r.ID,
 		&r.Seller.ID,
 		&r.Seller.Name,
+		&r.Seller.Verified,
 		&r.Buyer.ID,
 		&r.Buyer.Name,
+		&r.Buyer.Verified,
 		&r.Status,
 		&r.CreatedAt,
 		&r.UpdatedAt,
