@@ -30,7 +30,7 @@ export function StatCard({
   return (
     <Card className="@container gap-1 bg-muted py-5 ring-0 max-sm:[--card-spacing:--spacing(3)]">
       <CardHeader>
-        <CardDescription className="flex items-center gap-2">
+        <CardDescription className="flex items-center gap-2 text-xs lg:text-sm [&>svg]:max-lg:hidden">
           {Icon && <Icon className="size-4" aria-hidden="true" />}
           {label}
         </CardDescription>
@@ -68,7 +68,7 @@ export function StatGrid({
     <div
       className={
         threeUp
-          ? 'grid grid-cols-2 gap-2 sm:gap-4 max-lg:[&>:last-child:nth-child(odd)]:col-span-2 lg:grid-cols-3'
+          ? 'grid grid-cols-3 gap-2 sm:gap-4'
           : 'grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4'
       }
     >

@@ -183,7 +183,7 @@ test('S1 (round 21): panels size to their content', () => {
   assert.match(panels, /sum \+ toCents\(party\.value\)/);
   assert.match(
     source('routes/index.tsx'),
-    /grid items-start gap-6 md:grid-cols-2/
+    /grid items-start gap-4 lg:grid-cols-2/
   );
 });
 

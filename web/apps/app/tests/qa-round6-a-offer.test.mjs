@@ -61,6 +61,6 @@ test('the offer total shows a dash while a line is invalid', () => {
 test('dashboard recent collections ask for recorded order', () => {
   assert.match(
     source('routes/-dashboard/panels.tsx'),
-    /useTransactions\('sales', \{\s*limit: 4,\s*order: 'recorded'/
+    /useTransactions\('sales', \{\s*limit: 5,\s*order: 'recorded'/
   );
 });

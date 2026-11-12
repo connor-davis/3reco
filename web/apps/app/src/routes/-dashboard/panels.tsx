@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Users, MessageCircle, Receipt } from 'lucide-react';
 import { useInbox } from '@/lib/api/messages';
@@ -6,14 +5,7 @@ import { useTransactions } from '@/lib/api/transactions';
 import { BusinessName } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { LinkButton } from '@/components/link-button';
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Panel } from '@/components/panel';
 import type { Dashboard } from '@/lib/api/types';
 import {
   formatDate,
@@ -26,38 +18,6 @@ import { messageText } from '@/components/chat/helpers';
 import { ThreadMaterials } from '@/components/chat/cards';
 import { ImpactChart } from './impact-chart';
 import { useAuth } from '@/lib/auth/use-auth';
-import { cn } from '@/lib/utils';
-
-export function Panel({
-  title,
-  description,
-  action,
-  children,
-  className,
-  contentClassName,
-}: {
-  title: string;
-  description?: string;
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  contentClassName?: string;
-}) {
-  return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-        {action && <CardAction>{action}</CardAction>}
-      </CardHeader>
-      <CardContent
-        className={cn('flex min-h-0 flex-1 flex-col', contentClassName)}
-      >
-        {children}
-      </CardContent>
-    </Card>
-  );
-}
 
 export function MaterialsPanel({
   series,
@@ -67,13 +27,14 @@ export function MaterialsPanel({
   className?: string;
 }) {
   return (
-    <Panel
-      className={className}
-      title="Materials on the move"
-      description="Daily weight traded, in kg"
-    >
-      <ImpactChart series={series} />
-    </Panel>
+    <div className={className}>
+      <Panel
+        title="Materials on the move"
+        description="Daily weight traded, in kg"
+      >
+        <ImpactChart series={series} />
+      </Panel>
+    </div>
   );
 }
 
@@ -98,6 +59,11 @@ export function CounterpartyRows({
     <Panel
       title="Trading partners"
       description="Settled trades in this period, buying and selling"
+      action={
+        <LinkButton to={tradesTo} variant="link">
+          See all
+        </LinkButton>
+      }
     >
       <DataState
         isEmpty={rows.length === 0}
@@ -106,7 +72,7 @@ export function CounterpartyRows({
         emptyText="Partners will appear when a trade settles."
       >
         <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
-          {rows.map((party) => (
+          {rows.slice(0, 5).map((party) => (
             <li
               key={party.id}
               className="flex flex-wrap items-center justify-between gap-3 py-3"
@@ -131,9 +97,6 @@ export function CounterpartyRows({
             </span>{' '}
             {platformTotals ? 'in this period' : 'across these partners'}
           </p>
-          <LinkButton className="min-h-11" to={tradesTo} variant="outline">
-            View all trades
-          </LinkButton>
         </div>
       </DataState>
     </Panel>
@@ -146,13 +109,13 @@ export function QuickLinks({
   links: { to: string; label: string; icon: LucideIcon }[];
 }) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
       {links.map(({ to, label, icon: Icon }) => (
         <LinkButton
-          className="min-h-11"
+          className="min-h-14 justify-start whitespace-normal text-left"
           key={to}
           to={to}
-          variant="outline"
+          variant="secondary"
           size="lg"
         >
           <Icon data-icon="inline-start" />
@@ -165,9 +128,16 @@ export function QuickLinks({
 
 function RecentThreads() {
   const { user } = useAuth();
-  const query = useInbox({ limit: 4 });
+  const query = useInbox({ limit: 5 });
   return (
-    <Panel title="Recent conversations" className="gap-3">
+    <Panel
+      title="Recent activity"
+      action={
+        <LinkButton to="/messages" variant="link">
+          See all
+        </LinkButton>
+      }
+    >
       <DataState
         query={query}
         isEmpty={query.data?.items.length === 0}
@@ -180,7 +150,7 @@ function RecentThreads() {
         }
       >
         <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
-          {query.data?.items.map((thread) => (
+          {query.data?.items.slice(0, 5).map((thread) => (
             <li key={thread.request_id} className="py-3 first:pt-0">
               <LinkButton
                 className="min-h-11 min-w-0 max-w-full justify-start px-0 text-left whitespace-normal text-foreground"
@@ -205,9 +175,20 @@ function RecentThreads() {
 }
 
 function RecentCollections() {
-  const query = useTransactions('sales', { limit: 4, order: 'recorded' });
+  const query = useTransactions('sales', {
+    limit: 5,
+    order: 'recorded',
+    type: 'c2b',
+  });
   return (
-    <Panel title="Your recent collections">
+    <Panel
+      title="Your recent collections"
+      action={
+        <LinkButton to="/transactions/sales" variant="link">
+          See all
+        </LinkButton>
+      }
+    >
       <DataState
         query={query}
         isEmpty={query.data?.items.length === 0}
@@ -216,7 +197,7 @@ function RecentCollections() {
         emptyText="Your settled collections will appear here."
       >
         <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
-          {query.data?.items.map((trade) => (
+          {query.data?.items.slice(0, 5).map((trade) => (
             <li key={trade.id} className="space-y-1 py-3">
               <p className="font-medium">
                 <BusinessName
@@ -239,17 +220,63 @@ function RecentCollections() {
           ))}
         </ul>
       </DataState>
-      <LinkButton
-        className="mt-auto min-h-11 self-start"
-        to="/transactions/sales"
-        variant="link"
-      >
-        View all sales
-      </LinkButton>
     </Panel>
   );
 }
 
 export function RecentActivity({ collector }: { collector: boolean }) {
   return collector ? <RecentCollections /> : <RecentThreads />;
+}
+
+export function NeedsAttention({ collector }: { collector: boolean }) {
+  const { user } = useAuth();
+  const query = useInbox({ limit: 5 });
+  const waiting =
+    query.data?.items.filter(
+      (thread) =>
+        thread.unread_count > 0 ||
+        (thread.status === 'offered' &&
+          (thread.buyer.id === user?.id
+            ? thread.buyer_confirmed_version
+            : thread.seller_confirmed_version) !== thread.offer_version)
+    ) ?? [];
+
+  return (
+    <Panel title="Needs attention">
+      {collector || user?.role === 'staff' ? (
+        <LinkButton
+          className="w-full justify-start"
+          to="/profile"
+          variant="secondary"
+        >
+          Check your payout details
+        </LinkButton>
+      ) : (
+        <DataState
+          query={query}
+          isEmpty={!waiting.length}
+          icon={MessageCircle}
+          emptyTitle="You're up to date"
+          emptyText="New messages and offers will appear here."
+        >
+          <ul className="divide-y">
+            {waiting.slice(0, 3).map((thread) => (
+              <li key={thread.request_id}>
+                <LinkButton
+                  className="min-h-14 w-full justify-start whitespace-normal text-left"
+                  to={'/messages/' + thread.request_id}
+                  variant="ghost"
+                >
+                  {thread.other.name} ·{' '}
+                  {thread.unread_count
+                    ? `${thread.unread_count} unread`
+                    : 'Offer awaiting confirmation'}
+                </LinkButton>
+              </li>
+            ))}
+          </ul>
+        </DataState>
+      )}
+    </Panel>
+  );
 }

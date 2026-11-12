@@ -33,7 +33,10 @@ test('qa-round7: the filter bar keeps its controls on the Pending tab', () => {
 
 test('qa-round7: the receipt picker is a styled label over a hidden input', () => {
   const dialog = source('components/dialogs/record-dialogs.tsx');
-  assert.match(dialog, /id="receipt-file"[\s\S]*?className="peer sr-only"/);
+  assert.match(
+    dialog,
+    /id="receipt-file"[\s\S]*?className="peer sr-only top-0 left-0"/
+  );
   assert.match(dialog, /htmlFor="receipt-file"[\s\S]*?buttonVariants/);
   assert.match(dialog, /peer-focus-visible:ring-3/);
 });
@@ -130,6 +133,6 @@ test('qa-round7: an offer above the requested kg gets a hint, not a block', () =
 test('qa-round7: dashboard panels size to their content (round 21)', () => {
   assert.match(
     source('routes/index.tsx'),
-    /grid items-start gap-6 md:grid-cols-2/
+    /grid items-start gap-4 lg:grid-cols-2/
   );
 });
