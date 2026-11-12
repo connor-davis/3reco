@@ -29,8 +29,10 @@ export function SearchBox({
   className,
 }: SearchBoxProps) {
   return (
+    // flex-1 grows the box along a toolbar row; max-h-11 stops it growing
+    // tall when the parent is a column (the messages inbox).
     <InputGroup
-      className={cn('min-w-36 flex-1 basis-36 sm:max-w-sm', className)}
+      className={cn('max-h-11 min-w-36 flex-1 basis-36 sm:max-w-sm', className)}
     >
       <InputGroupAddon>
         <Search aria-hidden="true" />
