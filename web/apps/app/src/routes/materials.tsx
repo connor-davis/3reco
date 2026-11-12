@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Boxes, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Boxes, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Guarded } from '@/components/access-guard';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -10,7 +10,7 @@ import { DataTable } from '@/components/data-table';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { MaterialDialog } from '@/components/dialogs/material-dialog';
 import { Toolbar } from '@/components/toolbar';
-import { IconButton } from '@/components/icon-button';
+import { RowActions } from '@/components/row-actions';
 import { PageHeader } from '@/components/page-header';
 import { MaterialMark, Pager } from '@/components/transactions/list-tools';
 import { errorText, usePager } from '@/components/transactions/pager-state';
@@ -53,20 +53,17 @@ function MaterialsPage() {
       return <span className="text-sm text-muted-foreground">View only</span>;
 
     return (
-      <div className="flex gap-1">
-        <IconButton
-          label={`Edit ${material.name}`}
-          onClick={() => openForm(material)}
-        >
-          <Pencil />
-        </IconButton>
-        <IconButton
-          label={`Remove ${material.name}`}
-          onClick={() => setRemoving(material)}
-        >
-          <Trash2 />
-        </IconButton>
-      </div>
+      <RowActions
+        name={material.name}
+        actions={[
+          { label: 'Edit', onSelect: () => openForm(material) },
+          {
+            label: 'Remove',
+            destructive: true,
+            onSelect: () => setRemoving(material),
+          },
+        ]}
+      />
     );
   }
 
@@ -74,11 +71,11 @@ function MaterialsPage() {
     {
       accessorKey: 'name',
       header: 'Material',
-      meta: { sticky: 'left' },
+      meta: { main: true },
       cell: ({ row }) => (
-        <span className="flex items-center gap-3">
-          <MaterialMark className="size-9 rounded-lg" />
-          <span className="font-medium">{row.original.name}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          <MaterialMark className="size-9 shrink-0 rounded-lg" />
+          <span className="truncate font-medium">{row.original.name}</span>
         </span>
       ),
     },
@@ -99,7 +96,6 @@ function MaterialsPage() {
     {
       id: 'actions',
       header: 'Actions',
-      meta: { sticky: 'right' },
       cell: ({ row }) => actionsFor(row.original),
     },
   ];

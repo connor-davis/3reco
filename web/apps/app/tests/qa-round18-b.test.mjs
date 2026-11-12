@@ -610,7 +610,8 @@ with sync_playwright() as p:
         for method in ['bank', 'ewallet']:
             payout = method
             b.goto(base + '/collectors')
-            b.get_by_role('button', name='Edit Zanele Both', exact=True).click()
+            b.get_by_role('button', name='Actions for Zanele Both', exact=True).click()
+            b.get_by_role('menuitem', name='Edit', exact=True).click()
             dialog = b.get_by_role('dialog')
             expect(dialog.get_by_label('Full name', exact=True)).to_be_editable()
             for radio in dialog.get_by_role('radio').all():

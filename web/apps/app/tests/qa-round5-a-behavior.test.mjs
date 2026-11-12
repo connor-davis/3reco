@@ -202,8 +202,10 @@ test('admin cannot remove their own account; export audit shows kind and filters
   const tree = UsersPage();
   const table = nodes(tree).find((node) => node.props?.columns);
   const action = table.props.columns.find((column) => column.id === 'actions');
-  assert.equal(action.cell({ row: { original: { id: 'self' } } }), null);
-  assert.ok(action.cell({ row: { original: { id: 'other' } } }));
+  const menu = (id, role) =>
+    action.cell({ row: { original: { id, role } } }).props.actions;
+  assert.equal(menu('self').length, 0);
+  assert.ok(menu('other').length);
   assert.equal(
     eventLabel({
       kind: 'export',

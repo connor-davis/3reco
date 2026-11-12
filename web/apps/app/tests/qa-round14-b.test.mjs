@@ -192,11 +192,10 @@ test('S8: saved payout methods remain selected and business starts with no metho
   assert.equal(collectorForm('business').values.payout_method, '');
 });
 
-test('S4: table columns retain sticky edges without partial vertical dividers', () => {
+test('S4: table columns have no sticky bands without partial vertical dividers', () => {
   const table = source('components/data-table.tsx');
   assert.doesNotMatch(table, /border-[lr](?:\s|['"])/);
-  assert.match(table, /left-0/);
-  assert.match(table, /right-0/);
+  assert.doesNotMatch(table, /sticky|bg-muted(?!\/)/);
   assert.match(table, /<Panel>/);
   for (const route of ['materials', 'collectors']) {
     assert.doesNotMatch(

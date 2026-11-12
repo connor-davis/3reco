@@ -11,6 +11,7 @@ import { DataState, RowsSkeleton } from '@/components/data-state';
 import { FilterTabs } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
 import { ListRow } from '@/components/list-row';
+import { RowActions } from '@/components/row-actions';
 import { useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
@@ -56,21 +57,21 @@ export function RequestList({
   );
 
   const navigate = useNavigate();
+  const open = (request: TradeRequest) =>
+    void navigate({
+      to: '/market/$requestId',
+      params: { requestId: request.id },
+    });
   const columns: ColumnDef<TradeRequest>[] = [
     {
       id: 'date',
-      header: 'Date / Status',
-      meta: { className: 'w-32' },
-      cell: ({ row }) => (
-        <div className="space-y-1 text-xs [&_[data-slot=badge]]:max-w-full [&_[data-slot=badge]]:whitespace-normal">
-          <span className="block">{formatDate(row.original.created_at)}</span>
-          <StatusBadge status={row.original.status} />
-        </div>
-      ),
+      header: 'Date',
+      cell: ({ row }) => formatDate(row.original.created_at),
     },
     {
       id: 'materials',
       header: 'Material(s)',
+      meta: { main: true },
       cell: ({ row }) => (
         <span
           className="block truncate"
@@ -88,18 +89,24 @@ export function RequestList({
       cell: ({ row }) => {
         const other = counterpartyOf(row.original, user?.id);
         return (
-          <BusinessName
-            wrap
-            name={other.name}
-            verified={other.business_verified}
-          />
+          <span className="block max-w-72">
+            <BusinessName
+              name={other.name}
+              verified={other.business_verified}
+            />
+          </span>
         );
       },
     },
     {
+      id: 'status',
+      header: 'Status',
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
       id: 'weight',
       header: 'Weight (kg)',
-      meta: { align: 'right', className: 'w-28 text-xs' },
+      meta: { align: 'right' },
       cell: ({ row }) =>
         formatKgNumber(
           row.original.items.reduce(
@@ -112,13 +119,23 @@ export function RequestList({
     {
       id: 'total',
       header: 'Total',
-      meta: { align: 'right', className: 'w-36 text-xs' },
+      meta: { align: 'right' },
       cell: ({ row }) =>
         row.original.items.some((item) => item.offer_price !== null)
           ? formatRand(requestTotal(row.original))
           : isClosed(row.original)
             ? 'Closed'
             : 'Awaiting offer',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => (
+        <RowActions
+          name={counterpartyOf(row.original, user?.id).name}
+          actions={[{ label: 'Open', onSelect: () => open(row.original) }]}
+        />
+      ),
     },
   ];
 
@@ -156,15 +173,9 @@ export function RequestList({
         skeleton={<RowsSkeleton />}
       >
         <DataTable
-          fit
           columns={columns}
           data={shown}
-          onRowClick={(request) =>
-            void navigate({
-              to: '/market/$requestId',
-              params: { requestId: request.id },
-            })
-          }
+          onRowClick={open}
           rowLabel={(request) =>
             `View request from ${counterpartyOf(request, user?.id).name}`
           }

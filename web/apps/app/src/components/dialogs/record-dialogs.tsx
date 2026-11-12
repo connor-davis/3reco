@@ -1,10 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { MoreHorizontal, Upload } from 'lucide-react';
+import { FileText, MoreHorizontal, Upload } from 'lucide-react';
 import { BusinessName, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Panel } from '@/components/panel';
-import { ButtonRow } from '@/components/button-row';
 import { LinkButton } from '@/components/link-button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -100,7 +99,7 @@ export function TradeDetail({ record }: Props) {
           <header className="mb-6 flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[26px] font-semibold tracking-tight lg:text-4xl">
+                <h1 className="text-[26px] font-semibold tracking-tight break-all lg:text-4xl">
                   Invoice {shown.invoice_number}
                 </h1>
                 <StatusBadge
@@ -171,8 +170,8 @@ export function TradeDetail({ record }: Props) {
                       key={item.material_id}
                       className="flex justify-between gap-4 py-4 first:pt-0"
                     >
-                      <span>
-                        <span className="block font-medium">
+                      <span className="min-w-0">
+                        <span className="block font-medium break-words">
                           {item.material_name}
                         </span>
                         <span className="text-muted-foreground">
@@ -205,37 +204,58 @@ export function TradeDetail({ record }: Props) {
                   )}
                   <ul className="divide-y">
                     {shown.receipts.map((receipt) => (
-                      <li key={receipt.id} className="space-y-2 py-3 text-sm">
-                        <span className="min-w-0 truncate">
+                      <li
+                        key={receipt.id}
+                        className="flex items-center gap-3 py-3 text-sm"
+                      >
+                        <FileText
+                          className="size-5 shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <span
+                          className="min-w-0 flex-1 truncate"
+                          title={receipt.file_name}
+                        >
                           {receipt.file_name}
                         </span>
-                        <ButtonRow>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              download.mutate(receipt, {
-                                onError: (error) =>
-                                  toast.error(errorText(error)),
-                              })
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0"
+                                aria-label={`Actions for ${receipt.file_name}`}
+                              />
                             }
                           >
-                            Download receipt
-                          </Button>
-                          {user &&
-                            (receipt.uploaded_by === user.id ||
-                              shown.can_remove_receipts) && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                aria-label={`Remove receipt ${receipt.file_name}`}
-                                disabled={remove.isPending}
-                                onClick={() => setRemoving(receipt)}
-                              >
-                                Remove
-                              </Button>
-                            )}
-                        </ButtonRow>
+                            <MoreHorizontal />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                download.mutate(receipt, {
+                                  onError: (error) =>
+                                    toast.error(errorText(error)),
+                                })
+                              }
+                            >
+                              Download receipt
+                            </DropdownMenuItem>
+                            {user &&
+                              (receipt.uploaded_by === user.id ||
+                                shown.can_remove_receipts) && (
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  aria-label={`Remove receipt ${receipt.file_name}`}
+                                  disabled={remove.isPending}
+                                  onClick={() => setRemoving(receipt)}
+                                >
+                                  Remove
+                                </DropdownMenuItem>
+                              )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </li>
                     ))}
                   </ul>
@@ -356,8 +376,8 @@ export function TradeDetail({ record }: Props) {
 function Line({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex justify-between gap-4 text-sm">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-right font-medium break-words">{value}</dd>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { PackageOpen, Pencil, Plus, Trash2 } from 'lucide-react';
+import { PackageOpen, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Guarded } from '@/components/access-guard';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -11,7 +11,7 @@ import { DataTable } from '@/components/data-table';
 import { StockDialog } from '@/components/dialogs/stock-dialog';
 import { ChoiceSelect } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
-import { IconButton } from '@/components/icon-button';
+import { RowActions } from '@/components/row-actions';
 import { PageHeader } from '@/components/page-header';
 import { MaterialMark, Pager } from '@/components/transactions/list-tools';
 import { errorText, usePager } from '@/components/transactions/pager-state';
@@ -128,14 +128,17 @@ function StockPage() {
     // Two lots can share a material, so the name carries weight and price.
     const lot = `${item.material_name}, ${formatKg(item.weight)} at ${formatRate(item.price)}`;
     return (
-      <div className="flex gap-1">
-        <IconButton label={`Edit ${lot}`} onClick={() => openForm(item)}>
-          <Pencil />
-        </IconButton>
-        <IconButton label={`Remove ${lot}`} onClick={() => setRemoving(item)}>
-          <Trash2 />
-        </IconButton>
-      </div>
+      <RowActions
+        name={lot}
+        actions={[
+          { label: 'Edit', onSelect: () => openForm(item) },
+          {
+            label: 'Remove',
+            destructive: true,
+            onSelect: () => setRemoving(item),
+          },
+        ]}
+      />
     );
   }
 
@@ -143,11 +146,13 @@ function StockPage() {
     {
       accessorKey: 'material_name',
       header: 'Material',
-      meta: { sticky: 'left' },
+      meta: { main: true },
       cell: ({ row }) => (
-        <span className="flex items-center gap-3">
-          <MaterialMark className="size-9 rounded-lg" />
-          <span className="font-medium">{row.original.material_name}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          <MaterialMark className="size-9 shrink-0 rounded-lg" />
+          <span className="truncate font-medium">
+            {row.original.material_name}
+          </span>
         </span>
       ),
     },
@@ -173,7 +178,6 @@ function StockPage() {
     {
       id: 'actions',
       header: 'Actions',
-      meta: { sticky: 'right' },
       enableSorting: false,
       cell: ({ row }) => actions(row.original),
     },

@@ -39,7 +39,7 @@ test('role labels are capitalised, for known and unknown roles', () => {
 
 test('collectors page sorts by name on the server and says which way', () => {
   const page = source('routes/collectors.tsx');
-  assert.match(page, /enableSorting: true,\s*meta: \{ sticky: 'left' \}/);
+  assert.match(page, /enableSorting: true,\s*meta: \{ main: true \}/);
   assert.match(page, /Sorted A to Z/);
   assert.match(page, /typeof rawTotal === 'number'/);
 });

@@ -92,8 +92,9 @@ test('S7: stock Edit and Remove names carry weight and price', () => {
     text,
     /formatKg\(item\.weight\)\} at \$\{formatRate\(item\.price\)/
   );
-  assert.match(text, /Edit \$\{lot\}/);
-  assert.match(text, /Remove \$\{lot\}/);
+  assert.match(text, /name=\{lot\}/);
+  assert.match(text, /label: 'Edit'/);
+  assert.match(text, /label: 'Remove'/);
 });
 
 test('A1: staff see their own Collections subtitle', () => {

@@ -28,7 +28,8 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     align?: 'left' | 'right';
-    sticky?: 'left' | 'right';
+    // The one column that takes the spare width and truncates.
+    main?: boolean;
     className?: string;
   }
 }
@@ -41,7 +42,6 @@ type DataTableProps<T> = {
   footer?: ReactNode;
   onRowClick?: (row: T) => void;
   rowLabel?: (row: T) => string;
-  fit?: boolean;
   // The server orders the rows: one column, either way round, never unsorted.
   serverSort?: { id: string; desc: boolean; onChange: (desc: boolean) => void };
 };
@@ -58,7 +58,6 @@ export function DataTable<T>({
   serverSort,
   onRowClick,
   rowLabel,
-  fit = false,
 }: DataTableProps<T>) {
   const compact = useIsCompact();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -83,129 +82,131 @@ export function DataTable<T>({
 
   const rows = table.getRowModel().rows;
 
-  return (
-    <Panel>
-      {compact ? (
+  if (compact) {
+    return (
+      <Panel>
         <ul className="divide-y">
           {rows.map((row: Row<T>) => (
             <li key={row.id}>{renderCard(row.original)}</li>
           ))}
         </ul>
-      ) : (
-        <div className="min-w-0">
-          <Table className={fit ? 'table-fixed' : undefined}>
-            <TableHeader>
-              {table.getHeaderGroups().map((group) => (
-                <TableRow key={group.id} className="group hover:bg-transparent">
-                  {group.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      aria-sort={
-                        header.column.getCanSort()
-                          ? header.column.getIsSorted() === 'asc'
-                            ? 'ascending'
-                            : header.column.getIsSorted() === 'desc'
-                              ? 'descending'
-                              : 'none'
-                          : undefined
-                      }
-                      className={cn(
-                        'text-xs font-normal text-muted-foreground',
-                        header.column.columnDef.meta?.className,
-                        header.column.columnDef.meta?.align === 'right' &&
-                          'text-right tabular-nums',
-                        header.column.columnDef.meta?.sticky &&
-                          'sticky z-20 bg-muted',
-                        header.column.columnDef.meta?.sticky === 'left' &&
-                          'left-0',
-                        header.column.columnDef.meta?.sticky === 'right' &&
-                          'right-0'
-                      )}
-                    >
-                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                        <SortButton
-                          direction={header.column.getIsSorted()}
-                          align={header.column.columnDef.meta?.align}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </SortButton>
-                      ) : (
-                        flexRender(
+        {footer && <div className={footerClass}>{footer}</div>}
+      </Panel>
+    );
+  }
+
+  return (
+    <section className="overflow-hidden rounded-2xl bg-muted/50">
+      <div className="min-w-0">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((group) => (
+              <TableRow key={group.id} className="group hover:bg-transparent">
+                {group.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    aria-sort={
+                      header.column.getCanSort()
+                        ? header.column.getIsSorted() === 'asc'
+                          ? 'ascending'
+                          : header.column.getIsSorted() === 'desc'
+                            ? 'descending'
+                            : 'none'
+                        : undefined
+                    }
+                    className={cn(
+                      'h-11 bg-transparent text-xs font-medium text-muted-foreground',
+                      edge(header.index, group.headers.length),
+                      header.column.columnDef.meta?.main
+                        ? 'w-full max-w-0'
+                        : 'w-px whitespace-nowrap',
+                      header.column.columnDef.meta?.className,
+                      header.column.columnDef.meta?.align === 'right' &&
+                        'text-right tabular-nums'
+                    )}
+                  >
+                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                      <SortButton
+                        direction={header.column.getIsSorted()}
+                        align={header.column.columnDef.meta?.align}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
-                        )
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className={cn(
-                    'group hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring',
-                    onRowClick && 'cursor-pointer'
-                  )}
-                  tabIndex={onRowClick ? 0 : undefined}
-                  aria-label={rowLabel?.(row.original)}
-                  onClick={
-                    onRowClick ? () => onRowClick(row.original) : undefined
-                  }
-                  onKeyDown={
-                    onRowClick
-                      ? (event) => {
-                          if (
-                            event.target === event.currentTarget &&
-                            (event.key === 'Enter' || event.key === ' ')
-                          ) {
-                            event.preventDefault();
-                            onRowClick(row.original);
-                          }
+                        )}
+                      </SortButton>
+                    ) : (
+                      flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow
+                key={row.id}
+                className={cn(
+                  'group hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring',
+                  onRowClick && 'cursor-pointer'
+                )}
+                tabIndex={onRowClick ? 0 : undefined}
+                aria-label={rowLabel?.(row.original)}
+                onClick={
+                  onRowClick ? () => onRowClick(row.original) : undefined
+                }
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (
+                          event.target === event.currentTarget &&
+                          (event.key === 'Enter' || event.key === ' ')
+                        ) {
+                          event.preventDefault();
+                          onRowClick(row.original);
                         }
-                      : undefined
-                  }
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        fit && 'px-2 whitespace-normal',
-                        cell.column.columnDef.meta?.className,
-                        cell.column.columnDef.meta?.align === 'right' &&
-                          'text-right whitespace-nowrap tabular-nums',
-                        cell.column.columnDef.meta?.sticky &&
-                          'sticky z-10 bg-muted transition-colors',
-                        cell.column.columnDef.meta?.sticky === 'left' &&
-                          'left-0',
-                        cell.column.columnDef.meta?.sticky === 'right' &&
-                          'right-0'
-                      )}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-      {footer && (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-          {footer}
-        </div>
-      )}
-    </Panel>
+                      }
+                    : undefined
+                }
+              >
+                {row.getVisibleCells().map((cell, index, cells) => (
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      'py-3.5 text-sm',
+                      edge(index, cells.length),
+                      cell.column.columnDef.meta?.main
+                        ? 'w-full max-w-0 truncate'
+                        : 'w-px whitespace-nowrap',
+                      cell.column.columnDef.meta?.className,
+                      cell.column.columnDef.meta?.align === 'right' &&
+                        'text-right tabular-nums'
+                    )}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {footer && <div className={cn(footerClass, 'px-6 py-4')}>{footer}</div>}
+    </section>
   );
+}
+
+const footerClass =
+  'flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground';
+
+// The first cell sits 24px in, the last 24px from the edge, the rest 16px.
+function edge(index: number, count: number) {
+  return cn('px-4', index === 0 && 'pl-6', index === count - 1 && 'pr-6');
 }
 
 type SortButtonProps = {
