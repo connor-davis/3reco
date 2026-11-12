@@ -1,8 +1,9 @@
 import { stockLimit } from '@/lib/limits';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { TriangleAlert } from 'lucide-react';
 import { z } from 'zod';
 import { DecimalField, SelectField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
@@ -17,6 +18,7 @@ import {
   useCreateStock,
   useUpdateStock,
   useUploadStockImage,
+  useUploadNewStockImage,
   useDeleteStockImage,
 } from '@/lib/api/stock';
 import type { StockItem } from '@/lib/api/types';
@@ -25,6 +27,7 @@ import { formatRate, toCents } from '@/lib/format';
 import {
   priceCounter,
   priceError,
+  prefillPrice,
   quantityError,
   weightCounter,
 } from '@/lib/quantity';
@@ -72,10 +75,10 @@ function sameAmount(value: string, original?: string) {
   );
 }
 
-// Same words as the server, so the message reads the same before and after Save.
-function belowBase(price: string, base?: string) {
+// Any positive price saves; below the material's default only earns a warning.
+function belowDefault(price: string, base?: string) {
   return base && decimal.test(price.trim()) && toCents(price) < toCents(base)
-    ? `Price must be at least ${formatRate(base)}.`
+    ? `Below the default price of ${formatRate(base)}. You can still save.`
     : undefined;
 }
 
@@ -98,6 +101,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   const update = useUpdateStock(stock?.id ?? '');
   const [serverError, setServerError] = useState('');
   const uploadPhoto = useUploadStockImage(stock?.id ?? '');
+  const addPhoto = useUploadNewStockImage();
   const deletePhoto = useDeleteStockImage(stock?.id ?? '');
   const [photo, setPhoto] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
@@ -109,45 +113,33 @@ function StockForm({ open, onOpenChange, stock }: Props) {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
-  // The resolver reads the base price from here, so it follows the material.
-  const baseRef = useRef<string | undefined>(undefined);
-  const {
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    setError,
-    trigger,
-    formState,
-  } = useForm<Values>({
-    resolver: async (values, context, options) => {
-      const result = await zodResolver(schema(stock))(values, context, options);
-      const message = belowBase(values.price, baseRef.current);
-      if (!message || 'price' in result.errors) return result;
-
-      return {
-        values: {},
-        errors: { ...result.errors, price: { type: 'min', message } },
-      };
-    },
-    mode: 'onChange',
-    values: {
-      material_id: stock?.material_id ?? '',
-      weight: stock?.weight ?? '',
-      price: stock?.price ?? '',
-      is_listed: stock?.is_listed ?? true,
-    },
-  });
+  const { control, handleSubmit, watch, setValue, setError, formState } =
+    useForm<Values>({
+      resolver: zodResolver(schema(stock)),
+      mode: 'onChange',
+      values: {
+        material_id: stock?.material_id ?? '',
+        weight: stock?.weight ?? '',
+        price: stock?.price ?? '',
+        is_listed: stock?.is_listed ?? true,
+      },
+    });
 
   const items = materials.data?.items ?? [];
   const chosen = items.find((item) => item.id === watch('material_id'));
   const base = stock?.base_price ?? chosen?.price;
-  baseRef.current = base;
+  const warning = belowDefault(watch('price'), base);
 
-  // A new material changes the lowest price, so check the typed price again.
-  useEffect(() => {
-    if (watch('price')) void trigger('price');
-  }, [base, trigger, watch]);
+  // A new material fills its default price unless the user typed their own.
+  function pickMaterial(id: string) {
+    const fill = prefillPrice(
+      watch('price'),
+      chosen?.price,
+      items.find((item) => item.id === id)?.price
+    );
+    if (fill)
+      setValue('price', fill, { shouldValidate: true, shouldDirty: true });
+  }
 
   async function onSubmit(values: Values) {
     setServerError('');
@@ -172,7 +164,19 @@ function StockForm({ open, onOpenChange, stock }: Props) {
               : 'Stock is no longer listed.'
         );
       } else {
-        await create.mutateAsync({ ...values, weight, price });
+        const created = await create.mutateAsync({ ...values, weight, price });
+        if (photo) {
+          try {
+            await addPhoto.mutateAsync({ id: created.id, file: photo });
+          } catch {
+            // The stock exists now; creating it again would double it.
+            toast.warning(
+              'Stock added, but the photo did not upload. Edit the stock to try again.'
+            );
+            onOpenChange(false);
+            return;
+          }
+        }
         toast.success('Stock added.');
       }
       onOpenChange(false);
@@ -193,6 +197,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
     create.isPending ||
     update.isPending ||
     uploadPhoto.isPending ||
+    addPhoto.isPending ||
     deletePhoto.isPending;
   // Once someone interacts, only the fields explain what needs fixing.
   const pristine =
@@ -244,6 +249,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
             name="material_id"
             label="Material"
             options={items.map((m) => ({ value: m.id, label: m.name }))}
+            onPick={pickMaterial}
           />
         )}
         <DecimalField
@@ -261,76 +267,84 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           control={control}
           name="price"
           label="Price (R / kg)"
-          counter={{ ...priceCounter(base), unit: undefined }}
+          counter={{ ...priceCounter(), unit: undefined }}
           description={
             base
-              ? `At least ${formatRate(base)}.`
-              : 'Pick a material to see its lowest price.'
+              ? `Default price is ${formatRate(base)}. You can set your own.`
+              : 'Pick a material to see its default price.'
           }
         />
-        {stock && (
-          <Field>
-            <FieldLabel htmlFor="stock-photo">Photo</FieldLabel>
-            <p className="text-sm text-muted-foreground">
-              Upload a PNG, JPEG or WebP image up to 2 MiB.
-            </p>
-            <Input
-              id="stock-photo"
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              disabled={busy}
-              onChange={(event) => {
-                const next = event.target.files?.[0];
-                setPhoto(null);
-                setPreview('');
-                setPhotoError('');
-                if (!next) return;
-                if (
-                  !['image/png', 'image/jpeg', 'image/webp'].includes(
-                    next.type
-                  ) ||
-                  next.size === 0 ||
-                  next.size > 2 * 1024 * 1024
-                ) {
-                  setPhotoError(
-                    'Choose a PNG, JPEG or WebP image up to 2 MiB.'
-                  );
-                  return;
-                }
-                setPhoto(next);
-                setRemovePhoto(false);
-                setPreview(URL.createObjectURL(next));
-              }}
+        {warning && (
+          <p
+            role="status"
+            className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <TriangleAlert
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
             />
-            {(preview || (!removePhoto && stock.image_url)) && (
-              <>
-                <img
-                  src={preview || stock.image_url}
-                  alt={stock.material_name}
-                  className="h-32 w-full rounded-lg object-cover"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => {
-                    setPhoto(null);
-                    setPreview('');
-                    setPhotoError('');
-                    setRemovePhoto(true);
-                  }}
-                >
-                  Remove picture
-                </Button>
-              </>
-            )}
-            {photoError && (
-              <p role="alert" className="text-sm text-destructive">
-                {photoError}
-              </p>
-            )}
-          </Field>
+            <span>{warning}</span>
+          </p>
         )}
+        <Field>
+          <FieldLabel htmlFor="stock-photo">Photo</FieldLabel>
+          <p className="text-sm text-muted-foreground">
+            Upload a PNG, JPEG or WebP image up to 2 MiB.
+          </p>
+          <Input
+            id="stock-photo"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            disabled={busy}
+            onChange={(event) => {
+              const next = event.target.files?.[0];
+              setPhoto(null);
+              setPreview('');
+              setPhotoError('');
+              if (!next) return;
+              if (
+                !['image/png', 'image/jpeg', 'image/webp'].includes(
+                  next.type
+                ) ||
+                next.size === 0 ||
+                next.size > 2 * 1024 * 1024
+              ) {
+                setPhotoError('Choose a PNG, JPEG or WebP image up to 2 MiB.');
+                return;
+              }
+              setPhoto(next);
+              setRemovePhoto(false);
+              setPreview(URL.createObjectURL(next));
+            }}
+          />
+          {(preview || (!removePhoto && stock?.image_url)) && (
+            <>
+              <img
+                src={preview || stock?.image_url}
+                alt={stock?.material_name ?? chosen?.name ?? 'Stock photo'}
+                className="h-32 w-full rounded-lg object-cover"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => {
+                  setPhoto(null);
+                  setPreview('');
+                  setPhotoError('');
+                  setRemovePhoto(true);
+                }}
+              >
+                Remove picture
+              </Button>
+            </>
+          )}
+          {photoError && (
+            <p role="alert" className="text-sm text-destructive">
+              {photoError}
+            </p>
+          )}
+        </Field>
         <Field orientation="horizontal">
           <Switch
             id="stock-listed"

@@ -101,7 +101,7 @@ func validate(item store.Item, newWeight, newPrice bool) error {
 		return apperr.Field("weight", WeightLimitMessage)
 	}
 
-	price, err := Decimal(item.Price, "price", false)
+	price, err := Decimal(item.Price, "price", true)
 	if err != nil {
 		return err
 	}
@@ -111,15 +111,6 @@ func validate(item store.Item, newWeight, newPrice bool) error {
 	}
 	if newPrice && price.Cmp(big.NewRat(MaxPricePerKg, 1)) > 0 {
 		return apperr.Field("price", PriceLimitMessage)
-	}
-
-	base, err := Decimal(item.BasePrice, "base_price", false)
-	if err != nil {
-		return err
-	}
-
-	if price.Cmp(base) < 0 {
-		return apperr.Field("price", "Price must be at least R "+base.FloatString(2)+" / kg.")
 	}
 
 	return nil

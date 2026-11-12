@@ -111,3 +111,21 @@ test('materials are sorted by name', () => {
     /ORDER BY lower\(name\),id/
   );
 });
+
+test('picking a material prefills its default price, per line, unless the user typed one', () => {
+  const text = source(dialogPath);
+  assert.match(text, /onPick=\{\(id\) => pickMaterial\(index, id\)\}/);
+  assert.match(text, /prefillPrice\(\s*lines\[index\]\?\.price/);
+
+  const { prefillPrice } = compile('../src/lib/quantity.ts', {
+    '@/lib/format': {},
+  });
+  assert.equal(prefillPrice('', undefined, '9.5'), '9.50');
+  assert.equal(prefillPrice('5', '5.00', '9.50'), '9.50');
+  assert.equal(prefillPrice('7.25', '5.00', '9.50'), undefined);
+  assert.equal(prefillPrice('', undefined, undefined), undefined);
+});
+
+test('a price below the default still passes the line check', () => {
+  assert.ok(parse({ line: { price: '0.50' } }).success);
+});

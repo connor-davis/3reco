@@ -36,6 +36,8 @@ One item. The owner can always read it; anyone else only while it is listed. Oth
 
 **Returns:** `{ "id": "..." }`
 
+`base_price` is the material's default price. It is a starting suggestion, not a floor: any positive price with up to 2 decimals, up to the maximum, is accepted, on create and on update. The app fills the default when a material is picked and warns when the price is lower. To add a photo, create the stock first, then `POST /api/stock/:id/image` with the returned `id`.
+
 ### `PATCH /api/stock/:id`
 
 Any of `weight`, `price`, `is_listed`. Left out means unchanged. **Returns:** `{ "ok": true }`

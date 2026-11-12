@@ -56,6 +56,21 @@ export function useUploadStockImage(id: string) {
     },
   });
 }
+/** Uploads a photo for a stock line made a moment ago, so the id comes with the call. */
+export function useUploadNewStockImage() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      api<T.StockItem>(`/stock/${idPath(id)}/image`, upload(file)),
+    onSuccess: async () => {
+      await Promise.all(
+        ['stock', 'listings', 'stores'].map((key) =>
+          client.invalidateQueries({ queryKey: [key] })
+        )
+      );
+    },
+  });
+}
 export function useDeleteStockImage(id: string) {
   return useWrite<void, T.StockItem>(`/stock/${idPath(id)}/image`, 'DELETE', [
     ['stock'],

@@ -9,7 +9,7 @@ function stockSchema(original) {
   const text = source('components/dialogs/stock-dialog.tsx');
   const rules = text.slice(
     text.indexOf('const decimal'),
-    text.indexOf('// Same words')
+    text.indexOf('// Any positive price')
   );
   const { outputText } = ts.transpileModule(rules, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },

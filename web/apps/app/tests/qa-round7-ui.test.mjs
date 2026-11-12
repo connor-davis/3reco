@@ -102,19 +102,21 @@ test('qa-round7: cart hint and material dialog wording follow the role', () => {
   assert.doesNotMatch(dialog, /buy or sell/);
 });
 
-test('qa-round7: the stock dialog checks the base price live, in the server words', () => {
+test('qa-round7: the stock dialog warns, not blocks, below the default price', () => {
   const dialog = source('components/dialogs/stock-dialog.tsx');
   assert.match(dialog, /const base = stock\?\.base_price \?\? chosen\?\.price/);
-  assert.match(dialog, /Price must be at least \$\{formatRate\(base\)\}\./);
-  assert.match(dialog, /baseRef\.current/);
+  assert.match(dialog, /Below the default price of \$\{formatRate\(base\)\}/);
+  assert.match(dialog, /You can still save/);
+  assert.doesNotMatch(dialog, /Price must be at least/);
+  assert.doesNotMatch(dialog, /baseRef/);
   assert.match(dialog, /mode: 'onChange'/);
   assert.match(
     dialog,
     /disabled=\{busy \|\| !formState\.isValid \|\| !!photoError\}/
   );
-  assert.match(
+  assert.doesNotMatch(
     source('../../../../internal/services/stock/stock.go'),
-    /"Price must be at least R "\+base\.FloatString\(2\)\+" \/ kg\."/
+    /Price must be at least/
   );
 });
 

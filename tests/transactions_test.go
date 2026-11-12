@@ -89,6 +89,17 @@ func TestCollectorSaleAndDirectSale(t *testing.T) {
 	}
 }
 
+// A collection line may be priced below the material's default.
+func TestCollectionBelowDefaultPrice(t *testing.T) {
+	w := newTradeWorld(t)
+	collector := tradeCollector(t, w.app, w.buyer, "+27800000002")
+
+	// The material's default is R 5 / kg.
+	res := w.buyer.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(collector, "", tradeLine(w.material, "10", "1")))
+	tradeWant(t, "collection below the default", res, 200)
+}
+
 // Hole 10: only a business sells, the seller is the caller, the buyer must be
 // a real business, and the answer holds none of the buyer's private data.
 func TestDirectSaleRoleAndBuyerLeak(t *testing.T) {

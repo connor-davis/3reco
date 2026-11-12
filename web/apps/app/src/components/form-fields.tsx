@@ -182,6 +182,8 @@ export function DecimalField<T extends FieldValues>({
 type SelectFieldProps<T extends FieldValues> = FieldProps<T> & {
   options: (string | Option)[];
   placeholder?: string;
+  /** Runs with the new value before the field changes, so watch() still has the old one. */
+  onPick?: (value: string) => void;
 };
 
 export function SelectField<T extends FieldValues>({
@@ -191,6 +193,7 @@ export function SelectField<T extends FieldValues>({
   description,
   options,
   placeholder = 'Choose one',
+  onPick,
 }: SelectFieldProps<T>) {
   const ids = useFieldIds();
   const items = options.map((option) =>
@@ -212,7 +215,10 @@ export function SelectField<T extends FieldValues>({
             <Select
               items={items}
               value={field.value || null}
-              onValueChange={field.onChange}
+              onValueChange={(next) => {
+                if (typeof next === 'string') onPick?.(next);
+                field.onChange(next);
+              }}
             >
               <SelectTrigger className="w-full" {...aria}>
                 <SelectValue placeholder={placeholder} />

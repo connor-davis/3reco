@@ -66,6 +66,7 @@ test('add/edit stock footer never repeats field errors after interaction', () =>
             useCreateStock: () => ({}),
             useUpdateStock: () => ({}),
             useUploadStockImage: () => ({}),
+            useUploadNewStockImage: () => ({}),
             useDeleteStockImage: () => ({}),
           },
         },

@@ -141,25 +141,32 @@ func TestStockUpdateZeroPrice(t *testing.T) {
 
 	zeroBase := domainMaterial(t, app, "Glass", "0")
 	zeroID := domainStock(t, owner, zeroBase, false)
-	status(t, owner.Do("PATCH", "/api/stock/"+zeroID, map[string]any{"price": "0"}), 200)
-	if result := status(t, owner.Do("GET", "/api/stock/"+zeroID, nil), 200); result.Body["price"] != "0" {
-		t.Fatalf("explicit zero ignored: %s", result.Raw)
+	status(t, owner.Do("PATCH", "/api/stock/"+zeroID, map[string]any{"price": "0.01"}), 200)
+	if result := status(t, owner.Do("GET", "/api/stock/"+zeroID, nil), 200); result.Body["price"] != "0.01" {
+		t.Fatalf("explicit price ignored: %s", result.Raw)
 	}
 }
 
-// A price under the base says the number, and stock prices stop at cents.
+// A price under the material's default is allowed; stock prices stop at cents.
 func TestStockPriceMessages(t *testing.T) {
 	app := testutil.Server(t)
 	owner, _ := domainUser(t, app, "business")
+	other, _ := domainUser(t, app, "business")
 	material := domainMaterial(t, app, "Copper", "95")
 
 	low := owner.Do("POST", "/api/stock",
 		map[string]any{"material_id": material, "weight": "1", "price": "50"})
-	status(t, low, 400)
+	status(t, low, 200)
 
-	if fields, _ := low.Body["fields"].(map[string]any); fields["price"] != "Price must be at least R 95.00 / kg." {
-		t.Errorf("low price message: %s", low.Raw)
+	id, _ := low.Body["id"].(string)
+	status(t, owner.Do("PATCH", "/api/stock/"+id, map[string]any{"price": "40"}), 200)
+
+	if got := status(t, owner.Do("GET", "/api/stock/"+id, nil), 200); got.Body["price"] != "40" {
+		t.Errorf("price below the default not kept: %s", got.Raw)
 	}
+
+	// Someone else's stock stays out of reach, price rule or not.
+	status(t, other.Do("PATCH", "/api/stock/"+id, map[string]any{"price": "60"}), 404)
 
 	status(t, owner.Do("POST", "/api/stock",
 		map[string]any{"material_id": material, "weight": "1", "price": "95.125"}), 400)

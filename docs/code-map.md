@@ -272,7 +272,7 @@ Never rename a merged migration. Add a new file.
 | Versioned listing photo and seller logo projections | `internal/stores/market/listings.go`; stock photo projection in `internal/stores/stock/stock.go` |
 | Read stock photo keys before account erase and include them in own exports | `internal/stores/privacy/{erase,export}.go`; after-commit cleanup in `internal/services/privacy/erase.go` |
 | Shared picture avatar with initials fallback | `web/apps/app/src/components/visuals.tsx` (`PersonAvatar`) |
-| Edit-only stock photo selection, preview and staged removal | `web/apps/app/src/components/dialogs/stock-dialog.tsx`; hooks in `src/lib/api/stock.ts` |
+| Stock photo selection (add and edit), preview and staged removal; photo after create | `web/apps/app/src/components/dialogs/stock-dialog.tsx`; hooks in `src/lib/api/stock.ts` |
 | Marketplace card photos and seller logos, smaller listing gallery | `web/apps/app/src/components/listing-card.tsx`, `src/routes/market/listing/-components/gallery.tsx` |
 | Stock photo access, visibility, replacement, rollback, privacy and live routing tests | `tests/stock_images_test.go`, `tests/stock_images_live_test.go` |
-| Photo/placeholder, avatar, stock photo validation and staged-save web tests | `web/apps/app/tests/stock-images.test.mjs` |
+| Photo/placeholder, avatar, stock photo validation, staged-save and default-price prefill web tests | `web/apps/app/tests/stock-images.test.mjs` |
