@@ -273,7 +273,7 @@ test('catalogue factors share a formatter and order is explained; row actions ke
   const rows = source('routes/transactions/-components/record-list.tsx');
   assert.match(
     rows,
-    /className="w-full shrink-0 sm:w-44"[\s\S]*?Invoice and receipts/
+    /'aria-label': `Invoice and receipts: \$\{titleOf\(row\)\}`/
   );
   assert.doesNotMatch(rows, /Invoice and receipts \(/);
 });
