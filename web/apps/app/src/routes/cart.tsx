@@ -118,8 +118,9 @@ function CartPage() {
         </DataState>
       ) : (
         <>
-          <div className="mb-6 space-y-4">
+          <div className="mb-4 flex items-center gap-2">
             <SearchBox
+              className="min-w-0 flex-1"
               label="Find a store"
               value={search}
               onChange={(value) => {
@@ -134,6 +135,7 @@ function CartPage() {
               emptyText="Try another search."
             >
               <ChoiceSelect
+                className="w-40 shrink-0 sm:w-56"
                 label="Store cart"
                 value={sellerId}
                 options={options}
@@ -182,6 +184,7 @@ function SellerCart({
       {cart.data && (
         <CartForm
           sellerId={sellerId}
+          storeName={store.data?.name}
           items={cart.data.items}
           sending={sending}
         />
@@ -211,10 +214,12 @@ type CartValues = z.infer<ReturnType<typeof createCartSchema>>;
 
 function CartForm({
   sellerId,
+  storeName,
   items,
   sending,
 }: {
   sellerId: string;
+  storeName?: string;
   items: CartItem[];
   sending: MutableRefObject<boolean>;
 }) {
@@ -352,20 +357,33 @@ function CartForm({
     }
   }
 
+  const invalid = values.some(
+    (item) => !!quantityError(item.weight) || !!blockedLines[item.stock_id]
+  );
+  const totalText = invalid ? 'Enter valid quantities' : formatRand(total);
+
   return (
-    <Card>
+    <Card className="gap-3 max-lg:mb-20">
       <CardContent>
-        <p className="mb-4 text-sm text-muted-foreground">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <h2 className="min-w-0 truncate text-base font-medium">
+            {storeName ?? 'Store'}
+          </h2>
+          <LinkButton
+            to="/market/store/$sellerId"
+            params={{ sellerId }}
+            variant="link"
+            className="min-h-11 shrink-0 px-0"
+          >
+            View store
+          </LinkButton>
+        </div>
+        <p className="mb-2 text-xs text-muted-foreground">
           Your cart holds these quantities for 48 hours. After that they leave
           your cart. Sending your request keeps them reserved while you agree on
           the deal.
         </p>
-        <form
-          id="cart-form"
-          className="space-y-6"
-          onSubmit={form.handleSubmit(submit)}
-          noValidate
-        >
+        <form id="cart-form" onSubmit={form.handleSubmit(submit)} noValidate>
           {fields.fields.map((field, index) => (
             <CartLine
               key={field.id}
@@ -379,39 +397,37 @@ function CartForm({
             />
           ))}
           {error && (
-            <p role="alert" className="text-destructive">
+            <p role="alert" className="pt-3 text-destructive">
               {error}
             </p>
           )}
           {form.formState.errors.items?.root?.message && (
-            <p role="alert" className="text-destructive">
+            <p role="alert" className="pt-3 text-destructive">
               {form.formState.errors.items.root.message}
             </p>
           )}
         </form>
+        <p className="flex justify-between gap-3 border-t pt-3 text-sm">
+          <span className="text-muted-foreground">Store subtotal</span>
+          <span className="tabular-nums">
+            {invalid ? '-' : formatRand(total)}
+          </span>
+        </p>
       </CardContent>
-      <CardFooter className="flex-wrap gap-3">
-        <p className="mr-auto">
-          Estimated total{' '}
-          <strong className="tabular-nums">
-            {values.some(
-              (item) =>
-                !!quantityError(item.weight) || !!blockedLines[item.stock_id]
-            )
-              ? 'Enter valid quantities'
-              : formatRand(total)}
-          </strong>
+      {/* Phone and tablet: pinned above the bottom tabs. Laptop: card end. */}
+      <CardFooter
+        data-testid="cart-action-bar"
+        className="gap-3 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[calc(52px+env(safe-area-inset-bottom))] max-lg:z-20 max-lg:border-t max-lg:bg-background max-lg:px-4 max-lg:py-3"
+      >
+        <p className="mr-auto min-w-0 text-sm">
+          Estimated total
+          <strong className="block text-base tabular-nums">{totalText}</strong>
         </p>
         <Button
           type="submit"
           form="cart-form"
-          disabled={
-            busy ||
-            values.some(
-              (item) =>
-                !!quantityError(item.weight) || !!blockedLines[item.stock_id]
-            )
-          }
+          className="min-h-11"
+          disabled={busy || invalid}
         >
           Send request
         </Button>
@@ -458,53 +474,63 @@ function CartLine({
     onValidation(stockId, blocked);
   }, [stockId, blocked, onValidation]);
   return (
-    <div className="space-y-3 border-b pb-4">
-      <DataState
-        query={listing}
-        icon={ShoppingCart}
-        emptyTitle="Material unavailable"
-        emptyText="Remove this material to continue."
-      >
-        {listing.data && (
-          <>
-            <LinkButton
-              to="/market/listing/$listingId"
-              params={{ listingId: stockId }}
-              variant="link"
-              className="px-0 text-foreground"
-            >
-              {listing.data.material_name}
-            </LinkButton>
-            <p className="text-sm text-muted-foreground">
-              {formatRate(listing.data.price)}
-            </p>
-            {saved?.reserved_until && (
+    <div className="flex flex-col gap-2 border-t py-3 first:border-t-0 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 space-y-0.5">
+        <DataState
+          query={listing}
+          icon={ShoppingCart}
+          emptyTitle="Material unavailable"
+          emptyText="Remove this material to continue."
+        >
+          {listing.data && (
+            <>
+              <LinkButton
+                to="/market/listing/$listingId"
+                params={{ listingId: stockId }}
+                variant="link"
+                // Phones keep the 44px tap area; the negative margin stops it
+                // pushing the price away.
+                className="h-auto min-h-0 px-0 py-0 text-foreground max-[780px]:-my-2.5"
+              >
+                {listing.data.material_name}
+              </LinkButton>
               <p className="text-sm text-muted-foreground">
-                Reserved until {formatDateTime(saved.reserved_until)}
+                {formatRate(listing.data.price)}
               </p>
-            )}
-          </>
-        )}
-      </DataState>
-      <DecimalField
-        control={form.control}
-        name={`items.${index}.weight`}
-        label="Weight (kg)"
-        counter={weightCounter(available)}
-      />
+              {saved?.reserved_until && (
+                <p className="text-xs text-muted-foreground">
+                  Reserved until {formatDateTime(saved.reserved_until)}
+                </p>
+              )}
+            </>
+          )}
+        </DataState>
+      </div>
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">
+          <DecimalField
+            control={form.control}
+            name={`items.${index}.weight`}
+            label="Weight (kg)"
+            counter={weightCounter(available)}
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          aria-label={`Remove ${listing.data?.material_name ?? 'material'}`}
+          disabled={busy}
+          onClick={onRemove}
+        >
+          Remove
+        </Button>
+      </div>
       {problem && problem !== fieldError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm text-destructive sm:basis-full">
           {problem}
         </p>
       )}
-      <Button
-        type="button"
-        variant="outline"
-        disabled={busy}
-        onClick={onRemove}
-      >
-        Remove material
-      </Button>
     </div>
   );
 }
