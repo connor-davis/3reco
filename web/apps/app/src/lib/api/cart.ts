@@ -3,11 +3,9 @@ import { queryString } from './paging';
 import type * as T from './types';
 
 export function useCartStores() {
-  return useResource<{ items: { id: string; name: string }[] }>(
-    ['cart', 'stores'],
-    '/cart/stores',
-    true
-  );
+  return useResource<{
+    items: { id: string; name: string; item_count: number }[];
+  }>(['cart', 'stores'], '/cart/stores', true);
 }
 export function useCart(sellerId: string) {
   return useResource<T.Cart>(

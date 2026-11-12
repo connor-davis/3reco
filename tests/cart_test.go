@@ -8,6 +8,58 @@ import (
 	"github.com/connor-davis/3reco/tests/testutil"
 )
 
+func TestCartStoreCountsVisibleLines(t *testing.T) {
+	app := testutil.Server(t)
+	seller, sellerID := domainUser(t, app, "business")
+	secondSeller, secondSellerID := domainUser(t, app, "business")
+	buyer, _ := domainUser(t, app, "business")
+	other, _ := domainUser(t, app, "business")
+
+	material := domainMaterial(t, app, "Cart count glass", "2")
+	first := domainStock(t, seller, material, true)
+	hidden := domainStock(t, seller, material, true)
+	second := domainStock(t, secondSeller, material, true)
+
+	path := "/api/cart?seller_id=" + sellerID
+	items := []map[string]any{
+		{"stock_id": first, "material_id": material, "weight": "2.5"},
+		{"stock_id": hidden, "material_id": material, "weight": "1"},
+	}
+
+	status(t, buyer.Do("PUT", path, map[string]any{"items": items}), 200)
+	status(t, other.Do("PUT", path, map[string]any{"items": items}), 200)
+	status(t, buyer.Do("PUT", "/api/cart?seller_id="+secondSellerID, map[string]any{
+		"items": []map[string]any{{"stock_id": second, "material_id": material, "weight": "3"}},
+	}), 200)
+
+	assertCounts := func(wantFirst float64) {
+		t.Helper()
+		result := status(t, buyer.Do("GET", "/api/cart/stores", nil), 200)
+		rows := pageItems(t, result)
+		if len(rows) != 2 {
+			t.Fatalf("cart stores: %s", result.Raw)
+		}
+
+		counts := map[string]any{}
+		for _, row := range rows {
+			counts[row["id"].(string)] = row["item_count"]
+		}
+		if counts[sellerID] != wantFirst || counts[secondSellerID] != float64(1) {
+			t.Fatalf("visible cart counts include hidden or foreign lines: %s", result.Raw)
+		}
+	}
+
+	assertCounts(2)
+
+	// Saved lines can become hidden after checkout or a seller's listing change.
+	status(t, seller.Do("PATCH", "/api/stock/"+hidden, map[string]any{"is_listed": false}), 200)
+	assertCounts(1)
+	cart := status(t, buyer.Do("GET", path, nil), 200)
+	if len(pageItems(t, cart)) != 1 {
+		t.Fatalf("cart and store count disagree: %s", cart.Raw)
+	}
+}
+
 func TestCartOwnershipAndValidation(t *testing.T) {
 	app := testutil.Server(t)
 	seller, sellerID := domainUser(t, app, "business")

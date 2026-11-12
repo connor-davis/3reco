@@ -18,6 +18,8 @@ A listing shows the **available** weight (stock minus open offers). Rows with no
 
 A signed-in buyer keeps a cart per seller: `GET`, `PUT` and `DELETE /api/cart?seller_id=...`. The cart is saved on the server, so it follows the buyer to another device.
 
+`GET /api/cart/stores` lists stores with a saved cart and each one's `item_count` (visible lines), which the header cart badge sums. Adding a material shows a confirmation and keeps the buyer on the listing; the header cart icon opens the cart.
+
 ## Request and offer flow
 
 1. **Request.** The buyer sends `POST /api/requests/` with the seller and the stock lines they want. The seller is notified.
