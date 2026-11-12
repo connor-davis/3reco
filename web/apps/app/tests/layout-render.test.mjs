@@ -19,8 +19,8 @@ test(
       cacheDir: 'node_modules/.vite-layout',
       server: { host: '127.0.0.1', port, strictPort: true },
     });
-    await server.listen();
     try {
+      await server.listen();
       const result = await new Promise((resolve) => {
         const child = spawn(
           'python',
