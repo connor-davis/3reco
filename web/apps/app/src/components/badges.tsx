@@ -37,11 +37,30 @@ const dotColour: Record<BadgeVariant, string> = {
 };
 
 /** One dot and word for every deal, payment and profile status (design 05). */
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({
+  status,
+  dotOnly = false,
+}: {
+  status: string;
+  dotOnly?: boolean;
+}) {
   const requestStatus = Object.hasOwn(requestStatuses, status)
     ? requestStatuses[status as RequestStatus]
     : undefined;
   const variant = requestStatus?.variant ?? statusVariant[status] ?? 'outline';
+
+  if (dotOnly)
+    return (
+      <span
+        role="img"
+        aria-label={requestStatus?.label ?? status}
+        title={requestStatus?.label ?? status}
+        className={cn(
+          'inline-block size-1.5 shrink-0 rounded-full',
+          dotColour[variant]
+        )}
+      />
+    );
 
   return (
     <Badge
@@ -97,13 +116,19 @@ export function VerifiedMark({ verified }: { verified?: boolean }) {
 export function BusinessName({
   name,
   verified,
+  wrap = false,
 }: {
   name: string;
   verified?: boolean;
+  wrap?: boolean;
 }) {
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1 align-bottom">
-      <span className="truncate">{name}</span>
+      <span
+        className={wrap ? 'min-w-0 break-words whitespace-normal' : 'truncate'}
+      >
+        {name}
+      </span>
       {verified && (
         <BadgeCheck
           role="img"
@@ -119,14 +144,28 @@ export function BusinessName({
 export function TradeTypeLabel({
   type,
   verified,
+  compact = false,
 }: {
   type: TradeType;
   verified?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
-      {tradeTypeLabel(type)}
-      {verified === false && <Badge variant="outline">Unverified</Badge>}
+    <span
+      className={
+        compact
+          ? 'inline-flex items-center gap-1.5'
+          : 'inline-flex flex-wrap items-center gap-1.5'
+      }
+      title={compact ? tradeTypeLabel(type) : undefined}
+    >
+      {compact ? type.toUpperCase() : tradeTypeLabel(type)}
+      {verified === false &&
+        (compact ? (
+          <span>· Unverified</span>
+        ) : (
+          <Badge variant="outline">Unverified</Badge>
+        ))}
     </span>
   );
 }

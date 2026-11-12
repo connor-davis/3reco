@@ -30,7 +30,6 @@ import {
   formatKg,
   formatKgNumber,
   formatRand,
-  formatRate,
   plural,
   toCents,
   toGrams,
@@ -81,11 +80,13 @@ function Parties({ row }: { row: Transaction }) {
   return (
     <>
       <BusinessName
+        wrap
         name={row.seller.name}
         verified={row.seller.business_verified}
       />
       {' → '}
       <BusinessName
+        wrap
         name={row.buyer.name}
         verified={row.buyer.business_verified}
       />
@@ -166,15 +167,12 @@ export function RecordList({
   const columns: ColumnDef<Transaction>[] = [
     {
       id: 'date',
-      header: 'Date',
-      cell: ({ row }) => formatDate(dayOf(row.original)),
-    },
-    {
-      accessorKey: 'invoice_number',
-      header: 'Invoice',
+      header: 'Date / Invoice',
+      meta: { className: 'w-32' },
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <span className="block">{row.original.invoice_number}</span>
+        <div className="space-y-1 text-xs">
+          <span className="block">{formatDate(dayOf(row.original))}</span>
+          <span className="block break-all">{row.original.invoice_number}</span>
           <StatusBadge
             status={
               row.original.status === 'complete'
@@ -190,17 +188,38 @@ export function RecordList({
     {
       id: 'materials',
       header: 'Materials',
-      cell: ({ row }) =>
-        row.original.items.map((item) => item.material_name).join(', '),
+      cell: ({ row }) => (
+        <span
+          className="block truncate"
+          title={row.original.items
+            .map((item) => item.material_name)
+            .join(', ')}
+        >
+          {row.original.items.map((item) => item.material_name).join(', ')}
+        </span>
+      ),
     },
     {
       id: 'parties',
       header: 'From → To',
-      cell: ({ row }) => <Parties row={row.original} />,
+      cell: ({ row }) => (
+        <div className="space-y-2 text-xs">
+          <div className="flex items-start gap-1 [&>span]:min-w-0 [&>span]:flex-1">
+            <Parties row={row.original} />
+          </div>
+          <Badge variant="outline" className="2xl:hidden">
+            <TradeTypeLabel
+              type={row.original.type}
+              verified={row.original.business_verified}
+            />
+          </Badge>
+        </div>
+      ),
     },
     {
       id: 'type',
       header: 'Type',
+      meta: { className: 'hidden w-44 2xl:table-cell' },
       cell: ({ row }) => (
         <Badge variant="outline">
           <TradeTypeLabel
@@ -213,13 +232,13 @@ export function RecordList({
     {
       id: 'weight',
       header: 'Weight (kg)',
-      meta: { align: 'right' },
+      meta: { align: 'right', className: 'w-28 text-xs' },
       cell: ({ row }) => formatKgNumber(weightOf(row.original) / 1000),
     },
     {
       id: 'amount',
       header: 'Amount',
-      meta: { align: 'right' },
+      meta: { align: 'right', className: 'w-36 text-xs' },
       cell: ({ row }) => formatRand(toCents(row.original.total_price)),
     },
   ];
@@ -397,6 +416,7 @@ export function RecordList({
         skeleton={<RowsSkeleton />}
       >
         <DataTable
+          fit
           columns={columns}
           data={shown}
           onRowClick={openRow}
@@ -407,13 +427,16 @@ export function RecordList({
           }
           renderCard={(row) => (
             <ListRow
-              title={titleOf(row)}
+              layout="record"
+              title={row.items.map((item) => item.material_name).join(', ')}
+              secondaryValue={formatKg(weightOf(row) / 1000)}
               subtitle={<Parties row={row} />}
-              meta={`${formatDate(dayOf(row))} · ${row.invoice_number}${row.items.length === 1 ? ` · ${formatRate(row.items[0].price)}` : ''}`}
+              meta={`${formatDate(dayOf(row))} · ${row.invoice_number}`}
               value={formatRand(toCents(row.total_price))}
               status={
                 <>
                   <StatusBadge
+                    dotOnly
                     status={
                       row.status === 'complete'
                         ? 'Complete'
@@ -424,12 +447,15 @@ export function RecordList({
                   />
                   <Badge variant="outline" className="h-5 px-2 text-xs">
                     <TradeTypeLabel
+                      compact
                       type={row.type}
                       verified={row.business_verified}
                     />
                   </Badge>
                   {row.status === 'pending' && row.request_id && (
-                    <WaitingTag requestId={row.request_id} />
+                    <span className="sr-only">
+                      <WaitingTag requestId={row.request_id} />
+                    </span>
                   )}
                 </>
               }

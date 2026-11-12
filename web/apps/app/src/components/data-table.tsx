@@ -29,6 +29,7 @@ declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
     align?: 'left' | 'right';
     sticky?: 'left' | 'right';
+    className?: string;
   }
 }
 
@@ -40,6 +41,7 @@ type DataTableProps<T> = {
   footer?: ReactNode;
   onRowClick?: (row: T) => void;
   rowLabel?: (row: T) => string;
+  fit?: boolean;
   // The server orders the rows: one column, either way round, never unsorted.
   serverSort?: { id: string; desc: boolean; onChange: (desc: boolean) => void };
 };
@@ -56,6 +58,7 @@ export function DataTable<T>({
   serverSort,
   onRowClick,
   rowLabel,
+  fit = false,
 }: DataTableProps<T>) {
   const compact = useIsCompact();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -90,7 +93,7 @@ export function DataTable<T>({
         </ul>
       ) : (
         <div className="min-w-0">
-          <Table>
+          <Table className={fit ? 'table-fixed' : undefined}>
             <TableHeader>
               {table.getHeaderGroups().map((group) => (
                 <TableRow key={group.id} className="group hover:bg-transparent">
@@ -108,6 +111,7 @@ export function DataTable<T>({
                       }
                       className={cn(
                         'text-xs font-normal text-muted-foreground',
+                        header.column.columnDef.meta?.className,
                         header.column.columnDef.meta?.align === 'right' &&
                           'text-right tabular-nums',
                         header.column.columnDef.meta?.sticky &&
@@ -171,6 +175,8 @@ export function DataTable<T>({
                     <TableCell
                       key={cell.id}
                       className={cn(
+                        fit && 'px-2 whitespace-normal',
+                        cell.column.columnDef.meta?.className,
                         cell.column.columnDef.meta?.align === 'right' &&
                           'text-right whitespace-nowrap tabular-nums',
                         cell.column.columnDef.meta?.sticky &&

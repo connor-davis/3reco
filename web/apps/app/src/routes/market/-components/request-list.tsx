@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Inbox } from 'lucide-react';
-import { StatusBadge, VerifiedMark } from '@/components/badges';
+import { StatusBadge, TradeTypeLabel } from '@/components/badges';
+import { Badge } from '@/components/ui/badge';
 import {
   counterpartyOf,
   isClosed,
@@ -17,7 +18,6 @@ import { BusinessName } from '@/components/badges';
 import { ButtonRow } from '@/components/button-row';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PersonAvatar } from '@/components/visuals';
 import { useRequests } from '@/lib/api/requests';
 import { useAuth } from '@/lib/auth/use-auth';
 import { requestStatuses } from '@/lib/request-status';
@@ -27,7 +27,6 @@ import {
   formatKg,
   formatKgNumber,
   formatRand,
-  formatRate,
   toGrams,
 } from '@/lib/format';
 
@@ -60,14 +59,28 @@ export function RequestList({
   const columns: ColumnDef<TradeRequest>[] = [
     {
       id: 'date',
-      header: 'Date',
-      cell: ({ row }) => formatDate(row.original.created_at),
+      header: 'Date / Status',
+      meta: { className: 'w-32' },
+      cell: ({ row }) => (
+        <div className="space-y-1 text-xs">
+          <span className="block">{formatDate(row.original.created_at)}</span>
+          <StatusBadge status={row.original.status} />
+        </div>
+      ),
     },
     {
       id: 'materials',
       header: 'Material(s)',
-      cell: ({ row }) =>
-        row.original.items.map((item) => item.material_name).join(', '),
+      cell: ({ row }) => (
+        <span
+          className="block truncate"
+          title={row.original.items
+            .map((item) => item.material_name)
+            .join(', ')}
+        >
+          {row.original.items.map((item) => item.material_name).join(', ')}
+        </span>
+      ),
     },
     {
       id: 'party',
@@ -75,19 +88,18 @@ export function RequestList({
       cell: ({ row }) => {
         const other = counterpartyOf(row.original, user?.id);
         return (
-          <BusinessName name={other.name} verified={other.business_verified} />
+          <BusinessName
+            wrap
+            name={other.name}
+            verified={other.business_verified}
+          />
         );
       },
     },
     {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
-    },
-    {
       id: 'weight',
       header: 'Weight (kg)',
-      meta: { align: 'right' },
+      meta: { align: 'right', className: 'w-28 text-xs' },
       cell: ({ row }) =>
         formatKgNumber(
           row.original.items.reduce(
@@ -100,7 +112,7 @@ export function RequestList({
     {
       id: 'total',
       header: 'Total',
-      meta: { align: 'right' },
+      meta: { align: 'right', className: 'w-36 text-xs' },
       cell: ({ row }) =>
         row.original.items.some((item) => item.offer_price !== null)
           ? formatRand(requestTotal(row.original))
@@ -144,6 +156,7 @@ export function RequestList({
         skeleton={<RowsSkeleton />}
       >
         <DataTable
+          fit
           columns={columns}
           data={shown}
           onRowClick={(request) =>
@@ -156,17 +169,52 @@ export function RequestList({
             `View request from ${counterpartyOf(request, user?.id).name}`
           }
           renderCard={(request) => {
-            const other = counterpartyOf(request, user?.id);
             return (
               <ListRow
                 to="/market/$requestId"
                 params={{ requestId: request.id }}
-                media={<PersonAvatar name={other.name} />}
-                title={other.name}
-                titleMark={<VerifiedMark verified={other.business_verified} />}
-                subtitle={`${request.items.map((item) => item.material_name).join(', ')} · ${formatDate(request.created_at)}`}
-                meta={direction === 'incoming' && <Terms request={request} />}
-                status={<StatusBadge status={request.status} />}
+                layout="record"
+                title={request.items
+                  .map((item) => item.material_name)
+                  .join(', ')}
+                subtitle={
+                  <>
+                    <BusinessName
+                      wrap
+                      name={request.seller.name}
+                      verified={request.seller.business_verified}
+                    />
+                    {' → '}
+                    <BusinessName
+                      wrap
+                      name={request.buyer.name}
+                      verified={request.buyer.business_verified}
+                    />
+                  </>
+                }
+                secondaryValue={formatKg(
+                  request.items.reduce(
+                    (sum, item) =>
+                      sum +
+                      toGrams(
+                        item.offer_weight ?? item.requested_weight ?? '0'
+                      ),
+                    0
+                  ) / 1000
+                )}
+                meta={`${formatDate(request.created_at)} · ${request.id.slice(-8).toUpperCase()}`}
+                status={
+                  <>
+                    <StatusBadge dotOnly status={request.status} />
+                    <Badge variant="outline">
+                      <TradeTypeLabel
+                        compact
+                        type="b2b"
+                        verified={request.seller.business_verified}
+                      />
+                    </Badge>
+                  </>
+                }
                 value={
                   request.items.some((item) => item.offer_price !== null)
                     ? formatRand(requestTotal(request))
@@ -196,20 +244,4 @@ export function RequestList({
       </ButtonRow>
     </>
   );
-}
-
-// What was asked for, from the offer when there is one: "200 kg at R 23.40 / kg".
-function Terms({ request }: { request: TradeRequest }) {
-  const lines = request.items.flatMap((item) => {
-    const weight = item.offer_weight ?? item.requested_weight;
-    const price = item.offer_price ?? item.requested_price;
-
-    return weight && price
-      ? [`${formatKg(weight)} at ${formatRate(price)}`]
-      : [];
-  });
-
-  if (!lines.length) return null;
-
-  return <span>{lines.join(' · ')}</span>;
 }
