@@ -10,9 +10,9 @@ test('an error on a field shows once, with no second banner', () => {
   assert.match(dialog, /if \(!named\.length\) setServerError/);
 });
 
-test('Add stock shows the base price once a material is picked', () => {
+test('Add stock shows the default price once a material is picked', () => {
   assert.match(dialog, /const base = stock\?\.base_price \?\? chosen\?\.price/);
-  assert.match(dialog, /At least \$\{formatRate\(base\)\}/);
+  assert.match(dialog, /Default price is \$\{formatRate\(base\)\}/);
 });
 
 test('one figure when nothing is held', () => {

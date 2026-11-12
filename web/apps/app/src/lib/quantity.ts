@@ -28,7 +28,7 @@ export const weightCounter = (max?: string): CounterProps => ({
   places: 2,
 });
 
-/** A price in R per kg: R 1 a press, typing keeps cents, `min` is the base. */
+/** A price in R per kg: R 1 a press, typing keeps cents. */
 export const priceCounter = (min = '0.01'): CounterProps => ({
   noun: 'price',
   unit: 'R / kg',
@@ -136,4 +136,23 @@ export function priceError(raw: string): string | undefined {
   if (!/^\d{1,12}(\.\d{1,2})?$/.test(price) || !/[1-9]/.test(price)) {
     return 'Enter a price above R 0.00.';
   }
+}
+
+/**
+ * The price to fill in when a material is picked: its default, but only when
+ * the price is empty or still the previous material's default. Undefined
+ * means leave what the user typed.
+ */
+export function prefillPrice(
+  current: string,
+  previous: string | undefined,
+  next: string | undefined
+): string | undefined {
+  const fill = scaled(next, 2);
+  if (fill === null) return undefined;
+  const typed = scaled(current, 2);
+  const old = scaled(previous, 2);
+  return typed === null || (old !== null && typed === old)
+    ? plain(fill, 2)
+    : undefined;
 }

@@ -103,7 +103,7 @@ test('PersonAvatar renders its image and keeps initials as the fallback', () => 
   );
 });
 
-function stockForm(stock) {
+function stockForm(stock, options = {}) {
   const state = [];
   const effects = [];
   const calls = [];
@@ -112,6 +112,8 @@ function stockForm(stock) {
     isPending: false,
     mutateAsync: async (value) => {
       calls.push([kind, value]);
+      if (kind === 'create') return { id: 'new1' };
+      if (kind === 'addPhoto' && options.uploadFails) throw new Error('boom');
     },
   });
   const values = {
@@ -119,6 +121,7 @@ function stockForm(stock) {
     weight: '10',
     price: '8',
     is_listed: true,
+    ...options.values,
   };
   const hooks = {
     useState: (initial) => {
@@ -144,7 +147,10 @@ function stockForm(stock) {
           control: {},
           handleSubmit: (fn) => () => fn(values),
           watch: (key) => values[key],
-          setValue: () => {},
+          setValue: (name, value) => {
+            values[name] = value;
+            calls.push(['set', name, value]);
+          },
           setError: () => {},
           trigger: () => {},
           formState: {
@@ -155,16 +161,30 @@ function stockForm(stock) {
           },
         }),
       },
-      sonner: { toast: { success: () => {} } },
-      '@/lib/api/materials': { useMaterials: () => ({ data: { items: [] } }) },
+      sonner: {
+        toast: {
+          success: () => {},
+          warning: (message) => calls.push(['warning', message]),
+        },
+      },
+      '@/lib/api/materials': {
+        useMaterials: () => ({ data: { items: options.items ?? [] } }),
+      },
       '@/lib/api/stock': {
         useCreateStock: () => mutation('create'),
         useUpdateStock: () => mutation('update'),
         useUploadStockImage: () => mutation('upload'),
+        useUploadNewStockImage: () => mutation('addPhoto'),
         useDeleteStockImage: () => mutation('remove'),
       },
       '@/lib/format': load('lib/format.ts'),
-      '@/lib/quantity': { priceCounter: () => ({}), weightCounter: () => ({}) },
+      '@/lib/quantity': {
+        ...load('lib/quantity.ts', {
+          '@/lib/format': load('lib/format.ts'),
+        }),
+        priceCounter: () => ({}),
+        weightCounter: () => ({}),
+      },
     },
     '\nexports.StockForm = StockForm;',
     {
@@ -188,7 +208,11 @@ function stockForm(stock) {
     nodes(tree.props.footer)
       .find((node) => node.type === 'Button')
       .props.onClick();
-  return { render, input, save, calls, effects };
+  const pick = (tree, id) =>
+    nodes(tree)
+      .find((node) => node.props.onPick)
+      .props.onPick(id);
+  return { render, input, save, calls, effects, pick, values };
 }
 
 const item = {
@@ -203,9 +227,7 @@ const item = {
   image_url: '/old?v=1',
 };
 
-test('stock photo field is edit-only, validates files, previews and uploads on Save', async () => {
-  const create = stockForm(undefined);
-  assert.equal(create.input(create.render()), undefined);
+test('stock photo field validates files, previews and uploads on Save', async () => {
   const form = stockForm(item);
   let tree = form.render();
   const choose = (file) =>
@@ -238,7 +260,7 @@ test('stock photo field is edit-only, validates files, previews and uploads on S
     nodes(tree).find((node) => node.type === 'img').props.src,
     'blob:preview'
   );
-  const cleanup = form.effects.at(-2)();
+  const cleanup = form.effects.at(-1)();
   await form.save(tree);
   assert.deepEqual(
     form.calls.map(([kind]) => kind),
@@ -266,4 +288,98 @@ test('stock photo Remove waits until Save', async () => {
     form.calls.map(([kind]) => kind),
     ['update', 'remove', 'close']
   );
+});
+
+test('Add stock shows the photo picker and uploads with the created id', async () => {
+  const form = stockForm(undefined);
+  let tree = form.render();
+  assert.ok(form.input(tree));
+  form
+    .input(tree)
+    .props.onChange({ target: { files: [{ type: 'image/png', size: 9 }] } });
+  tree = form.render();
+  await form.save(tree);
+  assert.deepEqual(
+    form.calls.filter(([kind]) => kind !== 'revoke').map(([kind]) => kind),
+    ['create', 'addPhoto', 'close']
+  );
+  assert.equal(form.calls[1][1].id, 'new1');
+  assert.equal(form.calls[1][1].file.type, 'image/png');
+});
+
+test('a photo that fails after create warns and does not create again', async () => {
+  const form = stockForm(undefined, { uploadFails: true });
+  let tree = form.render();
+  form
+    .input(tree)
+    .props.onChange({ target: { files: [{ type: 'image/png', size: 9 }] } });
+  tree = form.render();
+  await form.save(tree);
+  assert.equal(form.calls.filter(([kind]) => kind === 'create').length, 1);
+  assert.deepEqual(form.calls.at(-1), ['close', false]);
+  assert.ok(
+    form.calls.some(
+      ([kind, message]) =>
+        kind === 'warning' &&
+        message ===
+          'Stock added, but the photo did not upload. Edit the stock to try again.'
+    )
+  );
+});
+
+const materials = [
+  { id: 'm', name: 'Glass', price: '5.00' },
+  { id: 'n', name: 'Tin', price: '9.50' },
+];
+
+test('picking a material fills its default price when the price is empty or still the old default', () => {
+  const empty = stockForm(undefined, {
+    items: materials,
+    values: { price: '' },
+  });
+  empty.pick(empty.render(), 'n');
+  assert.deepEqual(empty.calls[0], ['set', 'price', '9.50']);
+
+  const old = stockForm(undefined, {
+    items: materials,
+    values: { price: '5' },
+  });
+  old.pick(old.render(), 'n');
+  assert.deepEqual(old.calls[0], ['set', 'price', '9.50']);
+});
+
+test('picking a material never overwrites a price the user typed', () => {
+  const form = stockForm(undefined, {
+    items: materials,
+    values: { price: '7.25' },
+  });
+  form.pick(form.render(), 'n');
+  assert.equal(form.calls.length, 0);
+});
+
+test('a price below the default warns but does not block Save', async () => {
+  const form = stockForm(undefined, {
+    items: materials,
+    values: { price: '1' },
+  });
+  const tree = form.render();
+  assert.ok(
+    nodes(tree).some(
+      (node) =>
+        node.props.children ===
+        'Below the default price of R 5.00 / kg. You can still save.'
+    )
+  );
+  assert.equal(
+    nodes(tree.props.footer).find((node) => node.type === 'Button').props
+      .disabled,
+    false
+  );
+  await form.save(tree);
+  assert.equal(form.calls[0][0], 'create');
+});
+
+test('editing stock keeps its saved price', () => {
+  const form = stockForm({ ...item, price: '2.00' }, { items: materials });
+  assert.equal(form.calls.length, 0);
 });

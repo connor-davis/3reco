@@ -58,6 +58,7 @@ import {
 } from '@/lib/format';
 import {
   priceCounter,
+  prefillPrice,
   priceError,
   quantityError,
   weightCounter,
@@ -167,7 +168,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     // ponytail: one request per keystroke; add a debounce if it gets chatty.
     chooseBusiness && open
   );
-  const { control, handleSubmit, watch, reset, formState, setError } =
+  const { control, handleSubmit, watch, reset, formState, setError, setValue } =
     useForm<Values>({
       resolver: zodResolver(schema),
       // Say why a number is wrong when the user leaves the field, not only on save.
@@ -209,6 +210,21 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     (sum, item) => sum + lineCents(item.price || '0', item.weight || '0'),
     0
   );
+
+  // A new material fills its default price unless the user typed their own.
+  function pickMaterial(index: number, id: string) {
+    const fill = prefillPrice(
+      lines[index]?.price ?? '',
+      sorted.find((m) => m.id === lines[index]?.material_id)?.price,
+      sorted.find((m) => m.id === id)?.price
+    );
+    if (fill) {
+      setValue(`lines.${index}.price`, fill, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+  }
 
   /** Bad files are refused here, so only good ones wait for the save. */
   function pickReceipts(picked: File[]) {
@@ -401,6 +417,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
                   value: item.id,
                   label: item.name,
                 }))}
+                onPick={(id) => pickMaterial(index, id)}
               />
               <IconButton
                 label={`Remove line ${index + 1}`}
