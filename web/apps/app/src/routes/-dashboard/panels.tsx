@@ -109,10 +109,10 @@ export function QuickLinks({
   links: { to: string; label: string; icon: LucideIcon }[];
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-2 has-[>:nth-child(2)]:grid-cols-2 has-[>:nth-child(3)]:grid-cols-3">
       {links.map(({ to, label, icon: Icon }) => (
         <LinkButton
-          className="min-h-14 justify-start whitespace-normal text-left"
+          className="h-auto min-h-16 min-w-0 flex-col gap-2 px-1 py-3 text-center text-xs whitespace-nowrap sm:text-sm"
           key={to}
           to={to}
           variant="secondary"

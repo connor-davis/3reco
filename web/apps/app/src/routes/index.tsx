@@ -98,17 +98,17 @@ function Dashboard() {
               : [
                   {
                     to: '/market',
-                    label: 'Browse materials',
+                    label: 'Browse',
                     icon: Search,
                   },
                   {
                     to: '/stock',
-                    label: 'Manage stock',
+                    label: 'Stock',
                     icon: PackageOpen,
                   },
                   {
                     to: '/collections',
-                    label: 'Record a collection',
+                    label: 'Collect',
                     icon: ClipboardList,
                   },
                 ]
@@ -120,6 +120,7 @@ function Dashboard() {
   return (
     <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
       <PageHeader
+        compactActionsBelow
         title={
           staff
             ? 'A clear view of the trade.'
@@ -207,9 +208,7 @@ function Dashboard() {
                 ))}
               </ul>
             )}
-            <p className="text-sm text-muted-foreground">
-              CO₂e saved: {formatCo2(dashboard.totals.carbon_savings)}
-            </p>
+
             <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
               <NeedsAttention collector={collector} />
               <MaterialsPanel series={dashboard.series} />
@@ -232,7 +231,10 @@ function Dashboard() {
                 </ul>
               </Section>
             )}
-            {!collector && <CommunityImpact />}
+            <CommunityImpact
+              collector={collector}
+              carbonSavings={dashboard.totals.carbon_savings}
+            />
           </>
         )}
       </DataState>
@@ -245,33 +247,46 @@ function Dashboard() {
   );
 }
 
-function CommunityImpact() {
+function CommunityImpact({
+  carbonSavings,
+  collector,
+}: {
+  carbonSavings: string;
+  collector: boolean;
+}) {
   const query = useStats();
   const stats = query.data;
   return (
     <Section
       panel
-      title="Community impact"
+      title={collector ? 'Collection impact' : 'Community impact'}
       action={
-        <LinkButton to="/market" variant="link">
-          See all stores
-        </LinkButton>
+        !collector && (
+          <LinkButton to="/market" variant="link">
+            See all stores
+          </LinkButton>
+        )
       }
     >
-      <DataState
-        query={query}
-        isEmpty={stats?.deals === 0}
-        icon={Leaf}
-        emptyTitle="Every trade counts"
-        emptyText="Community impact will appear after the first settled trade."
-      >
-        {stats && (
-          <p className="text-sm text-muted-foreground">
-            {formatKg(stats.total_kg)} traded · {formatCo2(stats.co2_kg)} saved
-            · {stats.deals} settled trades, all time.
-          </p>
-        )}
-      </DataState>
+      <p className="mb-3 text-sm">
+        CO₂e saved in your last 30 days: {formatCo2(carbonSavings)}
+      </p>
+      {!collector && (
+        <DataState
+          query={query}
+          isEmpty={stats?.deals === 0}
+          icon={Leaf}
+          emptyTitle="Every trade counts"
+          emptyText="Community impact will appear after the first settled trade."
+        >
+          {stats && (
+            <p className="text-sm text-muted-foreground">
+              {formatKg(stats.total_kg)} traded · {formatCo2(stats.co2_kg)}{' '}
+              saved · {stats.deals} settled trades, all time.
+            </p>
+          )}
+        </DataState>
+      )}
     </Section>
   );
 }
