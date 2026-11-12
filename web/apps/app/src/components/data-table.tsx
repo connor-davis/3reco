@@ -80,7 +80,12 @@ export function DataTable<T>({
       {compact ? (
         <ul className="divide-y overflow-hidden rounded-lg border">
           {rows.map((row: Row<T>) => (
-            <li key={row.id}>{renderCard(row.original)}</li>
+            <li
+              key={row.id}
+              className="[--row-background:var(--background)] even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
+            >
+              {renderCard(row.original)}
+            </li>
           ))}
         </ul>
       ) : (
@@ -141,7 +146,8 @@ export function DataTable<T>({
               {rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="group bg-background [--row-background:var(--background)] hover:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))] data-[state=selected]:[--row-background:var(--muted)] has-aria-expanded:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))]"
+                  // :where keeps stripes below hover, selected and expanded states.
+                  className="group bg-[var(--row-background)] [--row-background:var(--background)] hover:bg-[var(--row-background)] hover:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))] data-[state=selected]:bg-[var(--row-background)] data-[state=selected]:[--row-background:var(--muted)] has-aria-expanded:bg-[var(--row-background)] has-aria-expanded:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))] [&:where(:nth-child(even))]:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

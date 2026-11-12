@@ -296,7 +296,7 @@ export function RecordList({
             <div
               key={row.id}
               role="listitem"
-              className="border-b last:border-b-0 sm:border-0"
+              className="border-b [--row-background:var(--background)] last:border-b-0 max-sm:even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))] sm:border-0"
             >
               <div className="sm:hidden">
                 <ListRow

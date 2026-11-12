@@ -71,10 +71,7 @@ export function AppSidebar() {
             'outline-none focus-visible:ring-2 focus-visible:ring-ring'
           )}
         >
-          <span
-            className="size-2.5 rounded-full bg-primary"
-            aria-hidden="true"
-          />
+          <img src="/logo-mark.png" alt="" className="size-7 object-contain" />
           <span>3REco</span>
         </Link>
         {user && (
