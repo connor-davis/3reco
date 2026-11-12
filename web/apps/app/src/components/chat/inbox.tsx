@@ -3,7 +3,8 @@ import { Link } from '@tanstack/react-router';
 import { LoaderCircle, MessageSquare, SquarePen } from 'lucide-react';
 import { BusinessName, StatusBadge } from '@/components/badges';
 import { DataState, RowsSkeleton } from '@/components/data-state';
-import { ChipGroup, SearchBox } from '@/components/filters';
+import { FilterTabs } from '@/components/filters';
+import { Toolbar } from '@/components/toolbar';
 import { IconButton } from '@/components/icon-button';
 import { PersonAvatar } from '@/components/visuals';
 import { Badge } from '@/components/ui/badge';
@@ -101,14 +102,12 @@ export function Inbox({
           </IconButton>
         )}
       </div>
-      <SearchBox
+      <Toolbar
         label="Search conversations"
         value={search}
         onChange={setSearch}
-        className="sm:max-w-none"
       />
-      <ChipGroup
-        outlined
+      <FilterTabs
         label="Filter conversations"
         value={filter}
         onChange={setFilter}

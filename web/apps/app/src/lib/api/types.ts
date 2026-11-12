@@ -187,6 +187,7 @@ export interface CollectorStats {
     weight: Decimal;
     price: Decimal;
     buyer_name: string;
+    buyer_verified: boolean;
   }[];
 }
 export interface Party {
@@ -355,7 +356,13 @@ export interface Dashboard {
   to: string;
   totals: DashboardTotals;
   series: (DashboardTotals & { day: string })[];
-  counterparties: { id: string; name: string; count: number; value: Decimal }[];
+  counterparties: {
+    id: string;
+    name: string;
+    business_verified: boolean;
+    count: number;
+    value: Decimal;
+  }[];
   users?: { role: string; count: number }[];
   by_type?: { type: 'c2b' | 'b2b'; count: number; weight: Decimal }[];
   collector_linked?: boolean;

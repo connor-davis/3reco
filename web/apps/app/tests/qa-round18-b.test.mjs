@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
+import { createServer as createPortServer } from 'node:net';
 import ts from 'typescript';
 import { source } from './qa-round2-loader.mjs';
 
@@ -490,12 +491,19 @@ test(
   { timeout: 180000 },
   async () => {
     const { createServer } = await import('vite');
+    // Vite treats port 0 as its default port; reserve an actual free port first.
+    const portServer = createPortServer();
+    await new Promise((resolve) => portServer.listen(0, '127.0.0.1', resolve));
+    const port = portServer.address().port;
+    await new Promise((resolve, reject) =>
+      portServer.close((error) => (error ? reject(error) : resolve()))
+    );
     const server = await createServer({
-      server: { host: '127.0.0.1', port: 0, strictPort: true },
+      server: { host: '127.0.0.1', port, strictPort: true, hmr: false },
     });
-    await server.listen();
-    const address = server.httpServer.address();
     try {
+      await server.listen();
+      const address = server.httpServer.address();
       const result = await new Promise((resolve) => {
         const child = spawn(
           'python',

@@ -7,6 +7,8 @@ import { PackageSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { BusinessName } from '@/components/badges';
 import { DataState } from '@/components/data-state';
+import { ActionBar, ActionBarSpacer } from '@/components/action-bar';
+import { Panel } from '@/components/panel';
 import { DecimalField } from '@/components/form-fields';
 import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
@@ -35,6 +37,7 @@ export const Route = createFileRoute('/market/listing/$listingId')({
 });
 
 function ListingPage() {
+  const { user } = useAuth();
   const { listingId } = Route.useParams();
   const query = useListing(listingId);
   useEffect(() => {
@@ -57,6 +60,9 @@ function ListingPage() {
           <>
             <ListingDetail key={query.data.id} listing={query.data} />
             <RelatedListings listing={query.data} />
+            {user?.role === 'business' && user.id !== query.data.seller_id && (
+              <ActionBarSpacer />
+            )}
           </>
         )}
       </DataState>
@@ -164,126 +170,135 @@ function ListingDetail({ listing }: { listing: Listing }) {
         initialWeight={problem ? '' : weight}
       />
       <Gallery image={listing.image_url} name={listing.material_name} />
-      <div className="space-y-6">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {listing.material_name}
-        </h1>
-        <p className="text-3xl font-semibold tabular-nums">
-          {formatRate(listing.price)}
-        </p>
-        <p className="text-muted-foreground">
-          {toGrams(listing.weight) === 0
-            ? 'Fully reserved'
-            : `${formatKg(listing.weight)} available`}
-        </p>
-        {own && listing.gw_code && (
-          <p className="text-sm text-muted-foreground">
-            Material code: {listing.gw_code}
+      <Panel title="Material details">
+        <div className="space-y-4">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {listing.material_name}
+          </h1>
+          <p className="text-3xl font-semibold tabular-nums">
+            {formatRate(listing.price)}
           </p>
-        )}
-        <form
-          onSubmit={form.handleSubmit(add)}
-          className="space-y-4"
-          noValidate
-        >
-          {!own && (
-            <>
-              <DecimalField
-                control={form.control}
-                name="weight"
-                label="Quantity (kg)"
-                counter={weightCounter(listing.weight)}
-                description={
-                  user?.role === 'business'
-                    ? 'Your cart keeps this quantity. You can change it before sending your request.'
-                    : undefined
-                }
-              />
-              {weight.trim() && problem && !form.formState.errors.weight && (
-                <p role="alert" className="text-sm text-destructive">
-                  {problem}
-                </p>
-              )}
-              <p>
-                Estimated total{' '}
-                <strong className="tabular-nums">
-                  {problem ? '-' : formatRand(lineCents(listing.price, weight))}
-                </strong>
-              </p>
-            </>
-          )}
-          {user?.role === 'business' && !own ? (
-            <DataState
-              query={cart}
-              icon={PackageSearch}
-              emptyTitle="Your cart"
-              emptyText="Add this material to your cart."
-            >
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  disabled={orderDisabled}
-                  onClick={() => setChatOpen(true)}
-                >
-                  Request this material
-                </Button>
-                <Button
-                  type="submit"
-                  variant="outline"
-                  disabled={orderDisabled}
-                >
-                  Add to cart
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Adding to your cart holds it for 48 hours.
-              </p>
-            </DataState>
-          ) : (
+          <p className="text-muted-foreground">
+            {toGrams(listing.weight) === 0
+              ? 'Fully reserved'
+              : `${formatKg(listing.weight)} available`}
+          </p>
+          {own && listing.gw_code && (
             <p className="text-sm text-muted-foreground">
-              {own
-                ? 'This is your own lot. Edit it from Stock.'
-                : user
-                  ? user.role === 'admin' || user.role === 'staff'
-                    ? 'You can browse listings, but staff and administrators cannot request materials.'
-                    : 'Only business accounts can request materials and use the cart.'
-                  : 'Sign in as a business to request materials and use the cart.'}
+              Material code: {listing.gw_code}
             </p>
           )}
-          {form.formState.errors.root?.message && (
-            <p role="alert" className="text-sm text-destructive">
-              {form.formState.errors.root?.message}
-            </p>
-          )}
-        </form>
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4">
-          <PersonAvatar
-            name={listing.seller_name}
-            image={listing.seller_avatar_url}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">
-              <BusinessName
-                name={listing.seller_name}
-                verified={listing.seller_verified}
-              />
-            </p>
-            {listing.average_rating !== null && (
-              <Stars value={listing.average_rating} />
-            )}
-            <p className="text-sm text-muted-foreground">
-              {plural(listing.review_count, 'review')}
-            </p>
-          </div>
-          <Link
-            className="inline-flex min-h-11 items-center rounded px-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring"
-            to="/market/store/$sellerId"
-            params={{ sellerId: listing.seller_id }}
+          <form
+            onSubmit={form.handleSubmit(add)}
+            className="space-y-4"
+            noValidate
           >
-            View store
-          </Link>
+            {!own && (
+              <>
+                <DecimalField
+                  control={form.control}
+                  name="weight"
+                  label="Quantity (kg)"
+                  counter={weightCounter(listing.weight)}
+                  description={
+                    user?.role === 'business'
+                      ? 'Your cart keeps this quantity. You can change it before sending your request.'
+                      : undefined
+                  }
+                />
+                {weight.trim() && problem && !form.formState.errors.weight && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {problem}
+                  </p>
+                )}
+              </>
+            )}
+            {user?.role === 'business' && !own ? (
+              <DataState
+                query={cart}
+                icon={PackageSearch}
+                emptyTitle="Your cart"
+                emptyText="Add this material to your cart."
+              >
+                <ActionBar
+                  label={
+                    <>
+                      <p>
+                        Estimated total{' '}
+                        <strong className="tabular-nums">
+                          {problem
+                            ? '-'
+                            : formatRand(lineCents(listing.price, weight))}
+                        </strong>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Adding to your cart holds it for 48 hours.
+                      </p>
+                    </>
+                  }
+                >
+                  <Button
+                    type="button"
+                    disabled={orderDisabled}
+                    onClick={() => setChatOpen(true)}
+                  >
+                    Request this material
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    disabled={orderDisabled}
+                  >
+                    Add to cart
+                  </Button>
+                </ActionBar>
+              </DataState>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {own
+                  ? 'This is your own lot. Edit it from Stock.'
+                  : user
+                    ? user.role === 'admin' || user.role === 'staff'
+                      ? 'You can browse listings, but staff and administrators cannot request materials.'
+                      : 'Only business accounts can request materials and use the cart.'
+                    : 'Sign in as a business to request materials and use the cart.'}
+              </p>
+            )}
+            {form.formState.errors.root?.message && (
+              <p role="alert" className="text-sm text-destructive">
+                {form.formState.errors.root?.message}
+              </p>
+            )}
+          </form>
+          <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+            <PersonAvatar
+              name={listing.seller_name}
+              image={listing.seller_avatar_url}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">
+                <BusinessName
+                  name={listing.seller_name}
+                  verified={listing.seller_verified}
+                />
+              </p>
+              {listing.average_rating !== null && (
+                <Stars value={listing.average_rating} />
+              )}
+              <p className="text-sm text-muted-foreground">
+                {plural(listing.review_count, 'review')}
+              </p>
+            </div>
+            <Link
+              className="inline-flex min-h-11 items-center rounded px-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring"
+              to="/market/store/$sellerId"
+              params={{ sellerId: listing.seller_id }}
+            >
+              View store
+            </Link>
+          </div>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

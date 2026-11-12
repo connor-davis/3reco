@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { VerifiedMark } from '@/components/badges';
 import type { Option } from '@/components/filters';
 
 // These wrap react-hook-form's Controller around the shadcn Field, so every
@@ -275,9 +276,10 @@ export function ComboboxField<T extends FieldValues>({
               <ComboboxContent>
                 <ComboboxEmpty>No match.</ComboboxEmpty>
                 <ComboboxList>
-                  {(item: { value: string; label: string }) => (
+                  {(item: Option) => (
                     <ComboboxItem key={item.value} value={item}>
                       {item.label}
+                      <VerifiedMark verified={item.verified} />
                     </ComboboxItem>
                   )}
                 </ComboboxList>

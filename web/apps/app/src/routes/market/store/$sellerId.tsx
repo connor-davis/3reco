@@ -3,6 +3,8 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
 import { BusinessName, UnverifiedBanner } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { ButtonRow } from '@/components/button-row';
+import { Panel } from '@/components/panel';
 import { DataState } from '@/components/data-state';
 import { ReviewDialog } from '@/components/dialogs/review-dialog';
 import { LinkButton } from '@/components/link-button';
@@ -65,59 +67,63 @@ function StorePage() {
             listing={chatListing ?? undefined}
           />
           {user?.id === sellerId && <UnverifiedBanner />}
-          <header className="flex flex-wrap items-center gap-4 rounded-lg bg-muted p-[17px] sm:p-6">
-            <PersonAvatar
-              name={store.data.name}
-              image={
-                store.data.avatar_url
-                  ? store.data.avatar_url + '?v=' + store.dataUpdatedAt
-                  : undefined
-              }
-              className="size-16"
-            />
-            <div className="min-w-0 flex-1 space-y-1">
-              <h1 className="text-2xl font-semibold">
-                <BusinessName
-                  name={store.data.name}
-                  verified={store.data.business_verified}
-                />
-              </h1>
-              <p>
-                {[store.data.city, store.data.province]
-                  .filter(Boolean)
-                  .join(', ')}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Member since {formatDate(store.data.created_at)}
-              </p>
-            </div>
-            {user?.role === 'business' && user.id !== sellerId && (
-              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                <Button
-                  nativeButton={false}
-                  render={<Link to="/cart" search={{ seller_id: sellerId }} />}
-                  variant="outline"
-                >
-                  Cart
-                </Button>
-                <Button
-                  disabled={
-                    !listings.data?.items.some(
-                      (item) => toGrams(item.weight) > 0
-                    )
-                  }
-                  onClick={() => {
-                    const item = listings.data?.items.find(
-                      (item) => toGrams(item.weight) > 0
-                    );
-                    if (item) setChatListing(item);
-                  }}
-                >
-                  Message store
-                </Button>
+          <Panel title="Store details">
+            <header className="flex flex-wrap items-center gap-4">
+              <PersonAvatar
+                name={store.data.name}
+                image={
+                  store.data.avatar_url
+                    ? store.data.avatar_url + '?v=' + store.dataUpdatedAt
+                    : undefined
+                }
+                className="size-16"
+              />
+              <div className="min-w-0 flex-1 space-y-1">
+                <h1 className="text-2xl font-semibold">
+                  <BusinessName
+                    name={store.data.name}
+                    verified={store.data.business_verified}
+                  />
+                </h1>
+                <p>
+                  {[store.data.city, store.data.province]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Member since {formatDate(store.data.created_at)}
+                </p>
               </div>
-            )}
-          </header>
+              {user?.role === 'business' && user.id !== sellerId && (
+                <ButtonRow>
+                  <Button
+                    nativeButton={false}
+                    render={
+                      <Link to="/cart" search={{ seller_id: sellerId }} />
+                    }
+                    variant="outline"
+                  >
+                    Cart
+                  </Button>
+                  <Button
+                    disabled={
+                      !listings.data?.items.some(
+                        (item) => toGrams(item.weight) > 0
+                      )
+                    }
+                    onClick={() => {
+                      const item = listings.data?.items.find(
+                        (item) => toGrams(item.weight) > 0
+                      );
+                      if (item) setChatListing(item);
+                    }}
+                  >
+                    Message store
+                  </Button>
+                </ButtonRow>
+              )}
+            </header>
+          </Panel>
           <Tabs defaultValue="stock" className="mt-8">
             <TabsList>
               <TabsTrigger value="stock">Stock</TabsTrigger>

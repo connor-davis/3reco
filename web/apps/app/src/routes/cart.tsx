@@ -13,13 +13,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Guarded } from '@/components/access-guard';
 import { BusinessName } from '@/components/badges';
+import { ActionBar, ActionBarSpacer } from '@/components/action-bar';
 import { DataState } from '@/components/data-state';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
 import { DecimalField } from '@/components/form-fields';
 import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
+import { Panel } from '@/components/panel';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useCart, useCartStores, useSaveCart } from '@/lib/api/cart';
 import { useStore } from '@/lib/api/stores';
 import { useListing } from '@/lib/api/listings';
@@ -85,6 +86,7 @@ function CartPage() {
       .map((store) => ({
         value: store.id,
         label: store.name,
+        verified: store.business_verified,
       })) ?? [];
 
   return (
@@ -367,15 +369,12 @@ function CartForm({
   const totalText = invalid ? 'Enter valid quantities' : formatRand(total);
 
   return (
-    <Card className="gap-3 max-lg:mb-20">
-      <CardContent>
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <h2 className="min-w-0 truncate text-base font-medium">
-            <BusinessName
-              name={storeName ?? 'Store'}
-              verified={storeVerified}
-            />
-          </h2>
+    <>
+      <Panel
+        title={
+          <BusinessName name={storeName ?? 'Store'} verified={storeVerified} />
+        }
+        action={
           <LinkButton
             to="/market/store/$sellerId"
             params={{ sellerId }}
@@ -384,7 +383,8 @@ function CartForm({
           >
             View store
           </LinkButton>
-        </div>
+        }
+      >
         <p className="mb-2 text-xs text-muted-foreground">
           Your cart holds these quantities for 48 hours. After that they leave
           your cart. Sending your request keeps them reserved while you agree on
@@ -420,26 +420,31 @@ function CartForm({
             {invalid ? '-' : formatRand(total)}
           </span>
         </p>
-      </CardContent>
-      {/* Phone and tablet: pinned above the bottom tabs. Laptop: card end. */}
-      <CardFooter
-        data-testid="cart-action-bar"
-        className="gap-3 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[calc(52px+env(safe-area-inset-bottom))] max-lg:z-20 max-lg:border-t max-lg:bg-background max-lg:px-4 max-lg:py-3"
-      >
-        <p className="mr-auto min-w-0 text-sm">
-          Estimated total
-          <strong className="block text-base tabular-nums">{totalText}</strong>
-        </p>
-        <Button
-          type="submit"
-          form="cart-form"
-          className="min-h-11"
-          disabled={busy || invalid}
+        {/* Phone and tablet: pinned above the bottom tabs. Laptop: card end. */}
+        <ActionBar
+          data-testid="cart-action-bar"
+          className="lg:mt-4"
+          label={
+            <p className="mr-auto min-w-0 text-sm">
+              Estimated total
+              <strong className="block text-base tabular-nums">
+                {totalText}
+              </strong>
+            </p>
+          }
         >
-          Send request
-        </Button>
-      </CardFooter>
-    </Card>
+          <Button
+            type="submit"
+            form="cart-form"
+            className="min-h-11"
+            disabled={busy || invalid}
+          >
+            Send request
+          </Button>
+        </ActionBar>
+      </Panel>
+      <ActionBarSpacer />
+    </>
   );
 }
 

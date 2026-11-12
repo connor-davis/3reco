@@ -112,7 +112,10 @@ export function CounterpartyRows({
               className="flex flex-wrap items-center justify-between gap-3 py-3"
             >
               <span className="min-w-0 break-words font-medium">
-                {party.name}
+                <BusinessName
+                  name={party.name}
+                  verified={party.business_verified}
+                />
               </span>
               <span className="text-sm text-muted-foreground">
                 {plural(party.count, 'trade')} ·{' '}

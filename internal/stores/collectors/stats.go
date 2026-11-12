@@ -24,6 +24,7 @@ type Recent struct {
 	Weight         string     `json:"weight"`
 	Price          string     `json:"price"`
 	BuyerName      string     `json:"buyer_name"`
+	BuyerVerified  bool       `json:"buyer_verified"`
 }
 
 // Stats is a privileged collector aggregate.
@@ -64,7 +65,8 @@ func (records *Store) Stats(ctx context.Context, item Collector) (Stats, error) 
 		JOIN materials m ON m.id=i.material_id WHERE i.transaction_id=t.id),'Unknown'),
 		COALESCE((SELECT sum(weight) FROM transaction_items WHERE transaction_id=t.id),0)::text,
 		t.total_price::text,CASE WHEN u.is_removed THEN 'Unknown' ELSE
-		`+database.DisplayName("u")+` END
+		`+database.DisplayName("u")+` END,
+		`+database.Verified("u")+`
 		FROM transactions t JOIN users u ON u.id=t.buyer_id WHERE t.status='complete' AND t.seller_id=$1 AND t.type='c2b'
 		ORDER BY t.created_at DESC,t.id DESC LIMIT 5`,
 		item.ID,
@@ -86,6 +88,7 @@ func (records *Store) Stats(ctx context.Context, item Collector) (Stats, error) 
 			&recent.Weight,
 			&recent.Price,
 			&recent.BuyerName,
+			&recent.BuyerVerified,
 		); err != nil {
 			return result, err
 		}

@@ -7,14 +7,8 @@ import { DataState, RowsSkeleton } from '@/components/data-state';
 import { AvatarDialog } from '@/components/dialogs/avatar-dialog';
 import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
+import { Panel } from '@/components/panel';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isStaffRole } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -71,7 +65,7 @@ function ProfilePage() {
         skeleton={<RowsSkeleton rows={4} />}
       >
         <Tabs defaultValue="personal" className="gap-6">
-          <TabsList className="h-auto w-full justify-start p-1.5 group-data-horizontal/tabs:h-auto max-md:flex-wrap max-md:gap-x-4 max-md:gap-y-2 max-md:group-data-horizontal/tabs:h-auto max-md:pb-2.5">
+          <TabsList>
             <TabsTrigger value="personal">Personal</TabsTrigger>
             {role !== 'collector' && !staff && (
               <TabsTrigger value="business">Business</TabsTrigger>
@@ -99,7 +93,7 @@ function ProfilePage() {
                   <AvatarFallback>{initials(person.name)}</AvatarFallback>
                 </Avatar>
                 <Button
-                  className="min-h-11"
+                  className="min-h-11 shrink-0"
                   variant="outline"
                   onClick={() => setAvatarOpen(true)}
                 >
@@ -166,12 +160,8 @@ type SectionProps = {
 
 function Section({ title, description, children }: SectionProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <Panel title={title} description={description}>
+      {children}
+    </Panel>
   );
 }

@@ -215,3 +215,31 @@ func TestUsersExportBusinessVerifiedColumn(t *testing.T) {
 
 	tradeWant(t, "business export", w.buyer.c.Do("GET", "/api/admin/exports/users", nil), 403)
 }
+
+func TestDashboardPartnersCarryTheVerifiedFlag(t *testing.T) {
+	w := newHiddenWorld(t)
+	tradeSale(t, w.seller, w.buyer, w.material, "2", "3")
+
+	flag := func() any {
+		dash := status(t, w.buyer.c.Do("GET", "/api/dashboard/business", nil), 200).Body
+		for _, row := range dash["counterparties"].([]any) {
+			if party := row.(map[string]any); party["id"] == w.seller.id {
+				return party["business_verified"]
+			}
+		}
+
+		t.Fatalf("seller missing from partners: %v", dash["counterparties"])
+
+		return nil
+	}
+
+	if flag() != false {
+		t.Error("unverified partner marked verified")
+	}
+
+	w.verify(t, true)
+
+	if flag() != true {
+		t.Error("verified partner not marked")
+	}
+}

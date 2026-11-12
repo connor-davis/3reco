@@ -223,6 +223,12 @@ Never rename a merged migration. Add a new file.
 | Admin/staff see a person's real name, not the business name (`PersonName`) | `internal/platform/database/sql.go`, tests in `tests/admin_names_test.go` |
 | Finished chats stay in the inbox (`done` filter) | `internal/stores/requests/messages.go`, tests in `tests/inbox_done_test.go` |
 | Compact divided list rows, primary taps and sibling More menus | `web/apps/app/src/components/list-row.tsx` |
+| Soft section panels sharing the Section heading and action slot | `web/apps/app/src/components/panel.tsx`, `page-header.tsx` |
+| One-row search toolbar and responsive filter sheet with clear/results actions | `web/apps/app/src/components/toolbar.tsx` |
+| Equal compact action buttons and stacked groups of three or more | `web/apps/app/src/components/button-row.tsx` |
+| Main actions above compact bottom tabs, reserved page space and wide end alignment | `web/apps/app/src/components/action-bar.tsx` |
+| Search, choice filters and scrolling underline filter tabs | `web/apps/app/src/components/filters.tsx`, `ui/tabs.tsx`, `ui/tabs-variants.ts` |
+| Shared layout contracts and 15-route, five-width light/dark browser regression | `web/apps/app/tests/layout-blocks.test.mjs`, `layout-render.test.mjs` |
 | Deferred desktop dialog / phone drawer implementation | `web/apps/app/src/components/responsive-overlay-body.tsx` (loaded by `responsive-overlay.tsx`) |
 | Deferred notification list, paging and actions | `web/apps/app/src/components/shell/notification-tray-list.tsx` (bell in `notification-tray.tsx`) |
 | Header cart link and visible line count across stores | `web/apps/app/src/components/shell/header-cart.tsx`; regression tests in `web/apps/app/tests/cart-header.test.mjs` |

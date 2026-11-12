@@ -6,7 +6,7 @@ export const tabsListVariants = cva(
     variants: {
       variant: {
         default: 'bg-muted',
-        line: 'gap-6 bg-transparent',
+        line: 'max-w-full flex-nowrap gap-6 overflow-x-auto bg-transparent [scrollbar-width:none] [&::-webkit-scrollbar]:hidden group-data-horizontal/tabs:h-[46px] group-data-horizontal/tabs:w-full group-data-horizontal/tabs:justify-start',
       },
     },
     defaultVariants: {

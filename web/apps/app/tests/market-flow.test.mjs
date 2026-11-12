@@ -105,10 +105,22 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
     tree,
     (node) => node.props?.['data-testid'] === 'cart-action-bar'
   );
-  assert.match(bar.props.className, /max-lg:fixed/);
-  assert.match(bar.props.className, /max-lg:bottom-\[calc\(52px/);
-  assert.match(words(bar), /Estimated total.*R.*97\.00.*Send request/);
-  assert.match(words(tree), /Store.*Store subtotal/);
+  const actionBar = readFileSync(
+    new URL('../src/components/action-bar.tsx', import.meta.url),
+    'utf8'
+  );
+  assert.match(actionBar, /max-lg:fixed/);
+  assert.match(actionBar, /max-lg:bottom-\[calc\(52px/);
+  assert.match(
+    words(bar.props.label) + words(bar),
+    /Estimated total.*R.*97\.00.*Send request/
+  );
+  assert.equal(
+    find(tree, (node) => node.props?.title?.props?.name === 'Store').props.title
+      .props.name,
+    'Store'
+  );
+  assert.match(words(tree), /Store subtotal/);
   values.items[0].weight = ' 9,750001 ';
   find(tree, (node) => !!node.props?.onValidation).props.onValidation(
     'stock',

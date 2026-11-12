@@ -46,6 +46,11 @@ function load(relative, overrides = {}) {
           return read(
             new URL('../src/components/stat-card.tsx', import.meta.url)
           );
+        if (name === '@/components/badges')
+          return new Proxy(
+            { BusinessName: ({ name }) => name },
+            { get: (known, key) => known[key] ?? primitive }
+          );
         if (name === '@/components/link-button')
           return {
             LinkButton: ({ to, children }) =>

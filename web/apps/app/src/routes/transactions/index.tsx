@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Guarded } from '@/components/access-guard';
-import { LinkButton } from '@/components/link-button';
 import { RecordList } from './-components/record-list';
 
 export const Route = createFileRoute('/transactions/')({
@@ -20,11 +19,6 @@ function AllTransactions() {
       exportKind="transactions"
       emptyTitle="No transactions yet"
       typeFilter
-      actions={
-        <LinkButton to="/messages" variant="outline">
-          Open messages
-        </LinkButton>
-      }
     />
   );
 }

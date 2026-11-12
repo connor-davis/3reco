@@ -82,6 +82,17 @@ export function VerifiedBadge({ verified }: { verified: boolean }) {
   );
 }
 
+/** The small check shown beside a business 3REco has verified. */
+export function VerifiedMark({ verified }: { verified?: boolean }) {
+  return verified ? (
+    <BadgeCheck
+      role="img"
+      aria-label="Verified business"
+      className="ml-1 inline size-4 shrink-0 align-text-bottom text-primary"
+    />
+  ) : null;
+}
+
 /** A business or store name, with a small check when 3REco has verified it. */
 export function BusinessName({
   name,

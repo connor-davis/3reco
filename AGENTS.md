@@ -158,6 +158,9 @@ Add short notes here when something surprises you, under the closest group.
 
 ### Windows and tooling
 
+- Vite treats port `0` as its default port, not a free port. Browser tests
+  should reserve a free port with `node:net`, and call `listen()` inside
+  `try/finally` so a failed start closes its file watcher.
 - On Windows, Python can't read git-bash `/tmp` paths. Keep scratch files
   inside the repo (for example `mystuff/`) and use relative paths.
 - Python on Windows writes CRLF with `open(p, 'w')`. Pass `newline=''` on

@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { ChevronRight, Inbox } from 'lucide-react';
-import { BusinessName, StatusBadge } from '@/components/badges';
+import { Inbox } from 'lucide-react';
+import { StatusBadge, VerifiedMark } from '@/components/badges';
 import {
   counterpartyOf,
   isClosed,
   requestTotal,
 } from '@/components/chat/helpers';
 import { DataState, RowsSkeleton } from '@/components/data-state';
-import { ChoiceSelect, SearchBox } from '@/components/filters';
+import { FilterTabs } from '@/components/filters';
+import { Toolbar } from '@/components/toolbar';
+import { ListRow } from '@/components/list-row';
 import { Link } from '@tanstack/react-router';
-import { LinkButton } from '@/components/link-button';
+import { ButtonRow } from '@/components/button-row';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { PersonAvatar } from '@/components/visuals';
@@ -47,13 +49,9 @@ export function RequestList({
   return (
     <>
       <PageHeader title={title} description={description} />
-      <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
-        <SearchBox
-          label="Search this page"
-          value={search}
-          onChange={setSearch}
-        />
-        <ChoiceSelect
+      <div className="mb-6 space-y-4">
+        <Toolbar label="Search this page" value={search} onChange={setSearch} />
+        <FilterTabs
           label="Status on this page"
           value={status}
           onChange={setStatus}
@@ -72,7 +70,6 @@ export function RequestList({
                 : (requestStatuses[value as RequestStatus]?.label ?? value),
           }))}
         />
-        <LinkButton to="/messages">Open messages</LinkButton>
       </div>
       <DataState
         query={query}
@@ -93,35 +90,26 @@ export function RequestList({
                 <Link
                   to="/market/$requestId"
                   params={{ requestId: request.id }}
-                  className="flex min-h-14 flex-wrap items-center gap-3 rounded-lg px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="block outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
-                  <PersonAvatar name={other.name} />
-                  <div className="min-w-40 flex-1">
-                    <p className="font-medium">
-                      <BusinessName
-                        name={other.name}
-                        verified={other.business_verified}
-                      />
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {request.items
-                        .map((item) => item.material_name)
-                        .join(', ')}{' '}
-                      · {formatDate(request.created_at)}
-                    </p>
-                    {direction === 'incoming' && <Terms request={request} />}
-                  </div>
-                  <StatusBadge status={request.status} />
-                  <p className="tabular-nums">
-                    {request.items.some((item) => item.offer_price !== null)
-                      ? formatRand(requestTotal(request))
-                      : isClosed(request)
-                        ? 'Closed'
-                        : 'Awaiting offer'}
-                  </p>
-                  <ChevronRight
-                    className="size-4 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
+                  <ListRow
+                    media={<PersonAvatar name={other.name} />}
+                    title={other.name}
+                    titleMark={
+                      <VerifiedMark verified={other.business_verified} />
+                    }
+                    subtitle={`${request.items.map((item) => item.material_name).join(', ')} · ${formatDate(request.created_at)}`}
+                    meta={
+                      direction === 'incoming' && <Terms request={request} />
+                    }
+                    status={<StatusBadge status={request.status} />}
+                    value={
+                      request.items.some((item) => item.offer_price !== null)
+                        ? formatRand(requestTotal(request))
+                        : isClosed(request)
+                          ? 'Closed'
+                          : 'Awaiting offer'
+                    }
                   />
                 </Link>
               </li>
@@ -129,7 +117,7 @@ export function RequestList({
           })}
         </ul>
       </DataState>
-      <div className="my-6 flex gap-3">
+      <ButtonRow className="my-6">
         {cursor && (
           <Button variant="outline" onClick={() => setCursor(undefined)}>
             First page
@@ -143,7 +131,7 @@ export function RequestList({
             Next page
           </Button>
         )}
-      </div>
+      </ButtonRow>
     </>
   );
 }
@@ -161,5 +149,5 @@ function Terms({ request }: { request: TradeRequest }) {
 
   if (!lines.length) return null;
 
-  return <p className="text-sm text-muted-foreground">{lines.join(' · ')}</p>;
+  return <span>{lines.join(' · ')}</span>;
 }

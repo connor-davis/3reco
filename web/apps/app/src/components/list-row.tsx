@@ -19,6 +19,8 @@ import {
 type ListRowProps = {
   media?: ReactNode;
   title: string;
+  /** A small mark after the title, such as the verified check. */
+  titleMark?: ReactNode;
   subtitle?: ReactNode;
   meta?: ReactNode;
   value?: ReactNode;
@@ -35,6 +37,7 @@ type ListRowProps = {
 export function ListRow({
   media,
   title,
+  titleMark,
   subtitle,
   meta,
   value,
@@ -71,7 +74,10 @@ export function ListRow({
           </ItemMedia>
         )}
         <ItemContent className="min-w-0 gap-0.5">
-          <ItemTitle className="block w-full truncate">{title}</ItemTitle>
+          <ItemTitle className="block w-full truncate">
+            {title}
+            {titleMark}
+          </ItemTitle>
           {subtitle && (
             <ItemDescription className="line-clamp-none truncate">
               {subtitle}
