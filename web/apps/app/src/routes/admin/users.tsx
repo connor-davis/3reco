@@ -223,7 +223,7 @@ function UsersPage() {
         if (!verifying && !removing) return null;
 
         return (
-          <span className="flex w-max gap-2">
+          <span className="flex w-max flex-col gap-2 2xl:flex-row">
             {verifying}
             {removing}
           </span>
