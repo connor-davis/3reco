@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataTable } from '@/components/data-table';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { MaterialDialog } from '@/components/dialogs/material-dialog';
-import { SearchBox } from '@/components/filters';
+import { Toolbar } from '@/components/toolbar';
 import { IconButton } from '@/components/icon-button';
 import { PageHeader } from '@/components/page-header';
 import { MaterialMark, Pager } from '@/components/transactions/list-tools';
@@ -109,19 +109,21 @@ function MaterialsPage() {
       <PageHeader
         title="Material catalogue"
         description="The grades, rates and carbon factors behind every trade. Listed by material name, A–Z."
+        actions={
+          isAdmin && (
+            <Button aria-label="Add material" onClick={() => openForm()}>
+              <Plus data-icon="inline-start" />
+              Add material
+            </Button>
+          )
+        }
       />
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <SearchBox
+      <div className="mb-6 space-y-4">
+        <Toolbar
           label="Search material names"
           value={query}
           onChange={setQuery}
         />
-        {isAdmin && (
-          <Button onClick={() => openForm()}>
-            <Plus data-icon="inline-start" />
-            Add material
-          </Button>
-        )}
         {!isAdmin && <Badge variant="outline">Read-only catalogue</Badge>}
       </div>
       <DataState

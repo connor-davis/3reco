@@ -40,7 +40,10 @@ function CollectionsPage() {
         stats
         actions={
           canRecord && (
-            <Button onClick={() => setOpen(true)}>
+            <Button
+              aria-label="Record collection"
+              onClick={() => setOpen(true)}
+            >
               <Plus data-icon="inline-start" />
               Record collection
             </Button>

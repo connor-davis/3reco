@@ -9,7 +9,8 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
 import { StockDialog } from '@/components/dialogs/stock-dialog';
-import { ChoiceSelect, SearchBox } from '@/components/filters';
+import { ChoiceSelect } from '@/components/filters';
+import { Toolbar } from '@/components/toolbar';
 import { IconButton } from '@/components/icon-button';
 import { PageHeader } from '@/components/page-header';
 import { MaterialMark, Pager } from '@/components/transactions/list-tools';
@@ -183,23 +184,29 @@ function StockPage() {
       <PageHeader
         title="Your stock"
         description="What's in the yard, ready for the next conversation."
+        actions={
+          <Button aria-label="Add stock" onClick={() => openForm()}>
+            <Plus data-icon="inline-start" />
+            Add stock
+          </Button>
+        }
       />
-      <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
-        <SearchBox
+      <div className="mb-6">
+        <Toolbar
           label="Search your materials"
           value={query}
           onChange={setQuery}
+          activeFilters={Number(status !== 'all')}
+          onClear={() => setStatus('all')}
+          filters={
+            <ChoiceSelect
+              label="Listing status"
+              value={status}
+              options={statusOptions}
+              onChange={setStatus}
+            />
+          }
         />
-        <ChoiceSelect
-          label="Listing status"
-          value={status}
-          options={statusOptions}
-          onChange={setStatus}
-        />
-        <Button onClick={() => openForm()}>
-          <Plus data-icon="inline-start" />
-          Add stock
-        </Button>
       </div>
       <DataState
         query={stock}

@@ -10,7 +10,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
 import { CollectorDialog } from '@/components/dialogs/collector-dialog';
-import { SearchBox } from '@/components/filters';
+import { Toolbar } from '@/components/toolbar';
 import { IconButton } from '@/components/icon-button';
 import { PageHeader } from '@/components/page-header';
 import { Pager } from '@/components/transactions/list-tools';
@@ -188,6 +188,14 @@ function CollectorsPage() {
     <>
       <PageHeader
         title="Collector directory"
+        actions={
+          !directory && (
+            <Button aria-label="Add collector" onClick={() => openForm()}>
+              <Plus data-icon="inline-start" />
+              Add collector
+            </Button>
+          )
+        }
         description={
           directory
             ? 'Every collector on 3REco, and how they are paid.'
@@ -199,8 +207,8 @@ function CollectorsPage() {
                   : '')
         }
       />
-      <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
-        <SearchBox
+      <div className="mb-6 space-y-4">
+        <Toolbar
           label="Search by name, email or phone"
           value={query}
           onChange={setQuery}
@@ -213,10 +221,6 @@ function CollectorsPage() {
                 Verified business
               </Badge>
             )}
-            <Button onClick={() => openForm()}>
-              <Plus data-icon="inline-start" />
-              Add collector
-            </Button>
           </>
         )}
       </div>

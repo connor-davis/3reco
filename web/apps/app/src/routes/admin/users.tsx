@@ -8,7 +8,8 @@ import { Guarded } from '@/components/access-guard';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
-import { ChoiceSelect, SearchBox } from '@/components/filters';
+import { ChoiceSelect } from '@/components/filters';
+import { Toolbar } from '@/components/toolbar';
 import { PageHeader } from '@/components/page-header';
 import { PersonAvatar } from '@/components/visuals';
 import { Badge } from '@/components/ui/badge';
@@ -233,30 +234,37 @@ function UsersPage() {
 
   return (
     <div className="space-y-6 pt-4">
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <SearchBox
-          label="Search names or emails"
-          value={search}
-          onChange={setSearch}
-        />
-        <ChoiceSelect
-          label="Role"
-          value={role}
-          options={filterOptions}
-          onChange={setRole}
-        />
-        <Button
-          className="min-h-11"
-          variant="outline"
-          disabled={download.isPending}
-          onClick={() =>
-            download.mutate({ role: role === 'all' ? undefined : role, q })
-          }
-        >
-          <Download data-icon="inline-start" />
-          {download.isPending ? 'Exporting…' : 'Export users'}
-        </Button>
-      </div>
+      <Toolbar
+        label="Search names or emails"
+        value={search}
+        onChange={setSearch}
+        activeFilters={Number(role !== 'all')}
+        onClear={() => setRole('all')}
+        filters={
+          <ChoiceSelect
+            label="Role"
+            value={role}
+            options={filterOptions}
+            onChange={setRole}
+          />
+        }
+        action={
+          <Button
+            className="min-h-11 max-lg:w-11 max-lg:px-0"
+            aria-label={download.isPending ? 'Exporting…' : 'Export users'}
+            variant="outline"
+            disabled={download.isPending}
+            onClick={() =>
+              download.mutate({ role: role === 'all' ? undefined : role, q })
+            }
+          >
+            <Download data-icon="inline-start" />
+            <span className="max-lg:sr-only">
+              {download.isPending ? 'Exporting…' : 'Export users'}
+            </span>
+          </Button>
+        }
+      />
       {(remove.error || download.error || verify.error) && (
         <p role="alert" className="text-sm text-destructive">
           {(remove.error ?? download.error ?? verify.error)?.message} Try again.
