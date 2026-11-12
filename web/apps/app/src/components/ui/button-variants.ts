@@ -18,15 +18,14 @@ export const buttonVariants = cva(
       },
       size: {
         default:
-          'h-9 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 max-[780px]:min-h-11',
-        xs: "h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 max-[780px]:min-h-11 [&_svg:not([class*='size-'])]:size-3",
-        sm: 'h-8 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 max-[780px]:min-h-11',
-        lg: 'h-10 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3 max-[780px]:min-h-11',
-        icon: 'size-9 max-[780px]:size-11',
-        'icon-xs':
-          "size-6 max-[780px]:size-11 [&_svg:not([class*='size-'])]:size-3",
-        'icon-sm': 'size-8 max-[780px]:size-11',
-        'icon-lg': 'size-10 max-[780px]:size-11',
+          'h-9 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 max-lg:min-h-11',
+        xs: "h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 max-lg:min-h-11 [&_svg:not([class*='size-'])]:size-3",
+        sm: 'h-8 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 max-lg:min-h-11',
+        lg: 'h-10 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3 max-lg:min-h-11',
+        icon: 'size-9 max-lg:size-11',
+        'icon-xs': "size-6 max-lg:size-11 [&_svg:not([class*='size-'])]:size-3",
+        'icon-sm': 'size-8 max-lg:size-11',
+        'icon-lg': 'size-10 max-lg:size-11',
       },
     },
     defaultVariants: {

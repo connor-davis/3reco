@@ -490,7 +490,7 @@ function CartLine({
                 variant="link"
                 // Phones keep the 44px tap area; the negative margin stops it
                 // pushing the price away.
-                className="h-auto min-h-0 px-0 py-0 text-foreground max-[780px]:-my-2.5"
+                className="h-auto min-h-0 px-0 py-0 text-foreground max-lg:-my-2.5"
               >
                 {listing.data.material_name}
               </LinkButton>

@@ -41,3 +41,18 @@ test('phone shell includes tablets and stops at 1024px; table and aside rules st
     /hidden min-w-0 lg:block/
   );
 });
+
+test('touch sizes and the chat back link follow the phone shell (below lg), not 780px', () => {
+  for (const file of [
+    'components/ui/button-variants.ts',
+    'components/ui/input.tsx',
+    'components/chat/conversation.tsx',
+  ]) {
+    assert.doesNotMatch(source(file), /\[78[01]px\]/, file);
+  }
+  assert.match(source('components/ui/button-variants.ts'), /max-lg:min-h-11/);
+  assert.match(
+    source('components/chat/conversation.tsx'),
+    /Back to messages[\s\S]*?lg:hidden/
+  );
+});
