@@ -10,7 +10,10 @@ import { DataState, RowsSkeleton } from '@/components/data-state';
 import { FilterTabs } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
 import { ListRow } from '@/components/list-row';
-import { Link } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
+import type { ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table';
+import { BusinessName } from '@/components/badges';
 import { ButtonRow } from '@/components/button-row';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -19,7 +22,14 @@ import { useRequests } from '@/lib/api/requests';
 import { useAuth } from '@/lib/auth/use-auth';
 import { requestStatuses } from '@/lib/request-status';
 import type { RequestStatus, TradeRequest } from '@/lib/api/types';
-import { formatDate, formatKg, formatRand, formatRate } from '@/lib/format';
+import {
+  formatDate,
+  formatKg,
+  formatKgNumber,
+  formatRand,
+  formatRate,
+  toGrams,
+} from '@/lib/format';
 
 export function RequestList({
   direction,
@@ -45,6 +55,60 @@ export function RequestList({
         .toLowerCase()
         .includes(search.toLowerCase())
   );
+
+  const navigate = useNavigate();
+  const columns: ColumnDef<TradeRequest>[] = [
+    {
+      id: 'date',
+      header: 'Date',
+      cell: ({ row }) => formatDate(row.original.created_at),
+    },
+    {
+      id: 'materials',
+      header: 'Material(s)',
+      cell: ({ row }) =>
+        row.original.items.map((item) => item.material_name).join(', '),
+    },
+    {
+      id: 'party',
+      header: 'Other party',
+      cell: ({ row }) => {
+        const other = counterpartyOf(row.original, user?.id);
+        return (
+          <BusinessName name={other.name} verified={other.business_verified} />
+        );
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
+      id: 'weight',
+      header: 'Weight (kg)',
+      meta: { align: 'right' },
+      cell: ({ row }) =>
+        formatKgNumber(
+          row.original.items.reduce(
+            (sum, item) =>
+              sum + toGrams(item.offer_weight ?? item.requested_weight ?? '0'),
+            0
+          ) / 1000
+        ),
+    },
+    {
+      id: 'total',
+      header: 'Total',
+      meta: { align: 'right' },
+      cell: ({ row }) =>
+        row.original.items.some((item) => item.offer_price !== null)
+          ? formatRand(requestTotal(row.original))
+          : isClosed(row.original)
+            ? 'Closed'
+            : 'Awaiting offer',
+    },
+  ];
 
   return (
     <>
@@ -79,43 +143,41 @@ export function RequestList({
         emptyText="Requests appear here when you start trading."
         skeleton={<RowsSkeleton />}
       >
-        <ul className="divide-y overflow-hidden rounded-lg border">
-          {shown.map((request) => {
+        <DataTable
+          columns={columns}
+          data={shown}
+          onRowClick={(request) =>
+            void navigate({
+              to: '/market/$requestId',
+              params: { requestId: request.id },
+            })
+          }
+          rowLabel={(request) =>
+            `View request from ${counterpartyOf(request, user?.id).name}`
+          }
+          renderCard={(request) => {
             const other = counterpartyOf(request, user?.id);
             return (
-              <li
-                key={request.id}
-                className="bg-[var(--row-background)] [--row-background:var(--background)] even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
-              >
-                <Link
-                  to="/market/$requestId"
-                  params={{ requestId: request.id }}
-                  className="block outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  <ListRow
-                    media={<PersonAvatar name={other.name} />}
-                    title={other.name}
-                    titleMark={
-                      <VerifiedMark verified={other.business_verified} />
-                    }
-                    subtitle={`${request.items.map((item) => item.material_name).join(', ')} · ${formatDate(request.created_at)}`}
-                    meta={
-                      direction === 'incoming' && <Terms request={request} />
-                    }
-                    status={<StatusBadge status={request.status} />}
-                    value={
-                      request.items.some((item) => item.offer_price !== null)
-                        ? formatRand(requestTotal(request))
-                        : isClosed(request)
-                          ? 'Closed'
-                          : 'Awaiting offer'
-                    }
-                  />
-                </Link>
-              </li>
+              <ListRow
+                to="/market/$requestId"
+                params={{ requestId: request.id }}
+                media={<PersonAvatar name={other.name} />}
+                title={other.name}
+                titleMark={<VerifiedMark verified={other.business_verified} />}
+                subtitle={`${request.items.map((item) => item.material_name).join(', ')} · ${formatDate(request.created_at)}`}
+                meta={direction === 'incoming' && <Terms request={request} />}
+                status={<StatusBadge status={request.status} />}
+                value={
+                  request.items.some((item) => item.offer_price !== null)
+                    ? formatRand(requestTotal(request))
+                    : isClosed(request)
+                      ? 'Closed'
+                      : 'Awaiting offer'
+                }
+              />
             );
-          })}
-        </ul>
+          }}
+        />
       </DataState>
       <ButtonRow className="my-6">
         {cursor && (

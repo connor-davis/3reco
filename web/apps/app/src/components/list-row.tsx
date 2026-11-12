@@ -52,7 +52,7 @@ export function ListRow({
   const interactive = !!(onOpen || to);
 
   return (
-    <div className="flex min-h-14 items-center bg-[var(--row-background,var(--background))]">
+    <div className="flex min-h-14 items-center">
       <Item
         className="min-h-14 min-w-0 flex-1 flex-nowrap gap-3 rounded-none border-0 px-4 py-3 text-left focus-visible:ring-inset"
         render={
@@ -74,9 +74,14 @@ export function ListRow({
           </ItemMedia>
         )}
         <ItemContent className="min-w-0 gap-0.5">
-          <ItemTitle className="block w-full truncate">
-            {title}
+          <ItemTitle className="flex w-full flex-wrap items-center gap-2">
+            <span className="min-w-0 truncate">{title}</span>
             {titleMark}
+            {status && (
+              <span className="inline-flex flex-wrap gap-1 text-xs [&_[data-slot=badge]]:min-h-5 [&_[data-slot=badge]]:px-2 [&_[data-slot=badge]]:text-xs">
+                {status}
+              </span>
+            )}
           </ItemTitle>
           {subtitle && (
             <ItemDescription className="line-clamp-none truncate">
@@ -88,7 +93,6 @@ export function ListRow({
               {meta}
             </ItemDescription>
           )}
-          {status && <div className="mt-1 flex flex-wrap gap-1">{status}</div>}
         </ItemContent>
         {value && (
           <span className="max-w-[45%] shrink-0 text-right font-semibold tabular-nums">

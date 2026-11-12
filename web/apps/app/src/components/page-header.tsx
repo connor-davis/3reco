@@ -80,7 +80,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 }
 
 type SectionProps = {
-  title: ReactNode;
+  title?: ReactNode;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
@@ -99,15 +99,17 @@ export function Section({
     <section
       className={cn(panel ? 'rounded-2xl bg-muted/50 p-4 lg:p-6' : 'mt-6')}
     >
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
+      {(title || action) && (
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+            {description && (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
+          {action}
         </div>
-        {action}
-      </div>
+      )}
       {children}
     </section>
   );

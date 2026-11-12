@@ -197,7 +197,7 @@ test('S4: table columns retain sticky edges without partial vertical dividers', 
   assert.doesNotMatch(table, /border-[lr](?:\s|['"])/);
   assert.match(table, /left-0/);
   assert.match(table, /right-0/);
-  assert.match(table, /overflow-hidden rounded-lg border/);
+  assert.match(table, /<Panel>/);
   for (const route of ['materials', 'collectors']) {
     assert.doesNotMatch(
       source(`routes/${route}.tsx`),
