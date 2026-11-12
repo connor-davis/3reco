@@ -57,8 +57,14 @@ from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright, expect
 
 base = sys.argv[1]
+sys.stdout.reconfigure(encoding='utf-8')
 listing = {'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '1000', 'held_weight': '0', 'price': '8.00', 'carbon_factor': '1', 'gw_code': 'GL', 'image_url': '', 'seller_avatar_url': '', 'average_rating': None, 'review_count': 0, 'created_at': '2026-11-08T08:00:00Z'}
-routes = ['/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
+routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
+party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
+trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
+request = {'id': 'request', 'seller': trade['seller'], 'buyer': trade['buyer'], 'status': 'offered', 'offer_by': 'seller', 'offer_version': 1, 'buyer_confirmed_version': None, 'seller_confirmed_version': 1, 'created_at': trade['created_at'], 'updated_at': trade['created_at'], 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'stock_id': 'stock', 'offer_price': '8.00', 'offer_weight': '12.5', 'requested_price': '8.00', 'requested_weight': '12.5', 'available_weight': '1000'}]}
+totals = {'count': 7, 'weight': '87.5', 'value': '700.00', 'carbon_savings': '100'}
+dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'series': [dict(totals, day='2026-11-08')], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
 with sync_playwright() as p:
     browser = p.chromium.launch()
     for mode in ['light', 'dark']:
@@ -73,7 +79,13 @@ with sync_playwright() as p:
                 elif path == '/auth/sessions': body = {'sessions': []}
                 elif path == '/profile': body = dict.fromkeys(['image', 'avatar_url', 'phone', 'id_number', 'business_name', 'business_registration_number', 'bank_account_holder_name', 'bank_name', 'bank_account_number', 'bank_branch_code', 'bank_account_type', 'street_address', 'city', 'province'], '') | {'id': 'buyer', 'name': 'Layout Buyer', 'first_name': 'Layout', 'last_name': 'Buyer', 'email': 'layout@example.test', 'role': role, 'profile_complete': True, 'agreed_to_terms': True, 'area_code': None}
                 elif path == '/collectors/selection' or (path == '/materials' and 'all=true' in route.request.url): body = []
-                elif path == '/transactions/totals': body = {'count': 0, 'weight': '0', 'value': '0', 'carbon_savings': '0'}
+                elif path == '/transactions/totals': body = totals
+                elif path == '/transactions/trade': body = trade
+                elif path in ['/transactions', '/transactions/', '/transactions/purchases', '/transactions/sales']: body['items'] = [dict(trade, id='trade' if i == 0 else str(i)) for i in range(7)]
+                elif path in ['/requests', '/requests/incoming', '/requests/outgoing']: body['items'] = [request]
+                elif path == '/requests/request': body = request
+                elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']: body = dashboard
+                elif path == '/stats': body = {'total_kg': '87.5', 'co2_kg': '100', 'deals': 7, 'top_stores': []}
                 elif path == '/market/listings/stock': body = listing
                 elif path == '/stores/seller': body = {'id': 'seller', 'name': 'Greenloop', 'city': 'Cape Town', 'province': 'Western Cape', 'created_at': '2026-11-08T08:00:00Z', 'average_rating': None, 'review_count': 0}
                 elif path == '/stores/seller/listings': body['items'] = [listing]
@@ -90,7 +102,7 @@ with sync_playwright() as p:
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.on('console', lambda message: errors.append(message.text) if message.type == 'error' else None)
             for route in routes:
-                role = 'admin' if route in ['/transactions', '/materials', '/admin/users'] else 'business'
+                role = 'collector' if route == '/?role=collector' else 'admin' if route in ['/?role=admin', '/transactions', '/materials', '/admin/users'] else 'business'
                 try:
                     page.goto(base + route)
                     page.wait_for_load_state('networkidle')
@@ -139,17 +151,53 @@ with sync_playwright() as p:
                         if width < 1024:
                             boxes = [button.bounding_box() for button in buttons.all()]
                             assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
+                    if route in ['/', '/?role=collector', '/?role=admin']:
+                        expect(page.locator('[data-slot="card"]')).to_have_count(3)
+                        stats = page.locator('[data-slot="card"]').all()
+                        assert max(card.bounding_box()['y'] for card in stats) - min(card.bounding_box()['y'] for card in stats) < 1
+                        partners = page.get_by_role('heading', name='Trading partners').locator('xpath=ancestor::section[1]').locator('ul > li')
+                        expect(partners).to_have_count(5)
+                        if role == 'collector':
+                            recent = page.get_by_role('heading', name='Your recent collections').locator('xpath=ancestor::section[1]').locator('ul > li')
+                            expect(recent).to_have_count(5)
+                    if route == '/profile' and width < 1024:
+                        buttons = page.get_by_role('button', name='Cancel changes').first.locator('..').get_by_role('button')
+                        expect(buttons).to_have_count(2)
+                        boxes = [button.bounding_box() for button in buttons.all()]
+                        assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
+                    if route in ['/transactions', '/transactions/purchases', '/market/incoming', '/market/outgoing']:
+                        expect(page.get_by_role('table')).to_have_count(1 if width >= 1024 else 0)
+                    if route in ['/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade']:
+                        assert 'Not available' not in page.locator('body').inner_text()
+                        expect(page.get_by_role('heading', name='Invoice INV-2048')).to_be_visible()
+                        expect(page.get_by_role('dialog')).to_have_count(0)
+                        assert '/transactions/trade' in page.url and 'open=' not in page.url
+                        expect(page.get_by_role('heading', name='Items', exact=True)).to_be_visible()
+                        expect(page.get_by_role('heading', name='Summary', exact=True)).to_be_visible()
+                        expect(page.get_by_label('Receipts', exact=True)).to_be_visible()
+                    if route == '/transactions/purchases':
+                        if width >= 1024:
+                            page.get_by_role('row', name='Invoice and receipts: Clear glass · 12.5 kg').first.click()
+                        else:
+                            page.get_by_role('button', name='Invoice and receipts: Clear glass · 12.5 kg').first.click()
+                        expect(page.get_by_role('heading', name='Invoice INV-2048')).to_be_visible()
+                        page.get_by_role('link', name='Back to transactions').click()
+                        expect(page.get_by_role('heading', name='Purchases', exact=True)).to_be_visible()
                     if route in ['/transactions', '/market/incoming', '/market/outgoing']:
                         expect(page.get_by_role('link', name='Open messages')).to_have_count(0)
                     assert not errors, errors
-                    if os.environ.get('THREERECO_LAYOUT_SHOTS') and width in [390, 1280] and route in ['/transactions', '/profile', '/market/store/seller', '/market/listing/stock']:
+                    if os.environ.get('THREERECO_LAYOUT_SHOTS') and width in [390, 1280] and route in ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions', '/profile', '/market/incoming']:
                         shots = Path(os.environ['THREERECO_LAYOUT_SHOTS'])
                         shots.mkdir(parents=True, exist_ok=True)
-                        page.screenshot(path=str(shots / (mode + '-' + str(width) + '-' + route.strip('/').replace('/', '-') + '.png')), full_page=True)
+                        page.screenshot(path=str(shots / (mode + '-' + str(width) + '-' + route.strip('/').replace('/', '-').replace('?', '-').replace('=', '-') + '.png')), full_page=True)
                 except Exception:
+                    shots = Path(os.environ.get('THREERECO_LAYOUT_SHOTS', '../../../mystuff/layout-phase2-shots'))
+                    shots.mkdir(parents=True, exist_ok=True)
+                    page.screenshot(path=str(shots / 'failure.png'), full_page=True)
+                    print(page.locator('body *').evaluate_all('(els) => els.filter(el => el.getBoundingClientRect().right > innerWidth).map(el => [el.tagName, el.className, el.getBoundingClientRect().toJSON(), getComputedStyle(el).position, getComputedStyle(el).left, getComputedStyle(el).width, getComputedStyle(el).margin, el.parentElement.outerHTML.slice(0,500)]).slice(0, 20)'), flush=True)
                     print(f'FAILED {mode} {width} {route}: {errors}\n' + page.locator('body').inner_text(), flush=True)
                     raise
             context.close()
     browser.close()
-print('150 route/theme/viewport checks passed')
+print('200 route/theme/viewport checks passed')
 `;

@@ -223,6 +223,9 @@ Never rename a merged migration. Add a new file.
 | Admin/staff see a person's real name, not the business name (`PersonName`) | `internal/platform/database/sql.go`, tests in `tests/admin_names_test.go` |
 | Finished chats stay in the inbox (`done` filter) | `internal/stores/requests/messages.go`, tests in `tests/inbox_done_test.go` |
 | Compact divided list rows, primary taps and sibling More menus | `web/apps/app/src/components/list-row.tsx` |
+| Responsive soft-panel tables, compact rows and keyboard row activation | `web/apps/app/src/components/data-table.tsx`; trade and request columns in `routes/transactions/-components/record-list.tsx`, `routes/market/-components/request-list.tsx` |
+| Guarded trade detail page, allowlisted Back destination and legacy `?open=` redirect | `web/apps/app/src/routes/transactions/$transactionId.tsx`, `routes/transactions/-components/record-list.tsx`; panels, invoice and receipt actions in `components/dialogs/record-dialogs.tsx` (`TradeDetail`) |
+| Dashboard panels, three-tile summary, quick links and capped activity/partners | `web/apps/app/src/routes/index.tsx`, `routes/-dashboard/panels.tsx`; phase 2 layout checks in `tests/layout-phase2.test.mjs`, `tests/layout-render.test.mjs` |
 | Soft section panels sharing the Section heading and action slot | `web/apps/app/src/components/panel.tsx`, `page-header.tsx` |
 | One-row search toolbar and responsive filter sheet with clear/results actions | `web/apps/app/src/components/toolbar.tsx` |
 | Equal compact action buttons and stacked groups of three or more | `web/apps/app/src/components/button-row.tsx` |
