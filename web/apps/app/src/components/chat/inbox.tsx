@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { LoaderCircle, MessageSquare, SquarePen } from 'lucide-react';
-import { StatusBadge } from '@/components/badges';
+import { BusinessName, StatusBadge } from '@/components/badges';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { ChipGroup, SearchBox } from '@/components/filters';
 import { IconButton } from '@/components/icon-button';
@@ -165,7 +165,10 @@ export function Inbox({
                   <span className="min-w-0 flex-1">
                     <span className="flex justify-between gap-2">
                       <span className="min-w-0 break-words font-medium">
-                        {thread.other.name}
+                        <BusinessName
+                          name={thread.other.name}
+                          verified={thread.other.business_verified}
+                        />
                       </span>
                       <time
                         dateTime={thread.activity_at}

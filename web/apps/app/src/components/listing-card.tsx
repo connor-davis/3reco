@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Package } from 'lucide-react';
+import { BusinessName } from '@/components/badges';
 import { PersonAvatar } from '@/components/visuals';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatKg, formatRate, toGrams } from '@/lib/format';
@@ -63,7 +64,10 @@ export function ListingCard({
               image={listing.seller_avatar_url}
               className="size-6"
             />
-            {listing.seller_name}
+            <BusinessName
+              name={listing.seller_name}
+              verified={listing.seller_verified}
+            />
           </Link>
         )}
       </CardContent>

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PackageSearch } from 'lucide-react';
 import { toast } from 'sonner';
+import { BusinessName } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { DecimalField } from '@/components/form-fields';
 import { LinkButton } from '@/components/link-button';
@@ -261,7 +262,12 @@ function ListingDetail({ listing }: { listing: Listing }) {
             image={listing.seller_avatar_url}
           />
           <div className="min-w-0 flex-1">
-            <p className="font-medium">{listing.seller_name}</p>
+            <p className="font-medium">
+              <BusinessName
+                name={listing.seller_name}
+                verified={listing.seller_verified}
+              />
+            </p>
             {listing.average_rating !== null && (
               <Stars value={listing.average_rating} />
             )}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronRight, Inbox } from 'lucide-react';
-import { StatusBadge } from '@/components/badges';
+import { BusinessName, StatusBadge } from '@/components/badges';
 import {
   counterpartyOf,
   isClosed,
@@ -97,7 +97,12 @@ export function RequestList({
                 >
                   <PersonAvatar name={other.name} />
                   <div className="min-w-40 flex-1">
-                    <p className="font-medium">{other.name}</p>
+                    <p className="font-medium">
+                      <BusinessName
+                        name={other.name}
+                        verified={other.business_verified}
+                      />
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {request.items
                         .map((item) => item.material_name)

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Download, Upload } from 'lucide-react';
+import { BusinessName } from '@/components/badges';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
@@ -107,8 +108,24 @@ export function TransactionDialog({ record, onClose }: Props) {
         {shown && (
           <div className="space-y-4">
             <dl className="space-y-2 text-sm">
-              <Line label="Seller" value={shown.seller.name} />
-              <Line label="Buyer" value={shown.buyer.name} />
+              <Line
+                label="Seller"
+                value={
+                  <BusinessName
+                    name={shown.seller.name}
+                    verified={shown.seller.business_verified}
+                  />
+                }
+              />
+              <Line
+                label="Buyer"
+                value={
+                  <BusinessName
+                    name={shown.buyer.name}
+                    verified={shown.buyer.business_verified}
+                  />
+                }
+              />
               <Line
                 label="Date"
                 value={formatDate(shown.collection_day ?? shown.effective_at)}
@@ -250,7 +267,7 @@ export function TransactionDialog({ record, onClose }: Props) {
   );
 }
 
-function Line({ label, value }: { label: string; value: string }) {
+function Line({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex justify-between gap-4 text-sm">
       <dt className="text-muted-foreground">{label}</dt>

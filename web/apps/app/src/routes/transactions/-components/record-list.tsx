@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
+import { BusinessName, TradeTypeLabel } from '@/components/badges';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { TransactionDialog } from '@/components/dialogs/record-dialogs';
 import { ListRow } from '@/components/list-row';
@@ -35,6 +36,7 @@ import {
 import type { Transaction } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useDebounced } from '@/lib/use-debounced';
+import { tradeTypeLabel } from '@/lib/trade-type';
 import { waitingFor } from '@/lib/waiting';
 import {
   formatDate,
@@ -68,8 +70,8 @@ type Props = {
 
 const typeOptions = [
   { value: 'all', label: 'All types' },
-  { value: 'b2b', label: 'Business trade' },
-  { value: 'c2b', label: 'Collection' },
+  { value: 'b2b', label: tradeTypeLabel('b2b') },
+  { value: 'c2b', label: tradeTypeLabel('c2b') },
 ];
 
 const csvOptions = (collectionsOnly: boolean) => [
@@ -84,6 +86,22 @@ const dayOf = (row: Transaction) => row.collection_day ?? row.effective_at;
 
 function weightOf(row: Transaction) {
   return row.items.reduce((sum, item) => sum + toGrams(item.weight), 0);
+}
+
+function Parties({ row }: { row: Transaction }) {
+  return (
+    <>
+      <BusinessName
+        name={row.seller.name}
+        verified={row.seller.business_verified}
+      />
+      {' → '}
+      <BusinessName
+        name={row.buyer.name}
+        verified={row.buyer.business_verified}
+      />
+    </>
+  );
 }
 
 function titleOf(row: Transaction) {
@@ -301,13 +319,16 @@ export function RecordList({
               <div className="sm:hidden">
                 <ListRow
                   title={titleOf(row)}
-                  subtitle={`${row.seller.name} → ${row.buyer.name}`}
+                  subtitle={<Parties row={row} />}
                   meta={`${formatDate(dayOf(row))} · ${row.invoice_number}${row.items.length === 1 ? ` · ${formatRate(row.items[0].price)}` : ''}`}
                   value={formatRand(toCents(row.total_price))}
                   status={
                     <>
                       <Badge variant="outline">
-                        {row.type === 'b2b' ? 'Business trade' : 'Collection'}
+                        <TradeTypeLabel
+                          type={row.type}
+                          verified={row.business_verified}
+                        />
                       </Badge>
                       {row.status === 'pending' && row.request_id && (
                         <WaitingTag requestId={row.request_id} />
@@ -330,7 +351,7 @@ export function RecordList({
                 <ItemContent className="min-w-48">
                   <ItemTitle>{titleOf(row)}</ItemTitle>
                   <ItemDescription>
-                    {row.seller.name} → {row.buyer.name}
+                    <Parties row={row} />
                   </ItemDescription>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(dayOf(row))} · {row.invoice_number}
@@ -343,7 +364,10 @@ export function RecordList({
                     variant="outline"
                     className="h-8 shrink-0 justify-center px-3 text-sm sm:w-40"
                   >
-                    {row.type === 'b2b' ? 'Business trade' : 'Collection'}
+                    <TradeTypeLabel
+                      type={row.type}
+                      verified={row.business_verified}
+                    />
                   </Badge>
                   <span className="ml-auto shrink-0 text-right font-semibold tabular-nums sm:ml-0 sm:w-32">
                     {formatRand(toCents(row.total_price))}

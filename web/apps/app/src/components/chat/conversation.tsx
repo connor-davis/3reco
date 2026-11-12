@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft, Info, LoaderCircle, MessageSquare } from 'lucide-react';
-import { StatusBadge } from '@/components/badges';
+import { BusinessName, StatusBadge } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
 import { TextField } from '@/components/form-fields';
@@ -183,9 +183,14 @@ export function Conversation({ request }: { request: TradeRequest }) {
         <PersonAvatar name={other.name} />
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold">
-            {viewer
-              ? `${request.buyer.name} and ${request.seller.name}`
-              : other.name}
+            {viewer ? (
+              `${request.buyer.name} and ${request.seller.name}`
+            ) : (
+              <BusinessName
+                name={other.name}
+                verified={other.business_verified}
+              />
+            )}
           </h2>
           <StatusBadge status={requestLabel(request, user?.id)} />
         </div>

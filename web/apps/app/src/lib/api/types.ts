@@ -72,6 +72,7 @@ export interface PublicUser {
 export interface Store {
   id: string;
   name: string;
+  business_verified: boolean;
   image: string;
   avatar_url: string;
   city: string;
@@ -108,6 +109,7 @@ export interface Listing {
   id: string;
   seller_id: string;
   seller_name: string;
+  seller_verified: boolean;
   material_id: string;
   material_name: string;
   carbon_factor: Decimal;
@@ -190,6 +192,8 @@ export interface CollectorStats {
 export interface Party {
   id: string;
   name: string;
+  // True for a business 3REco has verified.
+  business_verified: boolean;
 }
 export interface RequestItem {
   material_id: string;
@@ -278,6 +282,8 @@ export interface Transaction {
   request_id: string | null;
   id: string;
   type: 'c2b' | 'b2b';
+  // Live state of the business that decides the trade: false shows "Unverified".
+  business_verified: boolean;
   seller: Party;
   buyer: Party;
   total_price: Decimal;
@@ -378,7 +384,12 @@ export interface Stats {
   total_kg: Decimal;
   co2_kg: Decimal;
   deals: number;
-  top_stores: { id: string; name: string; kg: Decimal }[];
+  top_stores: {
+    id: string;
+    name: string;
+    business_verified: boolean;
+    kg: Decimal;
+  }[];
 }
 export interface PublicNotice {
   version: string;

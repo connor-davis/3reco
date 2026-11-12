@@ -12,6 +12,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Guarded } from '@/components/access-guard';
+import { BusinessName } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { ChoiceSelect, SearchBox } from '@/components/filters';
 import { DecimalField } from '@/components/form-fields';
@@ -185,6 +186,7 @@ function SellerCart({
         <CartForm
           sellerId={sellerId}
           storeName={store.data?.name}
+          storeVerified={store.data?.business_verified}
           items={cart.data.items}
           sending={sending}
         />
@@ -215,11 +217,13 @@ type CartValues = z.infer<ReturnType<typeof createCartSchema>>;
 function CartForm({
   sellerId,
   storeName,
+  storeVerified,
   items,
   sending,
 }: {
   sellerId: string;
   storeName?: string;
+  storeVerified?: boolean;
   items: CartItem[];
   sending: MutableRefObject<boolean>;
 }) {
@@ -367,7 +371,10 @@ function CartForm({
       <CardContent>
         <div className="mb-2 flex items-center justify-between gap-3">
           <h2 className="min-w-0 truncate text-base font-medium">
-            {storeName ?? 'Store'}
+            <BusinessName
+              name={storeName ?? 'Store'}
+              verified={storeVerified}
+            />
           </h2>
           <LinkButton
             to="/market/store/$sellerId"

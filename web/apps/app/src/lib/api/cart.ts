@@ -4,7 +4,12 @@ import type * as T from './types';
 
 export function useCartStores() {
   return useResource<{
-    items: { id: string; name: string; item_count: number }[];
+    items: {
+      id: string;
+      name: string;
+      business_verified: boolean;
+      item_count: number;
+    }[];
   }>(['cart', 'stores'], '/cart/stores', true);
 }
 export function useCart(sellerId: string) {

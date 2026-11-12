@@ -1,4 +1,5 @@
-import { StatusBadge } from '@/components/badges';
+import type { ReactNode } from 'react';
+import { BusinessName, StatusBadge } from '@/components/badges';
 import { LinkButton } from '@/components/link-button';
 import {
   formatDate,
@@ -43,8 +44,24 @@ export function DealAside({ request }: { request: TradeRequest }) {
       </ul>
       <dl className="space-y-3">
         <Row label="Created" value={formatDate(request.created_at)} />
-        <Row label="Buyer" value={request.buyer.name} />
-        <Row label="Seller" value={request.seller.name} />
+        <Row
+          label="Buyer"
+          value={
+            <BusinessName
+              name={request.buyer.name}
+              verified={request.buyer.business_verified}
+            />
+          }
+        />
+        <Row
+          label="Seller"
+          value={
+            <BusinessName
+              name={request.seller.name}
+              verified={request.seller.business_verified}
+            />
+          }
+        />
         {hasOffer && (
           <Row label="Offer total" value={formatRand(requestTotal(request))} />
         )}
@@ -75,7 +92,7 @@ function Availability({ stockId }: { stockId: string }) {
     <p className="text-muted-foreground">No longer listed</p>
   );
 }
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex justify-between gap-4">
       <dt className="text-muted-foreground">{label}</dt>
