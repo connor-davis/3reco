@@ -14,7 +14,8 @@ func (s *Store) ExportUsers(ctx context.Context, role, like string, visit func([
 		CASE WHEN role='business' THEN COALESCE(business_name,'') ELSE '' END,
 		CASE WHEN role='business' THEN COALESCE(business_registration_number,'') ELSE '' END,
 		COALESCE(phone,''),COALESCE(street_address,''),
-		COALESCE(city,''),COALESCE(area_code::text,''),COALESCE(province,''),created_at
+		COALESCE(city,''),COALESCE(area_code::text,''),COALESCE(province,''),created_at,
+		CASE WHEN COALESCE(role,'')<>'business' THEN '' WHEN business_verified_at IS NOT NULL THEN 'Verified' ELSE 'Unverified' END
 		FROM users u WHERE NOT is_removed AND ($1='' OR role=$1)
 		AND ($2='' OR name ILIKE $2 OR email ILIKE $2 OR business_name ILIKE $2
 			OR concat_ws(' ',first_name,last_name) ILIKE $2)
@@ -25,10 +26,10 @@ func (s *Store) ExportUsers(ctx context.Context, role, like string, visit func([
 	defer rows.Close()
 
 	for rows.Next() {
-		values := make([]string, 12)
+		values := make([]string, 13)
 		var registered time.Time
 		err := rows.Scan(&values[0], &values[1], &values[2], &values[3], &values[4], &values[5],
-			&values[6], &values[7], &values[8], &values[9], &values[10], &registered)
+			&values[6], &values[7], &values[8], &values[9], &values[10], &registered, &values[12])
 		if err != nil {
 			return err
 		}
