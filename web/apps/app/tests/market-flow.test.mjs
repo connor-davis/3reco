@@ -91,12 +91,21 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
   const tree = CartForm({
     sending: { current: false },
     sellerId: 'seller',
-    name: 'Store',
+    storeName: 'Store',
     items: [
       { stock_id: 'stock', material_id: 'glass', weight: '12.125', price: '8' },
     ],
   });
   assert.equal(values.items[0].weight, '12.125');
+  // The total sits in a bar pinned above the bottom tabs below `lg`.
+  const bar = find(
+    tree,
+    (node) => node.props?.['data-testid'] === 'cart-action-bar'
+  );
+  assert.match(bar.props.className, /max-lg:fixed/);
+  assert.match(bar.props.className, /max-lg:bottom-\[calc\(52px/);
+  assert.match(words(bar), /Estimated total.*R.*97\.00.*Send request/);
+  assert.match(words(tree), /Store.*Store subtotal/);
   values.items[0].weight = ' 9,750001 ';
   find(tree, (node) => !!node.props?.onValidation).props.onValidation(
     'stock',
