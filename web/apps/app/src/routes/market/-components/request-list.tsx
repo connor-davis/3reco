@@ -62,7 +62,7 @@ export function RequestList({
       header: 'Date / Status',
       meta: { className: 'w-32' },
       cell: ({ row }) => (
-        <div className="space-y-1 text-xs">
+        <div className="space-y-1 text-xs [&_[data-slot=badge]]:max-w-full [&_[data-slot=badge]]:whitespace-normal">
           <span className="block">{formatDate(row.original.created_at)}</span>
           <StatusBadge status={row.original.status} />
         </div>

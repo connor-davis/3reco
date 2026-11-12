@@ -187,6 +187,7 @@ with sync_playwright() as p:
                             assert container.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'table scrolls {route} {width}'
                             for cell in page.locator('tbody tr').first.locator('td').all():
                                 if cell.is_visible():
+                                    assert cell.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'cell content spills {route} {width}: {cell.inner_text()}'
                                     box = cell.bounding_box()
                                     assert box['x'] + box['width'] <= container.bounding_box()['x'] + container.bounding_box()['width'] + 1
                             if route.startswith('/transactions'):
