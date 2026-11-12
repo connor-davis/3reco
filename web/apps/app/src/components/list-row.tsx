@@ -49,7 +49,7 @@ export function ListRow({
   const interactive = !!(onOpen || to);
 
   return (
-    <div className="flex min-h-14 items-center bg-background">
+    <div className="flex min-h-14 items-center bg-[var(--row-background,var(--background))]">
       <Item
         className="min-h-14 min-w-0 flex-1 flex-nowrap gap-3 rounded-none border-0 px-4 py-3 text-left focus-visible:ring-inset"
         render={

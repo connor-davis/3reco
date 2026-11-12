@@ -93,7 +93,7 @@ The rules are in [docs/style-guide.md](docs/style-guide.md). In short:
   making new ones. Plain words on screen.
 - UI design: the picked marketplace design lives in `mystuff/designs/`
   (local, untracked). Read it before any page work. The brand green is
-  `--primary: oklch(0.648 0.2 131.684)`; every page works in light and dark.
+  `--primary: oklch(0.498419 0.070909 174.460)`; every page works in light and dark.
 
 ## Work rules
 

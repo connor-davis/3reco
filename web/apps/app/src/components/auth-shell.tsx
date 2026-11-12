@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Leaf, Recycle } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatKg } from '@/lib/format';
@@ -38,7 +38,11 @@ export function AuthShell({
             to="/"
             className="flex items-center gap-2 font-semibold lg:hidden"
           >
-            <Recycle className="size-5 text-primary" aria-hidden="true" />
+            <img
+              src="/logo-mark.png"
+              alt=""
+              className="size-7 object-contain"
+            />
             3REco
           </Link>
           <header className="space-y-1">
@@ -72,7 +76,7 @@ function StoryPanel() {
   return (
     <aside className="hidden flex-col justify-between bg-muted p-12 lg:flex">
       <Link to="/" className="flex items-center gap-2 text-lg font-semibold">
-        <Recycle className="size-6 text-primary" aria-hidden="true" />
+        <img src="/logo-mark.png" alt="" className="size-7 object-contain" />
         3REco
       </Link>
       <div className="space-y-6">

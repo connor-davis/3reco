@@ -85,11 +85,14 @@ export function RequestList({
         emptyText="Requests appear here when you start trading."
         skeleton={<RowsSkeleton />}
       >
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y overflow-hidden rounded-lg border">
           {shown.map((request) => {
             const other = counterpartyOf(request, user?.id);
             return (
-              <li key={request.id}>
+              <li
+                key={request.id}
+                className="bg-[var(--row-background)] [--row-background:var(--background)] even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
+              >
                 <Link
                   to="/market/$requestId"
                   params={{ requestId: request.id }}
