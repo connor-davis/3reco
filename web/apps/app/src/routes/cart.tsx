@@ -488,7 +488,9 @@ function CartLine({
                 to="/market/listing/$listingId"
                 params={{ listingId: stockId }}
                 variant="link"
-                className="h-auto min-h-0 px-0 py-0 text-foreground"
+                // Phones keep the 44px tap area; the negative margin stops it
+                // pushing the price away.
+                className="h-auto min-h-0 px-0 py-0 text-foreground max-[780px]:-my-2.5"
               >
                 {listing.data.material_name}
               </LinkButton>
@@ -517,6 +519,7 @@ function CartLine({
           type="button"
           variant="outline"
           className="min-h-11"
+          aria-label={`Remove ${listing.data?.material_name ?? 'material'}`}
           disabled={busy}
           onClick={onRemove}
         >
