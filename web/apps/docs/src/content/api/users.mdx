@@ -46,3 +46,11 @@ Send only the keys you change. Unknown keys are refused. Your email is not edita
 | DELETE | `/api/admin/users/:id` | Erase the account (same erase as a person deleting their own) |
 
 Admin routes need the `admin` role (`403 forbidden` otherwise). Live updates: the `admin:users` topic.
+
+## Verify a business
+
+### `PUT /api/admin/users/:id/business-verification`
+
+Body: `{"verified": true}` or `{"verified": false}`. A verified business can see and edit every collector. Only users whose role is `business` can be verified (`400` otherwise). The business gets a notification, the change is written to the privacy audit log (kind `business_verify`), and its open app updates at once. Changing the user's role away from `business` removes the verification.
+
+**Access:** `admin`

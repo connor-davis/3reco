@@ -24,7 +24,7 @@ func (service *Service) Stats(ctx context.Context, user auth.User, phone string)
 	}
 
 	creator := ""
-	if auth.HasRole(user, "business") {
+	if auth.HasRole(user, "business") && !user.BusinessVerified {
 		creator = user.ID
 	}
 

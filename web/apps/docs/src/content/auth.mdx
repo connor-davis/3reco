@@ -51,9 +51,9 @@ Auth routes are rate limited per address (`THREERECO_AUTH_RATE_LIMIT`, default 2
 
 | Role | What it is |
 |---|---|
-| `admin` | Full access; sets roles; reads the audit log |
+| `admin` | Full access; sets roles; verifies businesses; reads the audit log |
 | `staff` | Back-office: dashboards and exports, no user management |
-| `business` | Buys and sells; manages its collectors |
+| `business` | Buys and sells; manages its collectors. Once an admin verifies it (`business_verified` on the signed-in user), it can also see and edit every collector |
 | `collector` | Lists and sells stock |
 
 A new account has no role until the profile is completed. Roles are checked on every route: a call with the wrong role gets `403 forbidden`.

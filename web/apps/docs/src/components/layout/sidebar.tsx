@@ -104,6 +104,7 @@ const navGroups: NavGroup[] = [
     icon: <Code size={15} />,
     items: [
       { label: 'Users', to: '/docs/api/users' },
+      { label: 'Collectors', to: '/docs/api/collectors' },
       { label: 'Materials', to: '/docs/api/materials' },
       { label: 'Stock', to: '/docs/api/stock' },
       { label: 'Transactions', to: '/docs/api/transactions' },

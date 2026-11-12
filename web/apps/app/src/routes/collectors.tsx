@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Pencil, Plus, ShieldCheck, Trash2, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Guarded } from '@/components/access-guard';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -82,6 +83,8 @@ function CollectorsPage() {
   const { user } = useAuth();
   // Admin and staff see everyone's collectors, so the page is not "yours".
   const directory = isStaffRole(user?.role);
+  const isBusiness = user?.role === 'business';
+  const verified = isBusiness && user?.business_verified === true;
   const [query, setQuery] = useState('');
   const [desc, setDesc] = useState(false);
   const pager = usePager(50, {
@@ -188,14 +191,27 @@ function CollectorsPage() {
         description={
           directory
             ? 'Every collector on 3REco, and how they are paid.'
-            : 'A shared directory of collectors. You can edit the ones you added.'
+            : verified
+              ? 'Every collector on 3REco. Your business is verified, so you can see and edit them all.'
+              : 'A shared directory of collectors. You can edit the ones you added.' +
+                (isBusiness
+                  ? ' Ask an admin to verify your business to see and edit every collector.'
+                  : '')
         }
         actions={
           !directory && (
-            <Button onClick={() => openForm()}>
-              <Plus data-icon="inline-start" />
-              Add collector
-            </Button>
+            <>
+              {verified && (
+                <Badge variant="secondary">
+                  <ShieldCheck data-icon="inline-start" />
+                  Verified business
+                </Badge>
+              )}
+              <Button onClick={() => openForm()}>
+                <Plus data-icon="inline-start" />
+                Add collector
+              </Button>
+            </>
           )
         }
       />

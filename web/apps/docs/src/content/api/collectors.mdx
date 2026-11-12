@@ -1,0 +1,31 @@
+# Collectors API
+
+The collector directory. All routes are under `/api`.
+
+## Who sees and edits what
+
+| Caller | Contact and payout details | Edit |
+|---|---|---|
+| `admin` | Everything, in full (reads are audited) | Any collector |
+| `staff` | Contact details; account numbers masked | Any collector |
+| `business`, verified | Everything, in full | Any collector, including ones staff added |
+| `business`, not verified | Only for collectors it created | Only collectors it created |
+| `collector` | Their own record | No |
+
+A business is verified when an admin has set `business_verified` on it (see [Users](/docs/api/users)). Verification takes effect on the next request and is lost if the role changes away from `business`. Only `admin` and `staff` can delete a collector, verified or not.
+
+### `GET /api/collectors`, `GET /api/collectors/:id`, `GET /api/collectors/stats`
+
+Each collector has `can_edit` and `can_view_payout`. When either is false the private fields are removed or masked. `stats` looks a collector up by phone: an unverified business only finds its own collectors, a verified business finds any.
+
+**Access:** `admin`, `staff`, `business`
+
+### `POST /api/collectors`, `PATCH /api/collectors/:id`
+
+Create or change a collector. Someone who may not manage the collector gets `404`.
+
+**Access:** `admin`, `staff`, `business`
+
+### `DELETE /api/collectors/:id`
+
+**Access:** `admin`, `staff`

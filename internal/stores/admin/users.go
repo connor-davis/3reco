@@ -5,7 +5,10 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
@@ -20,6 +23,9 @@ type User struct {
 	Role            *string   `json:"role"`
 	ProfileComplete bool      `json:"profile_complete"`
 	CreatedAt       time.Time `json:"created_at"`
+	// BusinessVerified is true while an admin's verification stands.
+	BusinessVerified   bool       `json:"business_verified"`
+	BusinessVerifiedAt *time.Time `json:"business_verified_at"`
 }
 
 // Store runs the admin SQL.
@@ -38,7 +44,8 @@ func (s *Store) Users(
 	like, role string,
 ) ([]User, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT u.id, `+database.PersonName("u")+`, u.email, u.role, u.profile_complete, u.created_at
+		SELECT u.id, `+database.PersonName("u")+`, u.email, u.role, u.profile_complete, u.created_at,
+			u.business_verified_at IS NOT NULL, u.business_verified_at
 		FROM users u
 		WHERE NOT u.is_removed
 			AND ($1::timestamptz IS NULL OR (u.created_at, u.id) < ($1, $2))
@@ -58,7 +65,7 @@ func (s *Store) Users(
 		var u User
 
 		if err := rows.Scan(
-			&u.ID, &u.Name, &u.Email, &u.Role, &u.ProfileComplete, &u.CreatedAt,
+			&u.ID, &u.Name, &u.Email, &u.Role, &u.ProfileComplete, &u.CreatedAt, &u.BusinessVerified, &u.BusinessVerifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -87,7 +94,39 @@ func (s *Store) LockActive(ctx context.Context, id string) (bool, error) {
 // SetRole changes a user's role.
 func (s *Store) SetRole(ctx context.Context, id, role string) error {
 	_, err := s.db.Q(ctx).Exec(ctx,
-		`UPDATE users SET role = $2, updated_at = now() WHERE id = $1`, id, role)
+		`UPDATE users SET role = $2, updated_at = now(),
+			business_verified_at = CASE WHEN $2 = 'business' THEN business_verified_at END,
+			business_verified_by = CASE WHEN $2 = 'business' THEN business_verified_by END
+		WHERE id = $1`, id, role)
+
+	return err
+}
+
+// LockActiveRole locks a user row that is not removed and returns their role.
+// found is false when there is no such user.
+func (s *Store) LockActiveRole(ctx context.Context, id string) (role string, found bool, err error) {
+	var current *string
+
+	err = s.db.Q(ctx).QueryRow(ctx,
+		`SELECT role FROM users WHERE id = $1 AND NOT is_removed FOR UPDATE`, id).Scan(&current)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", false, nil
+	}
+
+	if err != nil || current == nil {
+		return "", err == nil, err
+	}
+
+	return *current, true, nil
+}
+
+// SetBusinessVerified marks a business verified by an admin, or clears it.
+func (s *Store) SetBusinessVerified(ctx context.Context, id, adminID string, verified bool) error {
+	_, err := s.db.Q(ctx).Exec(ctx, `
+		UPDATE users SET updated_at = now(),
+			business_verified_at = CASE WHEN $3 THEN now() END,
+			business_verified_by = CASE WHEN $3 THEN $2 END
+		WHERE id = $1`, id, adminID, verified)
 
 	return err
 }

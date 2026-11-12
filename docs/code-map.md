@@ -39,6 +39,7 @@ line when you add an owner.
 | `0017_export_audit_details.sql` | Download kind and filters on privacy export audit events |
 | `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
 | `0020_stock_images.sql` | One photo per stock item and live business logo changes |
+| `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
 
 Never rename a merged migration. Add a new file.
 
@@ -165,6 +166,10 @@ Never rename a merged migration. Add a new file.
 | Public store route registration | `internal/api/stores/handler.go` |
 | Public store detail and directory handlers | `internal/api/stores/profile.go` |
 | Collector management scope, redaction and PATCH preservation | `internal/services/collectors/collectors.go` |
+| Verified business counts as creator of every collector (`creator`, `verifiedBusiness`), also for stats and payout reads | `internal/services/collectors/collectors.go`, `stats.go`, `payout_access.go`; flag `BusinessVerified` loaded with the session in `internal/stores/auth/auth.go` |
+| Admin verifies or un-verifies a business: role check, audit, notification, recheck; clears on role change and erase | `internal/services/admin/verification.go`, `internal/stores/admin/users.go`, `internal/stores/privacy/erase.go`, route `PUT /admin/users/:id/business-verification` in `internal/api/admin/handler.go` |
+| Business verification tests | `tests/business_verification_test.go`, `web/apps/app/tests/business-verification.test.mjs` |
+| Verified badge, Verify action (admin users page); collectors page wording; user live event refreshes collectors | `web/apps/app/src/routes/admin/users.tsx`, `routes/collectors.tsx`, `lib/api/admin.ts` (`useSetBusinessVerified`), `lib/live/connection.ts` (`keysFor('user')`) |
 | Staff or creator-business phone statistics authorization | `internal/services/collectors/stats.go` |
 | Complete bank or ewallet payout and collector input rules | `internal/services/collectors/validation.go` |
 | Cart ownership and listed stock validation | `internal/services/market/cart.go` |

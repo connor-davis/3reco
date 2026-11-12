@@ -188,6 +188,7 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, erro
 			bank_account_holder_name = NULL, bank_name = NULL, bank_account_number = NULL,
 			bank_branch_code = NULL, bank_account_type = NULL, street_address = NULL,
 			city = NULL, area_code = NULL, province = NULL,
+			business_verified_at = NULL, business_verified_by = NULL,
 			is_removed = true, removed_at = now(), removed_by = $2, updated_at = now()
 		WHERE id = $1`, id, removedBy)
 	if err != nil {
