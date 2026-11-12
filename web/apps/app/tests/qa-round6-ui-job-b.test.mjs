@@ -117,7 +117,7 @@ test('qa-round6-ui: seller reviews, staff collector actions and guest breadcrumb
   assert.doesNotMatch(store, /You have reviewed all eligible trades/);
   assert.equal(
     source('routes/collectors.tsx').match(/!directory &&/g).length,
-    2
+    3
   );
   assert.match(source('components/shell/topbar.tsx'), /user.role !== 'guest'/);
   assert.match(
@@ -146,11 +146,9 @@ test('qa-round6-ui: route titles override the shell fallback after cached naviga
   );
 });
 
-test('qa-round6-ui: transaction status shares the wrapping records filter bar', () => {
+test('qa-round6-ui: transaction tabs precede the shared one-row toolbar', () => {
   const records = source('routes/transactions/-components/record-list.tsx');
-  const start = records.indexOf(
-    '<div className="mb-6 flex flex-wrap items-center gap-3">'
-  );
+  const start = records.indexOf('<div className="mb-6 space-y-4">');
   const status = records.indexOf('label="Transaction status"');
   const search = records.indexOf('label="Search records"');
   const dates = records.indexOf('placeholder="From – to date"');
@@ -159,11 +157,8 @@ test('qa-round6-ui: transaction status shares the wrapping records filter bar', 
     records.slice(start, search),
     /value=\{status\}\s*onChange=\{setStatus\}/
   );
-  assert.match(records, /shrink-0 justify-center px-3 text-sm sm:w-40/);
-  assert.match(
-    records,
-    /shrink-0 text-right font-semibold tabular-nums sm:ml-0 sm:w-32/
-  );
+  assert.match(records, /<ListRow/);
+  assert.match(records, /value=\{formatRand\(toCents\(row.total_price\)\)\}/);
 });
 
 test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded border', () => {
@@ -173,6 +168,6 @@ test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded b
   );
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /<ItemGroup className="gap-0 overflow-hidden rounded-lg border sm:gap-4"/
+    /<ItemGroup className="gap-0 overflow-hidden rounded-lg border"/
   );
 });

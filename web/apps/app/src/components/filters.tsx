@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type SearchBoxProps = {
   label: string;
@@ -61,6 +62,26 @@ type ChoiceSelectProps = {
 
 function toOption(option: string | Option): Option {
   return typeof option === 'string' ? { value: option, label: option } : option;
+}
+
+/** Underline tabs for a single list filter, with the shared scrolling contract. */
+export function FilterTabs({
+  label,
+  value,
+  options,
+  onChange,
+}: Omit<ChipGroupProps, 'outlined'>) {
+  return (
+    <Tabs value={value} onValueChange={(next) => onChange(String(next))}>
+      <TabsList aria-label={label}>
+        {options.map(toOption).map((item) => (
+          <TabsTrigger key={item.value} value={item.value}>
+            {item.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
 }
 
 /** A labelled single-choice dropdown built from the shadcn Select. */

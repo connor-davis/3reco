@@ -7,9 +7,8 @@ import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { TransactionDialog } from '@/components/dialogs/record-dialogs';
 import { ListRow } from '@/components/list-row';
-import { LinkButton } from '@/components/link-button';
-import { ChipGroup } from '@/components/filters';
-import { ChoiceSelect, SearchBox } from '@/components/filters';
+import { ChoiceSelect, FilterTabs } from '@/components/filters';
+import { Toolbar } from '@/components/toolbar';
 import { PageHeader } from '@/components/page-header';
 import { StatCard, StatGrid } from '@/components/stat-card';
 import { Pager } from '@/components/transactions/list-tools';
@@ -17,14 +16,7 @@ import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from '@/components/ui/item';
+import { ItemGroup } from '@/components/ui/item';
 import { useExport, type ExportKind } from '@/lib/api/exports';
 import { useRequest } from '@/lib/api/requests';
 import {
@@ -209,9 +201,9 @@ export function RecordList({
           </StatGrid>
         </div>
       )}
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      <div className="mb-6 space-y-4">
         {!collectionsOnly && (
-          <ChipGroup
+          <FilterTabs
             label="Transaction status"
             value={status}
             onChange={setStatus}
@@ -221,40 +213,54 @@ export function RecordList({
             ]}
           />
         )}
-        <SearchBox
+        <Toolbar
           label="Search records"
           value={query}
           onChange={setQuery}
-          className="sm:max-w-none"
-        />
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <DateRangePicker
-            value={range}
-            onChange={setRange}
-            placeholder="From – to date"
-            align="start"
-          />
-          {typeFilter && (
-            <ChoiceSelect
-              label="Transaction type"
-              value={type}
-              options={typeOptions}
-              onChange={setType}
-            />
-          )}
-          {exportKind && !readOnly && (
-            // Always drawn, so the bar keeps its shape on the Pending tab.
-            <div className="flex max-w-full flex-wrap items-center gap-2">
-              <ChoiceSelect
-                label="Export format"
-                value={csv}
-                options={csvOptions(collectionsOnly)}
-                onChange={setCsv}
-                disabled={status !== 'complete'}
+          activeFilters={
+            Number(!!range?.from) +
+            Number(type !== 'all') +
+            Number(csv !== 'transaction')
+          }
+          onClear={() => {
+            setRange(undefined);
+            setType('all');
+            setCsv('transaction');
+          }}
+          filters={
+            <>
+              <DateRangePicker
+                value={range}
+                onChange={setRange}
+                placeholder="From – to date"
+                align="start"
               />
+              {typeFilter && (
+                <ChoiceSelect
+                  label="Transaction type"
+                  value={type}
+                  options={typeOptions}
+                  onChange={setType}
+                />
+              )}
+              {exportKind && !readOnly && (
+                <ChoiceSelect
+                  label="Export format"
+                  value={csv}
+                  options={csvOptions(collectionsOnly)}
+                  onChange={setCsv}
+                  disabled={status !== 'complete'}
+                />
+              )}
+            </>
+          }
+          action={
+            exportKind &&
+            !readOnly && (
               <Button
                 variant="outline"
-                className="h-11"
+                className="h-11 max-lg:w-11 max-lg:px-0"
+                aria-label="Export"
                 disabled={
                   status !== 'complete' ||
                   download.isPending ||
@@ -265,11 +271,11 @@ export function RecordList({
                 onClick={exportCsv}
               >
                 <Download data-icon="inline-start" />
-                Export
+                <span className="max-lg:sr-only">Export</span>
               </Button>
-            </div>
-          )}
-        </div>
+            )
+          }
+        />
       </div>
       <DataState
         query={list}
@@ -291,86 +297,39 @@ export function RecordList({
         }
         skeleton={<RowsSkeleton />}
       >
-        <ItemGroup className="gap-0 overflow-hidden rounded-lg border sm:gap-4">
+        <ItemGroup className="gap-0 overflow-hidden rounded-lg border">
           {shown.map((row) => (
             <div
               key={row.id}
               role="listitem"
-              className="border-b [--row-background:var(--background)] last:border-b-0 max-sm:even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))] sm:border-0"
+              className="border-b [--row-background:var(--background)] last:border-b-0 even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
             >
-              <div className="sm:hidden">
-                <ListRow
-                  title={titleOf(row)}
-                  subtitle={`${row.seller.name} → ${row.buyer.name}`}
-                  meta={`${formatDate(dayOf(row))} · ${row.invoice_number}${row.items.length === 1 ? ` · ${formatRate(row.items[0].price)}` : ''}`}
-                  value={formatRand(toCents(row.total_price))}
-                  status={
-                    <>
-                      <Badge variant="outline">
-                        {row.type === 'b2b' ? 'Business trade' : 'Collection'}
-                      </Badge>
-                      {row.status === 'pending' && row.request_id && (
-                        <WaitingTag requestId={row.request_id} />
-                      )}
-                    </>
-                  }
-                  {...(row.status === 'pending' && row.request_id
-                    ? {
-                        to: '/messages/$requestId' as const,
-                        params: { requestId: row.request_id },
-                        'aria-label': `View request: ${titleOf(row)}`,
-                      }
-                    : {
-                        onOpen: () => setOpen(row),
-                        'aria-label': `Invoice and receipts: ${titleOf(row)}`,
-                      })}
-                />
-              </div>
-              <Item className="hidden sm:flex sm:flex-wrap">
-                <ItemContent className="min-w-48">
-                  <ItemTitle>{titleOf(row)}</ItemTitle>
-                  <ItemDescription>
-                    {row.seller.name} → {row.buyer.name}
-                  </ItemDescription>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(dayOf(row))} · {row.invoice_number}
-                    {row.items.length === 1 &&
-                      ` · ${formatRate(row.items[0].price)}`}
-                  </p>
-                </ItemContent>
-                <ItemActions className="w-full flex-wrap sm:w-auto">
-                  <Badge
-                    variant="outline"
-                    className="h-8 shrink-0 justify-center px-3 text-sm sm:w-40"
-                  >
-                    {row.type === 'b2b' ? 'Business trade' : 'Collection'}
-                  </Badge>
-                  <span className="ml-auto shrink-0 text-right font-semibold tabular-nums sm:ml-0 sm:w-32">
-                    {formatRand(toCents(row.total_price))}
-                  </span>
-                  {row.status === 'pending' && row.request_id && (
-                    <WaitingTag requestId={row.request_id} />
-                  )}
-                  {row.status === 'pending' && row.request_id ? (
-                    <LinkButton
-                      to="/messages/$requestId"
-                      params={{ requestId: row.request_id }}
-                      variant="outline"
-                    >
-                      View request
-                    </LinkButton>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full shrink-0 sm:w-44"
-                      onClick={() => setOpen(row)}
-                    >
-                      Invoice and receipts
-                    </Button>
-                  )}
-                </ItemActions>
-              </Item>
+              <ListRow
+                title={titleOf(row)}
+                subtitle={`${row.seller.name} → ${row.buyer.name}`}
+                meta={`${formatDate(dayOf(row))} · ${row.invoice_number}${row.items.length === 1 ? ` · ${formatRate(row.items[0].price)}` : ''}`}
+                value={formatRand(toCents(row.total_price))}
+                status={
+                  <>
+                    <Badge variant="outline" className="min-h-8 px-3 text-sm">
+                      {row.type === 'b2b' ? 'Business trade' : 'Collection'}
+                    </Badge>
+                    {row.status === 'pending' && row.request_id && (
+                      <WaitingTag requestId={row.request_id} />
+                    )}
+                  </>
+                }
+                {...(row.status === 'pending' && row.request_id
+                  ? {
+                      to: '/messages/$requestId' as const,
+                      params: { requestId: row.request_id },
+                      'aria-label': `View request: ${titleOf(row)}`,
+                    }
+                  : {
+                      onOpen: () => setOpen(row),
+                      'aria-label': `Invoice and receipts: ${titleOf(row)}`,
+                    })}
+              />
             </div>
           ))}
         </ItemGroup>

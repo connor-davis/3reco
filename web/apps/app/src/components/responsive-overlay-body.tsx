@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { ButtonRow } from '@/components/button-row';
 
 import type { ResponsiveOverlayProps } from './responsive-overlay';
 
@@ -48,7 +49,11 @@ export default function ResponsiveOverlayBody({
             {<DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
           <div className="overflow-y-auto px-4 pt-4 pb-2">{children}</div>
-          {footer && <DrawerFooter>{footer}</DrawerFooter>}
+          {footer && (
+            <DrawerFooter>
+              <ButtonRow>{footer}</ButtonRow>
+            </DrawerFooter>
+          )}
         </DrawerContent>
       </Drawer>
     );
