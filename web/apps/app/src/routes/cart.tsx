@@ -363,7 +363,7 @@ function CartForm({
   const totalText = invalid ? 'Enter valid quantities' : formatRand(total);
 
   return (
-    <Card className="gap-3 py-4 [--card-spacing:--spacing(4)] max-lg:mb-20 sm:py-6 sm:[--card-spacing:--spacing(6)]">
+    <Card className="gap-3 max-lg:mb-20">
       <CardContent>
         <div className="mb-2 flex items-center justify-between gap-3">
           <h2 className="min-w-0 truncate text-base font-medium">
