@@ -48,6 +48,8 @@ test('S5: the material price unit shows once', () => {
   assert.doesNotMatch(dialog, /Base price \(R/);
 });
 
-test('S7: top-store names line up with the rank line', () => {
-  assert.match(source('routes/index.tsx'), /className="min-h-11 px-0"/);
+test('S7: community impact stays compact with a stores link', () => {
+  const page = source('routes/index.tsx');
+  assert.match(page, /See all stores/);
+  assert.doesNotMatch(page, /stats\.top_stores\.map/);
 });

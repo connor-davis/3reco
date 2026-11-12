@@ -74,7 +74,7 @@ test('S2: the deal panel hides "held" at zero', () => {
 
 test('S3: each incoming row is one link to the chat', () => {
   const text = source('routes/market/-components/request-list.tsx');
-  assert.match(text, /<Link\s+to="\/market\/\$requestId"/);
+  assert.match(text, /<ListRow\s+to="\/market\/\$requestId"/);
   assert.doesNotMatch(text, /Open chat/);
 });
 

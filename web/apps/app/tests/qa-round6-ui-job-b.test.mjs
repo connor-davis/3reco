@@ -164,13 +164,10 @@ test('qa-round6-ui: transaction tabs precede the shared one-row toolbar', () => 
   assert.match(records, /value=\{formatRand\(toCents\(row.total_price\)\)\}/);
 });
 
-test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded border', () => {
-  assert.match(
-    source('components/data-table.tsx'),
-    /className="overflow-hidden rounded-lg border"/
-  );
+test('qa-round6-ui: the shared table owns the soft panel for trade lists', () => {
+  assert.match(source('components/data-table.tsx'), /<Panel>/);
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /<ItemGroup className="gap-0 overflow-hidden rounded-lg border"/
+    /<DataTable/
   );
 });

@@ -4,7 +4,7 @@ import OverlayBody from './responsive-overlay-body';
 export type ResponsiveOverlayProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
+  title: ReactNode;
   description: string;
   children: ReactNode;
   footer?: ReactNode;

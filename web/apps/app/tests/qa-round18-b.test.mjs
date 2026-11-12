@@ -315,7 +315,10 @@ test('A7: removed sign-in has no trade tagline or unsupported contact instructio
 test('H2: million-kg axis ticks are compact and tooltip weights retain full precision', () => {
   const { ImpactChart, axisWeight } = compile(
     'routes/-dashboard/impact-chart.tsx',
-    { '@/lib/format': format }
+    {
+      '@/lib/format': format,
+      '@/hooks/use-mobile': { useIsCompact: () => false },
+    }
   );
   assert.match(axisWeight(1200000), /1[.,]2M kg/);
   const tree = nodes(

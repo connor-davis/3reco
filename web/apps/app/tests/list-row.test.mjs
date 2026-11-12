@@ -16,9 +16,11 @@ test('ListRow only renders a menu for actions, beside the primary body and switc
   vm.runInNewContext(outputText, {
     exports,
     require: (name) =>
-      name === 'react/jsx-runtime'
-        ? jsx
-        : new Proxy({}, { get: (_, key) => key }),
+      name === '@/lib/utils'
+        ? { cn: (...values) => values.filter(Boolean).join(' ') }
+        : name === 'react/jsx-runtime'
+          ? jsx
+          : new Proxy({}, { get: (_, key) => key }),
   });
   const children = (node) =>
     [node.props.children].flat(Infinity).filter(Boolean);

@@ -416,10 +416,15 @@ export function Conversation({ request }: { request: TradeRequest }) {
       <ResponsiveOverlay
         open={infoOpen}
         onOpenChange={setInfoOpen}
-        title="Request details"
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            Request details{' '}
+            <StatusBadge status={requestLabel(request, user?.id)} />
+          </span>
+        }
         description={`Request ${request.id.slice(-8).toUpperCase()}`}
       >
-        <DealAside request={request} />
+        <DealAside request={request} showTitle={false} />
       </ResponsiveOverlay>
       <ConfirmDialog
         open={confirm !== null}

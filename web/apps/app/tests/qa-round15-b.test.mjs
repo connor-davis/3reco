@@ -33,7 +33,7 @@ test('qa-round15 HK4: a removed account gets its own title', () => {
 
 test('qa-round15 SN6: the trade pill has room around its words', () => {
   const list = source('routes/transactions/-components/record-list.tsx');
-  assert.match(list, /className="min-h-8 px-3 text-sm"/);
+  assert.match(list, /className="h-5 px-2 text-xs"/);
 });
 
 test('qa-round15 SN7: the Listed switch has a real label', () => {
@@ -45,7 +45,7 @@ test('qa-round15 SN7: the Listed switch has a real label', () => {
 
 test('qa-round15 SN8 (round 21: one height): dashboard cards size to their content', () => {
   const index = source('routes/index.tsx');
-  assert.match(index, /grid items-start gap-6 md:grid-cols-2/);
+  assert.match(index, /grid items-start gap-4 lg:grid-cols-2/);
 });
 
 test('qa-round15 SO2: the collector dashboard has one profile link', () => {

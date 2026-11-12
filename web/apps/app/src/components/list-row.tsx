@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 import { Link, type LinkProps } from '@tanstack/react-router';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,9 @@ type ListRowProps = {
   meta?: ReactNode;
   value?: ReactNode;
   status?: ReactNode;
+  /** Three-line ledger layout for trades and requests. */
+  layout?: 'default' | 'record';
+  secondaryValue?: ReactNode;
   onOpen?: () => void;
   to?: LinkProps['to'];
   params?: LinkProps['params'];
@@ -42,6 +46,8 @@ export function ListRow({
   meta,
   value,
   status,
+  layout = 'default',
+  secondaryValue,
   onOpen,
   to,
   params,
@@ -52,9 +58,12 @@ export function ListRow({
   const interactive = !!(onOpen || to);
 
   return (
-    <div className="flex min-h-14 items-center bg-[var(--row-background,var(--background))]">
+    <div className="flex min-h-14 items-center">
       <Item
-        className="min-h-14 min-w-0 flex-1 flex-nowrap gap-3 rounded-none border-0 px-4 py-3 text-left focus-visible:ring-inset"
+        className={cn(
+          'min-h-14 min-w-0 flex-1 flex-nowrap gap-3 rounded-none border-0 px-4 py-3 text-left focus-visible:ring-inset',
+          layout === 'record' && 'px-0'
+        )}
         render={
           to ? (
             <Link to={to} params={params} aria-label={ariaLabel} />
@@ -73,29 +82,69 @@ export function ListRow({
             {media}
           </ItemMedia>
         )}
-        <ItemContent className="min-w-0 gap-0.5">
-          <ItemTitle className="block w-full truncate">
-            {title}
-            {titleMark}
-          </ItemTitle>
-          {subtitle && (
-            <ItemDescription className="line-clamp-none truncate">
-              {subtitle}
-            </ItemDescription>
-          )}
-          {meta && (
-            <ItemDescription className="line-clamp-none truncate text-xs">
-              {meta}
-            </ItemDescription>
-          )}
-          {status && <div className="mt-1 flex flex-wrap gap-1">{status}</div>}
-        </ItemContent>
-        {value && (
+        {layout === 'record' ? (
+          <ItemContent className="min-w-0 gap-1" data-slot="record-row">
+            <div
+              className="flex min-w-0 items-baseline justify-between gap-2"
+              data-slot="record-primary"
+            >
+              <span className="min-w-0 truncate text-sm font-medium">
+                {title}
+              </span>
+              <span className="shrink-0 text-right text-sm font-semibold tabular-nums">
+                {value}
+              </span>
+            </div>
+            <div
+              className="flex min-w-0 items-start justify-between gap-2"
+              data-slot="record-parties"
+            >
+              <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+                {subtitle}
+              </span>
+              <span className="shrink-0 text-right text-xs tabular-nums">
+                {secondaryValue}
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+              data-slot="record-meta"
+            >
+              <span className="whitespace-nowrap">{meta}</span>
+              <span className="inline-flex shrink-0 items-center gap-1.5 [&_[data-slot=badge]]:h-4 [&_[data-slot=badge]]:min-h-0 [&_[data-slot=badge]]:px-1 [&_[data-slot=badge]]:text-[10px]">
+                {status}
+              </span>
+            </div>
+          </ItemContent>
+        ) : (
+          <ItemContent className="min-w-0 gap-0.5">
+            <ItemTitle className="flex w-full flex-wrap items-center gap-2">
+              <span className="min-w-0 truncate">{title}</span>
+              {titleMark}
+              {status && (
+                <span className="inline-flex flex-wrap gap-1 text-xs [&_[data-slot=badge]]:min-h-5 [&_[data-slot=badge]]:px-2 [&_[data-slot=badge]]:text-xs">
+                  {status}
+                </span>
+              )}
+            </ItemTitle>
+            {subtitle && (
+              <ItemDescription className="line-clamp-none truncate">
+                {subtitle}
+              </ItemDescription>
+            )}
+            {meta && (
+              <ItemDescription className="line-clamp-none truncate text-xs">
+                {meta}
+              </ItemDescription>
+            )}
+          </ItemContent>
+        )}
+        {layout !== 'record' && value && (
           <span className="max-w-[45%] shrink-0 text-right font-semibold tabular-nums">
             {value}
           </span>
         )}
-        {interactive && !trailing && (
+        {layout !== 'record' && interactive && !trailing && (
           <ChevronRight
             className="size-4 shrink-0 text-muted-foreground"
             aria-hidden="true"

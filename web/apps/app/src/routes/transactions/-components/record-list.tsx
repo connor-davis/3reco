@@ -1,12 +1,13 @@
-import { useState, type ReactNode } from 'react';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLocation, useNavigate, useSearch } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
-import { TransactionDialog } from '@/components/dialogs/record-dialogs';
-import { BusinessName, TradeTypeLabel } from '@/components/badges';
+import { DataTable } from '@/components/data-table';
+import type { ColumnDef } from '@tanstack/react-table';
+import { TradeParties, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { ListRow } from '@/components/list-row';
 import { ChoiceSelect, FilterTabs } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
@@ -17,14 +18,9 @@ import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { ItemGroup } from '@/components/ui/item';
 import { useExport, type ExportKind } from '@/lib/api/exports';
 import { useRequest } from '@/lib/api/requests';
-import {
-  useTransaction,
-  useTransactions,
-  useTransactionTotals,
-} from '@/lib/api/transactions';
+import { useTransactions, useTransactionTotals } from '@/lib/api/transactions';
 import type { Transaction } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useDebounced } from '@/lib/use-debounced';
@@ -32,8 +28,8 @@ import { waitingFor } from '@/lib/waiting';
 import {
   formatDate,
   formatKg,
+  formatKgNumber,
   formatRand,
-  formatRate,
   plural,
   toCents,
   toGrams,
@@ -81,19 +77,7 @@ function weightOf(row: Transaction) {
 }
 
 function Parties({ row }: { row: Transaction }) {
-  return (
-    <>
-      <BusinessName
-        name={row.seller.name}
-        verified={row.seller.business_verified}
-      />
-      {' → '}
-      <BusinessName
-        name={row.buyer.name}
-        verified={row.buyer.business_verified}
-      />
-    </>
-  );
+  return <TradeParties seller={row.seller} buyer={row.buyer} />;
 }
 
 function titleOf(row: Transaction) {
@@ -115,7 +99,7 @@ function WaitingTag({ requestId }: { requestId: string }) {
   );
 }
 
-/** The shared record list: filters, optional stats, rows and the detail dialog. */
+/** The shared record list: filters, optional stats, rows and trade page links. */
 export function RecordList({
   title,
   description,
@@ -133,12 +117,120 @@ export function RecordList({
   const [range, setRange] = useState<DateRange | undefined>();
   const [type, setType] = useState('all');
   const [csv, setCsv] = useState('transaction');
-  const [open, setOpen] = useState<Transaction | null>(null);
 
-  // A link such as /transactions/purchases?open=<id> opens that trade.
+  // A link such as /transactions/purchases?open=<id> redirects to that trade page.
   const { open: openId } = useSearch({ strict: false }) as { open?: string };
   const navigate = useNavigate();
-  const linked = useTransaction(openId ?? '');
+  const location = useLocation();
+  const from = location.pathname;
+
+  useEffect(() => {
+    if (openId)
+      void navigate({
+        to: '/transactions/$transactionId',
+        params: { transactionId: openId },
+        search: { from },
+        replace: true,
+      });
+  }, [openId, from, navigate]);
+
+  function openRow(row: Transaction) {
+    if (row.status === 'pending' && row.request_id) {
+      void navigate({
+        to: '/messages/$requestId',
+        params: { requestId: row.request_id },
+      });
+      return;
+    }
+
+    void navigate({
+      to: '/transactions/$transactionId',
+      params: { transactionId: row.id },
+      search: { from },
+    });
+  }
+
+  const columns: ColumnDef<Transaction>[] = [
+    {
+      id: 'date',
+      header: 'Date / Invoice',
+      meta: { className: 'w-32' },
+      cell: ({ row }) => (
+        <div className="space-y-1 text-xs">
+          <span className="block">{formatDate(dayOf(row.original))}</span>
+          <span className="block break-all">{row.original.invoice_number}</span>
+          <StatusBadge
+            status={
+              row.original.status === 'complete'
+                ? 'Complete'
+                : row.original.status === 'pending'
+                  ? 'Pending'
+                  : 'Cancelled'
+            }
+          />
+        </div>
+      ),
+    },
+    {
+      id: 'materials',
+      header: 'Materials',
+      cell: ({ row }) => (
+        <span
+          className="block truncate"
+          title={row.original.items
+            .map((item) => item.material_name)
+            .join(', ')}
+        >
+          {row.original.items.map((item) => item.material_name).join(', ')}
+        </span>
+      ),
+    },
+    {
+      id: 'parties',
+      header: 'From → To',
+      cell: ({ row }) => (
+        <div className="space-y-2 text-xs">
+          <div>
+            <Parties row={row.original} />
+          </div>
+          <Badge
+            variant="outline"
+            className="max-w-full whitespace-normal 2xl:hidden"
+          >
+            <TradeTypeLabel
+              type={row.original.type}
+              verified={row.original.business_verified}
+            />
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      meta: { className: 'hidden w-44 2xl:table-cell' },
+      cell: ({ row }) => (
+        <Badge variant="outline" className="max-w-full whitespace-normal">
+          <TradeTypeLabel
+            type={row.original.type}
+            verified={row.original.business_verified}
+          />
+        </Badge>
+      ),
+    },
+    {
+      id: 'weight',
+      header: 'Weight (kg)',
+      meta: { align: 'right', className: 'w-28 text-xs' },
+      cell: ({ row }) => formatKgNumber(weightOf(row.original) / 1000),
+    },
+    {
+      id: 'amount',
+      header: 'Amount',
+      meta: { align: 'right', className: 'w-36 text-xs' },
+      cell: ({ row }) => formatRand(toCents(row.original.total_price)),
+    },
+  ];
 
   // The server does the searching, so the filters ride along with every page.
   const q = useDebounced(query.trim());
@@ -156,9 +248,6 @@ export function RecordList({
   const download = useExport(exportKind ?? 'transactions');
 
   const shown = list.data?.items ?? [];
-  const linkedRow = openId
-    ? (shown.find((row) => row.id === openId) ?? linked.data ?? null)
-    : null;
   const filtered = !!(q || range?.from || (!collectionsOnly && type !== 'all'));
   const caption = !filtered
     ? 'All time'
@@ -315,45 +404,63 @@ export function RecordList({
         }
         skeleton={<RowsSkeleton />}
       >
-        <ItemGroup className="gap-0 overflow-hidden rounded-lg border">
-          {shown.map((row) => (
-            <div
-              key={row.id}
-              role="listitem"
-              className="border-b [--row-background:var(--background)] last:border-b-0 even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
-            >
-              <ListRow
-                title={titleOf(row)}
-                subtitle={<Parties row={row} />}
-                meta={`${formatDate(dayOf(row))} · ${row.invoice_number}${row.items.length === 1 ? ` · ${formatRate(row.items[0].price)}` : ''}`}
-                value={formatRand(toCents(row.total_price))}
-                status={
-                  <>
-                    <Badge variant="outline" className="min-h-8 px-3 text-sm">
-                      <TradeTypeLabel
-                        type={row.type}
-                        verified={row.business_verified}
-                      />
-                    </Badge>
-                    {row.status === 'pending' && row.request_id && (
-                      <WaitingTag requestId={row.request_id} />
-                    )}
-                  </>
-                }
-                {...(row.status === 'pending' && row.request_id
-                  ? {
-                      to: '/messages/$requestId' as const,
-                      params: { requestId: row.request_id },
-                      'aria-label': `View request: ${titleOf(row)}`,
+        <DataTable
+          fit
+          columns={columns}
+          data={shown}
+          onRowClick={openRow}
+          rowLabel={(row) =>
+            row.status === 'pending'
+              ? `View request: ${titleOf(row)}`
+              : `Invoice and receipts: ${titleOf(row)}`
+          }
+          renderCard={(row) => (
+            <ListRow
+              layout="record"
+              title={row.items.map((item) => item.material_name).join(', ')}
+              secondaryValue={formatKg(weightOf(row) / 1000)}
+              subtitle={<Parties row={row} />}
+              meta={`${formatDate(dayOf(row))} · ${row.invoice_number}`}
+              value={formatRand(toCents(row.total_price))}
+              status={
+                <>
+                  <StatusBadge
+                    dotOnly
+                    status={
+                      row.status === 'complete'
+                        ? 'Complete'
+                        : row.status === 'pending'
+                          ? 'Pending'
+                          : 'Cancelled'
                     }
-                  : {
-                      onOpen: () => setOpen(row),
-                      'aria-label': `Invoice and receipts: ${titleOf(row)}`,
-                    })}
-              />
-            </div>
-          ))}
-        </ItemGroup>
+                  />
+                  <Badge variant="outline" className="h-5 px-2 text-xs">
+                    <TradeTypeLabel
+                      compact
+                      type={row.type}
+                      verified={row.business_verified}
+                    />
+                  </Badge>
+                  {row.status === 'pending' && row.request_id && (
+                    <span className="sr-only">
+                      <WaitingTag requestId={row.request_id} />
+                    </span>
+                  )}
+                </>
+              }
+              {...(row.status === 'pending' && row.request_id
+                ? {
+                    to: '/messages/$requestId' as const,
+                    params: { requestId: row.request_id },
+                    'aria-label': `View request: ${titleOf(row)}`,
+                  }
+                : {
+                    onOpen: () => openRow(row),
+                    'aria-label': `Invoice and receipts: ${titleOf(row)}`,
+                  })}
+            />
+          )}
+        />
       </DataState>
       {totals.data !== undefined && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -361,15 +468,6 @@ export function RecordList({
         </div>
       )}
       <Pager pager={pager} page={list.data} total={totals.data?.count} />
-      <TransactionDialog
-        key={(open ?? linkedRow)?.id}
-        record={open ?? linkedRow}
-        onClose={() => {
-          setOpen(null);
-          if (openId)
-            void navigate({ to: '.', search: {} as never, replace: true });
-        }}
-      />
     </>
   );
 }

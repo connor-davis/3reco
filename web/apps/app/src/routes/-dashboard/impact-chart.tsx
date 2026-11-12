@@ -1,3 +1,4 @@
+import { useIsCompact } from '@/hooks/use-mobile';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   type ChartConfig,
@@ -22,14 +23,18 @@ export const axisWeight = (value: number) =>
 /** Every 7th day from the first, the first and the last day always, and no
  * tick within 4 days of the last so two labels never collide. Computed from
  * the data so the same data gives the same ticks on every load. */
-export function axisTicks(days: string[]): string[] {
+export function axisTicks(days: string[], compact = false): string[] {
   const last = days.length - 1;
+  if (compact) return days.length > 1 ? [days[0], days[last]] : days;
+
   return days.filter(
     (_, i) => i === 0 || i === last || (i % 7 === 0 && last - i >= 4)
   );
 }
 
 export function ImpactChart({ series }: { series: Dashboard['series'] }) {
+  const compact = useIsCompact();
+
   // Chart geometry uses numbers; amounts shown as money never do.
   const points = series.map((day) => ({
     day: day.day,
@@ -52,7 +57,10 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
           tickMargin={8}
           tick={{ fill: 'var(--muted-foreground)' }}
           padding={{ left: 24, right: 24 }}
-          ticks={axisTicks(points.map((p) => p.day))}
+          ticks={axisTicks(
+            points.map((p) => p.day),
+            compact
+          )}
           interval={0}
         />
         <YAxis

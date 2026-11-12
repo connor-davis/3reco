@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from 'react';
 import { BadgeCheck } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import {
 } from '@/components/ui/popover';
 import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
-import type { RequestStatus } from '@/lib/api/types';
+import type { Party, RequestStatus } from '@/lib/api/types';
 import { requestStatuses } from '@/lib/request-status';
 import { tradeTypeLabel, type TradeType } from '@/lib/trade-type';
 
@@ -37,11 +38,30 @@ const dotColour: Record<BadgeVariant, string> = {
 };
 
 /** One dot and word for every deal, payment and profile status (design 05). */
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({
+  status,
+  dotOnly = false,
+}: {
+  status: string;
+  dotOnly?: boolean;
+}) {
   const requestStatus = Object.hasOwn(requestStatuses, status)
     ? requestStatuses[status as RequestStatus]
     : undefined;
   const variant = requestStatus?.variant ?? statusVariant[status] ?? 'outline';
+
+  if (dotOnly)
+    return (
+      <span
+        role="img"
+        aria-label={requestStatus?.label ?? status}
+        title={requestStatus?.label ?? status}
+        className={cn(
+          'inline-block size-1.5 shrink-0 rounded-full',
+          dotColour[variant]
+        )}
+      />
+    );
 
   return (
     <Badge
@@ -97,13 +117,52 @@ export function VerifiedMark({ verified }: { verified?: boolean }) {
 export function BusinessName({
   name,
   verified,
+  wrap = false,
+  prefix,
 }: {
   name: string;
   verified?: boolean;
+  wrap?: boolean;
+  prefix?: ReactNode;
 }) {
+  if (wrap) {
+    const words = name.trim().split(/\s+/);
+    return (
+      <span className="inline break-words">
+        {words.map((word, index) => (
+          <Fragment key={index}>
+            {index > 0 && ' '}
+            <span
+              className={
+                (index === 0 && prefix) ||
+                (index === words.length - 1 && verified)
+                  ? 'whitespace-nowrap'
+                  : undefined
+              }
+            >
+              {index === 0 && prefix}
+              {word}
+              {index === words.length - 1 && verified && (
+                <BadgeCheck
+                  role="img"
+                  aria-label="Verified business"
+                  className="ml-1 inline size-3 align-text-bottom text-primary"
+                />
+              )}
+            </span>
+          </Fragment>
+        ))}
+      </span>
+    );
+  }
+
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1 align-bottom">
-      <span className="truncate">{name}</span>
+      <span
+        className={wrap ? 'min-w-0 break-words whitespace-normal' : 'truncate'}
+      >
+        {name}
+      </span>
       {verified && (
         <BadgeCheck
           role="img"
@@ -115,18 +174,62 @@ export function BusinessName({
   );
 }
 
+/** Flowing party names keep the arrow with the buyer and each check with its name. */
+export function TradeParties({
+  seller,
+  buyer,
+}: {
+  seller: Party;
+  buyer: Party;
+}) {
+  return (
+    <span data-slot="trade-parties" className="inline">
+      <BusinessName
+        wrap
+        name={seller.name}
+        verified={seller.business_verified}
+      />{' '}
+      <BusinessName
+        wrap
+        prefix="→ "
+        name={buyer.name}
+        verified={buyer.business_verified}
+      />
+    </span>
+  );
+}
+
 /** The trade type in plain words, with "Unverified" beside it when the business is not. */
 export function TradeTypeLabel({
   type,
   verified,
+  compact = false,
 }: {
   type: TradeType;
   verified?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
-      {tradeTypeLabel(type)}
-      {verified === false && <Badge variant="outline">Unverified</Badge>}
+    <span
+      className={
+        compact
+          ? 'inline-flex items-center gap-1.5'
+          : 'inline-flex flex-wrap items-center gap-1.5'
+      }
+      title={compact ? tradeTypeLabel(type) : undefined}
+      aria-label={compact ? tradeTypeLabel(type) : undefined}
+    >
+      {compact
+        ? type === 'c2b'
+          ? 'Collector'
+          : 'Business'
+        : tradeTypeLabel(type)}
+      {verified === false &&
+        (compact ? (
+          <span>· Unverified</span>
+        ) : (
+          <Badge variant="outline">Unverified</Badge>
+        ))}
     </span>
   );
 }

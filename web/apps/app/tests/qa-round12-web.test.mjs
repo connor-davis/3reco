@@ -283,39 +283,36 @@ test('receipt validation calls wrong-type and oversized files images', () => {
   const errors = [];
   const uploads = [];
   let stateIndex = 0;
-  const { TransactionDialog } = compile(
-    'components/dialogs/record-dialogs.tsx',
-    {
-      react: {
-        useState: (value) => {
-          const index = stateIndex++;
-          return [
-            value,
-            (next) => {
-              if (index === 1) errors.push(next);
-            },
-          ];
-        },
+  const { TradeDetail } = compile('components/dialogs/record-dialogs.tsx', {
+    react: {
+      useState: (value) => {
+        const index = stateIndex++;
+        return [
+          value,
+          (next) => {
+            if (index === 1) errors.push(next);
+          },
+        ];
       },
-      '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 'buyer' } }) },
-      '@/lib/api/transactions': {
-        useTransaction: () => ({}),
-        useDownloadInvoice: () => ({}),
-      },
-      '@/lib/api/receipts': {
-        kinds: ['image/png', 'image/jpeg'],
-        maxBytes: 5 * 1024 * 1024,
-        maxReceipts: 5,
-        useUploadReceipt: () => ({ mutate: ({ file }) => uploads.push(file) }),
-        useDownloadReceipt: () => ({}),
-        useDeleteReceipt: () => ({}),
-      },
-      '@/lib/format': { formatRand() {}, toCents() {}, formatDate() {} },
-      '@/lib/utils': { cn: () => '' },
-      '@/components/ui/button-variants': { buttonVariants: () => '' },
-    }
-  );
-  const tree = TransactionDialog({
+    },
+    '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 'buyer' } }) },
+    '@/lib/api/transactions': {
+      useTransaction: () => ({}),
+      useDownloadInvoice: () => ({}),
+    },
+    '@/lib/api/receipts': {
+      kinds: ['image/png', 'image/jpeg'],
+      maxBytes: 5 * 1024 * 1024,
+      maxReceipts: 5,
+      useUploadReceipt: () => ({ mutate: ({ file }) => uploads.push(file) }),
+      useDownloadReceipt: () => ({}),
+      useDeleteReceipt: () => ({}),
+    },
+    '@/lib/format': { formatRand() {}, toCents() {}, formatDate() {} },
+    '@/lib/utils': { cn: () => '' },
+    '@/components/ui/button-variants': { buttonVariants: () => '' },
+  });
+  const tree = TradeDetail({
     record: {
       id: 'trade',
       buyer: { id: 'buyer' },

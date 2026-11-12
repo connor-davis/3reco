@@ -19,10 +19,16 @@ type PageHeaderProps = {
   title: string;
   description?: string;
   actions?: ReactNode;
+  compactActionsBelow?: boolean;
 };
 
 /** h1, one line of help, and the page's actions on the right (map section 1). */
-export function PageHeader({ title, description, actions }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  compactActionsBelow = false,
+}: PageHeaderProps) {
   const items = Children.toArray(actions).flatMap((child) =>
     isValidElement<{ children?: ReactNode }>(child) && child.type === Fragment
       ? Children.toArray(child.props.children)
@@ -30,14 +36,22 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
   );
 
   return (
-    <header className="mb-6 flex items-start justify-between gap-4">
+    <header
+      className={cn(
+        'mb-6 flex items-start justify-between gap-4',
+        compactActionsBelow && 'max-lg:flex-col'
+      )}
+    >
       <div className="min-w-0 space-y-1">
         <h1 className="text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
           {title}
         </h1>
         {description && (
           <p
-            className="max-w-[56ch] truncate text-[15px] text-muted-foreground"
+            className={cn(
+              'max-w-[56ch] text-[15px] text-muted-foreground',
+              !compactActionsBelow && 'truncate'
+            )}
             title={description}
           >
             {description}
@@ -45,7 +59,12 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
         )}
       </div>
       {items.length > 0 && (
-        <div className="flex shrink-0 items-center gap-2 [&>*]:min-h-11 [&>button:has(svg)]:max-lg:w-11 [&>button:has(svg)]:max-lg:gap-0 [&>button:has(svg)]:max-lg:overflow-hidden [&>button:has(svg)]:max-lg:px-3 [&>button:has(svg)]:max-lg:text-[0px]">
+        <div
+          className={cn(
+            compactActionsBelow && 'max-lg:w-full max-lg:[&>*]:w-full',
+            'flex shrink-0 items-center gap-2 [&>*]:min-h-11 [&>button:has(svg)]:max-lg:w-11 [&>button:has(svg)]:max-lg:gap-0 [&>button:has(svg)]:max-lg:overflow-hidden [&>button:has(svg)]:max-lg:px-3 [&>button:has(svg)]:max-lg:text-[0px]'
+          )}
+        >
           {items[0]}
           {items.length > 1 && (
             <DropdownMenu>
@@ -80,7 +99,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 }
 
 type SectionProps = {
-  title: ReactNode;
+  title?: ReactNode;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
@@ -99,15 +118,17 @@ export function Section({
     <section
       className={cn(panel ? 'rounded-2xl bg-muted/50 p-4 lg:p-6' : 'mt-6')}
     >
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
+      {(title || action) && (
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+            {description && (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
+          {action}
         </div>
-        {action}
-      </div>
+      )}
       {children}
     </section>
   );

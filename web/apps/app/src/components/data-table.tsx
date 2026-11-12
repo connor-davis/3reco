@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Panel } from '@/components/panel';
 import {
   Table,
   TableBody,
@@ -28,6 +29,7 @@ declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
     align?: 'left' | 'right';
     sticky?: 'left' | 'right';
+    className?: string;
   }
 }
 
@@ -37,13 +39,16 @@ type DataTableProps<T> = {
   // Compact lists share one divided surface.
   renderCard: (row: T) => ReactNode;
   footer?: ReactNode;
+  onRowClick?: (row: T) => void;
+  rowLabel?: (row: T) => string;
+  fit?: boolean;
   // The server orders the rows: one column, either way round, never unsorted.
   serverSort?: { id: string; desc: boolean; onChange: (desc: boolean) => void };
 };
 
 /**
  * The shadcn Table with TanStack Table doing columns and sorting. Below
- * 1100px the same data renders as list rows, so nothing scrolls sideways.
+ * 1024px the same data renders as list rows, so nothing scrolls sideways.
  */
 export function DataTable<T>({
   columns,
@@ -51,6 +56,9 @@ export function DataTable<T>({
   renderCard,
   footer,
   serverSort,
+  onRowClick,
+  rowLabel,
+  fit = false,
 }: DataTableProps<T>) {
   const compact = useIsCompact();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -76,27 +84,19 @@ export function DataTable<T>({
   const rows = table.getRowModel().rows;
 
   return (
-    <div className="space-y-3">
+    <Panel>
       {compact ? (
-        <ul className="divide-y overflow-hidden rounded-lg border">
+        <ul className="divide-y">
           {rows.map((row: Row<T>) => (
-            <li
-              key={row.id}
-              className="[--row-background:var(--background)] even:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
-            >
-              {renderCard(row.original)}
-            </li>
+            <li key={row.id}>{renderCard(row.original)}</li>
           ))}
         </ul>
       ) : (
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
+        <div className="min-w-0">
+          <Table className={fit ? 'table-fixed' : undefined}>
             <TableHeader>
               {table.getHeaderGroups().map((group) => (
-                <TableRow
-                  key={group.id}
-                  className="group bg-background [--row-background:var(--background)] hover:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))]"
-                >
+                <TableRow key={group.id} className="group hover:bg-transparent">
                   {group.headers.map((header) => (
                     <TableHead
                       key={header.id}
@@ -110,10 +110,12 @@ export function DataTable<T>({
                           : undefined
                       }
                       className={cn(
+                        'text-xs font-normal text-muted-foreground',
+                        header.column.columnDef.meta?.className,
                         header.column.columnDef.meta?.align === 'right' &&
                           'text-right tabular-nums',
                         header.column.columnDef.meta?.sticky &&
-                          'sticky z-20 bg-[var(--row-background)]',
+                          'sticky z-20 bg-muted',
                         header.column.columnDef.meta?.sticky === 'left' &&
                           'left-0',
                         header.column.columnDef.meta?.sticky === 'right' &&
@@ -146,17 +148,39 @@ export function DataTable<T>({
               {rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  // :where keeps stripes below hover, selected and expanded states.
-                  className="group bg-[var(--row-background)] [--row-background:var(--background)] hover:bg-[var(--row-background)] hover:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))] data-[state=selected]:bg-[var(--row-background)] data-[state=selected]:[--row-background:var(--muted)] has-aria-expanded:bg-[var(--row-background)] has-aria-expanded:[--row-background:color-mix(in_oklab,var(--muted)_50%,var(--background))] [&:where(:nth-child(even))]:[--row-background:color-mix(in_oklab,var(--muted)_45%,var(--background))]"
+                  className={cn(
+                    'group hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring',
+                    onRowClick && 'cursor-pointer'
+                  )}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  aria-label={rowLabel?.(row.original)}
+                  onClick={
+                    onRowClick ? () => onRowClick(row.original) : undefined
+                  }
+                  onKeyDown={
+                    onRowClick
+                      ? (event) => {
+                          if (
+                            event.target === event.currentTarget &&
+                            (event.key === 'Enter' || event.key === ' ')
+                          ) {
+                            event.preventDefault();
+                            onRowClick(row.original);
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
                       className={cn(
+                        fit && 'px-2 whitespace-normal',
+                        cell.column.columnDef.meta?.className,
                         cell.column.columnDef.meta?.align === 'right' &&
                           'text-right whitespace-nowrap tabular-nums',
                         cell.column.columnDef.meta?.sticky &&
-                          'sticky z-10 bg-[var(--row-background)] transition-colors',
+                          'sticky z-10 bg-muted transition-colors',
                         cell.column.columnDef.meta?.sticky === 'left' &&
                           'left-0',
                         cell.column.columnDef.meta?.sticky === 'right' &&
@@ -180,7 +204,7 @@ export function DataTable<T>({
           {footer}
         </div>
       )}
-    </div>
+    </Panel>
   );
 }
 

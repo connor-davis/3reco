@@ -10,7 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Guarded } from '@/components/access-guard';
-import { BusinessName, TradeTypeLabel } from '@/components/badges';
+import { TradeTypeLabel } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { LinkButton } from '@/components/link-button';
 import { PageHeader, Section } from '@/components/page-header';
@@ -18,12 +18,13 @@ import { StatCard, StatGrid } from '@/components/stat-card';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useDashboard } from '@/lib/api/dashboards';
 import { useStats } from '@/lib/api/stats';
-import { formatDate, formatKg, formatRand, toCents } from '@/lib/format';
+import { formatKg, formatRand, toCents } from '@/lib/format';
 import { formatCo2 } from '@/lib/impact';
 import { roleLabel } from '@/lib/access';
 import {
   CounterpartyRows,
   RecentActivity,
+  NeedsAttention,
   MaterialsPanel,
   QuickLinks,
 } from './-dashboard/panels';
@@ -68,9 +69,58 @@ function Dashboard() {
   const first = useFirstVisit(user?.id);
   const dashboard = query.data;
 
+  const workspace = (
+    <Section title="Your workspace">
+      <QuickLinks
+        links={
+          collector
+            ? [
+                {
+                  to: '/transactions/sales',
+                  label: 'My collections',
+                  icon: Receipt,
+                },
+              ]
+            : staff
+              ? [
+                  { to: '/materials', label: 'Materials', icon: Boxes },
+                  {
+                    to: '/collections',
+                    label: 'Collections',
+                    icon: ClipboardList,
+                  },
+                  {
+                    to: '/collectors',
+                    label: 'Collectors',
+                    icon: Users,
+                  },
+                ]
+              : [
+                  {
+                    to: '/market',
+                    label: 'Browse',
+                    icon: Search,
+                  },
+                  {
+                    to: '/stock',
+                    label: 'Stock',
+                    icon: PackageOpen,
+                  },
+                  {
+                    to: '/collections',
+                    label: 'Collect',
+                    icon: ClipboardList,
+                  },
+                ]
+        }
+      />
+    </Section>
+  );
+
   return (
-    <>
+    <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
       <PageHeader
+        compactActionsBelow
         title={
           staff
             ? 'A clear view of the trade.'
@@ -81,7 +131,9 @@ function Dashboard() {
         description={
           staff
             ? 'Everyone on 3REco, last 30 days.'
-            : 'Your settled trades, last 30 days.'
+            : collector
+              ? 'Your collections, last 30 days.'
+              : 'Your settled trades, last 30 days.'
         }
         actions={
           <LinkButton
@@ -126,40 +178,24 @@ function Dashboard() {
       >
         {dashboard && (
           <>
-            <StatGrid>
+            <StatGrid threeUp>
               <StatCard
-                label={
-                  collector
-                    ? 'Collected (30 days)'
-                    : 'Materials traded (30 days)'
-                }
+                label={collector ? 'Collected' : 'Material traded'}
                 value={formatKg(dashboard.totals.weight)}
                 icon={Boxes}
               />
               <StatCard
-                label={
-                  collector
-                    ? 'Your earnings (30 days)'
-                    : 'Trade value (30 days)'
-                }
+                label={collector ? 'Earned' : 'Trade value'}
                 value={formatRand(toCents(dashboard.totals.value))}
                 icon={Receipt}
               />
               <StatCard
-                label={
-                  collector
-                    ? 'Collections (30 days)'
-                    : 'Settled trades (30 days)'
-                }
+                label={collector ? 'Collections' : 'Settled trades'}
                 value={String(dashboard.totals.count)}
                 icon={ClipboardList}
               />
-              <StatCard
-                label="CO₂e saved (30 days)"
-                value={formatCo2(dashboard.totals.carbon_savings)}
-                icon={Leaf}
-              />
             </StatGrid>
+            {workspace}
             {staff && dashboard.by_type && (
               <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
                 {dashboard.by_type.map((row) => (
@@ -172,27 +208,19 @@ function Dashboard() {
                 ))}
               </ul>
             )}
-            <Section
-              title="Trade activity"
-              description={
-                'From ' + formatDate(dashboard.from) + ' over the last 30 days'
-              }
-            >
-              <div className="grid items-start gap-6 md:grid-cols-2">
-                <RecentActivity collector={collector} />
-                <CounterpartyRows
-                  rows={dashboard.counterparties}
-                  tradesTo={collector ? '/transactions/sales' : '/transactions'}
-                  platformTotals={staff ? dashboard.totals : undefined}
-                />
-                <MaterialsPanel
-                  className="md:col-span-2"
-                  series={dashboard.series}
-                />
-              </div>
-            </Section>
+
+            <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+              <NeedsAttention collector={collector} />
+              <MaterialsPanel series={dashboard.series} />
+            </div>
+            <RecentActivity collector={collector} />
+            <CounterpartyRows
+              rows={dashboard.counterparties}
+              tradesTo={collector ? '/transactions/sales' : '/transactions'}
+              platformTotals={staff ? dashboard.totals : undefined}
+            />
             {staff && dashboard.users && (
-              <Section title="People on 3REco">
+              <Section panel title="People on 3REco">
                 <ul className="flex flex-wrap gap-6">
                   {dashboard.users.map((group) => (
                     <li key={group.role} className="text-sm">
@@ -203,109 +231,62 @@ function Dashboard() {
                 </ul>
               </Section>
             )}
-            {!collector && <CommunityImpact />}
+            <CommunityImpact
+              collector={collector}
+              carbonSavings={dashboard.totals.carbon_savings}
+            />
           </>
         )}
       </DataState>
-      <Section title="Your workspace">
-        <QuickLinks
-          links={
-            collector
-              ? [
-                  {
-                    to: '/transactions/sales',
-                    label: 'Your sales',
-                    icon: Receipt,
-                  },
-                ]
-              : staff
-                ? [
-                    { to: '/materials', label: 'Materials', icon: Boxes },
-                    {
-                      to: '/collections',
-                      label: 'Collections',
-                      icon: ClipboardList,
-                    },
-                    { to: '/collectors', label: 'Collectors', icon: Users },
-                  ]
-                : [
-                    { to: '/market', label: 'Browse materials', icon: Search },
-                    { to: '/stock', label: 'Manage stock', icon: PackageOpen },
-                    {
-                      to: '/collections',
-                      label: 'Record a collection',
-                      icon: ClipboardList,
-                    },
-                  ]
-          }
-        />
-      </Section>
-    </>
+      {(!dashboard ||
+        dashboard.totals.count === 0 ||
+        query.isPending ||
+        query.isError) &&
+        workspace}
+    </div>
   );
 }
 
-function CommunityImpact() {
+function CommunityImpact({
+  carbonSavings,
+  collector,
+}: {
+  carbonSavings: string;
+  collector: boolean;
+}) {
   const query = useStats();
   const stats = query.data;
   return (
     <Section
-      title="Our community's impact — all time"
-      description="Every settled trade on 3REco since the start, not just the last 30 days."
+      panel
+      title={collector ? 'Collection impact' : 'Community impact'}
+      action={
+        !collector && (
+          <LinkButton to="/market" variant="link">
+            See all stores
+          </LinkButton>
+        )
+      }
     >
-      <DataState
-        query={query}
-        isEmpty={stats?.deals === 0}
-        icon={Leaf}
-        emptyTitle="Every trade counts"
-        emptyText="Community impact will appear after the first settled trade."
-      >
-        {stats && (
-          <div className="space-y-6">
-            <StatGrid threeUp>
-              <StatCard
-                label="Materials traded (all time)"
-                value={formatKg(stats.total_kg)}
-                icon={Boxes}
-              />
-              <StatCard
-                label="CO₂e saved (all time)"
-                value={formatCo2(stats.co2_kg)}
-                icon={Leaf}
-              />
-              <StatCard
-                label="Settled trades (all time)"
-                value={String(stats.deals)}
-                icon={Receipt}
-              />
-            </StatGrid>
-            <div>
-              <h3 className="font-medium">Top stores by material traded</h3>
-              <p className="text-sm text-muted-foreground">
-                Collections bought and materials sold.
-              </p>
-            </div>
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {stats.top_stores.map((store, index) => (
-                <li key={store.id} className="rounded-lg border p-4">
-                  <span className="block text-sm text-muted-foreground">
-                    {index + 1}. {formatKg(store.kg)}
-                  </span>
-                  <LinkButton
-                    className="min-h-11 px-0"
-                    to={'/market/store/' + store.id}
-                    variant="link"
-                  >
-                    <BusinessName
-                      name={store.name}
-                      verified={store.business_verified}
-                    />
-                  </LinkButton>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </DataState>
+      <p className="mb-3 text-sm">
+        CO₂e saved in your last 30 days: {formatCo2(carbonSavings)}
+      </p>
+      {!collector && (
+        <DataState
+          query={query}
+          isEmpty={stats?.deals === 0}
+          icon={Leaf}
+          emptyTitle="Every trade counts"
+          emptyText="Community impact will appear after the first settled trade."
+        >
+          {stats && (
+            <p className="text-sm text-muted-foreground">
+              {formatKg(stats.total_kg)} traded · {formatCo2(stats.co2_kg)}{' '}
+              saved · {stats.deals} settled trades, all time.
+            </p>
+          )}
+        </DataState>
+      )}
     </Section>
   );
 }

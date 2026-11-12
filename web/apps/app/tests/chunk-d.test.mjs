@@ -36,6 +36,7 @@ function load(relative, overrides = {}) {
       URL,
       require: (name) => {
         if (name in overrides) return overrides[name];
+        if (name === '@/hooks/use-mobile') return { useIsCompact: () => false };
         if (name === '@tanstack/react-router')
           return { createFileRoute: () => (options) => options };
         if (name === '@/components/data-state')

@@ -30,6 +30,7 @@ import { Route as MessagesIndexRouteImport } from './routes/messages/index'
 import { Route as MarketIndexRouteImport } from './routes/market/index'
 import { Route as TransactionsSalesRouteImport } from './routes/transactions/sales'
 import { Route as TransactionsPurchasesRouteImport } from './routes/transactions/purchases'
+import { Route as TransactionsTransactionIdRouteImport } from './routes/transactions/$transactionId'
 import { Route as MessagesRequestIdRouteImport } from './routes/messages/$requestId'
 import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
@@ -143,6 +144,12 @@ const TransactionsPurchasesRoute = TransactionsPurchasesRouteImport.update({
   path: '/transactions/purchases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TransactionsTransactionIdRoute =
+  TransactionsTransactionIdRouteImport.update({
+    id: '/transactions/$transactionId',
+    path: '/transactions/$transactionId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const MessagesRequestIdRoute = MessagesRequestIdRouteImport.update({
   id: '/messages/$requestId',
   path: '/messages/$requestId',
@@ -200,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
   '/messages/$requestId': typeof MessagesRequestIdRoute
+  '/transactions/$transactionId': typeof TransactionsTransactionIdRoute
   '/transactions/purchases': typeof TransactionsPurchasesRoute
   '/transactions/sales': typeof TransactionsSalesRoute
   '/market/': typeof MarketIndexRoute
@@ -230,6 +238,7 @@ export interface FileRoutesByTo {
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
   '/messages/$requestId': typeof MessagesRequestIdRoute
+  '/transactions/$transactionId': typeof TransactionsTransactionIdRoute
   '/transactions/purchases': typeof TransactionsPurchasesRoute
   '/transactions/sales': typeof TransactionsSalesRoute
   '/market': typeof MarketIndexRoute
@@ -261,6 +270,7 @@ export interface FileRoutesById {
   '/market/incoming': typeof MarketIncomingRoute
   '/market/outgoing': typeof MarketOutgoingRoute
   '/messages/$requestId': typeof MessagesRequestIdRoute
+  '/transactions/$transactionId': typeof TransactionsTransactionIdRoute
   '/transactions/purchases': typeof TransactionsPurchasesRoute
   '/transactions/sales': typeof TransactionsSalesRoute
   '/market/': typeof MarketIndexRoute
@@ -293,6 +303,7 @@ export interface FileRouteTypes {
     | '/market/incoming'
     | '/market/outgoing'
     | '/messages/$requestId'
+    | '/transactions/$transactionId'
     | '/transactions/purchases'
     | '/transactions/sales'
     | '/market/'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/market/incoming'
     | '/market/outgoing'
     | '/messages/$requestId'
+    | '/transactions/$transactionId'
     | '/transactions/purchases'
     | '/transactions/sales'
     | '/market'
@@ -353,6 +365,7 @@ export interface FileRouteTypes {
     | '/market/incoming'
     | '/market/outgoing'
     | '/messages/$requestId'
+    | '/transactions/$transactionId'
     | '/transactions/purchases'
     | '/transactions/sales'
     | '/market/'
@@ -384,6 +397,7 @@ export interface RootRouteChildren {
   MarketIncomingRoute: typeof MarketIncomingRoute
   MarketOutgoingRoute: typeof MarketOutgoingRoute
   MessagesRequestIdRoute: typeof MessagesRequestIdRoute
+  TransactionsTransactionIdRoute: typeof TransactionsTransactionIdRoute
   TransactionsPurchasesRoute: typeof TransactionsPurchasesRoute
   TransactionsSalesRoute: typeof TransactionsSalesRoute
   MarketIndexRoute: typeof MarketIndexRoute
@@ -543,6 +557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransactionsPurchasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/transactions/$transactionId': {
+      id: '/transactions/$transactionId'
+      path: '/transactions/$transactionId'
+      fullPath: '/transactions/$transactionId'
+      preLoaderRoute: typeof TransactionsTransactionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/messages/$requestId': {
       id: '/messages/$requestId'
       path: '/messages/$requestId'
@@ -616,6 +637,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarketIncomingRoute: MarketIncomingRoute,
   MarketOutgoingRoute: MarketOutgoingRoute,
   MessagesRequestIdRoute: MessagesRequestIdRoute,
+  TransactionsTransactionIdRoute: TransactionsTransactionIdRoute,
   TransactionsPurchasesRoute: TransactionsPurchasesRoute,
   TransactionsSalesRoute: TransactionsSalesRoute,
   MarketIndexRoute: MarketIndexRoute,

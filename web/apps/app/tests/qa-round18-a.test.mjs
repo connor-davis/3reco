@@ -9,7 +9,7 @@ test('qa-round18 L1 (round 21): Trading partners sizes to content with its summa
   // Exact: integer cents and counts summed from the same rows the list shows.
   assert.match(panels, /sum \+ toCents\(party\.value\)/);
   assert.match(panels, /sum \+ party\.count/);
-  assert.match(panels, /View all trades/);
+  assert.match(panels, /See all/);
   // Admin rows list a trade under both partners, so they are never summed.
   assert.match(panels, /platformTotals\?\.count \?\?/);
   assert.match(

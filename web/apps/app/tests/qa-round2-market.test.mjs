@@ -14,15 +14,15 @@ test('a closed request does not say "Awaiting offer"', () => {
   );
 });
 
-test('incoming rows show kg and price', () => {
+test('request rows show materials, parties, weight and total in the shared record layout', () => {
+  assert.match(requests, /layout="record"/);
   assert.match(
     requests,
-    /direction === 'incoming' && <Terms request=\{request\} \/>/
+    /secondaryValue=\{formatKg|secondaryValue=\{\s*formatKg/
   );
-  assert.match(
-    requests,
-    /\$\{formatKg\(weight\)\} at \$\{formatRate\(price\)\}/
-  );
+  assert.match(requests, /item.offer_weight \?\? item.requested_weight/);
+  assert.match(requests, /formatRand\(requestTotal\(request\)\)/);
+  assert.match(requests, /<TradeParties[\s\S]*buyer=\{request.buyer\}/);
 });
 
 test('your own lot has no quantity form or validation', () => {

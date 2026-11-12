@@ -244,6 +244,7 @@ test('B5: export success and failure have separate feedback', () => {
       react: hooks,
       '@tanstack/react-router': {
         useSearch: () => ({}),
+        useLocation: () => ({ pathname: '/transactions/sales' }),
         useNavigate: () => () => {},
       },
       '@/lib/format': format,
@@ -353,12 +354,12 @@ test('S2/S7: listing prices print as one run of text and short titles do not res
 test('S3/S4: local dashboard spacing and readable trade pill override inherited defaults', () => {
   assert.match(
     source('routes/-dashboard/panels.tsx'),
-    /title="Recent conversations" className="gap-3"/
+    /title="Recent activity"/
   );
   assert.match(source('routes/-dashboard/panels.tsx'), /py-3 first:pt-0/);
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /min-h-8 px-3 text-sm/
+    /h-5 px-2 text-xs/
   );
 });
 
