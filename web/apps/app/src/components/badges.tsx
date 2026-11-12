@@ -102,7 +102,7 @@ export function BusinessName({
   verified?: boolean;
 }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1 align-bottom">
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1 align-bottom">
       <span className="truncate">{name}</span>
       {verified && (
         <BadgeCheck
