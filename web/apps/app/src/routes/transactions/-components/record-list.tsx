@@ -188,12 +188,14 @@ export function RecordList({
       id: 'parties',
       header: 'From → To',
       cell: ({ row }) => (
-        <div className="max-w-80 min-w-48 space-y-1 whitespace-normal">
+        <div className="max-w-md min-w-48 space-y-1 whitespace-normal 2xl:min-w-96">
           <div className="line-clamp-2">
             <Parties row={row.original} />
           </div>
-          <Badge variant="outline" className="max-w-full whitespace-normal">
+          {/* The plain compact label: a Badge inside the fixed-height Badge was clipped. */}
+          <Badge variant="outline" className="h-5 px-2 text-xs">
             <TradeTypeLabel
+              compact
               type={row.original.type}
               verified={row.original.business_verified}
             />
