@@ -9,8 +9,10 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/pdf"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/transactions"
+	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	store "github.com/connor-davis/3reco/internal/stores/requests"
 )
 
@@ -35,6 +37,10 @@ func (s *Service) MakeOffer(
 
 		if r.Status != StatusPending && r.Status != StatusOffered {
 			return apperr.Conflict("An offer can only be made on an open request.")
+		}
+
+		if err := s.requireVerified(ctx, r); err != nil {
+			return err
 		}
 
 		if err := transactions.CheckPricedItems(offer); err != nil {
@@ -154,6 +160,10 @@ func (s *Service) Accept(
 			}
 
 			return apperr.Conflict("There is no active offer to accept.")
+		}
+
+		if err := s.requireVerified(ctx, r); err != nil {
+			return err
 		}
 
 		if len(version) > 0 && version[0] != r.OfferVersion {
@@ -414,4 +424,12 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 
 		return s.notes.Notify(ctx, other.ID, step.kind, step.title, body, link)
 	})
+}
+
+// requireVerified stops new offers and acceptances once the business being bought
+// from has lost its verification. Cancelling stays open, so nothing is stranded.
+// ponytail: holds on a request stay until it is cancelled or runs out; releasing
+// them on un-verify would need a hook in the admin verify action.
+func (s *Service) requireVerified(ctx context.Context, r store.Request) error {
+	return marketsvc.RequireVerified(ctx, marketstore.New(s.db), r.Seller.ID)
 }

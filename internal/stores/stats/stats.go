@@ -11,7 +11,9 @@ import (
 type TopStore struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
-	KG   string `json:"kg"`
+	// Verified is always true today: only verified businesses are ranked.
+	Verified bool   `json:"business_verified"`
+	KG       string `json:"kg"`
 }
 
 // Summary contains exact community totals across settled trades.
@@ -48,9 +50,9 @@ func (records *Store) Summary(ctx context.Context) (Summary, error) {
 	// A business earns kg as the seller of a b2b trade and as the buyer of a
 	// collection (c2b).
 	rows, err := records.db.Q(ctx).Query(ctx, `
-		SELECT u.id, COALESCE(u.business_name,''), sum(ti.weight)::text
+		SELECT u.id, COALESCE(u.business_name,''), u.business_verified_at IS NOT NULL, sum(ti.weight)::text
 		FROM transactions t JOIN transaction_items ti ON ti.transaction_id=t.id
-		JOIN users u ON u.role='business' AND NOT u.is_removed
+		JOIN users u ON u.role='business' AND NOT u.is_removed AND u.business_verified_at IS NOT NULL
 			AND u.id = CASE WHEN t.type='b2b' THEN t.seller_id ELSE t.buyer_id END
 		WHERE t.status='complete'
 		GROUP BY u.id,u.business_name
@@ -62,7 +64,7 @@ func (records *Store) Summary(ctx context.Context) (Summary, error) {
 
 	for rows.Next() {
 		var item TopStore
-		if err := rows.Scan(&item.ID, &item.Name, &item.KG); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Verified, &item.KG); err != nil {
 			return result, err
 		}
 

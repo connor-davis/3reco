@@ -1,9 +1,15 @@
 package market
 
-import "github.com/gofiber/fiber/v3"
+import (
+	"github.com/gofiber/fiber/v3"
+
+	"github.com/connor-davis/3reco/internal/api/middleware"
+)
 
 func (handler *Handler) detail(c fiber.Ctx) error {
-	item, err := handler.svc.Detail(c.Context(), c.Params("id"))
+	user, _ := middleware.CurrentUser(c)
+
+	item, err := handler.svc.Detail(c.Context(), c.Params("id"), user.ID)
 	if err != nil {
 		return err
 	}

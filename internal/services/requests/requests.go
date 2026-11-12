@@ -16,6 +16,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
@@ -228,6 +229,10 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 
 		if !active {
 			return apperr.BadRequest("That seller is not available.", nil)
+		}
+
+		if err := marketsvc.RequireVerified(ctx, marketstore.New(s.db), in.SellerID); err != nil {
+			return err
 		}
 
 		items, err := s.checkListed(ctx, in)

@@ -23,7 +23,9 @@ func (handler *Handler) list(c fiber.Ctx) error {
 }
 
 func (handler *Handler) find(c fiber.Ctx) error {
-	item, err := handler.svc.Find(c.Context(), c.Params("id"))
+	user, _ := middleware.CurrentUser(c)
+
+	item, err := handler.svc.Find(c.Context(), c.Params("id"), user.ID)
 	if err != nil {
 		return err
 	}

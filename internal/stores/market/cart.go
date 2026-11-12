@@ -22,12 +22,13 @@ type CartItem struct {
 type CartStore struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
+	Verified  bool   `json:"business_verified"`
 	ItemCount int    `json:"item_count"`
 }
 
 // CartStores lists only the caller's nonempty carts with visible materials.
 func (records *Store) CartStores(ctx context.Context, buyer string) ([]CartStore, error) {
-	rows, err := records.db.Q(ctx).Query(ctx, `SELECT u.id, `+database.DisplayName("u")+`, count(*)
+	rows, err := records.db.Q(ctx).Query(ctx, `SELECT u.id, `+database.DisplayName("u")+`, `+database.Verified("u")+`, count(*)
         FROM carts c JOIN cart_items i ON i.cart_id=c.id JOIN stock s ON s.id=i.stock_id
         JOIN users u ON u.id=c.seller_id
         LEFT JOIN stock_holds h ON h.cart_id=c.id AND h.stock_id=i.stock_id
@@ -35,7 +36,7 @@ func (records *Store) CartStores(ctx context.Context, buyer string) ([]CartStore
         WHERE c.buyer_id=$1 AND NOT u.is_removed
         AND s.owner_id=u.id AND s.material_id=i.material_id AND s.is_listed
         AND stock_available(s.id,s.weight)+COALESCE(h.weight,0)>0
-        GROUP BY u.id, `+database.DisplayName("u")+` ORDER BY 2,1`, buyer)
+        GROUP BY u.id, `+database.DisplayName("u")+`, `+database.Verified("u")+` ORDER BY 2,1`, buyer)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (records *Store) CartStores(ctx context.Context, buyer string) ([]CartStore
 	out := []CartStore{}
 	for rows.Next() {
 		var item CartStore
-		if err := rows.Scan(&item.ID, &item.Name, &item.ItemCount); err != nil {
+		if err := rows.Scan(&item.ID, &item.Name, &item.Verified, &item.ItemCount); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

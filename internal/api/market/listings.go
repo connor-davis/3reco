@@ -14,12 +14,14 @@ func (handler *Handler) listings(c fiber.Ctx) error {
 	return handler.list(
 		c,
 		store.Filter{SellerID: c.Query("seller_id"), MaterialID: c.Query("material_id"),
-			Search: c.Query("q"), ExcludeOwner: user.ID},
+			Search: c.Query("q"), ExcludeOwner: user.ID, ViewerID: user.ID},
 	)
 }
 
 func (handler *Handler) sellerListings(c fiber.Ctx) error {
-	return handler.list(c, store.Filter{SellerID: c.Params("id")})
+	user, _ := middleware.CurrentUser(c)
+
+	return handler.list(c, store.Filter{SellerID: c.Params("id"), ViewerID: user.ID})
 }
 
 func (handler *Handler) list(c fiber.Ctx, filter store.Filter) error {

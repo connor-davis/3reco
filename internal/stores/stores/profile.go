@@ -12,6 +12,7 @@ import (
 type Profile struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
+	Verified      bool      `json:"business_verified"`
 	Image         string    `json:"image"`
 	AvatarURL     string    `json:"avatar_url"`
 	City          string    `json:"city"`
@@ -26,7 +27,7 @@ type Profile struct {
 var profileColumns = `u.id,` + database.DisplayName("u") + `,
 	COALESCE(u.image,''),CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar' ELSE COALESCE(u.image,'') END,COALESCE(u.city,''),COALESCE(u.province,''),
 	COALESCE(st.items,0),COALESCE(st.names,'{}'::text[]),
-	u.created_at`
+	u.created_at,` + database.Verified("u")
 
 // profileSelect reads the page of users first, then sums their stock in one grouped pass.
 func profileSelect(page string) string {
@@ -40,12 +41,16 @@ func profileSelect(page string) string {
 }
 
 // Find reads one active business by its users ID.
-func (records *Store) Find(ctx context.Context, id string) (Profile, error) {
+// An unverified business is hidden from everyone but itself, so its owner can
+// still open the store page and manage stock.
+func (records *Store) Find(ctx context.Context, id, viewer string) (Profile, error) {
 	var item Profile
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		profileSelect(`SELECT * FROM users u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed`),
+		profileSelect(`SELECT * FROM users u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed
+		AND (`+database.Verified("u")+` OR u.id=$2)`),
 		id,
+		viewer,
 	).Scan(
 		&item.ID,
 		&item.Name,
@@ -56,6 +61,7 @@ func (records *Store) Find(ctx context.Context, id string) (Profile, error) {
 		&item.ItemCount,
 		&item.MaterialNames,
 		&item.CreatedAt,
+		&item.Verified,
 	)
 
 	return item, err
@@ -66,6 +72,7 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		profileSelect(`SELECT * FROM users u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
+		AND `+database.Verified("u")+`
 		AND ($2='' OR u.business_name ILIKE '%'||$2||'%' OR u.name ILIKE '%'||$2||'%')
 		AND ($3='' OR (u.created_at,u.id)<($4,$3))
 		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($5,0)`),
@@ -93,6 +100,7 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 			&item.ItemCount,
 			&item.MaterialNames,
 			&item.CreatedAt,
+			&item.Verified,
 		); err != nil {
 			return nil, err
 		}

@@ -13,8 +13,8 @@ import (
 )
 
 // Find reads one active business profile with stock and review summaries.
-func (service *Service) Find(ctx context.Context, id string) (store.Profile, error) {
-	item, err := service.store.Find(ctx, id)
+func (service *Service) Find(ctx context.Context, id, viewer string) (store.Profile, error) {
+	item, err := service.store.Find(ctx, id, viewer)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return item, apperr.NotFound("No such store.")
 	}
