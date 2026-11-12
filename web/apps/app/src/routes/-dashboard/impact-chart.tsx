@@ -36,10 +36,7 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
     kg: Number(day.weight),
   }));
   return (
-    <ChartContainer
-      config={config}
-      className="aspect-auto min-h-56 w-full flex-1"
-    >
+    <ChartContainer config={config} className="h-64 w-full flex-none">
       <BarChart
         accessibilityLayer
         data={points}

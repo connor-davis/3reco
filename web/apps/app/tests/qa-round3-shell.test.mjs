@@ -37,15 +37,22 @@ const helpers = compile('../src/components/chat/helpers.ts', {
   '@/lib/format': format,
 });
 
+test('number groups, currency and weight units stay together when wrapping', () => {
+  assert.equal(format.formatKg('1959.35'), '1\u00a0959.35\u00a0kg');
+  assert.equal(format.formatRand(195935), 'R\u00a01\u00a0959.35');
+  assert.equal(format.formatRand(-195935), '-R\u00a01\u00a0959.35');
+  assert.equal(format.formatKgFixed('1000000.01'), '1\u00a0000\u00a0000.01');
+});
+
 test('weights and CO₂e use one rule: kg, thousands spaces, 2 decimals at most', () => {
-  assert.equal(format.formatKg('1231.805'), '1 231.81 kg');
-  assert.equal(format.formatKg('12000'), '12 000 kg');
-  assert.equal(format.formatKg('4799.25'), '4 799.25 kg');
-  assert.equal(format.formatKg('0.5'), '0.5 kg');
-  assert.equal(format.formatKg(1231.805), '1 231.81 kg');
-  assert.equal(impact.formatCo2('3500.4'), '3 500.40 kg CO₂e');
+  assert.equal(format.formatKg('1231.805'), '1 231.81 kg');
+  assert.equal(format.formatKg('12000'), '12 000 kg');
+  assert.equal(format.formatKg('4799.25'), '4 799.25 kg');
+  assert.equal(format.formatKg('0.5'), '0.5 kg');
+  assert.equal(format.formatKg(1231.805), '1 231.81 kg');
+  assert.equal(impact.formatCo2('3500.4'), '3 500.40 kg CO₂e');
   assert.equal(impact.formatCo2(129.999), '130.00 kg CO₂e');
-  assert.equal(impact.formatCo2(1900.123), '1 900.12 kg CO₂e');
+  assert.equal(impact.formatCo2(1900.123), '1 900.12 kg CO₂e');
 });
 
 test('the About line shows CO₂e with the one formatter', () => {

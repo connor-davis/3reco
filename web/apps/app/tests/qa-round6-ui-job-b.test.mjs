@@ -11,7 +11,7 @@ const { formatCo2 } = load('lib/impact.ts', {
 });
 
 test('qa-round6-ui: the dashboard shows CO2 with the same decimals as every page', () => {
-  assert.equal(formatCo2('1414.1'), '1 414.10 kg CO₂e');
+  assert.equal(formatCo2('1414.1'), '1 414.10 kg CO₂e');
   assert.doesNotMatch(source('routes/index.tsx'), /wholeKg/);
 });
 
@@ -76,7 +76,7 @@ test('qa-round6-ui: material summaries use cached request items in inbox and das
     renderToStaticMarkup(
       createElement(ThreadMaterials, { requestId: 'request' })
     ),
-    /Aluminium cans · 12.75 kg/
+    /Aluminium cans · 12.75 kg/
   );
   for (const path of [
     'components/chat/inbox.tsx',
@@ -173,6 +173,6 @@ test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded b
   );
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /<ItemGroup className="gap-0 overflow-hidden rounded-lg border sm:gap-4"/
+    /<ItemGroup className="max-w-5xl gap-0 overflow-hidden rounded-lg border sm:gap-4"/
   );
 });

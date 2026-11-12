@@ -176,19 +176,20 @@ test('H7: carbon factors always show 2 decimals', () => {
   assert.doesNotMatch(source('routes/materials.tsx'), /formatKgNumber/);
 });
 
-test('S1 (round 21): panels share one height, lists scroll inside', () => {
+test('S1 (round 21): panels size to their content', () => {
   const panels = source('routes/-dashboard/panels.tsx');
   assert.match(panels, /min-h-0 flex-1 divide-y overflow-y-auto/);
   assert.match(panels, /mt-auto flex flex-wrap/);
   assert.match(panels, /sum \+ toCents\(party\.value\)/);
   assert.match(
     source('routes/index.tsx'),
-    /grid gap-6 lg:auto-rows-\[30rem\] lg:grid-cols-2/
+    /grid items-start gap-6 md:grid-cols-2/
   );
 });
 
 test('S2: the whole price is one run of text', () => {
   const { ListingCard } = compile('components/listing-card.tsx', {
+    react: { useState: () => [undefined, () => {}] },
     '@/lib/format': format,
   });
   const tree = ListingCard({ listing: { price: '22.37', weight: '12.5' } });
@@ -196,7 +197,7 @@ test('S2: the whole price is one run of text', () => {
     (node) =>
       node.type === 'p' && node.props.className === 'font-semibold tabular-nums'
   );
-  assert.equal(price.props.children, 'R 22.37 / kg');
+  assert.equal(price.props.children, 'R 22.37 / kg');
   assert.doesNotMatch(source('components/listing-card.tsx'), /font-normal/);
 });
 

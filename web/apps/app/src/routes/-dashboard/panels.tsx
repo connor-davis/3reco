@@ -43,7 +43,7 @@ export function Panel({
   contentClassName?: string;
 }) {
   return (
-    <Card className={cn('h-full', className)}>
+    <Card className={className}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}

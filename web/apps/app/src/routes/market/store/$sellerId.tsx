@@ -63,7 +63,7 @@ function StorePage() {
             }}
             listing={chatListing ?? undefined}
           />
-          <header className="flex flex-wrap items-center gap-4 rounded-lg bg-muted p-6">
+          <header className="flex flex-wrap items-center gap-4 rounded-lg bg-muted p-[17px] sm:p-6">
             <PersonAvatar
               name={store.data.name}
               image={
@@ -85,28 +85,30 @@ function StorePage() {
               </p>
             </div>
             {user?.role === 'business' && user.id !== sellerId && (
-              <Button
-                nativeButton={false}
-                render={<Link to="/cart" search={{ seller_id: sellerId }} />}
-                variant="outline"
-              >
-                Cart
-              </Button>
-            )}
-            {user?.role === 'business' && user.id !== sellerId && (
-              <Button
-                disabled={
-                  !listings.data?.items.some((item) => toGrams(item.weight) > 0)
-                }
-                onClick={() => {
-                  const item = listings.data?.items.find(
-                    (item) => toGrams(item.weight) > 0
-                  );
-                  if (item) setChatListing(item);
-                }}
-              >
-                Message store
-              </Button>
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                <Button
+                  nativeButton={false}
+                  render={<Link to="/cart" search={{ seller_id: sellerId }} />}
+                  variant="outline"
+                >
+                  Cart
+                </Button>
+                <Button
+                  disabled={
+                    !listings.data?.items.some(
+                      (item) => toGrams(item.weight) > 0
+                    )
+                  }
+                  onClick={() => {
+                    const item = listings.data?.items.find(
+                      (item) => toGrams(item.weight) > 0
+                    );
+                    if (item) setChatListing(item);
+                  }}
+                >
+                  Message store
+                </Button>
+              </div>
             )}
           </header>
           <Tabs defaultValue="stock" className="mt-8">
@@ -122,7 +124,7 @@ function StorePage() {
                 emptyTitle="Nothing listed right now"
                 emptyText="This store has no materials listed."
               >
-                <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {listings.data?.items.map((item) => (
                     <ListingCard
                       key={item.id}

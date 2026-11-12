@@ -63,6 +63,7 @@ test('B3: Add account sends the add and redirect search', () => {
 
 test('B4b: store page cards hide the seller, market cards keep it', () => {
   const { ListingCard } = load('components/listing-card.tsx', {
+    react: { useState: () => [undefined, () => {}] },
     '@/components/visuals': { PersonAvatar: 'avatar' },
     'react/jsx-runtime': jsx,
     '@tanstack/react-router': { Link: 'a' },

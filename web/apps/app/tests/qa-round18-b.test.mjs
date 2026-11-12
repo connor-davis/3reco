@@ -77,7 +77,7 @@ test('A1/A6: removed counterparties have no Visit link; live parties and quantit
       const quantities = Availability({ stockId: 'stock' }).props.children.join(
         ''
       );
-      assert.equal(quantities, '12.5 kg available · 2 kg held');
+      assert.equal(quantities, '12.5 kg available · 2 kg held');
     }
   }
 });
@@ -275,7 +275,7 @@ test('A5: staff breadcrumb and browser title use the same unavailable label; adm
     assert.equal(nav.pageTitleFor('/admin/users', role), expected);
     assert.equal(
       tree.filter((node) => node.props.children === expected).length,
-      2
+      1
     );
   }
   assert.match(
@@ -325,7 +325,7 @@ test('H2: million-kg axis ticks are compact and tooltip weights retain full prec
     axisWeight
   );
   const tooltip = tree.find((node) => node.props.content).props.content;
-  assert.equal(tooltip.props.formatter(1200000).props.children, '1 200 000 kg');
+  assert.equal(tooltip.props.formatter(1200000).props.children, '1 200 000 kg');
 });
 
 test('H3: collection title and submit action both say Record collection', () => {

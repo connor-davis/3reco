@@ -57,19 +57,19 @@ export function AccountMenu() {
         render={
           <Button
             variant="ghost"
-            className="h-auto gap-2 px-2 py-1 max-[780px]:min-h-11"
+            className="h-auto gap-2 px-2 py-1 max-lg:min-h-11"
             aria-label="Account menu"
           />
         }
       >
         <PersonAvatar name={user.name} />
-        <span className="hidden min-w-0 text-left text-xs sm:block">
+        <span className="hidden min-w-0 text-left text-xs lg:block">
           <span className="block truncate font-medium">{user.name}</span>
           <span className="block truncate text-muted-foreground">
             {user.role ? roleLabels[user.role] : 'No role yet'}
           </span>
         </span>
-        <ChevronsUpDown className="hidden sm:block" aria-hidden="true" />
+        <ChevronsUpDown className="hidden lg:block" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>

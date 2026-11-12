@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { source } from './qa-round2-loader.mjs';
 
-test('qa-round18 L1 (round 21): Trading partners fills the shared height, summary pinned under the list', () => {
+test('qa-round18 L1 (round 21): Trading partners sizes to content with its summary under the list', () => {
   const panels = source('routes/-dashboard/panels.tsx');
-  assert.match(panels, /h-full/);
+  assert.doesNotMatch(panels, /h-full/);
   assert.match(panels, /mt-auto flex flex-wrap/);
   // Exact: integer cents and counts summed from the same rows the list shows.
   assert.match(panels, /sum \+ toCents\(party\.value\)/);

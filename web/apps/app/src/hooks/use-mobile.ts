@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-const MOBILE_BREAKPOINT = 781;
+const MOBILE_BREAKPOINT = 1024;
 // Tables switch to cards below this width. With the sidebar open, a table
 // needs about 1100px of window to fit without a scrollbar.
 const COMPACT_BREAKPOINT = 1100;
@@ -18,7 +18,7 @@ function useMedia(query: string) {
   );
 }
 
-/** True on phones. Reads the browser's media query, so no effect is needed. */
+/** True on phones and tablets. Reads the browser's media query directly. */
 export function useIsMobile() {
   return useMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
 }

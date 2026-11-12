@@ -62,7 +62,7 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="none"
-      className="sticky top-0 h-svh w-60 shrink-0 border-r max-[780px]:hidden"
+      className="sticky top-0 h-svh w-60 shrink-0 border-r max-lg:hidden"
     >
       <SidebarHeader className="gap-3">
         <Link

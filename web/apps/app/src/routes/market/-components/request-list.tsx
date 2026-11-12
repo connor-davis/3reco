@@ -46,12 +46,8 @@ export function RequestList({
 
   return (
     <>
-      <PageHeader
-        title={title}
-        description={description}
-        actions={<LinkButton to="/messages">Open messages</LinkButton>}
-      />
-      <div className="mb-6 flex flex-wrap gap-3">
+      <PageHeader title={title} description={description} />
+      <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBox
           label="Search this page"
           value={search}
@@ -76,6 +72,7 @@ export function RequestList({
                 : (requestStatuses[value as RequestStatus]?.label ?? value),
           }))}
         />
+        <LinkButton to="/messages">Open messages</LinkButton>
       </div>
       <DataState
         query={query}
@@ -85,7 +82,7 @@ export function RequestList({
         emptyText="Requests appear here when you start trading."
         skeleton={<RowsSkeleton />}
       >
-        <ul className="divide-y overflow-hidden rounded-lg border">
+        <ul className="max-w-3xl divide-y overflow-hidden rounded-lg border">
           {shown.map((request) => {
             const other = counterpartyOf(request, user?.id);
             return (

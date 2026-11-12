@@ -119,8 +119,8 @@ test('dashboard hides retained totals and every activity panel while pending, fa
     const html = renderToStaticMarkup(
       React.createElement(page.Route.component)
     );
-    assert.ok(!html.includes('R 12 345.67'));
-    assert.ok(!html.includes('2 345.5 kg'));
+    assert.ok(!html.includes('R 12 345.67'));
+    assert.ok(!html.includes('2 345.5 kg'));
     assert.ok(!html.includes('Trading partners'));
     assert.ok(!html.includes('Materials on the move'));
     assert.ok(!html.includes('88 888'));
@@ -140,8 +140,8 @@ test('renaming a collector preserves server totals and distinct partners with id
     '@/lib/api/stats': { useStats: () => ready(null) },
   });
   const html = renderToStaticMarkup(React.createElement(page.Route.component));
-  assert.ok(html.includes('R 12 345.67'));
-  assert.ok(html.includes('2 345.5 kg'));
+  assert.ok(html.includes('R 12 345.67'));
+  assert.ok(html.includes('2 345.5 kg'));
   assert.equal((html.match(/Same name/g) ?? []).length, 2);
 });
 

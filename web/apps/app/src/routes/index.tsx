@@ -180,9 +180,7 @@ function Dashboard() {
                 'From ' + formatDate(dashboard.from) + ' over the last 30 days'
               }
             >
-              {/* Every panel gets the same height on wide screens; long lists
-                  scroll inside their card instead of stretching the row. */}
-              <div className="grid gap-6 lg:auto-rows-[30rem] lg:grid-cols-2">
+              <div className="grid items-start gap-6 md:grid-cols-2">
                 <RecentActivity collector={collector} />
                 <CounterpartyRows
                   rows={dashboard.counterparties}
@@ -190,7 +188,7 @@ function Dashboard() {
                   platformTotals={staff ? dashboard.totals : undefined}
                 />
                 <MaterialsPanel
-                  className="lg:col-span-2"
+                  className="md:col-span-2"
                   series={dashboard.series}
                 />
               </div>

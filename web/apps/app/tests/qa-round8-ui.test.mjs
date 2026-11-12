@@ -157,7 +157,7 @@ test('collection total is absent for invalid weight and returns after correction
     assert.equal(
       tree.find((node) => node.props.className === 'tabular-nums').props
         .children,
-      weight === '1.50' ? 'R 3.00' : '-'
+      weight === '1.50' ? 'R 3.00' : '-'
     );
   }
 });

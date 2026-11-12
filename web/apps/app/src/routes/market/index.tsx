@@ -3,14 +3,12 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Leaf, SearchX } from 'lucide-react';
 import { CardsSkeleton, DataState } from '@/components/data-state';
 import { SearchBox } from '@/components/filters';
-import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useListings } from '@/lib/api/listings';
 import { useStats } from '@/lib/api/stats';
-import { useAuth } from '@/lib/auth/use-auth';
 import { formatKg, plural } from '@/lib/format';
 import { formatCo2 } from '@/lib/impact';
 import { filterListings } from './-components/filter-listings';
@@ -19,7 +17,6 @@ import { MarketFilters } from './-components/market-filters';
 export const Route = createFileRoute('/market/')({ component: MarketPage });
 
 function MarketPage() {
-  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [cursor, setCursor] = useState<string>();
   const [sort, setSort] = useState('newest');
@@ -32,11 +29,6 @@ function MarketPage() {
       <PageHeader
         title="Find your next material."
         description="Materials from local recyclers. Prices in R / kg."
-        actions={
-          user?.role === 'business' && (
-            <LinkButton to="/cart">Your cart</LinkButton>
-          )
-        }
       />
       <DataState
         query={stats}
@@ -52,7 +44,7 @@ function MarketPage() {
           </p>
         )}
       </DataState>
-      <div className="my-6 flex flex-wrap gap-3">
+      <div className="my-6 flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBox
           label="Search materials or stores"
           value={search}
@@ -71,7 +63,7 @@ function MarketPage() {
         emptyText="Try a different search."
         skeleton={<CardsSkeleton />}
       >
-        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {results.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
