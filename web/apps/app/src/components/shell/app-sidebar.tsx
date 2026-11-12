@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 import { Info } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 import { PersonAvatar } from '@/components/visuals';
 import {
   Sidebar,
@@ -71,8 +72,7 @@ export function AppSidebar() {
             'outline-none focus-visible:ring-2 focus-visible:ring-ring'
           )}
         >
-          <img src="/logo-mark.png" alt="" className="size-7 object-contain" />
-          <span>3REco</span>
+          <BrandLogo className="h-12" />
         </Link>
         {user && (
           <div className="flex items-center gap-2 px-2">
