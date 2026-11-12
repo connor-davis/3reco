@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 import { SelectField, TextField } from '@/components/form-fields';
 import { Button } from '@/components/ui/button';
+import { ButtonRow } from '@/components/button-row';
 import { ApiError } from '@/lib/api/client';
 import { useUpdateProfile } from '@/lib/api/profile';
 import type { Profile } from '@/lib/api/types';
@@ -89,7 +90,7 @@ function FormShell<T extends FieldValues>({
           {form.formState.errors.root.message}
         </p>
       )}
-      <div className="flex gap-2">
+      <ButtonRow>
         {!wizard && (
           <Button
             className="min-h-11"
@@ -112,7 +113,7 @@ function FormShell<T extends FieldValues>({
               ? 'Continue'
               : 'Save changes'}
         </Button>
-      </div>
+      </ButtonRow>
     </form>
   );
 }
