@@ -225,9 +225,9 @@ export function RecordList({
           label="Search records"
           value={query}
           onChange={setQuery}
-          className="min-w-60 flex-1 sm:max-w-none"
+          className="sm:max-w-none"
         />
-        <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <DateRangePicker
             value={range}
             onChange={setRange}
@@ -244,7 +244,7 @@ export function RecordList({
           )}
           {exportKind && !readOnly && (
             // Always drawn, so the bar keeps its shape on the Pending tab.
-            <>
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               <ChoiceSelect
                 label="Export format"
                 value={csv}
@@ -267,7 +267,7 @@ export function RecordList({
                 <Download data-icon="inline-start" />
                 Export
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -291,7 +291,7 @@ export function RecordList({
         }
         skeleton={<RowsSkeleton />}
       >
-        <ItemGroup className="gap-0 overflow-hidden rounded-lg border sm:gap-4">
+        <ItemGroup className="max-w-5xl gap-0 overflow-hidden rounded-lg border sm:gap-4">
           {shown.map((row) => (
             <div
               key={row.id}
@@ -326,7 +326,7 @@ export function RecordList({
                       })}
                 />
               </div>
-              <Item className="hidden sm:flex">
+              <Item className="hidden sm:flex sm:flex-wrap">
                 <ItemContent className="min-w-48">
                   <ItemTitle>{titleOf(row)}</ItemTitle>
                   <ItemDescription>

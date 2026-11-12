@@ -198,29 +198,27 @@ function CollectorsPage() {
                   ? ' Ask an admin to verify your business to see and edit every collector.'
                   : '')
         }
-        actions={
-          !directory && (
-            <>
-              {verified && (
-                <Badge variant="secondary">
-                  <ShieldCheck data-icon="inline-start" />
-                  Verified business
-                </Badge>
-              )}
-              <Button onClick={() => openForm()}>
-                <Plus data-icon="inline-start" />
-                Add collector
-              </Button>
-            </>
-          )
-        }
       />
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBox
           label="Search by name, email or phone"
           value={query}
           onChange={setQuery}
         />
+        {!directory && (
+          <>
+            {verified && (
+              <Badge variant="secondary">
+                <ShieldCheck data-icon="inline-start" />
+                Verified business
+              </Badge>
+            )}
+            <Button onClick={() => openForm()}>
+              <Plus data-icon="inline-start" />
+              Add collector
+            </Button>
+          </>
+        )}
       </div>
       <DataState
         query={list}

@@ -31,8 +31,56 @@ function nodes(tree) {
   return [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 }
 
+test('broken listing and gallery images fall back to the box and recover on a new URL', () => {
+  for (const [path, component, props, imageKey] of [
+    [
+      'components/listing-card.tsx',
+      'ListingCard',
+      { listing: { image_url: '/broken', weight: '1', price: '2' } },
+      'listing',
+    ],
+    [
+      'routes/market/listing/-components/gallery.tsx',
+      'Gallery',
+      { image: '/broken', name: 'Glass' },
+      'image',
+    ],
+  ]) {
+    let failed;
+    const loaded = compile(path, {
+      react: {
+        useState: () => [
+          failed,
+          (value) => {
+            failed = value;
+          },
+        ],
+      },
+      '@/lib/format': load('lib/format.ts'),
+    });
+    const render = () => nodes(loaded[component](props));
+    render()
+      .find((node) => node.type === 'img')
+      .props.onError();
+    assert.equal(
+      render().some((node) => node.type === 'img'),
+      false
+    );
+    assert.ok(
+      render().some((node) => node.type === require('lucide-react').Package)
+    );
+    if (imageKey === 'listing') props.listing.image_url = '/replacement';
+    else props.image = '/replacement';
+    assert.equal(
+      render().find((node) => node.type === 'img').props.src,
+      '/replacement'
+    );
+  }
+});
+
 test('listing cards show stock photos and seller logos with a placeholder fallback', () => {
   const { ListingCard } = compile('components/listing-card.tsx', {
+    react: { useState: () => [undefined, () => {}] },
     '@/lib/format': load('lib/format.ts'),
   });
   const listing = {
@@ -67,7 +115,9 @@ test('listing cards show stock photos and seller logos with a placeholder fallba
 });
 
 test('gallery shows the stock photo in the smaller responsive frame', () => {
-  const { Gallery } = compile('routes/market/listing/-components/gallery.tsx');
+  const { Gallery } = compile('routes/market/listing/-components/gallery.tsx', {
+    react: { useState: () => [undefined, () => {}] },
+  });
   const tree = Gallery({ image: '/photo?v=1', name: 'Glass' });
   assert.match(tree.props.className, /aspect-\[4\/3\]/);
   assert.match(tree.props.className, /max-h-64/);
@@ -367,7 +417,7 @@ test('a price below the default warns but does not block Save', async () => {
     nodes(tree).some(
       (node) =>
         node.props.children ===
-        'Below the default price of R 5.00 / kg. You can still save.'
+        'Below the default price of R 5.00 / kg. You can still save.'
     )
   );
   assert.equal(

@@ -29,7 +29,9 @@ export function SearchBox({
   className,
 }: SearchBoxProps) {
   return (
-    <InputGroup className={cn('sm:max-w-sm', className)}>
+    <InputGroup
+      className={cn('min-w-36 flex-1 basis-36 sm:max-w-sm', className)}
+    >
       <InputGroupAddon>
         <Search aria-hidden="true" />
       </InputGroupAddon>
@@ -77,7 +79,10 @@ export function ChoiceSelect({
       disabled={disabled}
       onValueChange={(next) => next && onChange(next)}
     >
-      <SelectTrigger aria-label={label} className={cn('min-w-36', className)}>
+      <SelectTrigger
+        aria-label={label}
+        className={cn('min-h-11 min-w-36 max-w-full shrink-0', className)}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

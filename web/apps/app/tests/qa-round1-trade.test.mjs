@@ -219,6 +219,7 @@ test('cart search never invents an empty seller parameter', () => {
 
 test('listing card has no unexplained Ask shortcut that could reserve stock', () => {
   const { ListingCard } = compile('../src/components/listing-card.tsx', {
+    react: { useState: () => [undefined, () => {}] },
     'react/jsx-runtime': jsx,
     '@/lib/format': format,
   });

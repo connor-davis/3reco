@@ -331,6 +331,7 @@ test('B6: Request and Add to cart agree for empty, invalid and valid weights', (
 
 test('S2/S7: listing prices print as one run of text and short titles do not reserve a second line', () => {
   const { ListingCard } = compile('components/listing-card.tsx', {
+    react: { useState: () => [undefined, () => {}] },
     '@/lib/format': format,
   });
   const tree = ListingCard({ listing: { price: '22.37', weight: '12.5' } });
@@ -338,7 +339,7 @@ test('S2/S7: listing prices print as one run of text and short titles do not res
     nodes(tree).find((node) => node.props?.className === 'font-normal'),
     undefined
   );
-  assert.match(words(tree), /R 22.37 \/ kg/);
+  assert.match(words(tree), /R\u00a022.37 \/ kg/);
   assert.doesNotMatch(
     nodes(tree).find((node) => node.type === 'h3').props.className,
     /min-h-/

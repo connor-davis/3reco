@@ -51,5 +51,5 @@ test('a total is the sum of rounded lines, as the server stores it', () => {
     ['0.05', '0.5'],
   ].map(([price, kg]) => format.lineCents(price, kg));
   assert.deepEqual(lines, [1, 2, 3]);
-  assert.equal(format.formatRand(lines.reduce((a, b) => a + b, 0)), 'R 0.06');
+  assert.equal(format.formatRand(lines.reduce((a, b) => a + b, 0)), 'R 0.06');
 });

@@ -23,13 +23,13 @@ const tabClass = cn(
 
 const navClass = cn(
   'fixed inset-x-0 bottom-0 z-30 border-t bg-background/95',
-  'pb-[env(safe-area-inset-bottom)] backdrop-blur min-[781px]:hidden'
+  'pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden'
 );
 
 const raisedClass =
   '-mt-5 size-11 rounded-full bg-primary text-primary-foreground shadow-md';
 
-/** Phone navigation (780px and below). Each role only sees tabs it can open. */
+/** Phone and tablet navigation below 1024px, with tabs for the caller's role. */
 export function BottomTabs() {
   const role = useAuth().user?.role ?? null;
   const [moreOpen, setMoreOpen] = useState(false);

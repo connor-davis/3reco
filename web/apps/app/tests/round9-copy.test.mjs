@@ -7,7 +7,7 @@ const helpers = load('components/chat/helpers.ts', { '@/lib/format': format });
 
 test('CO₂e always shows 2 decimals, and market and About drop "saved"', () => {
   assert.equal(format.formatKgFixed(242.5), '242.50');
-  assert.equal(format.formatKgFixed('1398.28'), '1 398.28');
+  assert.equal(format.formatKgFixed('1398.28'), '1 398.28');
   assert.doesNotMatch(source('routes/market/index.tsx'), /co2_kg\)\} saved/);
   assert.doesNotMatch(source('routes/about.tsx'), /saved/);
 });

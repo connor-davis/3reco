@@ -1,5 +1,6 @@
-import { useRouterState } from '@tanstack/react-router';
+import { Link, useRouterState } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 import { IconButton } from '@/components/icon-button';
 import { LinkButton } from '@/components/link-button';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -16,7 +17,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { AccountMenu } from './account-menu';
 import { NotificationTray } from './notification-tray';
 import { HeaderCart } from './header-cart';
-import { pageTitleFor } from '@/lib/nav';
+import { isRequestPath, pageTitleFor } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 
 type TopbarProps = { onSearch: () => void };
@@ -35,7 +36,7 @@ export function Topbar({ onSearch }: TopbarProps) {
         'bg-background/80 backdrop-blur-xl'
       )}
     >
-      <Breadcrumb className="hidden min-w-0 sm:block">
+      <Breadcrumb className="hidden min-w-0 lg:block">
         <BreadcrumbList>
           {user &&
             user.role !== 'guest' &&
@@ -50,9 +51,17 @@ export function Topbar({ onSearch }: TopbarProps) {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <p className="min-w-0 truncate text-sm font-medium sm:hidden">
-        {pageTitleFor(pathname, role)}
-      </p>
+      {/* Phones and tablets: the page has its own heading, so show the logo,
+          except in a chat or request, which have no heading of their own. */}
+      {pathname.startsWith('/messages/') || isRequestPath(pathname) ? (
+        <p className="text-sm font-medium lg:hidden">
+          {pageTitleFor(pathname, role)}
+        </p>
+      ) : (
+        <Link to="/" aria-label="Home" className="lg:hidden">
+          <BrandLogo className="h-8" />
+        </Link>
+      )}
 
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <Button

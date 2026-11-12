@@ -32,6 +32,38 @@ function nodes(node) {
 }
 const format = compile('lib/format.ts');
 
+test('phone titles appear only on chat details without a page H1', () => {
+  const access = compile('lib/access.ts');
+  const nav = compile('lib/nav.ts', { '@/lib/access': access });
+  for (const [pathname, titleCount] of [
+    ['/market', 0],
+    ['/cart', 0],
+    ['/messages', 0],
+    ['/market/incoming', 0],
+    ['/market/outgoing', 0],
+    ['/market/store/seller', 0],
+    ['/market/listing/stock', 0],
+    ['/messages/request', 1],
+    ['/market/request', 1],
+  ]) {
+    const { Topbar } = compile('components/shell/topbar.tsx', {
+      '@tanstack/react-router': { useRouterState: () => pathname },
+      '@/lib/auth/use-auth': {
+        useAuth: () => ({ user: { role: 'business' } }),
+      },
+      '@/lib/nav': nav,
+      '@/lib/utils': { cn: (...values) => values.join(' ') },
+    });
+    const titles = nodes(Topbar({ onSearch() {} })).filter(
+      (node) => node.type === 'p' && node.props.className.includes('lg:hidden')
+    );
+    assert.equal(titles.length, titleCount, pathname);
+    assert.ok(
+      titles.every((node) => !node.props.className.includes('truncate'))
+    );
+  }
+});
+
 test('cart stays out of sidebar, More and command navigation; its route stays available', () => {
   const access = compile('lib/access.ts');
   const { navFor, pageTitleFor } = compile('lib/nav.ts', {
@@ -70,7 +102,10 @@ test('only a loaded business account gets the header cart component', () => {
         '@/lib/auth/use-auth': {
           useAuth: () => ({ user: role ? { role } : null, isLoading }),
         },
-        '@/lib/nav': { pageTitleFor: () => 'Browse materials' },
+        '@/lib/nav': {
+          pageTitleFor: () => 'Browse materials',
+          isRequestPath: () => false,
+        },
         '@/lib/utils': { cn: (...values) => values.join(' ') },
       });
       const tree = nodes(Topbar({ onSearch: () => {} }));

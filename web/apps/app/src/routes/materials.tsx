@@ -109,14 +109,6 @@ function MaterialsPage() {
       <PageHeader
         title="Material catalogue"
         description="The grades, rates and carbon factors behind every trade. Listed by material name, A–Z."
-        actions={
-          isAdmin && (
-            <Button onClick={() => openForm()}>
-              <Plus data-icon="inline-start" />
-              Add material
-            </Button>
-          )
-        }
       />
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <SearchBox
@@ -124,6 +116,12 @@ function MaterialsPage() {
           value={query}
           onChange={setQuery}
         />
+        {isAdmin && (
+          <Button onClick={() => openForm()}>
+            <Plus data-icon="inline-start" />
+            Add material
+          </Button>
+        )}
         {!isAdmin && <Badge variant="outline">Read-only catalogue</Badge>}
       </div>
       <DataState

@@ -109,9 +109,9 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
           >
             <ResizablePanel
               id="inbox"
-              defaultSize={showAside ? '25%' : '30%'}
-              minSize={260}
-              maxSize="32%"
+              defaultSize={showAside ? '28%' : '38%'}
+              minSize={300}
+              maxSize="42%"
               className="min-h-0 bg-background"
             >
               {inbox}
@@ -119,7 +119,7 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
             <ResizableHandle withHandle />
             <ResizablePanel
               id="thread"
-              defaultSize={showAside ? '48%' : '70%'}
+              defaultSize={showAside ? '45%' : '62%'}
               minSize="40%"
               className="min-h-0"
             >

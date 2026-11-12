@@ -37,7 +37,7 @@ const impact = compile('../src/lib/impact.ts', {
 test('formatCo2 says CO₂e in kg, from a number or exact text', () => {
   assert.equal(impact.formatCo2(729.4), '729.40 kg CO₂e');
   assert.equal(impact.formatCo2('729.4'), '729.40 kg CO₂e');
-  assert.equal(impact.formatCo2('3580.105'), '3 580.11 kg CO₂e');
+  assert.equal(impact.formatCo2('3580.105'), '3 580.11 kg CO₂e');
 });
 
 test('every impact line goes through formatCo2', () => {

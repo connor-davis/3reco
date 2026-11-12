@@ -52,7 +52,7 @@ export function lineCents(pricePerKg: string, kg: string): number {
 }
 
 function spaced(whole: number): string {
-  return whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 }
 
 /** Prints a weight with thousands spaces and always 2 decimals ("242.50"). */
@@ -81,7 +81,7 @@ export function formatRand(cents: number): string {
   const abs = Math.abs(cents);
   const rest = (abs % 100).toString().padStart(2, '0');
 
-  return `${sign}R ${spaced(Math.floor(abs / 100))}.${rest}`;
+  return `${sign}R\u00a0${spaced(Math.floor(abs / 100))}.${rest}`;
 }
 
 /** Groups a South African number: "+27 82 000 1010" or "082 000 1010". */
@@ -99,7 +99,7 @@ export function formatRate(pricePerKg: string): string {
 
 /** Prints a weight with thousands spaces: "12 000 kg". */
 export function formatKg(kg: string | number): string {
-  return `${formatKgNumber(kg)} kg`;
+  return `${formatKgNumber(kg)}\u00a0kg`;
 }
 
 const dateFormat = new Intl.DateTimeFormat('en-ZA', {

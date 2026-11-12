@@ -222,7 +222,7 @@ function UsersPage() {
         if (!verifying && !removing) return null;
 
         return (
-          <span className="flex flex-wrap gap-2">
+          <span className="flex w-max gap-2">
             {verifying}
             {removing}
           </span>
@@ -233,7 +233,7 @@ function UsersPage() {
 
   return (
     <div className="space-y-6 pt-4">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBox
           label="Search names or emails"
           value={search}

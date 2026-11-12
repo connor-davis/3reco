@@ -164,12 +164,7 @@ export function Inbox({
                   <PersonAvatar name={thread.other.name} />
                   <span className="min-w-0 flex-1">
                     <span className="flex justify-between gap-2">
-                      <span
-                        className={cn(
-                          'min-w-0 font-medium',
-                          admin ? 'break-words' : 'truncate'
-                        )}
-                      >
+                      <span className="min-w-0 break-words font-medium">
                         {thread.other.name}
                       </span>
                       <time

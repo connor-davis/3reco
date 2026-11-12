@@ -183,14 +183,8 @@ function StockPage() {
       <PageHeader
         title="Your stock"
         description="What's in the yard, ready for the next conversation."
-        actions={
-          <Button onClick={() => openForm()}>
-            <Plus data-icon="inline-start" />
-            Add stock
-          </Button>
-        }
       />
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBox
           label="Search your materials"
           value={query}
@@ -202,6 +196,10 @@ function StockPage() {
           options={statusOptions}
           onChange={setStatus}
         />
+        <Button onClick={() => openForm()}>
+          <Plus data-icon="inline-start" />
+          Add stock
+        </Button>
       </div>
       <DataState
         query={stock}
