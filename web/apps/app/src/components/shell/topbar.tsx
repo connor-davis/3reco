@@ -1,5 +1,6 @@
-import { useRouterState } from '@tanstack/react-router';
+import { Link, useRouterState } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 import { IconButton } from '@/components/icon-button';
 import { LinkButton } from '@/components/link-button';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -50,10 +51,16 @@ export function Topbar({ onSearch }: TopbarProps) {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      {(pathname.startsWith('/messages/') || isRequestPath(pathname)) && (
+      {/* Phones and tablets: the page has its own heading, so show the logo,
+          except in a chat or request, which have no heading of their own. */}
+      {pathname.startsWith('/messages/') || isRequestPath(pathname) ? (
         <p className="text-sm font-medium lg:hidden">
           {pageTitleFor(pathname, role)}
         </p>
+      ) : (
+        <Link to="/" aria-label="Home" className="lg:hidden">
+          <BrandLogo className="h-8" />
+        </Link>
       )}
 
       <div className="ml-auto flex shrink-0 items-center gap-1">
