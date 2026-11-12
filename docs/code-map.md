@@ -219,6 +219,7 @@ Never rename a merged migration. Add a new file.
 | Compact divided list rows, primary taps and sibling More menus | `web/apps/app/src/components/list-row.tsx` |
 | Deferred desktop dialog / phone drawer implementation | `web/apps/app/src/components/responsive-overlay-body.tsx` (loaded by `responsive-overlay.tsx`) |
 | Deferred notification list, paging and actions | `web/apps/app/src/components/shell/notification-tray-list.tsx` (bell in `notification-tray.tsx`) |
+| Header cart link and visible line count across stores | `web/apps/app/src/components/shell/header-cart.tsx`; regression tests in `web/apps/app/tests/cart-header.test.mjs` |
 | Signed-in user context and auth query cache | `web/apps/app/src/lib/auth/`, `src/lib/api/auth.ts` |
 | API error to form field errors | `web/apps/app/src/lib/form-errors.ts` |
 | Auth page layout (sign-in, sign-up, verify, reset) | `web/apps/app/src/components/auth-shell.tsx`, routes `src/routes/{sign-in,sign-up,verify-email,forgot-password,reset-password}.tsx` |

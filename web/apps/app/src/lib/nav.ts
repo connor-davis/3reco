@@ -11,7 +11,6 @@ import {
   Search,
   Send,
   Store,
-  ShoppingCart,
   TrendingUp,
   UserCircle,
   UserPlus,
@@ -80,12 +79,7 @@ export function navFor(role: Role | null): NavGroup[] {
     case 'business':
       return [
         {
-          links: [
-            dashboard,
-            messages,
-            browse,
-            { label: 'Your cart', to: '/cart', icon: ShoppingCart },
-          ],
+          links: [dashboard, messages, browse],
         },
         {
           label: 'Your trade',

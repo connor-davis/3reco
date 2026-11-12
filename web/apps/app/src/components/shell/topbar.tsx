@@ -15,6 +15,7 @@ import { Kbd } from '@/components/ui/kbd';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AccountMenu } from './account-menu';
 import { NotificationTray } from './notification-tray';
+import { HeaderCart } from './header-cart';
 import { pageTitleFor } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +35,7 @@ export function Topbar({ onSearch }: TopbarProps) {
         'bg-background/80 backdrop-blur-xl'
       )}
     >
-      <Breadcrumb className="hidden sm:block">
+      <Breadcrumb className="hidden min-w-0 sm:block">
         <BreadcrumbList>
           {user &&
             user.role !== 'guest' &&
@@ -49,11 +50,11 @@ export function Topbar({ onSearch }: TopbarProps) {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <p className="truncate text-sm font-medium sm:hidden">
+      <p className="min-w-0 truncate text-sm font-medium sm:hidden">
         {pageTitleFor(pathname, role)}
       </p>
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <Button
           variant="secondary"
           className="hidden min-w-48 justify-between min-[1020px]:inline-flex"
@@ -77,6 +78,7 @@ export function Topbar({ onSearch }: TopbarProps) {
           <LinkButton to="/sign-in">Sign in</LinkButton>
         ) : (
           <>
+            {role === 'business' && <HeaderCart />}
             <NotificationTray />
             <AccountMenu />
           </>

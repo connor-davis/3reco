@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -102,7 +102,6 @@ function ListingDetail({ listing }: { listing: Listing }) {
   );
   const save = useSaveCart(listing.seller_id);
   const [chatOpen, setChatOpen] = useState(false);
-  const navigate = useNavigate();
   const schema = z.object({
     weight: z.string().superRefine((value, ctx) => {
       // An empty field has no error to explain yet; the cart action stays disabled.
@@ -141,7 +140,6 @@ function ListingDetail({ listing }: { listing: Listing }) {
         ],
       });
       toast.success('Added to your cart.', { id: 'cart-saved' });
-      await navigate({ to: '/cart', search: { seller_id: listing.seller_id } });
     } catch (error) {
       form.setError('root', {
         message:

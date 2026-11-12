@@ -61,6 +61,9 @@ func TestQACartStoresAreCallerOwned(t *testing.T) {
 	if len(rows) != 1 || rows[0].(map[string]any)["id"] != w.seller.id {
 		t.Fatalf("saved carts: %s", got.Raw)
 	}
+	if rows[0].(map[string]any)["item_count"] != float64(1) {
+		t.Fatalf("saved cart line count: %s", got.Raw)
+	}
 	if len(tradeItems(status(t, other.c.Do("GET", "/api/cart/stores?buyer_id="+w.buyer.id, nil), 200))) != 0 {
 		t.Fatal("another buyer can see saved carts")
 	}
