@@ -10,9 +10,15 @@ import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useMaterials } from '@/lib/api/materials';
-import { useCreateStock, useUpdateStock } from '@/lib/api/stock';
+import {
+  useCreateStock,
+  useUpdateStock,
+  useUploadStockImage,
+  useDeleteStockImage,
+} from '@/lib/api/stock';
 import type { StockItem } from '@/lib/api/types';
 import { ApiError } from '@/lib/api/client';
 import { formatRate, toCents } from '@/lib/format';
@@ -91,6 +97,18 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   const create = useCreateStock();
   const update = useUpdateStock(stock?.id ?? '');
   const [serverError, setServerError] = useState('');
+  const uploadPhoto = useUploadStockImage(stock?.id ?? '');
+  const deletePhoto = useDeleteStockImage(stock?.id ?? '');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const [preview, setPreview] = useState('');
+  const [photoError, setPhotoError] = useState('');
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
   // The resolver reads the base price from here, so it follows the material.
   const baseRef = useRef<string | undefined>(undefined);
   const {
@@ -143,6 +161,8 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           price: sameAmount(price, stock.price) ? undefined : price,
           is_listed: values.is_listed,
         });
+        if (photo) await uploadPhoto.mutateAsync(photo);
+        else if (removePhoto) await deletePhoto.mutateAsync(undefined);
         // Say what changed about the market when the switch moved.
         toast.success(
           values.is_listed === stock.is_listed
@@ -169,7 +189,11 @@ function StockForm({ open, onOpenChange, stock }: Props) {
     }
   }
 
-  const busy = create.isPending || update.isPending;
+  const busy =
+    create.isPending ||
+    update.isPending ||
+    uploadPhoto.isPending ||
+    deletePhoto.isPending;
   // Once someone interacts, only the fields explain what needs fixing.
   const pristine =
     !stock &&
@@ -180,7 +204,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   return (
     <ResponsiveOverlay
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(next) => !busy && onOpenChange(next)}
       title={stock ? 'Edit stock' : 'Add stock'}
       description="Listed stock shows up in the market. Prices are per kg."
       footer={
@@ -199,7 +223,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           </div>
           <DialogFooter>
             <Button
-              disabled={busy || !formState.isValid}
+              disabled={busy || !formState.isValid || !!photoError}
               onClick={handleSubmit(onSubmit)}
             >
               {stock ? 'Save changes' : 'Add stock'}
@@ -244,6 +268,69 @@ function StockForm({ open, onOpenChange, stock }: Props) {
               : 'Pick a material to see its lowest price.'
           }
         />
+        {stock && (
+          <Field>
+            <FieldLabel htmlFor="stock-photo">Photo</FieldLabel>
+            <p className="text-sm text-muted-foreground">
+              Upload a PNG, JPEG or WebP image up to 2 MiB.
+            </p>
+            <Input
+              id="stock-photo"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              disabled={busy}
+              onChange={(event) => {
+                const next = event.target.files?.[0];
+                setPhoto(null);
+                setPreview('');
+                setPhotoError('');
+                if (!next) return;
+                if (
+                  !['image/png', 'image/jpeg', 'image/webp'].includes(
+                    next.type
+                  ) ||
+                  next.size === 0 ||
+                  next.size > 2 * 1024 * 1024
+                ) {
+                  setPhotoError(
+                    'Choose a PNG, JPEG or WebP image up to 2 MiB.'
+                  );
+                  return;
+                }
+                setPhoto(next);
+                setRemovePhoto(false);
+                setPreview(URL.createObjectURL(next));
+              }}
+            />
+            {(preview || (!removePhoto && stock.image_url)) && (
+              <>
+                <img
+                  src={preview || stock.image_url}
+                  alt={stock.material_name}
+                  className="h-32 w-full rounded-lg object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setPhoto(null);
+                    setPreview('');
+                    setPhotoError('');
+                    setRemovePhoto(true);
+                  }}
+                >
+                  Remove picture
+                </Button>
+              </>
+            )}
+            {photoError && (
+              <p role="alert" className="text-sm text-destructive">
+                {photoError}
+              </p>
+            )}
+          </Field>
+        )}
         <Field orientation="horizontal">
           <Switch
             id="stock-listed"

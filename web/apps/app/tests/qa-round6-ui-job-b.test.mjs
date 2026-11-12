@@ -104,7 +104,10 @@ test('qa-round6-ui: create state is discarded after save and stock validates whi
   );
   const stock = source('components/dialogs/stock-dialog.tsx');
   assert.match(stock, /mode: 'onChange'/);
-  assert.match(stock, /disabled=\{busy \|\| !formState.isValid\}/);
+  assert.match(
+    stock,
+    /disabled=\{busy \|\| !formState\.isValid \|\| !!photoError\}/
+  );
 });
 
 test('qa-round6-ui: seller reviews, staff collector actions and guest breadcrumbs match roles', () => {

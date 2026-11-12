@@ -158,7 +158,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
         listing={listing}
         initialWeight={problem ? '' : weight}
       />
-      <Gallery />
+      <Gallery image={listing.image_url} name={listing.material_name} />
       <div className="space-y-6">
         <h1 className="text-3xl font-semibold tracking-tight">
           {listing.material_name}
@@ -249,7 +249,10 @@ function ListingDetail({ listing }: { listing: Listing }) {
           )}
         </form>
         <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4">
-          <PersonAvatar name={listing.seller_name} />
+          <PersonAvatar
+            name={listing.seller_name}
+            image={listing.seller_avatar_url}
+          />
           <div className="min-w-0 flex-1">
             <p className="font-medium">{listing.seller_name}</p>
             {listing.average_rating !== null && (

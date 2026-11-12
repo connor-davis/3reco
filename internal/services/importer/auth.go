@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
-	"github.com/connor-davis/3reco/internal/services/files"
+	"github.com/connor-davis/3reco/internal/platform/storage"
 	store "github.com/connor-davis/3reco/internal/stores/importer"
 )
 
@@ -263,7 +263,7 @@ func (p *planner) userPicture(r *row, out store.Row, app, auth doc) {
 		return
 	}
 
-	data, contentType, err := files.Image(bytes.NewReader(decoded), maxAvatarBytes, true)
+	data, contentType, err := storage.Image(bytes.NewReader(decoded), maxAvatarBytes, true)
 	if err != nil {
 		p.rep.note("avatars skipped (not a PNG, JPEG or WEBP under 2 MiB)")
 

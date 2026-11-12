@@ -14,6 +14,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
+	"github.com/connor-davis/3reco/internal/platform/storage"
 	store "github.com/connor-davis/3reco/internal/stores/stock"
 )
 
@@ -31,12 +32,15 @@ const PriceLimitMessage = "Price must be R 100 000.00 per kg or less."
 
 // Service owns stock rules and transaction boundaries.
 type Service struct {
-	db    *database.DB
-	store *store.Store
+	db      *database.DB
+	store   *store.Store
+	objects *storage.Client
 }
 
 // New builds the service.
-func New(db *database.DB, rows *store.Store) *Service { return &Service{db: db, store: rows} }
+func New(db *database.DB, rows *store.Store, objects *storage.Client) *Service {
+	return &Service{db: db, store: rows, objects: objects}
+}
 
 // Input uses pointers so zero and omitted prices remain different.
 type Input struct {
@@ -246,7 +250,15 @@ func (service *Service) Delete(ctx context.Context, id, owner string) error {
 				return apperr.Conflict("Some of this stock is held for open offers.")
 			}
 
-			return service.store.Delete(ctx, id, owner)
+			if err := service.store.Delete(ctx, id, owner); err != nil {
+				return err
+			}
+
+			if item.ImageKey != "" {
+				service.objects.RemoveAfterCommit(ctx, item.ImageKey)
+			}
+
+			return nil
 		},
 	)
 }

@@ -64,7 +64,15 @@ function StorePage() {
             listing={chatListing ?? undefined}
           />
           <header className="flex flex-wrap items-center gap-4 rounded-lg bg-muted p-6">
-            <PersonAvatar name={store.data.name} className="size-16" />
+            <PersonAvatar
+              name={store.data.name}
+              image={
+                store.data.avatar_url
+                  ? store.data.avatar_url + '?v=' + store.dataUpdatedAt
+                  : undefined
+              }
+              className="size-16"
+            />
             <div className="min-w-0 flex-1 space-y-1">
               <h1 className="text-2xl font-semibold">{store.data.name}</h1>
               <p>

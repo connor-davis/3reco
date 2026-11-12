@@ -233,16 +233,19 @@ func TestLiveHoldsRouting(t *testing.T) {
 	}
 }
 
-// Routine writes to a user (terms, password, avatar) do not wake admins; what
-// the admin list shows does.
+// Routine writes to a user (terms, password) do not wake admins; admin fields
+// and avatars do. Business logos also wake the public listings.
 func TestLiveUserWritesWakeAdminsOnlyForListedColumns(t *testing.T) {
 	w := newLiveWorld(t)
+	tradeExec(t, w.app, `UPDATE users SET role='collector' WHERE id=$1`, w.stranger.id)
 	socks := joinLive(t, w.app, w.admin, w.staff)
 	admin, staff := socks[0], socks[1]
 
 	tradeExec(t, w.app, `UPDATE users SET agreed_to_terms = true, password_hash = 'x' WHERE id = $1`, w.stranger.id)
 	tradeExec(t, w.app, `UPDATE users SET business_name = 'Renamed' WHERE id = $1`, w.stranger.id)
 
+	admin.hear("user", w.stranger.id)
+	tradeExec(t, w.app, `UPDATE users SET avatar_key='new-avatar' WHERE id=$1`, w.stranger.id)
 	admin.hear("user", w.stranger.id)
 	admin.quiet("admin after the routine write")
 	staff.quiet("staff")

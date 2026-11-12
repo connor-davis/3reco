@@ -8,7 +8,7 @@ A stock item is:
 {
   "id": "...", "owner_id": "...", "material_id": "...", "material_name": "PET Plastic",
   "weight": "120.5", "available_weight": "100", "price": "6.50", "base_price": "6.00",
-  "is_listed": true, "created_at": "..."
+  "is_listed": true, "image_url": "/api/stock/.../image?v=...", "created_at": "..."
 }
 ```
 
@@ -40,7 +40,7 @@ One item. The owner can always read it; anyone else only while it is listed. Oth
 
 Any of `weight`, `price`, `is_listed`. Left out means unchanged. **Returns:** `{ "ok": true }`
 
-Listing or unlisting sends the owner a `stock_listed` or `stock_unlisted` notification.
+Listing or unlisting updates the market live without adding a notification to the owner's bell.
 
 ### `DELETE /api/stock/:id`
 
@@ -48,4 +48,28 @@ Listing or unlisting sends the owner a `stock_listed` or `stock_unlisted` notifi
 
 You can only change or delete your own stock. Someone else's id gets `404 not_found`.
 
-Live updates: `stock:<your user id>` fires when your stock or its holds change.
+## Photo
+
+One photo per stock item. `image_url` is empty when there is no photo; otherwise it is a versioned URL that changes on every replacement. The internal object key is never returned by stock or listing routes.
+
+### `POST /api/stock/:id/image`
+
+Send multipart form data with a `file` field. PNG, JPEG and WEBP are accepted, detected from the bytes, up to 2 MiB. Empty, oversized or unsupported images return `400`.
+
+**Access:** the owning business. Anonymous callers get `401`; another business's id gets `404 not_found`.
+
+**Returns:** the updated stock item, including `image_url`. Replacement removes the old file only after the database commit.
+
+### `DELETE /api/stock/:id/image`
+
+Same write access as upload. **Returns:** the updated stock item with an empty `image_url`. The file is removed after commit. Deleting stock or erasing its owner's account also removes the photo after commit.
+
+### `GET /api/stock/:id/image`
+
+Streams the photo. The owner can read it even while unlisted or empty. Everyone else, including anonymous callers, can read it only while the stock is listed, weight is above zero, and the seller is a business that has not been removed. Otherwise `404 not_found`.
+
+**Cache-Control:** `private, max-age=60`.
+
+Marketplace listing responses also include `image_url` and `seller_avatar_url` (the business's existing profile picture).
+
+Live updates send a `stock` change to the owner when stock, its photo or its holds change. Listed photos also send a `listing` change to everyone signed in. Business logo changes send a `listing` change too.

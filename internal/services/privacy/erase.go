@@ -22,8 +22,8 @@ func (s *Service) Delete(ctx context.Context, user auth.User, password string) e
 // Erase anonymises a user. Both the self-service route and the admin removal
 // call it, so they do exactly the same. Open requests are cancelled and the
 // other side told; finished trades stay under the name "Removed account" and
-// their invoices are rebuilt. The avatar file is removed and the sockets are
-// closed only after the transaction commits.
+// their invoices are rebuilt. Avatar and stock photos are removed and sockets
+// are closed only after the transaction commits.
 func (s *Service) Erase(ctx context.Context, actorID, id string) error {
 	return s.db.InTx(ctx, func(ctx context.Context) error {
 		found, err := s.store.LockActive(ctx, id)
@@ -63,13 +63,13 @@ func (s *Service) Erase(ctx context.Context, actorID, id string) error {
 			}
 		}
 
-		avatar, err := s.store.Erase(ctx, id, actorID)
+		keys, err := s.store.Erase(ctx, id, actorID)
 		if err != nil {
 			return err
 		}
 
-		if avatar != "" {
-			s.objects.RemoveAfterCommit(ctx, avatar)
+		for _, key := range keys {
+			s.objects.RemoveAfterCommit(ctx, key)
 		}
 
 		database.AfterCommit(ctx, func() { s.hub.DisconnectUser(id) })

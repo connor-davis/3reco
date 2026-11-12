@@ -101,7 +101,7 @@ function ProfilePage() {
                   variant="outline"
                   onClick={() => setAvatarOpen(true)}
                 >
-                  Change picture
+                  {role === 'business' ? 'Store logo' : 'Change picture'}
                 </Button>
               </div>
               {profile && <PersonalForm profile={profile} />}
