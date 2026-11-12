@@ -15,6 +15,7 @@ type Listing struct {
 	ID              string    `json:"id"`
 	SellerID        string    `json:"seller_id"`
 	SellerName      string    `json:"seller_name"`
+	SellerVerified  bool      `json:"seller_verified"`
 	MaterialID      string    `json:"material_id"`
 	MaterialName    string    `json:"material_name"`
 	CarbonFactor    string    `json:"carbon_factor"`
@@ -33,13 +34,16 @@ type Filter struct {
 	MaterialID   string
 	Search       string
 	ExcludeOwner string
+	// ViewerID is the caller, who may see their own stock even when unverified.
+	ViewerID string
 }
 
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
 	s.material_id,m.name,m.carbon_factor::text,m.gw_code,GREATEST(s.weight-COALESCE(h.held,0),0)::text,s.price::text,
 	s.created_at,COALESCE(h.held,0)::text,
 	CASE WHEN s.image_key IS NOT NULL THEN '/api/stock/'||s.id||'/image?v='||md5(s.image_key) ELSE '' END,
-	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END`
+	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END,
+	` + database.Verified("u")
 
 // Held weight is summed once for all stock, not once per row through stock_available().
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
@@ -49,11 +53,17 @@ const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
 	WHERE s.is_listed AND s.weight>0
 	AND NOT u.is_removed AND u.role='business'`
 
+// sellerVisible hides an unverified business's stock from everyone but its owner,
+// whose id is the numbered placeholder.
+func sellerVisible(viewer string) string {
+	return ` AND (` + database.Verified("u") + ` OR u.id=` + viewer + `)`
+}
+
 // Listings excludes hidden, empty and removed-seller stock at the SQL boundary.
 func (records *Store) Listings(ctx context.Context, filter Filter, query paging.Query) ([]Listing, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT `+listingColumns+listingJoin+`
+		`SELECT `+listingColumns+listingJoin+sellerVisible("$8")+`
 		AND ($1='' OR s.owner_id=$1) AND ($2='' OR s.material_id=$2)
 		AND ($3='' OR m.name ILIKE '%'||$3||'%' OR u.business_name ILIKE '%'||$3||'%')
 		AND ($4='' OR s.owner_id<>$4) AND ($5='' OR (s.created_at,s.id)<($6,$5))
@@ -65,6 +75,7 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 		query.ID,
 		query.At,
 		query.Size(),
+		filter.ViewerID,
 	)
 	if err != nil {
 		return nil, err
@@ -88,6 +99,7 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 			&item.HeldWeight,
 			&item.ImageURL,
 			&item.SellerAvatarURL,
+			&item.SellerVerified,
 		); err != nil {
 			return nil, err
 		}
@@ -99,9 +111,14 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 }
 
 // Listing reads only stock that can currently be seen on the marketplace.
-func (records *Store) Listing(ctx context.Context, id string) (Listing, error) {
+func (records *Store) Listing(ctx context.Context, id, viewer string) (Listing, error) {
 	var item Listing
-	err := records.db.Q(ctx).QueryRow(ctx, `SELECT `+listingColumns+listingJoin+` AND s.id=$1`, id).Scan(
+	err := records.db.Q(ctx).QueryRow(
+		ctx,
+		`SELECT `+listingColumns+listingJoin+sellerVisible("$2")+` AND s.id=$1`,
+		id,
+		viewer,
+	).Scan(
 		&item.ID,
 		&item.SellerID,
 		&item.SellerName,
@@ -115,6 +132,7 @@ func (records *Store) Listing(ctx context.Context, id string) (Listing, error) {
 		&item.HeldWeight,
 		&item.ImageURL,
 		&item.SellerAvatarURL,
+		&item.SellerVerified,
 	)
 
 	return item, err

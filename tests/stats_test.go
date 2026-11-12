@@ -66,13 +66,16 @@ func TestPublicStats(t *testing.T) {
 	// The seller traded 12.12 kg; the buyer bought 3.5 kg of collections.
 	for index, want := range []string{seller.id, buyer.id} {
 		store := stores[index].(map[string]any)
-		if len(store) != 3 || store["id"] != want {
+		if len(store) != 4 || store["id"] != want {
 			t.Fatalf("unexpected store %d projection: %s", index, after.Raw)
 		}
 		for _, key := range []string{"id", "name", "kg"} {
 			if _, ok := store[key].(string); !ok {
 				t.Errorf("store %s is not text: %s", key, after.Raw)
 			}
+		}
+		if store["business_verified"] != true {
+			t.Errorf("store %d is not marked verified: %s", index, after.Raw)
 		}
 	}
 }

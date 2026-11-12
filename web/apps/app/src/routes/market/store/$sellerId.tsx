@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
+import { BusinessName, UnverifiedBanner } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ButtonRow } from '@/components/button-row';
 import { Panel } from '@/components/panel';
@@ -65,6 +66,7 @@ function StorePage() {
             }}
             listing={chatListing ?? undefined}
           />
+          {user?.id === sellerId && <UnverifiedBanner />}
           <Panel title="Store details">
             <header className="flex flex-wrap items-center gap-4">
               <PersonAvatar
@@ -77,7 +79,12 @@ function StorePage() {
                 className="size-16"
               />
               <div className="min-w-0 flex-1 space-y-1">
-                <h1 className="text-2xl font-semibold">{store.data.name}</h1>
+                <h1 className="text-2xl font-semibold">
+                  <BusinessName
+                    name={store.data.name}
+                    verified={store.data.business_verified}
+                  />
+                </h1>
                 <p>
                   {[store.data.city, store.data.province]
                     .filter(Boolean)

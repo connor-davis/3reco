@@ -69,6 +69,7 @@ test('B4b: store page cards hide the seller, market cards keep it', () => {
     '@tanstack/react-router': { Link: 'a' },
     'lucide-react': { Package: 'svg' },
     '@/components/ui/card': { Card: 'div', CardContent: 'div' },
+    '@/components/badges': { BusinessName: ({ name }) => name },
     '@/lib/format': format,
   });
   const listing = {

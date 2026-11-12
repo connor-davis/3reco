@@ -10,6 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Guarded } from '@/components/access-guard';
+import { BusinessName, TradeTypeLabel } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { LinkButton } from '@/components/link-button';
 import { PageHeader, Section } from '@/components/page-header';
@@ -166,10 +167,7 @@ function Dashboard() {
                     <span className="font-medium text-foreground">
                       {row.count}
                     </span>{' '}
-                    {row.type === 'c2b'
-                      ? 'Collections (collectors → businesses)'
-                      : 'Business to business'}
-                    , {formatKg(row.weight)}
+                    <TradeTypeLabel type={row.type} />, {formatKg(row.weight)}
                   </li>
                 ))}
               </ul>
@@ -297,7 +295,10 @@ function CommunityImpact() {
                     to={'/market/store/' + store.id}
                     variant="link"
                   >
-                    {store.name}
+                    <BusinessName
+                      name={store.name}
+                      verified={store.business_verified}
+                    />
                   </LinkButton>
                 </li>
               ))}

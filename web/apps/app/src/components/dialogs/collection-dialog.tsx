@@ -189,6 +189,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const businessOptions = (businesses.data?.items ?? []).map((store) => ({
     value: store.id,
     label: store.name,
+    verified: store.business_verified,
   }));
   if (
     chooseBusiness &&
@@ -198,6 +199,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     businessOptions.push({
       value: picked,
       label: seen.current.get(picked) ?? '',
+      verified: false,
     });
   }
 

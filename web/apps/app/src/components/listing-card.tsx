@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Package } from 'lucide-react';
+import { BusinessName } from '@/components/badges';
 import { PersonAvatar } from '@/components/visuals';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatKg, formatRate, toGrams } from '@/lib/format';
@@ -54,7 +55,7 @@ export function ListingCard({
         </p>
         {showSeller && (
           <Link
-            className="relative z-10 inline-flex min-h-11 items-center gap-2 text-sm hover:underline"
+            className="relative z-10 inline-flex min-h-11 max-w-full items-center gap-2 text-sm hover:underline"
             to="/market/store/$sellerId"
             params={{ sellerId: listing.seller_id }}
           >
@@ -63,7 +64,10 @@ export function ListingCard({
               image={listing.seller_avatar_url}
               className="size-6"
             />
-            {listing.seller_name}
+            <BusinessName
+              name={listing.seller_name}
+              verified={listing.seller_verified}
+            />
           </Link>
         )}
       </CardContent>

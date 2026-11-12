@@ -6,6 +6,7 @@ import { Boxes, Download, FileText, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { TransactionDialog } from '@/components/dialogs/record-dialogs';
+import { BusinessName, TradeTypeLabel } from '@/components/badges';
 import { ListRow } from '@/components/list-row';
 import { ChoiceSelect, FilterTabs } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
@@ -37,6 +38,7 @@ import {
   toCents,
   toGrams,
 } from '@/lib/format';
+import { tradeTypeLabel } from '@/lib/trade-type';
 
 const day = (date: Date) => format(date, 'yyyy-MM-dd');
 
@@ -60,8 +62,8 @@ type Props = {
 
 const typeOptions = [
   { value: 'all', label: 'All types' },
-  { value: 'b2b', label: 'Business trade' },
-  { value: 'c2b', label: 'Collection' },
+  { value: 'b2b', label: tradeTypeLabel('b2b') },
+  { value: 'c2b', label: tradeTypeLabel('c2b') },
 ];
 
 const csvOptions = (collectionsOnly: boolean) => [
@@ -76,6 +78,22 @@ const dayOf = (row: Transaction) => row.collection_day ?? row.effective_at;
 
 function weightOf(row: Transaction) {
   return row.items.reduce((sum, item) => sum + toGrams(item.weight), 0);
+}
+
+function Parties({ row }: { row: Transaction }) {
+  return (
+    <>
+      <BusinessName
+        name={row.seller.name}
+        verified={row.seller.business_verified}
+      />
+      {' → '}
+      <BusinessName
+        name={row.buyer.name}
+        verified={row.buyer.business_verified}
+      />
+    </>
+  );
 }
 
 function titleOf(row: Transaction) {
@@ -306,13 +324,16 @@ export function RecordList({
             >
               <ListRow
                 title={titleOf(row)}
-                subtitle={`${row.seller.name} → ${row.buyer.name}`}
+                subtitle={<Parties row={row} />}
                 meta={`${formatDate(dayOf(row))} · ${row.invoice_number}${row.items.length === 1 ? ` · ${formatRate(row.items[0].price)}` : ''}`}
                 value={formatRand(toCents(row.total_price))}
                 status={
                   <>
                     <Badge variant="outline" className="min-h-8 px-3 text-sm">
-                      {row.type === 'b2b' ? 'Business trade' : 'Collection'}
+                      <TradeTypeLabel
+                        type={row.type}
+                        verified={row.business_verified}
+                      />
                     </Badge>
                     {row.status === 'pending' && row.request_id && (
                       <WaitingTag requestId={row.request_id} />

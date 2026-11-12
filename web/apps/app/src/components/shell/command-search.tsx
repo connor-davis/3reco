@@ -8,6 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { BusinessName } from '@/components/badges';
 import { useListings } from '@/lib/api/listings';
 import { useStores } from '@/lib/api/stores';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -150,7 +151,10 @@ function SearchResults({ q, go }: { q: string; go: (to: string) => void }) {
               value={`store-${store.id}`}
               onSelect={() => go(`/market/store/${store.id}`)}
             >
-              {store.name}
+              <BusinessName
+                name={store.name}
+                verified={store.business_verified}
+              />
               <span className="ml-auto text-xs text-muted-foreground">
                 {store.city}
               </span>

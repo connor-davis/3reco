@@ -47,6 +47,7 @@ function nodes(node) {
 function text(node) {
   if (typeof node === 'string') return node;
   if (!node || typeof node !== 'object') return '';
+  if (typeof node.type === 'function') return text(node.type(node.props));
   return [node.props?.children].flat(Infinity).map(text).join(' ');
 }
 
@@ -267,6 +268,7 @@ test('S9: admin cards omit repeated names while participant summaries remain', (
       '@/lib/api/messages': {
         useThreadHistory: () => ({ data: { pages: [{ items: [thread] }] } }),
       },
+      '@/components/badges': { BusinessName: ({ name }) => name },
       '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
       './helpers': helpers,
     });

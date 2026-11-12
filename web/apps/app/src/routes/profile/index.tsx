@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { UserRound } from 'lucide-react';
+import { UnverifiedBanner } from '@/components/badges';
 import { Guarded } from '@/components/access-guard';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { AvatarDialog } from '@/components/dialogs/avatar-dialog';
@@ -53,6 +54,7 @@ function ProfilePage() {
           ) : undefined
         }
       />
+      <UnverifiedBanner />
       <DataState
         query={query}
         isEmpty={!profile}

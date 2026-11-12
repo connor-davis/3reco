@@ -10,7 +10,7 @@ import (
 func TestRound2CollectorPhoneSearch(t *testing.T) {
 	app := testutil.Server(t)
 	creator, _ := domainUser(t, app, "business")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 	collector, _ := domainUser(t, app, "collector")
 	id := status(t, creator.Do("POST", "/api/collectors", collectorBody("0820001010")), 200).Body["id"]
 

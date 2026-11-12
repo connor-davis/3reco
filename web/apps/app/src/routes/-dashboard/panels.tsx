@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Users, MessageCircle, Receipt } from 'lucide-react';
 import { useInbox } from '@/lib/api/messages';
 import { useTransactions } from '@/lib/api/transactions';
+import { BusinessName } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { LinkButton } from '@/components/link-button';
 import {
@@ -111,7 +112,10 @@ export function CounterpartyRows({
               className="flex flex-wrap items-center justify-between gap-3 py-3"
             >
               <span className="min-w-0 break-words font-medium">
-                {party.name}
+                <BusinessName
+                  name={party.name}
+                  verified={party.business_verified}
+                />
               </span>
               <span className="text-sm text-muted-foreground">
                 {plural(party.count, 'trade')} ·{' '}
@@ -214,7 +218,12 @@ function RecentCollections() {
         <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
           {query.data?.items.map((trade) => (
             <li key={trade.id} className="space-y-1 py-3">
-              <p className="font-medium">{trade.buyer.name}</p>
+              <p className="font-medium">
+                <BusinessName
+                  name={trade.buyer.name}
+                  verified={trade.buyer.business_verified}
+                />
+              </p>
               <p className="text-sm text-muted-foreground">
                 {trade.items
                   .map(

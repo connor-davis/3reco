@@ -65,6 +65,10 @@ func (service *Service) SaveCart(ctx context.Context, buyer, seller string, item
 				return service.store.ClearCart(ctx, buyer, seller)
 			}
 
+			if err := RequireVerified(ctx, service.store, seller); err != nil {
+				return err
+			}
+
 			for i, item := range items {
 				line := transactions.SaleItem{
 					MaterialID: item.MaterialID, Weight: item.Weight, Price: "0",

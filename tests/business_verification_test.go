@@ -30,8 +30,8 @@ func newVerifyWorld(t *testing.T) verifyWorld {
 		app:   app,
 		admin: tradeNewUser(t, app, "admin"),
 		staff: tradeNewUser(t, app, "staff"),
-		bizA:  tradeNewUser(t, app, "business"),
-		bizB:  tradeNewUser(t, app, "business"),
+		bizA:  tradeNewUnverified(t, app),
+		bizB:  tradeNewUnverified(t, app),
 		verifyURL: func(id string) string {
 			return "/api/admin/users/" + id + "/business-verification"
 		},
@@ -147,7 +147,10 @@ func TestVerificationNotifiesAndAudits(t *testing.T) {
 
 	w.setVerified(t, w.bizB.id, true)
 	own.hear("user", w.bizB.id)
-	other.quiet("another business")
+
+	// Everyone's market and trade lists change, so everyone hears those two.
+	other.hear("listing", w.bizB.id)
+	other.hear("transaction", w.bizB.id)
 
 	w.setVerified(t, w.bizB.id, false)
 	own.hear("user", w.bizB.id)

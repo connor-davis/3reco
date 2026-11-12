@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Inbox } from 'lucide-react';
-import { StatusBadge } from '@/components/badges';
+import { StatusBadge, VerifiedMark } from '@/components/badges';
 import {
   counterpartyOf,
   isClosed,
@@ -95,6 +95,9 @@ export function RequestList({
                   <ListRow
                     media={<PersonAvatar name={other.name} />}
                     title={other.name}
+                    titleMark={
+                      <VerifiedMark verified={other.business_verified} />
+                    }
                     subtitle={`${request.items.map((item) => item.material_name).join(', ')} · ${formatDate(request.created_at)}`}
                     meta={
                       direction === 'incoming' && <Terms request={request} />

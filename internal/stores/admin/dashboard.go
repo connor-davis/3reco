@@ -33,10 +33,11 @@ type Day struct {
 // Counterparty is the other side of a trade: the seller of a purchase or the
 // buyer of a sale.
 type Counterparty struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Count int    `json:"count"`
-	Value string `json:"value"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Verified bool   `json:"business_verified"`
+	Count    int    `json:"count"`
+	Value    string `json:"value"`
 }
 
 // TypeTotal is the settled trades of one type (c2b or b2b) in a window.
@@ -113,20 +114,21 @@ func (s *Store) Counterparties(
 				t.collection_day, t.collection_date, t.created_at, `+database.EffectiveDate("t")+` AS at
 			FROM transactions t WHERE t.status='complete' AND `+string(scope)+`
 		)
-		SELECT cp.id, cp.name, count(*), sum(tx.total_price)::text
+		SELECT cp.id, cp.name, cp.verified, count(*), sum(tx.total_price)::text
 		FROM tx
 		LEFT JOIN users seller ON seller.id = tx.seller_id AND tx.type = 'b2b'
 		LEFT JOIN collectors col ON col.id = tx.seller_id AND tx.type = 'c2b'
 		JOIN users buyer ON buyer.id = tx.buyer_id
 		CROSS JOIN LATERAL (
-			SELECT tx.seller_id AS id, COALESCE(col.name, `+database.DisplayName("seller")+`) AS name
+			SELECT tx.seller_id AS id, COALESCE(col.name, `+database.DisplayName("seller")+`) AS name,
+				`+database.Verified("seller")+` AS verified
 			WHERE $1 = '' OR tx.buyer_id = $1
 			UNION ALL
-			SELECT tx.buyer_id, `+database.DisplayName("buyer")+`
+			SELECT tx.buyer_id, `+database.DisplayName("buyer")+`, `+database.Verified("buyer")+`
 			WHERE $1 = '' OR tx.buyer_id <> $1
 		) cp
 		WHERE tx.at >= $2 AND tx.at < $3
-		GROUP BY cp.id, cp.name
+		GROUP BY cp.id, cp.name, cp.verified
 		ORDER BY sum(tx.total_price) DESC, cp.id
 		LIMIT 10`, owner, from, to)
 	if err != nil {
@@ -139,7 +141,7 @@ func (s *Store) Counterparties(
 	for rows.Next() {
 		var c Counterparty
 
-		if err := rows.Scan(&c.ID, &c.Name, &c.Count, &c.Value); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Verified, &c.Count, &c.Value); err != nil {
 			return nil, err
 		}
 

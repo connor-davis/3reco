@@ -38,8 +38,8 @@ func (service *Service) Listings(ctx context.Context, filter store.Filter, query
 }
 
 // Detail hides stock immediately when it is unlisted.
-func (service *Service) Detail(ctx context.Context, id string) (store.Listing, error) {
-	item, err := service.store.Listing(ctx, id)
+func (service *Service) Detail(ctx context.Context, id, viewer string) (store.Listing, error) {
+	item, err := service.store.Listing(ctx, id, viewer)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return item, apperr.NotFound("No such listing.")
 	}
@@ -52,4 +52,19 @@ func (service *Service) Detail(ctx context.Context, id string) (store.Listing, e
 	item.AverageRating, item.ReviewCount = summary.Average, summary.Count
 
 	return item, err
+}
+
+// RequireVerified refuses a purchase from a business that is not verified yet.
+// Reads stay open so people can still cancel what they already started.
+func RequireVerified(ctx context.Context, records *store.Store, sellerID string) error {
+	unverified, err := records.Unverified(ctx, sellerID)
+	if err != nil {
+		return err
+	}
+
+	if unverified {
+		return apperr.Forbidden("This business is not verified to trade yet.")
+	}
+
+	return nil
 }

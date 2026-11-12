@@ -24,7 +24,7 @@ func TestCollectorBlankPayout(t *testing.T) {
 		t.Run(role, func(t *testing.T) {
 			app := testutil.Server(t)
 			owner, _ := domainUser(t, app, "business")
-			other, _ := domainUser(t, app, "business")
+			other, _ := domainUnverified(t, app)
 			editor := owner
 			if role != "business" {
 				editor, _ = domainUser(t, app, role)
@@ -86,7 +86,7 @@ func TestCollectorBlankPayout(t *testing.T) {
 func TestCollectorOptionalContacts(t *testing.T) {
 	app := testutil.Server(t)
 	creator, _ := domainUser(t, app, "business")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 	admin, _ := domainUser(t, app, "admin")
 
 	for _, email := range []string{"first@example.test", "second@example.test"} {
@@ -175,7 +175,7 @@ func noPrivateKeysButMasks(t *testing.T, value any) {
 func TestCollectorDetailsRedactPayout(t *testing.T) {
 	app := testutil.Server(t)
 	creator, _ := domainUser(t, app, "business")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 	member, _ := domainUser(t, app, "collector")
 	admin, _ := domainUser(t, app, "admin")
 	anonymous := app.NewClient(t)
@@ -332,7 +332,7 @@ func TestCollectorPatchPreservesOmittedFields(t *testing.T) {
 func TestCollectorStatsPhoneLeak(t *testing.T) {
 	app := testutil.Server(t)
 	creator, _ := domainUser(t, app, "business")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 	member, _ := domainUser(t, app, "collector")
 	admin, _ := domainUser(t, app, "admin")
 	staff, _ := domainUser(t, app, "staff")
@@ -410,7 +410,7 @@ func TestCollectorStatsPhoneLeak(t *testing.T) {
 func TestCollectorEditScopeAndBranchPrivacy(t *testing.T) {
 	app := testutil.Server(t)
 	owner, _ := domainUser(t, app, "business")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 	staff, _ := domainUser(t, app, "staff")
 	id := status(t, owner.Do("POST", "/api/collectors", collectorBody(domainPhone())), 200).Body["id"].(string)
 

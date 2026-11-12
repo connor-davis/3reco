@@ -42,6 +42,7 @@ export function useThreadHistory(q = '', filter = 'all') {
           other: {
             id: thread.request_id,
             name: `${thread.buyer.name} ↔ ${thread.seller.name}`,
+            business_verified: false,
           },
           unread_count: 0,
         })),

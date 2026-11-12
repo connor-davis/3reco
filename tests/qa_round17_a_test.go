@@ -52,7 +52,7 @@ func TestRound17CollectorPayoutMerge(t *testing.T) {
 	app := testutil.Server(t)
 	owner, _ := domainUser(t, app, "business")
 	staff, _ := domainUser(t, app, "staff")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 	id := status(t, owner.Do("POST", "/api/collectors", collectorBody("0827770171")), 200).
 		Body["id"].(string)
 	path := "/api/collectors/" + id

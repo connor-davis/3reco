@@ -30,7 +30,7 @@ var transactionColumns = []string{
 
 var userColumns = []string{
 	"Email", "Account Type", "First Name", "Last Name", "Business Name", "Business Reg. No.", "Phone",
-	"Street Address", "City", "Area Code", "Province", "Registered At (SAST)",
+	"Street Address", "City", "Area Code", "Province", "Registered At (SAST)", "Business verified",
 }
 
 // Export is a validated export request. Write streams rows into the HTTP response.
@@ -182,7 +182,7 @@ func (s *Service) PrepareExport(
 			header = append(header, "Materials")
 		}
 		header = append(header, transactionColumns[7:]...)
-		header = append(header, "Invoice number")
+		header = append(header, "Invoice number", "Business verified")
 		if err := write(header); err != nil {
 			return err
 		}
@@ -254,7 +254,7 @@ func exportRows(document tstore.Document, itemised bool) [][]string {
 
 	suffix := []string{weight.FloatString(2), pdf.Decimal(trade.TotalPrice), invoices.Name(seller),
 		seller.Email, seller.Phone, invoices.Address(seller), invoices.Name(buyer), buyer.Email,
-		buyer.Phone, invoices.Address(buyer), method, payout, trade.InvoiceNumber}
+		buyer.Phone, invoices.Address(buyer), method, payout, trade.InvoiceNumber, verifiedText(trade.BusinessVerified)}
 	if !itemised {
 		return [][]string{append(append(prefix, strings.Join(materials, "\n")), suffix...)}
 	}
@@ -271,4 +271,13 @@ func exportRows(document tstore.Document, itemised bool) [][]string {
 	}
 
 	return rows
+}
+
+// verifiedText is the export word for a business's verification.
+func verifiedText(verified bool) string {
+	if verified {
+		return "Verified"
+	}
+
+	return "Unverified"
 }

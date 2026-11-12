@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react';
+import { VerifiedMark } from '@/components/badges';
 import {
   InputGroup,
   InputGroupAddon,
@@ -49,7 +50,8 @@ export function SearchBox({
   );
 }
 
-export type Option = { value: string; label: string };
+/** `verified` adds the 3REco check after the label of a verified business. */
+export type Option = { value: string; label: string; verified?: boolean };
 
 type ChoiceSelectProps = {
   label: string;
@@ -112,6 +114,7 @@ export function ChoiceSelect({
         {items.map((item) => (
           <SelectItem key={item.value} value={item.value}>
             {item.label}
+            <VerifiedMark verified={item.verified} />
           </SelectItem>
         ))}
       </SelectContent>

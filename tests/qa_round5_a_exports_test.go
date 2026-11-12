@@ -60,8 +60,8 @@ func TestQARound5AExportSearchAndAudit(t *testing.T) {
 		}
 	}
 	rows := csvRows(t, w.buyer.c, "/api/exports/collections?q="+c2b)
-	if len(rows) != 2 || rows[0][len(rows[0])-1] != "Invoice number" ||
-		rows[1][len(rows[1])-1] != strings.ToUpper(c2b[len(c2b)-8:]) {
+	if len(rows) != 2 || rows[0][len(rows[0])-2] != "Invoice number" ||
+		rows[1][len(rows[1])-2] != strings.ToUpper(c2b[len(c2b)-8:]) {
 		t.Fatalf("collection invoice reference: %v", rows)
 	}
 	rows = csvRows(t, admin.c, "/api/admin/exports/transactions?q="+id+"&from=2000-01-01T00:00:00Z&to=2000-01-02T00:00:00Z")

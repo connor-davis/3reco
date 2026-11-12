@@ -23,8 +23,29 @@ type tradeUser struct {
 }
 
 // tradeNewUser signs a person up, verifies them, gives them a role and a
-// business name, and signs them in.
+// business name, and signs them in. A business is also verified by 3REco, so it
+// shows in the market and can be bought from.
 func tradeNewUser(t *testing.T, app *testutil.App, role string) tradeUser {
+	t.Helper()
+
+	return tradeNewUserVerified(t, app, role, true)
+}
+
+// tradeNewUnverified is a business 3REco has not verified yet.
+func tradeNewUnverified(t *testing.T, app *testutil.App) tradeUser {
+	t.Helper()
+
+	return tradeNewUserVerified(t, app, "business", false)
+}
+
+// tradeUnverify takes the 3REco verification off a business made by tradeNewUser.
+func tradeUnverify(t *testing.T, app *testutil.App, user tradeUser) {
+	t.Helper()
+
+	tradeExec(t, app, `UPDATE users SET business_verified_at = NULL WHERE id = $1`, user.id)
+}
+
+func tradeNewUserVerified(t *testing.T, app *testutil.App, role string, verified bool) tradeUser {
 	t.Helper()
 
 	c := app.NewClient(t)
@@ -37,6 +58,10 @@ func tradeNewUser(t *testing.T, app *testutil.App, role string) tradeUser {
 	tradeExec(t, app, `
 		UPDATE users SET role = $2, business_name = $3, phone = $4, normalized_phone = $4,
 			profile_complete = true WHERE id = $1`, id, role, "Biz "+id[:6], phone)
+
+	if verified && role == "business" {
+		tradeExec(t, app, `UPDATE users SET business_verified_at = now() WHERE id = $1`, id)
+	}
 
 	return tradeUser{c: c, id: id, email: email, phone: phone}
 }

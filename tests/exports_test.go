@@ -16,7 +16,7 @@ var exportHeader = []string{
 	"Items Count", "Materials", "Total Weight (kg)", "Total Price (R)", "Seller Name", "Seller Email",
 	"Seller Phone", "Seller Address", "Buyer Name", "Buyer Email", "Buyer Phone", "Buyer Address",
 	"Collector Payout Method", "Collector Payout Details",
-	"Invoice number",
+	"Invoice number", "Business verified",
 }
 
 func csvRows(t *testing.T, client *testutil.Client, path string) [][]string {
@@ -159,7 +159,7 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE users SET created_at='2026-11-04T23:30:00Z' WHERE id=$1`, w.buyer.id)
 	rows = csvRows(t, admin.c, "/api/admin/exports/users")
 	want := []string{"Email", "Account Type", "First Name", "Last Name", "Business Name", "Business Reg. No.",
-		"Phone", "Street Address", "City", "Area Code", "Province", "Registered At (SAST)"}
+		"Phone", "Street Address", "City", "Area Code", "Province", "Registered At (SAST)", "Business verified"}
 	if !reflect.DeepEqual(rows[0], want) {
 		t.Fatalf("user export columns: %v", rows[0])
 	}

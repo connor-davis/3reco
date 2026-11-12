@@ -41,21 +41,24 @@ type Receipt struct {
 // Transaction is a trade as its participants see it. It never holds the
 // collector snapshot, the invoice key or the upload slots.
 type Transaction struct {
-	CanRemoveReceipts bool           `json:"can_remove_receipts"`
-	ID                string         `json:"id"`
-	Type              string         `json:"type"`
-	Status            string         `json:"status"`
-	RequestID         *string        `json:"request_id"`
-	Seller            database.Party `json:"seller"`
-	Buyer             database.Party `json:"buyer"`
-	TotalPrice        string         `json:"total_price"`
-	CollectionDay     *string        `json:"collection_day"`
-	CollectionDate    *time.Time     `json:"collection_date"`
-	EffectiveAt       time.Time      `json:"effective_at"`
-	CreatedAt         time.Time      `json:"created_at"`
-	InvoiceNumber     string         `json:"invoice_number"`
-	Items             []Item         `json:"items"`
-	Receipts          []Receipt      `json:"receipts"`
+	CanRemoveReceipts bool   `json:"can_remove_receipts"`
+	ID                string `json:"id"`
+	Type              string `json:"type"`
+	Status            string `json:"status"`
+	// BusinessVerified is the deciding business's live state: the buyer in a
+	// collection, the seller in a business trade. The stored type never changes.
+	BusinessVerified bool           `json:"business_verified"`
+	RequestID        *string        `json:"request_id"`
+	Seller           database.Party `json:"seller"`
+	Buyer            database.Party `json:"buyer"`
+	TotalPrice       string         `json:"total_price"`
+	CollectionDay    *string        `json:"collection_day"`
+	CollectionDate   *time.Time     `json:"collection_date"`
+	EffectiveAt      time.Time      `json:"effective_at"`
+	CreatedAt        time.Time      `json:"created_at"`
+	InvoiceNumber    string         `json:"invoice_number"`
+	Items            []Item         `json:"items"`
+	Receipts         []Receipt      `json:"receipts"`
 }
 
 // Scope says which rows a list may return. Each one is a fixed SQL clause on
@@ -94,7 +97,9 @@ var selectTransaction = `
 	SELECT t.id, t.type, t.seller_id,
 		COALESCE(c.name, ` + database.DisplayName("s") + `), t.buyer_id, ` + database.DisplayName("b") + `,
 		t.total_price::text, t.collection_day::text, t.collection_date,
-		` + database.EffectiveDate("t") + `, t.created_at, t.status, t.request_id` + fromJoins
+		` + database.EffectiveDate("t") + `, t.created_at, t.status, t.request_id,
+		` + database.TradeVerified() + `,
+		COALESCE(s.business_verified_at IS NOT NULL, false), b.business_verified_at IS NOT NULL` + fromJoins
 
 // fromJoins is the table list every transaction query shares, so a filter can
 // name buyer (b), seller (s) and collector (c) the same way everywhere.
@@ -160,7 +165,8 @@ func scan(row pgx.Row) (Transaction, error) {
 	var t Transaction
 
 	err := row.Scan(&t.ID, &t.Type, &t.Seller.ID, &t.Seller.Name, &t.Buyer.ID, &t.Buyer.Name,
-		&t.TotalPrice, &t.CollectionDay, &t.CollectionDate, &t.EffectiveAt, &t.CreatedAt, &t.Status, &t.RequestID)
+		&t.TotalPrice, &t.CollectionDay, &t.CollectionDate, &t.EffectiveAt, &t.CreatedAt, &t.Status, &t.RequestID,
+		&t.BusinessVerified, &t.Seller.Verified, &t.Buyer.Verified)
 	if err != nil {
 		return t, err
 	}

@@ -110,7 +110,7 @@ func TestPrivacyFieldsAreCiphertextAtRest(t *testing.T) {
 func TestPrivacyMaskAndFullView(t *testing.T) {
 	app := testutil.Server(t)
 	creator := tradeNewUser(t, app, "business")
-	other := tradeNewUser(t, app, "business")
+	other := tradeNewUnverified(t, app)
 	staff := tradeNewUser(t, app, "staff")
 	admin := tradeNewUser(t, app, "admin")
 	login := tradeNewUser(t, app, "collector")

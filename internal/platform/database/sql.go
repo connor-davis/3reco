@@ -9,6 +9,13 @@ func DisplayName(alias string) string {
 		"NULLIF(" + alias + ".name, ''), 'Unknown')"
 }
 
+// Verified is the SQL boolean for whether the business user row aliased as alias
+// has been verified by 3REco. It is computed from the stored timestamp, never
+// kept as a second copy.
+func Verified(alias string) string {
+	return alias + ".business_verified_at IS NOT NULL"
+}
+
 // PersonName is the name to show for the person behind a user row aliased as
 // alias, in admin lists: admin and staff by their own first and last name (a
 // business name left over from an earlier role is not theirs), everyone else
@@ -39,7 +46,18 @@ func EffectiveDate(alias string) string {
 }
 
 // Party is a person as other people may see them: an id and a safe name.
+// Verified is true for a business 3REco has verified; it is computed, never stored.
 type Party struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Verified bool   `json:"business_verified"`
+}
+
+// TradeVerified is the SQL boolean for whether the business that decides a
+// transaction row (alias t) is verified: the buyer (b) in a collection and the
+// seller (s) in a business trade. Verifying the business clears the mark on old
+// trades too.
+func TradeVerified() string {
+	return "CASE WHEN t.type = 'b2b' THEN s.business_verified_at IS NOT NULL " +
+		"ELSE b.business_verified_at IS NOT NULL END"
 }

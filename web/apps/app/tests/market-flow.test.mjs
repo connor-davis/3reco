@@ -36,6 +36,8 @@ function find(node, predicate) {
   return null;
 }
 
+const BusinessName = ({ name }) => name;
+
 test('cart restores the saved exact weight and sends edited weight at checkout', async () => {
   const writes = [];
   let values;
@@ -76,6 +78,7 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
       },
       '@hookform/resolvers/zod': { zodResolver: () => {} },
       zod: { z },
+      '@/components/badges': { BusinessName },
       '@/lib/api/cart': {
         useSaveCart: mutation('save'),
         useCart: () => ({}),
@@ -113,7 +116,8 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
     /Estimated total.*R.*97\.00.*Send request/
   );
   assert.equal(
-    find(tree, (node) => node.props?.title === 'Store').props.title,
+    find(tree, (node) => node.props?.title?.props?.name === 'Store').props.title
+      .props.name,
     'Store'
   );
   assert.match(words(tree), /Store subtotal/);
@@ -134,6 +138,7 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
 function words(node) {
   if (typeof node === 'string') return node;
   if (!node || typeof node !== 'object') return '';
+  if (node.type === BusinessName) return node.props.name;
   return [node.props?.children].flat(Infinity).map(words).join('');
 }
 

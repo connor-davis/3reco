@@ -80,7 +80,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 }
 
 type SectionProps = {
-  title: string;
+  title: ReactNode;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
