@@ -291,7 +291,7 @@ export function RecordList({
         }
         skeleton={<RowsSkeleton />}
       >
-        <ItemGroup className="max-w-5xl gap-0 overflow-hidden rounded-lg border sm:gap-4">
+        <ItemGroup className="gap-0 overflow-hidden rounded-lg border sm:gap-4">
           {shown.map((row) => (
             <div
               key={row.id}

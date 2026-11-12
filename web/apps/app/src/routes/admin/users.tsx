@@ -374,6 +374,7 @@ function UsersPage() {
             ? 'Remove verification'
             : 'Verify business'
         }
+        destructive={verifying?.business_verified ?? false}
         onConfirm={() => {
           if (!verifying) return;
           const verified = !verifying.business_verified;

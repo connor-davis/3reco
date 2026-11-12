@@ -55,6 +55,7 @@ export function DealAside({ request }: { request: TradeRequest }) {
           to="/market/store/$sellerId"
           params={{ sellerId: isSeller ? request.buyer.id : request.seller.id }}
           variant="outline"
+          className="w-full"
         >
           Visit {isSeller ? request.buyer.name : request.seller.name}
         </LinkButton>

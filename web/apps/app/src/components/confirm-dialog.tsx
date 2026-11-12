@@ -22,9 +22,12 @@ type ConfirmDialogProps = {
   onConfirm: () => void;
   // When set, the person must type this exact text before they can confirm.
   typedName?: string;
+  // False for a safe yes (like verifying a business): the button is the plain
+  // brand colour instead of red.
+  destructive?: boolean;
 };
 
-/** The one confirm for every destructive action (remove, cancel, reject). */
+/** The one confirm for every action that needs a second yes (remove, cancel, verify). */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -34,6 +37,7 @@ export function ConfirmDialog({
   cancelLabel = 'Keep it',
   onConfirm,
   typedName,
+  destructive = true,
 }: ConfirmDialogProps) {
   const [typed, setTyped] = useState('');
   const blocked = typedName !== undefined && typed !== typedName;
@@ -67,7 +71,7 @@ export function ConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
-            variant="destructive"
+            variant={destructive ? 'destructive' : 'default'}
             disabled={blocked}
             onClick={onConfirm}
           >

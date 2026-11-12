@@ -173,6 +173,6 @@ test('qa-round6-ui: the shared table clips cell backgrounds inside its rounded b
   );
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
-    /<ItemGroup className="max-w-5xl gap-0 overflow-hidden rounded-lg border sm:gap-4"/
+    /<ItemGroup className="gap-0 overflow-hidden rounded-lg border sm:gap-4"/
   );
 });

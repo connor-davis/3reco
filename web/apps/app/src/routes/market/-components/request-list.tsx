@@ -82,7 +82,7 @@ export function RequestList({
         emptyText="Requests appear here when you start trading."
         skeleton={<RowsSkeleton />}
       >
-        <ul className="max-w-3xl divide-y overflow-hidden rounded-lg border">
+        <ul className="divide-y overflow-hidden rounded-lg border">
           {shown.map((request) => {
             const other = counterpartyOf(request, user?.id);
             return (
