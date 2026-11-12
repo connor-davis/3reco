@@ -82,6 +82,7 @@ export interface Store {
   created_at: string;
 }
 export interface StockItem {
+  image_url: string;
   id: string;
   owner_id: string;
   material_id: string;
@@ -101,6 +102,8 @@ export interface StockInput {
 }
 export type StockPatch = Partial<Omit<StockInput, 'material_id'>>;
 export interface Listing {
+  image_url: string;
+  seller_avatar_url: string;
   id: string;
   seller_id: string;
   seller_name: string;

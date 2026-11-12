@@ -12,7 +12,7 @@ export function useUploadAvatar() {
     mutationFn: (file: File) => api<T.Profile>('/profile/avatar', upload(file)),
     onSuccess: async () => {
       await Promise.all(
-        ['profile', 'auth', 'stores', 'users'].map((key) =>
+        ['profile', 'auth', 'stores', 'users', 'listings'].map((key) =>
           client.invalidateQueries({ queryKey: [key] })
         )
       );
@@ -25,5 +25,6 @@ export function useDeleteAvatar() {
     ['auth'],
     ['stores'],
     ['users'],
+    ['listings'],
   ]);
 }

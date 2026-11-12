@@ -1,5 +1,10 @@
 import { Star } from 'lucide-react';
-import { Avatar, AvatarBadge, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Avatar,
+  AvatarBadge,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/ui/avatar';
 import { initials } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -36,14 +41,21 @@ export function Stars({
 
 type PersonAvatarProps = {
   name: string;
+  image?: string;
   online?: boolean;
   className?: string;
 };
 
-/** Initials avatar with an optional green "online" dot. */
-export function PersonAvatar({ name, online, className }: PersonAvatarProps) {
+/** Picture with initials fallback and an optional green "online" dot. */
+export function PersonAvatar({
+  name,
+  image,
+  online,
+  className,
+}: PersonAvatarProps) {
   return (
     <Avatar className={className}>
+      {image && <AvatarImage src={image} alt={name} />}
       <AvatarFallback>{initials(name)}</AvatarFallback>
       {online && <AvatarBadge className="bg-primary" aria-label="Online" />}
     </Avatar>

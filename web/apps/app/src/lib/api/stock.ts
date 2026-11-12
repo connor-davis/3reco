@@ -1,3 +1,5 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api, upload } from './client';
 import { useResource, useWrite, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
@@ -38,4 +40,26 @@ export function useDeleteStock() {
     [['stock'], ['listings'], ['stores']],
     () => undefined
   );
+}
+
+export function useUploadStockImage(id: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) =>
+      api<T.StockItem>(`/stock/${idPath(id)}/image`, upload(file)),
+    onSuccess: async () => {
+      await Promise.all(
+        ['stock', 'listings', 'stores'].map((key) =>
+          client.invalidateQueries({ queryKey: [key] })
+        )
+      );
+    },
+  });
+}
+export function useDeleteStockImage(id: string) {
+  return useWrite<void, T.StockItem>(`/stock/${idPath(id)}/image`, 'DELETE', [
+    ['stock'],
+    ['listings'],
+    ['stores'],
+  ]);
 }

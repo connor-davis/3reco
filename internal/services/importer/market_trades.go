@@ -8,7 +8,6 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/storage"
-	"github.com/connor-davis/3reco/internal/services/files"
 	store "github.com/connor-davis/3reco/internal/stores/importer"
 )
 
@@ -157,7 +156,7 @@ func (p *planner) receipts(r *row) {
 			continue
 		}
 
-		data, contentType, err := files.Image(bytes.NewReader(data), maxReceiptBytes, false)
+		data, contentType, err := storage.Image(bytes.NewReader(data), maxReceiptBytes, false)
 		if err != nil {
 			child.fail("storageId", "the receipt is not a PNG or JPEG under 5 MiB")
 

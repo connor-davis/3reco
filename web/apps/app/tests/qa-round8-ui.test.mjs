@@ -185,6 +185,8 @@ test('disabled stock submission leaves field errors out of the footer', () => {
         '@/lib/api/stock': {
           useCreateStock: () => ({}),
           useUpdateStock: () => ({}),
+          useUploadStockImage: () => ({}),
+          useDeleteStockImage: () => ({}),
         },
         '@/lib/format': format,
         '@/lib/quantity': quantity,

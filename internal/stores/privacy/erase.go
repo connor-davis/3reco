@@ -106,14 +106,44 @@ func (s *Store) CancelOpenRequests(ctx context.Context, userID string) ([]Cancel
 
 // Erase removes what is private about a user and blanks the user row, keeping
 // only the id so finished transactions and reviews still point at a row. It
-// returns the avatar object key so the caller can remove the file after the
-// commit. The caller runs it inside a transaction, after CancelOpenRequests.
-func (s *Store) Erase(ctx context.Context, id, removedBy string) (string, error) {
+// returns avatar and stock object keys for removal after commit. The caller
+// runs it inside a transaction, after CancelOpenRequests.
+func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, error) {
 	q := s.db.Q(ctx)
 
 	var avatar *string
 	if err := q.QueryRow(ctx, `SELECT avatar_key FROM users WHERE id = $1`, id).Scan(&avatar); err != nil {
-		return "", err
+		return nil, err
+	}
+
+	keys := []string{}
+	if avatar != nil {
+		keys = append(keys, *avatar)
+	}
+
+	// Read keys before deleting the stock rows that hold them.
+	rows, err := q.Query(
+		ctx,
+		`SELECT COALESCE(image_key,'') FROM stock WHERE owner_id=$1 FOR UPDATE`,
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		if key != "" {
+			keys = append(keys, key)
+		}
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return nil, err
 	}
 
 	// Order does not matter: each of these only points at the user.
@@ -143,11 +173,11 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) (string, error)
 				AND t.anonymised_at IS NULL)`,
 	} {
 		if _, err := q.Exec(ctx, stmt, id); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
-	_, err := q.Exec(ctx, `
+	_, err = q.Exec(ctx, `
 		UPDATE users SET
 			name = 'Removed account', business_name = 'Removed account',
 			email = NULL, email_verified = false, email_verified_at = NULL,
@@ -161,12 +191,8 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) (string, error)
 			is_removed = true, removed_at = now(), removed_by = $2, updated_at = now()
 		WHERE id = $1`, id, removedBy)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if avatar == nil {
-		return "", nil
-	}
-
-	return *avatar, nil
+	return keys, nil
 }

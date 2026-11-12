@@ -18,6 +18,9 @@ func New(service *svc.Service) *Handler { return &Handler{svc: service} }
 
 // Register adds stock routes under /api.
 func (handler *Handler) Register(router fiber.Router) {
+	router.Get("/stock/:id/image", handler.image)
+	router.Post("/stock/:id/image", middleware.RequireRole(auth.RoleBusiness), handler.uploadImage)
+	router.Delete("/stock/:id/image", middleware.RequireRole(auth.RoleBusiness), handler.deleteImage)
 	router.Get("/stock/:id", handler.find)
 	router.Get("/stock", middleware.RequireUser, handler.list)
 	router.Post("/stock", middleware.RequireRole(auth.RoleBusiness), handler.create)

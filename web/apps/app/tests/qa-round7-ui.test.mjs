@@ -108,7 +108,10 @@ test('qa-round7: the stock dialog checks the base price live, in the server word
   assert.match(dialog, /Price must be at least \$\{formatRate\(base\)\}\./);
   assert.match(dialog, /baseRef\.current/);
   assert.match(dialog, /mode: 'onChange'/);
-  assert.match(dialog, /disabled=\{busy \|\| !formState\.isValid\}/);
+  assert.match(
+    dialog,
+    /disabled=\{busy \|\| !formState\.isValid \|\| !!photoError\}/
+  );
   assert.match(
     source('../../../../internal/services/stock/stock.go'),
     /"Price must be at least R "\+base\.FloatString\(2\)\+" \/ kg\."/

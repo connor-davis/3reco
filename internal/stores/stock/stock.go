@@ -13,6 +13,8 @@ import (
 
 // Item is a stock row with its material's safe catalog fields.
 type Item struct {
+	ImageKey        string    `json:"-"`
+	ImageURL        string    `json:"image_url"`
 	ID              string    `json:"id"`
 	OwnerID         string    `json:"owner_id"`
 	MaterialID      string    `json:"material_id"`
@@ -32,7 +34,8 @@ type Store struct{ db *database.DB }
 func New(db *database.DB) *Store { return &Store{db: db} }
 
 const columns = `s.id,s.owner_id,s.material_id,m.name,s.weight::text,s.price::text,
-	m.price::text,s.is_listed,s.created_at,stock_available(s.id,s.weight)::text`
+	m.price::text,s.is_listed,s.created_at,stock_available(s.id,s.weight)::text,COALESCE(s.image_key,''),
+	CASE WHEN s.image_key IS NOT NULL THEN '/api/stock/'||s.id||'/image?v='||md5(s.image_key) ELSE '' END`
 
 func scan(row pgx.Row, item *Item) error {
 	return row.Scan(
@@ -46,6 +49,8 @@ func scan(row pgx.Row, item *Item) error {
 		&item.IsListed,
 		&item.CreatedAt,
 		&item.AvailableWeight,
+		&item.ImageKey,
+		&item.ImageURL,
 	)
 }
 

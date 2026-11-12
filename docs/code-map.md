@@ -12,6 +12,7 @@ line when you add an owner.
 | Postgres pool, transaction helper, run-after-commit, new ids, unique-violation check | `database/database.go` |
 | SQL migrations: runner, then the files in order | `database/migrate.go`, `database/migrations/*.sql` |
 | Send email (Resend, or SMTP to Mailpit) and the action email template | `mail/mail.go` |
+| Bounded PNG/JPEG/WEBP byte sniffing and image size limits | `storage/image.go` (`Image`) |
 | Files in MinIO or S3: put, get, remove, presign | `storage/storage.go` |
 | A4 invoice layout, wrapping, pagination and exact decimal formatting (MIT-licensed go-pdf/fpdf) | `pdf/invoice.go` |
 
@@ -35,7 +36,9 @@ line when you add an owner.
 | `0014_realtime_recipients.sql` | `notify_change()` and `notify_stock_hold()` send kind, id, op and recipients; `realtime` triggers on collectors, store_reviews and transaction_receipts; narrower users trigger |
 | `0015_market_flow.sql` | Cart quantities, requested terms, versioned offers, dual confirmation and retained transaction status |
 | `0016_request_system_messages.sql` | Explicit system request events sharing message unread tracking |
+| `0017_export_audit_details.sql` | Download kind and filters on privacy export audit events |
 | `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
+| `0020_stock_images.sql` | One photo per stock item and live business logo changes |
 
 Never rename a merged migration. Add a new file.
 
@@ -89,7 +92,7 @@ Never rename a merged migration. Add a new file.
 | Stock availability and fenced hold consumption during settlement | `internal/stores/transactions/holds.go` |
 | Transactions: lists, detail, collector sale, direct sale, stock moves, invoice hook | `internal/stores/transactions`, `internal/services/transactions`, `internal/api/transactions` |
 | Authorized multipart receipt upload and streamed receipt/invoice downloads | `internal/api/transactions/receipts.go` |
-| Bounded image sniffing, receipt participation, SHA duplicates, five-file lock and failed-write cleanup | `internal/services/files/receipts.go` |
+| Receipt participation, SHA duplicates, five-file lock and failed-write cleanup | `internal/services/files/receipts.go` |
 | Receipt metadata, transaction row lock and scoped object lookup SQL | `internal/stores/files/files.go` |
 | Receipt removal (`DELETE /api/transactions/:id/receipts/:receipt_id`: access rule, row delete, file removed after commit) | `Remove` in `internal/services/files/receipts.go`, `receiptRemove` in `internal/api/transactions/receipts.go` |
 | Snapshot-first private document reads, invoice key locking/replacement and bounded export ID pages | `internal/stores/transactions/documents.go` |
@@ -253,3 +256,18 @@ Never rename a merged migration. Add a new file.
 | Counts and bad-row report | `internal/services/importer/report.go` |
 | Empty check, lock, trigger switch, inserts, counts (all the SQL) | `internal/stores/importer/store.go` |
 | Made-up export and tests for the import | `tests/import_fixture_test.go`, `tests/import_test.go` |
+
+## Stock photos and store logos
+
+| Job | Owner |
+| --- | --- |
+| Owner photo upload/removal and private cached photo stream | `internal/api/stock/image.go` |
+| Stock photo ownership, replacement compensation and after-commit cleanup | `internal/services/stock/image.go`; stock deletion in `stock.go` |
+| Market-visible photo reads and owner image reference writes | `internal/stores/stock/image.go` |
+| Versioned listing photo and seller logo projections | `internal/stores/market/listings.go`; stock photo projection in `internal/stores/stock/stock.go` |
+| Read stock photo keys before account erase and include them in own exports | `internal/stores/privacy/{erase,export}.go`; after-commit cleanup in `internal/services/privacy/erase.go` |
+| Shared picture avatar with initials fallback | `web/apps/app/src/components/visuals.tsx` (`PersonAvatar`) |
+| Edit-only stock photo selection, preview and staged removal | `web/apps/app/src/components/dialogs/stock-dialog.tsx`; hooks in `src/lib/api/stock.ts` |
+| Marketplace card photos and seller logos, smaller listing gallery | `web/apps/app/src/components/listing-card.tsx`, `src/routes/market/listing/-components/gallery.tsx` |
+| Stock photo access, visibility, replacement, rollback, privacy and live routing tests | `tests/stock_images_test.go`, `tests/stock_images_live_test.go` |
+| Photo/placeholder, avatar, stock photo validation and staged-save web tests | `web/apps/app/tests/stock-images.test.mjs` |

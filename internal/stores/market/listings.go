@@ -10,19 +10,21 @@ import (
 
 // Listing is an allowlisted market view, never a private user or stock record.
 type Listing struct {
-	ID            string    `json:"id"`
-	SellerID      string    `json:"seller_id"`
-	SellerName    string    `json:"seller_name"`
-	MaterialID    string    `json:"material_id"`
-	MaterialName  string    `json:"material_name"`
-	CarbonFactor  string    `json:"carbon_factor"`
-	GWCode        string    `json:"gw_code"`
-	HeldWeight    string    `json:"held_weight"`
-	Weight        string    `json:"weight"`
-	Price         string    `json:"price"`
-	AverageRating *float64  `json:"average_rating"`
-	ReviewCount   int       `json:"review_count"`
-	CreatedAt     time.Time `json:"created_at"`
+	ImageURL        string    `json:"image_url"`
+	SellerAvatarURL string    `json:"seller_avatar_url"`
+	ID              string    `json:"id"`
+	SellerID        string    `json:"seller_id"`
+	SellerName      string    `json:"seller_name"`
+	MaterialID      string    `json:"material_id"`
+	MaterialName    string    `json:"material_name"`
+	CarbonFactor    string    `json:"carbon_factor"`
+	GWCode          string    `json:"gw_code"`
+	HeldWeight      string    `json:"held_weight"`
+	Weight          string    `json:"weight"`
+	Price           string    `json:"price"`
+	AverageRating   *float64  `json:"average_rating"`
+	ReviewCount     int       `json:"review_count"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 // Filter narrows public listings before paging.
@@ -35,7 +37,9 @@ type Filter struct {
 
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
 	s.material_id,m.name,m.carbon_factor::text,m.gw_code,GREATEST(s.weight-COALESCE(h.held,0),0)::text,s.price::text,
-	s.created_at,COALESCE(h.held,0)::text`
+	s.created_at,COALESCE(h.held,0)::text,
+	CASE WHEN s.image_key IS NOT NULL THEN '/api/stock/'||s.id||'/image?v='||md5(s.image_key) ELSE '' END,
+	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END`
 
 // Held weight is summed once for all stock, not once per row through stock_available().
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
@@ -82,6 +86,8 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 			&item.Price,
 			&item.CreatedAt,
 			&item.HeldWeight,
+			&item.ImageURL,
+			&item.SellerAvatarURL,
 		); err != nil {
 			return nil, err
 		}
@@ -107,6 +113,8 @@ func (records *Store) Listing(ctx context.Context, id string) (Listing, error) {
 		&item.Price,
 		&item.CreatedAt,
 		&item.HeldWeight,
+		&item.ImageURL,
+		&item.SellerAvatarURL,
 	)
 
 	return item, err

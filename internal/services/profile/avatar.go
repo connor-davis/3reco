@@ -11,12 +11,12 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/database"
-	"github.com/connor-davis/3reco/internal/services/files"
+	"github.com/connor-davis/3reco/internal/platform/storage"
 )
 
 // UploadAvatar validates the caller's image before replacing its object reference.
 func (service *Service) UploadAvatar(ctx context.Context, id string, reader io.Reader) error {
-	data, kind, err := files.Image(reader, 2<<20, true)
+	data, kind, err := storage.Image(reader, 2<<20, true)
 	if err != nil {
 		return err
 	}
