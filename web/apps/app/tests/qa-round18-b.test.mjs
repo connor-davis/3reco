@@ -499,7 +499,7 @@ test(
       portServer.close((error) => (error ? reject(error) : resolve()))
     );
     const server = await createServer({
-      server: { host: '127.0.0.1', port, strictPort: true },
+      server: { host: '127.0.0.1', port, strictPort: true, hmr: false },
     });
     try {
       await server.listen();

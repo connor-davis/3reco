@@ -17,7 +17,7 @@ test(
     const server = await createServer({
       // The account-switch browser regression runs another Vite server in parallel.
       cacheDir: 'node_modules/.vite-layout',
-      server: { host: '127.0.0.1', port, strictPort: true },
+      server: { host: '127.0.0.1', port, strictPort: true, hmr: false },
     });
     try {
       await server.listen();
