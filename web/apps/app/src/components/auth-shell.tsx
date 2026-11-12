@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Leaf } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatKg } from '@/lib/format';
@@ -38,12 +39,7 @@ export function AuthShell({
             to="/"
             className="flex items-center gap-2 font-semibold lg:hidden"
           >
-            <img
-              src="/logo-mark.png"
-              alt=""
-              className="size-7 object-contain"
-            />
-            3REco
+            <BrandLogo />
           </Link>
           <header className="space-y-1">
             <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
@@ -76,8 +72,7 @@ function StoryPanel() {
   return (
     <aside className="hidden flex-col justify-between bg-muted p-12 lg:flex">
       <Link to="/" className="flex items-center gap-2 text-lg font-semibold">
-        <img src="/logo-mark.png" alt="" className="size-7 object-contain" />
-        3REco
+        <BrandLogo className="h-9" />
       </Link>
       <div className="space-y-6">
         <h2 className="max-w-md text-4xl font-semibold tracking-tight">
