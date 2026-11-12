@@ -38,6 +38,7 @@ test('DataTable owns one Panel, a wide table, transparent divided compact rows a
       },
     });
     const tree = DataTable({
+      fit: true,
       columns: [],
       data: [original],
       renderCard: () => 'Compact row',
@@ -55,6 +56,10 @@ test('DataTable owns one Panel, a wide table, transparent divided compact rows a
       compact
     );
     if (!compact) {
+      assert.equal(
+        all.find((node) => node.type === 'table').props.className,
+        'table-fixed'
+      );
       const row = all.find((node) => node.type === 'tr');
       row.props.onClick();
       let prevented = false;
@@ -75,6 +80,61 @@ test('DataTable owns one Panel, a wide table, transparent divided compact rows a
     /even:|nth-child|rounded-lg border|--row-background/
   );
   assert.doesNotMatch(source('components/list-row.tsx'), /--row-background/);
+});
+
+test('record rows keep amount, parties, weight and metadata in three shared lines', () => {
+  const { ListRow } = load('components/list-row.tsx', {
+    '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
+    '@tanstack/react-router': { Link: 'Link' },
+    '@/components/ui/button': { Button: 'Button' },
+    '@/components/ui/dropdown-menu': {},
+    '@/components/ui/item': {
+      Item: 'Item',
+      ItemContent: 'ItemContent',
+      ItemDescription: 'ItemDescription',
+      ItemMedia: 'ItemMedia',
+      ItemTitle: 'ItemTitle',
+    },
+  });
+  const row = ListRow({
+    layout: 'record',
+    title: 'Steel cans',
+    subtitle: 'Zanele Both → Cape Town Recycling',
+    value: 'R 2 000 000.00',
+    secondaryValue: '1 000 000 kg',
+    meta: '08 Nov 2026 · GLH09G54',
+    status: 'C2B',
+    onOpen() {},
+  });
+  const all = nodes(row);
+  for (const slot of ['record-primary', 'record-parties', 'record-meta'])
+    assert.equal(
+      all.filter((node) => node.props?.['data-slot'] === slot).length,
+      1
+    );
+  assert.equal(
+    all.find((node) => node.props?.['data-slot'] === 'record-row').props
+      .children.length,
+    3
+  );
+  const footer = all.find(
+    (node) => node.props?.['data-slot'] === 'record-meta'
+  );
+  assert.doesNotMatch(footer.props.className, /wrap|truncate/);
+  assert.ok(!all.some((node) => node.type === 'ItemMedia'));
+});
+
+test('compact chart ticks show just the first and last day without duplicates', () => {
+  const { axisTicks } = load('routes/-dashboard/impact-chart.tsx', {
+    '@/hooks/use-mobile': { useIsCompact: () => true },
+    '@/components/ui/chart': {},
+    '@/lib/format': load('lib/format.ts'),
+  });
+  const days = Array.from({ length: 30 }, (_, i) => String(i));
+  assert.deepEqual(Array.from(axisTicks(days, true)), ['0', '29']);
+  assert.deepEqual(Array.from(axisTicks(['only'], true)), ['only']);
+  assert.deepEqual(Array.from(axisTicks([], true)), []);
+  assert.ok(axisTicks(days).length > 2);
 });
 
 test('trade detail is a guarded route, with allowlisted return lists and legacy open redirects', () => {

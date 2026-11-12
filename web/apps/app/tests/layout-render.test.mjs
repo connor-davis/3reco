@@ -53,6 +53,7 @@ test(
 const regression = String.raw`
 import sys, json, re, os
 from pathlib import Path
+from datetime import date, timedelta
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright, expect
 
@@ -62,9 +63,10 @@ listing = {'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'ma
 routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
 party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
 trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
-request = {'id': 'request', 'seller': trade['seller'], 'buyer': trade['buyer'], 'status': 'offered', 'offer_by': 'seller', 'offer_version': 1, 'buyer_confirmed_version': None, 'seller_confirmed_version': 1, 'created_at': trade['created_at'], 'updated_at': trade['created_at'], 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'stock_id': 'stock', 'offer_price': '8.00', 'offer_weight': '12.5', 'requested_price': '8.00', 'requested_weight': '12.5', 'available_weight': '1000'}]}
+large_trade = dict(trade, id='large', type='c2b', invoice_number='GLH09G54', seller=party('collector', 'Zanele Both'), buyer=party('buyer', 'Cape Town Recycling'), total_price='2000000.00', items=[{'material_id': 'steel', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'weight': '1000000', 'price': '2.00'}])
+request = {'id': 'request', 'seller': large_trade['seller'], 'buyer': large_trade['buyer'], 'status': 'offered', 'offer_by': 'seller', 'offer_version': 1, 'buyer_confirmed_version': None, 'seller_confirmed_version': 1, 'created_at': trade['created_at'], 'updated_at': trade['created_at'], 'items': [{'material_id': 'glass', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'stock_id': 'stock', 'offer_price': '2.00', 'offer_weight': '1000000', 'requested_price': '8.00', 'requested_weight': '12.5', 'available_weight': '1000'}]}
 totals = {'count': 7, 'weight': '87.5', 'value': '700.00', 'carbon_savings': '100'}
-dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'series': [dict(totals, day='2026-11-08')], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
+dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'series': [dict(totals, day=str(date(2026,10,10)+timedelta(days=i))) for i in range(30)], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
 with sync_playwright() as p:
     browser = p.chromium.launch()
     for mode in ['light', 'dark']:
@@ -81,7 +83,7 @@ with sync_playwright() as p:
                 elif path == '/collectors/selection' or (path == '/materials' and 'all=true' in route.request.url): body = []
                 elif path == '/transactions/totals': body = totals
                 elif path == '/transactions/trade': body = trade
-                elif path in ['/transactions', '/transactions/', '/transactions/purchases', '/transactions/sales']: body['items'] = [dict(trade, id='trade' if i == 0 else str(i)) for i in range(7)]
+                elif path in ['/transactions', '/transactions/', '/transactions/purchases', '/transactions/sales']: body['items'] = [trade, large_trade, dict(large_trade, id='unverified', business_verified=False)] + [dict(trade, id=str(i)) for i in range(4)]
                 elif path in ['/requests', '/requests/incoming', '/requests/outgoing']: body['items'] = [request]
                 elif path == '/requests/request': body = request
                 elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']: body = dashboard
@@ -160,6 +162,49 @@ with sync_playwright() as p:
                         if role == 'collector':
                             recent = page.get_by_role('heading', name='Your recent collections').locator('xpath=ancestor::section[1]').locator('ul > li')
                             expect(recent).to_have_count(5)
+                    if route == '/' and width < 1024:
+                        header = page.locator('h1').locator('xpath=ancestor::header[1]')
+                        title_box = header.locator('h1').bounding_box()
+                        action_box = header.get_by_role('button', name='View transactions').bounding_box()
+                        description = header.locator('p')
+                        assert action_box['y'] >= description.bounding_box()['y'] + description.bounding_box()['height']
+                        assert action_box['width'] >= header.bounding_box()['width'] - 1
+                        assert description.evaluate('(el) => el.scrollWidth <= el.clientWidth')
+                        quick = page.get_by_role('heading', name='Your workspace').locator('xpath=ancestor::section[1]').get_by_role('button')
+                        expect(quick).to_have_count(3)
+                        boxes = [tile.bounding_box() for tile in quick.all()]
+                        assert max(b['y'] for b in boxes) - min(b['y'] for b in boxes) < 1
+                        assert max(b['width'] for b in boxes) - min(b['width'] for b in boxes) < 1
+                        assert all(b['height'] >= 44 for b in boxes)
+                        tick_labels = page.locator('svg text').filter(has_text=re.compile(r'^\d{2} (Oct|Nov)$'))
+                        expect(tick_labels).to_have_count(2)
+                        tick_boxes = [label.bounding_box() for label in tick_labels.all()]
+                        assert 1 <= len(tick_boxes) <= 2
+                        assert all(tick_boxes[i]['x'] + tick_boxes[i]['width'] < tick_boxes[i+1]['x'] for i in range(len(tick_boxes)-1))
+                    if route in ['/transactions', '/transactions/purchases', '/market/incoming', '/market/outgoing']:
+                        if width >= 1024:
+                            container = page.locator('[data-slot="table-container"]')
+                            assert container.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'table scrolls {route} {width}'
+                            for cell in page.locator('tbody tr').first.locator('td').all():
+                                if cell.is_visible():
+                                    box = cell.bounding_box()
+                                    assert box['x'] + box['width'] <= container.bounding_box()['x'] + container.bounding_box()['width'] + 1
+                            if route.startswith('/transactions'):
+                                expect(page.get_by_role('columnheader', name='Type', exact=True)).to_have_count(1 if width >= 1536 else 0)
+                                for cell in page.locator('tbody tr').nth(1).locator('td').all()[-2:]:
+                                    assert cell.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'numeric cell clipped {route} {width}'
+                        else:
+                            rows = page.locator('[data-slot="record-row"]')
+                            assert rows.count() > 0
+                            for row in rows.all():
+                                assert row.bounding_box()['height'] <= 88, f'compact content too tall {route} {width}'
+                                meta = row.locator('[data-slot="record-meta"]')
+                                assert meta.bounding_box()['height'] <= 20
+                                assert meta.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'footer clips {route} {width}'
+                            stress = rows.nth(1) if route.startswith('/transactions') else rows.first
+                            parties = stress.locator('[data-slot="record-parties"]')
+                            assert 'Zanele Both' in parties.inner_text() and 'Cape Town Recycling' in parties.inner_text()
+                            assert parties.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1')
                     if route == '/profile' and width < 1024:
                         buttons = page.get_by_role('button', name='Cancel changes').first.locator('..').get_by_role('button')
                         expect(buttons).to_have_count(2)
