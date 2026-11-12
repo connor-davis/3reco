@@ -356,8 +356,9 @@ function CartForm({
     <Card>
       <CardContent>
         <p className="mb-4 text-sm text-muted-foreground">
-          Your cart keeps these quantities. Sending your request reserves the
-          stock for 48 hours while you agree on the deal.
+          Your cart holds these quantities for 48 hours. After that they leave
+          your cart. Sending your request keeps them reserved while you agree on
+          the deal.
         </p>
         <form
           id="cart-form"
