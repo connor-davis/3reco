@@ -441,6 +441,7 @@ const privacyKinds: Record<string, string> = {
   export: 'Data download',
   delete: 'Account deletion',
   admin_full_view: 'Full identifier viewed',
+  business_verify: 'Business verification changed',
 };
 
 function eventLabel(event: PrivacyEvent) {
