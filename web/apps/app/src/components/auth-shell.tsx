@@ -39,7 +39,7 @@ export function AuthShell({
             to="/"
             className="flex items-center gap-2 font-semibold lg:hidden"
           >
-            <BrandLogo />
+            <BrandLogo className="h-10" />
           </Link>
           <header className="space-y-1">
             <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
@@ -72,7 +72,7 @@ function StoryPanel() {
   return (
     <aside className="hidden flex-col justify-between bg-muted p-12 lg:flex">
       <Link to="/" className="flex items-center gap-2 text-lg font-semibold">
-        <BrandLogo className="h-9" />
+        <BrandLogo className="h-14" />
       </Link>
       <div className="space-y-6">
         <h2 className="max-w-md text-4xl font-semibold tracking-tight">

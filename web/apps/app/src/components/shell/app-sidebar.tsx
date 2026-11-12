@@ -72,7 +72,7 @@ export function AppSidebar() {
             'outline-none focus-visible:ring-2 focus-visible:ring-ring'
           )}
         >
-          <BrandLogo />
+          <BrandLogo className="h-12" />
         </Link>
         {user && (
           <div className="flex items-center gap-2 px-2">
