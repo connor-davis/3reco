@@ -22,7 +22,7 @@ test('request rows show materials, parties, weight and total in the shared recor
   );
   assert.match(requests, /item.offer_weight \?\? item.requested_weight/);
   assert.match(requests, /formatRand\(requestTotal\(request\)\)/);
-  assert.match(requests, /name=\{request.buyer.name\}/);
+  assert.match(requests, /<TradeParties[\s\S]*buyer=\{request.buyer\}/);
 });
 
 test('your own lot has no quantity form or validation', () => {

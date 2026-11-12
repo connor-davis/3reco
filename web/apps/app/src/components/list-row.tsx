@@ -99,7 +99,7 @@ export function ListRow({
               className="flex min-w-0 items-start justify-between gap-2"
               data-slot="record-parties"
             >
-              <span className="flex min-w-0 flex-1 items-start gap-1 text-xs text-muted-foreground [&>span]:flex-1">
+              <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                 {subtitle}
               </span>
               <span className="shrink-0 text-right text-xs tabular-nums">

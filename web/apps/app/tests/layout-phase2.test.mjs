@@ -1,6 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { load, source } from './qa-round2-loader.mjs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+test('flowing party names bind the arrow to the buyer and checks to the last word', () => {
+  const { TradeParties, TradeTypeLabel } = load('components/badges.tsx', {
+    '@/components/ui/alert': {},
+    '@/components/ui/badge': { Badge: 'span' },
+    '@/components/ui/popover': {},
+    '@/lib/auth/use-auth': {},
+    '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
+    '@/lib/request-status': { requestStatuses: {} },
+    '@/lib/trade-type': load('lib/trade-type.ts'),
+  });
+  const html = renderToStaticMarkup(
+    createElement(TradeParties, {
+      seller: { name: 'Zanele Both', business_verified: true },
+      buyer: { name: 'Kasi Collect Co', business_verified: true },
+    })
+  );
+  assert.match(html, /class="whitespace-nowrap">→ Kasi<\/span>/);
+  assert.match(html, /class="whitespace-nowrap">Both<svg/);
+  assert.match(html, /class="whitespace-nowrap">Co<svg/);
+  assert.doesNotMatch(html, /flex|grid/);
+  for (const [type, short, full] of [
+    ['c2b', 'Collector', 'Collector to business'],
+    ['b2b', 'Business', 'Business to business'],
+  ]) {
+    const label = TradeTypeLabel({ type, compact: true, verified: false });
+    assert.equal(label.props.children[0], short);
+    assert.equal(label.props.title, full);
+    assert.equal(label.props['aria-label'], full);
+    assert.match(renderToStaticMarkup(label), /Unverified/);
+  }
+});
 
 function nodes(node) {
   if (!node || typeof node !== 'object') return [];

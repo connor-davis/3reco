@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Inbox } from 'lucide-react';
-import { StatusBadge, TradeTypeLabel } from '@/components/badges';
+import { StatusBadge, TradeTypeLabel, TradeParties } from '@/components/badges';
 import { Badge } from '@/components/ui/badge';
 import {
   counterpartyOf,
@@ -178,19 +178,7 @@ export function RequestList({
                   .map((item) => item.material_name)
                   .join(', ')}
                 subtitle={
-                  <>
-                    <BusinessName
-                      wrap
-                      name={request.seller.name}
-                      verified={request.seller.business_verified}
-                    />
-                    {' → '}
-                    <BusinessName
-                      wrap
-                      name={request.buyer.name}
-                      verified={request.buyer.business_verified}
-                    />
-                  </>
+                  <TradeParties seller={request.seller} buyer={request.buyer} />
                 }
                 secondaryValue={formatKg(
                   request.items.reduce(

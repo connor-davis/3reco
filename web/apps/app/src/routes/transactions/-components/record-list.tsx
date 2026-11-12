@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
-import { BusinessName, StatusBadge, TradeTypeLabel } from '@/components/badges';
+import { TradeParties, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { ListRow } from '@/components/list-row';
 import { ChoiceSelect, FilterTabs } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
@@ -77,21 +77,7 @@ function weightOf(row: Transaction) {
 }
 
 function Parties({ row }: { row: Transaction }) {
-  return (
-    <>
-      <BusinessName
-        wrap
-        name={row.seller.name}
-        verified={row.seller.business_verified}
-      />
-      {' → '}
-      <BusinessName
-        wrap
-        name={row.buyer.name}
-        verified={row.buyer.business_verified}
-      />
-    </>
-  );
+  return <TradeParties seller={row.seller} buyer={row.buyer} />;
 }
 
 function titleOf(row: Transaction) {
@@ -204,7 +190,7 @@ export function RecordList({
       header: 'From → To',
       cell: ({ row }) => (
         <div className="space-y-2 text-xs">
-          <div className="flex items-start gap-1 [&>span]:min-w-0 [&>span]:flex-1">
+          <div>
             <Parties row={row.original} />
           </div>
           <Badge
