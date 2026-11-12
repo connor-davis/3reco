@@ -160,7 +160,7 @@ func TestRound12CollectionTotalAtLeastOneCent(t *testing.T) {
 func TestRound12CollectorPhonePartialSearch(t *testing.T) {
 	app := testutil.Server(t)
 	creator, _ := domainUser(t, app, "business")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 	stranger, _ := domainUser(t, app, "collector")
 
 	body := collectorBody("0827771234")
@@ -197,6 +197,7 @@ func TestRound12CollectorCanViewPayout(t *testing.T) {
 	admin := tradeNewUser(t, w.app, "admin")
 	staff := tradeNewUser(t, w.app, "staff")
 	stranger, _ := domainUser(t, w.app, "collector")
+	tradeUnverify(t, w.app, w.seller)
 	id := privacyCollector(t, w.buyer.c)
 
 	for name, c := range map[string]*testutil.Client{
@@ -224,7 +225,7 @@ func TestRound12CollectorCanViewPayout(t *testing.T) {
 func TestRound12CollectorDuplicateWording(t *testing.T) {
 	app := testutil.Server(t)
 	owner, _ := domainUser(t, app, "business")
-	other, _ := domainUser(t, app, "business")
+	other, _ := domainUnverified(t, app)
 
 	first := collectorBody("0831110001")
 	status(t, owner.Do("POST", "/api/collectors", first), 200)

@@ -19,7 +19,10 @@ const wrapper = ({ children }) => createElement('div', null, children);
 test('qa-round6-ui: Visit store targets the other business for buyer and seller', () => {
   let userId = 'buyer';
   const { DealAside } = load('components/chat/deal-aside.tsx', {
-    '@/components/badges': { StatusBadge: wrapper },
+    '@/components/badges': {
+      StatusBadge: wrapper,
+      BusinessName: ({ name }) => name,
+    },
     '@/components/link-button': {
       LinkButton: ({ params, children }) =>
         createElement(

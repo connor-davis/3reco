@@ -41,6 +41,7 @@ line when you add an owner.
 | `0020_stock_images.sql` | One photo per stock item and live business logo changes |
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
 | `0022_cart_holds.sql` | `stock_holds.cart_id` (request or cart owner, never both), active cart-hold indexes, realtime trigger for cart holds, notification type `cart_expired` |
+| `0023_business_verified_notify.sql` | trigger `business_verified_notify`: a change to `users.business_verified_at` sends `listing` and `transaction` events to `all` |
 
 Never rename a merged migration. Add a new file.
 
@@ -62,7 +63,7 @@ Never rename a merged migration. Add a new file.
 | --- | --- |
 | Cursor paging: page shape, cursor, limit, list search pattern | `internal/platform/paging/paging.go` |
 | Transaction list filters (q, type, days) and totals | `internal/services/transactions/filter.go`, `internal/stores/transactions/transactions.go` |
-| Shared SQL: safe display name, SAST effective date, `Party` | `internal/platform/database/sql.go` |
+| Shared SQL: safe display name, SAST effective date, `Verified(alias)`, `TradeVerified()`, `Party` | `internal/platform/database/sql.go` |
 | Encrypting ID and bank fields (AES-256-GCM, `v1:` prefix) and the `******1234` mask | `internal/platform/crypt/crypt.go` |
 | Notice version and retention periods (the one place to change them) | `internal/platform/config/privacy.go` |
 | Export, self-delete, notice, audit log, hourly retention: SQL, rules, `/api/privacy` routes | `internal/stores/privacy`, `internal/services/privacy`, `internal/api/privacy` |
@@ -111,6 +112,7 @@ Never rename a merged migration. Add a new file.
 | Job | Owner |
 | --- | --- |
 | Who hears a row change (user ids or an audience word, never row data) | `notify_change()` and `notify_stock_hold()` in `0014_realtime_recipients.sql` |
+| Verifying a business reloads every market and trade list (`business_verified_notify`) | `0023_business_verified_notify.sql` |
 | Open sockets, indexed by user and role | `internal/services/realtime/hub.go` |
 | Listen to Postgres | `internal/services/realtime/listen.go` |
 | Turn a NOTIFY into one encoded event for its recipients | `internal/services/realtime/routing.go` |
@@ -171,6 +173,7 @@ Never rename a merged migration. Add a new file.
 | Admin verifies or un-verifies a business: role check, audit, notification, recheck; clears on role change and erase | `internal/services/admin/verification.go`, `internal/stores/admin/users.go`, `internal/stores/privacy/erase.go`, route `PUT /admin/users/:id/business-verification` in `internal/api/admin/handler.go` |
 | Business verification tests | `tests/business_verification_test.go`, `web/apps/app/tests/business-verification.test.mjs` |
 | Verified badge, Verify action (admin users page); collectors page wording; user live event refreshes collectors | `web/apps/app/src/routes/admin/users.tsx`, `routes/collectors.tsx`, `lib/api/admin.ts` (`useSetBusinessVerified`), `lib/live/connection.ts` (`keysFor('user')`) |
+| Unverified businesses are hidden from the market and cannot be bought from (`sellerVisible`, `RequireVerified`); computed `business_verified` on parties and trades; "Business verified" last column in the trade and users CSVs; `BusinessName`, `TradeTypeLabel`, `UnverifiedBanner` | `internal/stores/market/listings.go`, `internal/services/market/listings.go`, `internal/stores/stores/profile.go`, `internal/stores/stats/stats.go`, `internal/services/requests/state.go`, `internal/services/admin/exports.go`, `web/apps/app/src/components/badges.tsx`, `lib/trade-type.ts` |
 | Staff or creator-business phone statistics authorization | `internal/services/collectors/stats.go` |
 | Complete bank or ewallet payout and collector input rules | `internal/services/collectors/validation.go` |
 | Cart ownership, stock validation, 48-hour cart holds and expiry notices | `internal/services/market/cart.go` |

@@ -17,6 +17,16 @@ func domainPhone() string {
 	return fmt.Sprintf("081%07d", phoneSequence.Add(1))
 }
 
+// domainUnverified is a business 3REco has not verified yet.
+func domainUnverified(t *testing.T, app *testutil.App) (*testutil.Client, string) {
+	t.Helper()
+
+	client, id := domainUser(t, app, "business")
+	tradeExec(t, app, `UPDATE users SET business_verified_at = NULL WHERE id = $1`, id)
+
+	return client, id
+}
+
 func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client, string) {
 	t.Helper()
 
@@ -29,7 +39,8 @@ func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client,
 		phone=$3,id_number=$4,bank_account_number=$5,
 		bank_account_holder_name='Private Holder',bank_name='Private Bank',bank_branch_code='123456',
 		bank_account_type='Savings',
-		business_name=CASE WHEN $2='business' THEN 'Business '||id ELSE NULL END
+		business_name=CASE WHEN $2='business' THEN 'Business '||id ELSE NULL END,
+		business_verified_at=CASE WHEN $2='business' THEN now() END
 		WHERE email=$1 RETURNING id`,
 		email,
 		role,

@@ -23,7 +23,7 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 	login := tradeNewUser(t, w.app, "collector")
 	staff := tradeNewUser(t, w.app, "staff")
 	admin := tradeNewUser(t, w.app, "admin")
-	other := tradeNewUser(t, w.app, "business")
+	other := tradeNewUnverified(t, w.app)
 	collector := tradeCollector(t, w.app, w.buyer, login.phone)
 	tradeExec(t, w.app, `UPDATE collectors SET created_by_business_id=$2,
 		bank_account_holder_name='Frozen Holder',bank_name='Frozen Bank',bank_branch_code='250655',
@@ -226,7 +226,7 @@ func TestRound3WalletPayoutAccess(t *testing.T) {
 	login := tradeNewUser(t, w.app, "collector")
 	staff := tradeNewUser(t, w.app, "staff")
 	admin := tradeNewUser(t, w.app, "admin")
-	other := tradeNewUser(t, w.app, "business")
+	other := tradeNewUnverified(t, w.app)
 	collector := tradeCollector(t, w.app, w.buyer, login.phone)
 	tradeExec(t, w.app, `UPDATE collectors SET payout_method='ewallet',
 		ewallet_platform_name='Frozen Wallet',ewallet_payment_id=$2 WHERE id=$1`,
