@@ -40,6 +40,7 @@ line when you add an owner.
 | `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
 | `0020_stock_images.sql` | One photo per stock item and live business logo changes |
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
+| `0022_cart_holds.sql` | `stock_holds.cart_id` (request or cart owner, never both), active cart-hold indexes, realtime trigger for cart holds, notification type `cart_expired` |
 
 Never rename a merged migration. Add a new file.
 
@@ -172,7 +173,7 @@ Never rename a merged migration. Add a new file.
 | Verified badge, Verify action (admin users page); collectors page wording; user live event refreshes collectors | `web/apps/app/src/routes/admin/users.tsx`, `routes/collectors.tsx`, `lib/api/admin.ts` (`useSetBusinessVerified`), `lib/live/connection.ts` (`keysFor('user')`) |
 | Staff or creator-business phone statistics authorization | `internal/services/collectors/stats.go` |
 | Complete bank or ewallet payout and collector input rules | `internal/services/collectors/validation.go` |
-| Cart ownership and listed stock validation | `internal/services/market/cart.go` |
+| Cart ownership, stock validation, 48-hour cart holds and expiry notices | `internal/services/market/cart.go` |
 | Public listing visibility and review summary composition | `internal/services/market/listings.go` |
 | Marketplace service construction | `internal/services/market/market.go` |
 | Administrator catalog rules and reference protection | `internal/services/materials/materials.go` |
@@ -184,6 +185,7 @@ Never rename a merged migration. Add a new file.
 | Collector records, creator scope and phone conflict SQL | `internal/stores/collectors/collectors.go` |
 | Exact collector collection totals and recent transaction SQL | `internal/stores/collectors/stats.go` |
 | Buyer-scoped cart persistence and available stock SQL | `internal/stores/market/cart.go` |
+| Cart hold locks, releases and set-based expiry SQL | `internal/stores/market/cart_holds.go` |
 | Safe listed-market filters and detail SQL | `internal/stores/market/listings.go` |
 | Marketplace store construction | `internal/stores/market/market.go` |
 | Catalog persistence and foreign-key protected deletion SQL | `internal/stores/materials/materials.go` |
@@ -192,6 +194,7 @@ Never rename a merged migration. Add a new file.
 | Safe active business profiles and listed-stock aggregate SQL | `internal/stores/stores/profile.go` |
 | Public store database construction | `internal/stores/stores/stores.go` |
 | Cart isolation, unavailable stock and stale visibility tests | `tests/cart_test.go` |
+| Cart holds, expiry, conversion and races | `tests/cart_holds_test.go` |
 | Collector payout redaction, creator scope, phone leaks and PATCH tests | `tests/collectors_test.go` |
 | Market visibility, filters, cursor tests and shared Chunk A fixtures | `tests/market_test.go` |
 | Public catalog and administrator-only mutation tests | `tests/materials_test.go` |

@@ -20,6 +20,10 @@ A signed-in buyer keeps a cart per seller: `GET`, `PUT` and `DELETE /api/cart?se
 
 `GET /api/cart/stores` lists stores with a saved cart and each one's `item_count` (visible lines), which the header cart badge sums. Adding a material shows a confirmation and keeps the buyer on the listing; the header cart icon opens the cart.
 
+**Cart holds.** Saving a cart line reserves that weight for 48 hours, so other buyers cannot take it. Each line returns `reserved_until`. Raising or lowering the weight keeps the original end time; a line added again after its hold ended gets a fresh 48 hours. If there is not enough free stock, `PUT` fails with `400` and `fields.items` says how much is left, such as `Only 3.5 kg left.`
+
+**Ending.** Removing a line, clearing the cart or turning the cart into a request frees the hold (a request takes over the stock with no gap). When 48 hours pass, a background job removes the line, frees the stock and sends the buyer one `cart_expired` notification per store.
+
 ## Request and offer flow
 
 1. **Request.** The buyer sends `POST /api/requests/` with the seller and the stock lines they want. The seller is notified.

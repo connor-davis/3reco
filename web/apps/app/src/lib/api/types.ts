@@ -124,6 +124,8 @@ export interface CartItem {
   material_name?: string;
   weight?: Decimal;
   price?: Decimal;
+  // When this line's 48-hour stock hold ends (an ISO time); set by the server.
+  reserved_until?: string;
 }
 export interface Cart {
   items: CartItem[];

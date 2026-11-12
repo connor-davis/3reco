@@ -103,7 +103,8 @@ func TestRound13RequestFromCartRefusesChangedCart(t *testing.T) {
 	if count := tradeText(t, w.app, `SELECT count(*)::text FROM transaction_requests`); count != "0" {
 		t.Fatalf("refused creates wrote %s requests", count)
 	}
-	holdCount(t, w, "active", "0")
+	// Only the buyer's cart hold for the one line still in the cart; no request hold.
+	holdCount(t, w, "active", "1")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "100")
 
 	// Missing cart materials are refused too; weights may be changed independently.
@@ -133,7 +134,9 @@ func TestRound13CartRemovalIsLive(t *testing.T) {
 	socks := joinLive(t, w.app, w.buyer, w.seller)
 	status(t, w.buyer.c.Do("PUT", path, map[string]any{"items": []any{}}), 200)
 	socks[0].hear("cart", id)
-	socks[1].quiet("seller cannot hear a buyer's cart")
+	// Freeing the cart's hold changes the seller's stock, but the seller never
+	// hears the buyer's cart itself.
+	socks[1].hear("stock", w.stock)
 }
 
 func TestRound13TradeCompleteNoticeHasTerms(t *testing.T) {

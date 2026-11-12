@@ -203,7 +203,7 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 
 				reserved, _ := new(big.Rat).SetString(held)
 				if amount.Cmp(reserved) < 0 {
-					return apperr.Conflict("Some of this stock is held for open offers.")
+					return apperr.Conflict("Some of this stock is held for open offers or carts.")
 				}
 			}
 
@@ -238,7 +238,7 @@ func (service *Service) Delete(ctx context.Context, id, owner string) error {
 
 			reserved, _ := new(big.Rat).SetString(held)
 			if reserved.Sign() > 0 {
-				return apperr.Conflict("Some of this stock is held for open offers.")
+				return apperr.Conflict("Some of this stock is held for open offers or carts.")
 			}
 
 			if err := service.store.Delete(ctx, id, owner); err != nil {

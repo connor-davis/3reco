@@ -13,7 +13,7 @@
 | `collectors` | Collectors a business manages, with payout details |
 | `materials` | The catalogue: name, carbon factor, code, base price |
 | `stock` | What a user holds: material, weight, price, listed or not |
-| `stock_holds` | Weight reserved by an open offer (48 hours) |
+| `stock_holds` | Weight reserved for 48 hours, by an open offer (`request_id`) or by a cart line (`cart_id`); exactly one of the two is set |
 | `transaction_requests` | A buyer's request to a seller, and its status |
 | `transaction_request_items` | The materials in a request and the offered weight and price |
 | `transaction_request_messages` | Chat messages on a request |

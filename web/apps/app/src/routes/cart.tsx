@@ -19,17 +19,18 @@ import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import {
-  useCart,
-  useCartStores,
-  useSaveCart,
-  useClearCart,
-} from '@/lib/api/cart';
+import { useCart, useCartStores, useSaveCart } from '@/lib/api/cart';
 import { useStore } from '@/lib/api/stores';
 import { useListing } from '@/lib/api/listings';
 import { useCreateRequest } from '@/lib/api/requests';
 import type { CartItem } from '@/lib/api/types';
-import { formatRand, formatRate, lineCents } from '@/lib/format';
+import {
+  formatDateTime,
+  formatRand,
+  formatRate,
+  lineCents,
+  toGrams,
+} from '@/lib/format';
 import { quantityError, weightCounter } from '@/lib/quantity';
 
 export const Route = createFileRoute('/cart')({
@@ -219,10 +220,9 @@ function CartForm({
 }) {
   const save = useSaveCart(sellerId);
   const cart = useCart(sellerId);
-  const clear = useClearCart(sellerId);
   const create = useCreateRequest();
   const navigate = useNavigate();
-  // Keep the created request across retries if clearing the cart fails.
+  // Keep the created request across retries if opening its chat fails.
   const sent = useRef<string | null>(null);
   const availability = useRef(new Map<string, string | null>());
   const validateLine = useCallback((id: string, problem: string | null) => {
@@ -284,6 +284,9 @@ function CartForm({
     }
     setBusy(true);
     setError(null);
+    // The server empties the cart when it creates the request. Say so before
+    // the cart refetches, so the page does not bounce back to /cart.
+    sending.current = true;
     try {
       const clean = values.items.map((item) => ({
         ...item,
@@ -304,8 +307,6 @@ function CartForm({
       }
       if (sent.current) {
         const id = sent.current;
-        sending.current = true;
-        await clear.mutateAsync();
         await navigate({
           to: '/messages/$requestId',
           params: { requestId: id },
@@ -355,8 +356,9 @@ function CartForm({
     <Card>
       <CardContent>
         <p className="mb-4 text-sm text-muted-foreground">
-          Your cart keeps these quantities. Sending your request reserves the
-          stock for 48 hours while you agree on the deal.
+          Your cart holds these quantities for 48 hours. After that they leave
+          your cart. Sending your request keeps them reserved while you agree on
+          the deal.
         </p>
         <form
           id="cart-form"
@@ -368,6 +370,7 @@ function CartForm({
             <CartLine
               key={field.id}
               stockId={field.stock_id}
+              saved={items.find((item) => item.stock_id === field.stock_id)}
               index={index}
               form={form}
               busy={busy}
@@ -419,6 +422,7 @@ function CartForm({
 
 function CartLine({
   stockId,
+  saved,
   index,
   form,
   busy,
@@ -426,6 +430,7 @@ function CartLine({
   onValidation,
 }: {
   stockId: string;
+  saved?: CartItem;
   index: number;
   form: ReturnType<typeof useForm<CartValues>>;
   busy: boolean;
@@ -435,9 +440,15 @@ function CartLine({
   const listing = useListing(stockId);
   const weight = form.watch(`items.${index}.weight`);
   const fieldError = form.formState.errors.items?.[index]?.weight?.message;
-  const problem = listing.data
-    ? quantityError(weight, listing.data.weight)
-    : null;
+  // The listing's free stock already excludes this line's own hold, so the
+  // buyer may keep or raise the line up to free stock plus what they hold.
+  const reservedGrams = saved?.reserved_until
+    ? toGrams(saved.weight ?? '0')
+    : 0;
+  const available = listing.data
+    ? ((toGrams(listing.data.weight) + reservedGrams) / 1000).toFixed(3)
+    : undefined;
+  const problem = available ? quantityError(weight, available) : null;
   const blocked = listing.isFetching
     ? 'Wait for the material availability to load.'
     : listing.isError || !listing.data
@@ -467,6 +478,11 @@ function CartLine({
             <p className="text-sm text-muted-foreground">
               {formatRate(listing.data.price)}
             </p>
+            {saved?.reserved_until && (
+              <p className="text-sm text-muted-foreground">
+                Reserved until {formatDateTime(saved.reserved_until)}
+              </p>
+            )}
           </>
         )}
       </DataState>
@@ -474,7 +490,7 @@ function CartLine({
         control={form.control}
         name={`items.${index}.weight`}
         label="Weight (kg)"
-        counter={weightCounter(listing.data?.weight)}
+        counter={weightCounter(available)}
       />
       {problem && problem !== fieldError && (
         <p role="alert" className="text-sm text-destructive">

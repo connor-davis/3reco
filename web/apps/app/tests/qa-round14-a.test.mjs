@@ -5,7 +5,7 @@ import { source } from './qa-round2-loader.mjs';
 test('B1: a sent request does not bounce the buyer back to /cart', () => {
   const cart = source('routes/cart.tsx');
   assert.match(cart, /!sending\.current/);
-  assert.match(cart, /sending\.current = true;\s*await clear\.mutateAsync/);
+  assert.match(cart, /sending\.current = true;\s*try/);
   // A failed send lets a later hand-removal redirect again.
   assert.match(cart, /catch \(cause\) \{\s*sending\.current = false;/);
   // Removing the last item by hand still replaces the URL with /cart.

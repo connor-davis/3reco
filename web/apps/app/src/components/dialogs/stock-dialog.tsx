@@ -259,7 +259,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           counter={{ ...weightCounter(), unit: undefined }}
           description={
             stock && stock.available_weight !== stock.weight
-              ? 'Some of this stock is held for open offers.'
+              ? 'Some of this stock is held for open offers or carts.'
               : undefined
           }
         />

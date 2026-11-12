@@ -25,6 +25,8 @@ The event never carries the notification itself, so a client that missed an even
 
 Each notification has `id, type, title, body, link, read, created_at`. `link` is an app route such as `/market/<id>` or `/market/incoming`.
 
+`cart_expired` is sent to the buyer when a 48-hour cart reservation ends and the line is removed from the cart. It links to the store page, `/market/store/<seller id>`.
+
 ## Routes
 
 | Method | Path | What it does |

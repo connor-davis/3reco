@@ -15,6 +15,7 @@ import { PersonAvatar, Stars } from '@/components/visuals';
 import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import { useListing, useListings } from '@/lib/api/listings';
 import { useCart, useSaveCart } from '@/lib/api/cart';
+import { ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/use-auth';
 import type { Listing } from '@/lib/api/types';
 import {
@@ -141,9 +142,14 @@ function ListingDetail({ listing }: { listing: Listing }) {
       });
       toast.success('Added to your cart.', { id: 'cart-saved' });
     } catch (error) {
+      // The server says how much is left in the field message.
       form.setError('root', {
         message:
-          error instanceof Error ? error.message : 'Could not save your cart.',
+          error instanceof ApiError && error.fields?.items
+            ? error.fields.items
+            : error instanceof Error
+              ? error.message
+              : 'Could not save your cart.',
       });
     }
   }
@@ -228,6 +234,9 @@ function ListingDetail({ listing }: { listing: Listing }) {
                   Add to cart
                 </Button>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Adding to your cart holds it for 48 hours.
+              </p>
             </DataState>
           ) : (
             <p className="text-sm text-muted-foreground">

@@ -26,6 +26,7 @@ export function useCreateRequest() {
     ['messages'],
     ['stock'],
     ['listings'],
+    ['cart'],
   ]);
 }
 export function useOffer(id: string) {

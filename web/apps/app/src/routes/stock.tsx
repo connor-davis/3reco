@@ -36,7 +36,7 @@ const statusOptions = [
   { value: 'unlisted', label: 'Unlisted' },
 ];
 
-/** What is held for open offers, or null when nothing is. */
+/** What is held for open offers or carts, or null when nothing is. */
 function heldKg(item: StockItem) {
   const held = toGrams(item.weight) - toGrams(item.available_weight);
 
