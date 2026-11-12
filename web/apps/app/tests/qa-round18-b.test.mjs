@@ -113,6 +113,7 @@ test('A2: phone role menu opens the picker; cancel writes nothing and confirm wr
       '@/lib/api/admin': {
         useAdminUsers: () => ({ data: { items: [person] } }),
         useDeleteUser: () => ({}),
+        useSetBusinessVerified: () => ({}),
       },
       '@/lib/api/exports': { useExport: () => ({}) },
       '@/lib/format': format,
@@ -161,6 +162,7 @@ test('A2: phone role menu opens the picker; cancel writes nothing and confirm wr
       '@/lib/access': access,
       '@/lib/api/admin': {
         useSetUserRole: () => ({ mutate: (value) => writes.push(value) }),
+        useSetBusinessVerified: () => ({ mutate() {}, isPending: false }),
       },
     },
     '\nexports.RoleSelect = RoleSelect;'

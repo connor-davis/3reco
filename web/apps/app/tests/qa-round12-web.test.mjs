@@ -113,6 +113,7 @@ function adminPage(list) {
       '@/lib/api/admin': {
         useAdminUsers: () => list,
         useDeleteUser: () => ({}),
+        useSetBusinessVerified: () => ({}),
         usePrivacyEvents: () => ({ data: { items: [], has_more: false } }),
       },
       '@/lib/api/exports': { useExport: () => ({}) },

@@ -26,6 +26,7 @@ func (h *Handler) Register(api fiber.Router) {
 	api.Get("/admin/users", admin, h.users)
 	api.Delete("/admin/users/:id", admin, h.remove)
 	api.Patch("/admin/users/:id/role", admin, h.setRole)
+	api.Put("/admin/users/:id/business-verification", admin, h.setBusinessVerified)
 	api.Get("/admin/exports/users", middleware.RequireUser, h.export("users"))
 	api.Get("/admin/exports/transactions", middleware.RequireUser, h.export("transactions"))
 	api.Get("/exports/collections", middleware.RequireUser, h.export("collections"))
@@ -71,6 +72,22 @@ func (h *Handler) setRole(c fiber.Ctx) error {
 	}
 
 	if err := h.svc.SetRole(c.Context(), caller(c), c.Params("id"), in.Role); err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"ok": true})
+}
+
+func (h *Handler) setBusinessVerified(c fiber.Ctx) error {
+	var in struct {
+		Verified *bool `json:"verified"`
+	}
+
+	if err := c.Bind().JSON(&in); err != nil || in.Verified == nil {
+		return apperr.BadRequest("Send {\"verified\": true} or {\"verified\": false}.", nil)
+	}
+
+	if err := h.svc.SetBusinessVerified(c.Context(), caller(c), c.Params("id"), *in.Verified); err != nil {
 		return err
 	}
 

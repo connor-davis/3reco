@@ -25,9 +25,10 @@ import (
 
 // Audit kinds written to the privacy log.
 const (
-	KindExport        = "export"
-	KindDelete        = "delete"
-	KindAdminFullView = "admin_full_view"
+	KindExport         = "export"
+	KindDelete         = "delete"
+	KindAdminFullView  = "admin_full_view"
+	KindBusinessVerify = "business_verify"
 )
 
 // Service owns the privacy rules.

@@ -21,6 +21,7 @@ export interface AuthUser {
   firstName: string | null;
   lastName: string | null;
   businessName: string | null;
+  business_verified: boolean;
 }
 export interface Session {
   id: string;
@@ -332,6 +333,8 @@ export interface AdminUser {
   role: Role | null;
   profile_complete: boolean;
   created_at: string;
+  business_verified: boolean;
+  business_verified_at: string | null;
 }
 export interface DashboardTotals {
   count: number;

@@ -30,8 +30,10 @@ type User struct {
 	FirstName       *string `json:"firstName"`
 	LastName        *string `json:"lastName"`
 	BusinessName    *string `json:"businessName"`
-	IsRemoved       bool    `json:"-"`
-	PasswordHash    *string `json:"-"`
+	// BusinessVerified is true once an admin has verified this business.
+	BusinessVerified bool    `json:"business_verified"`
+	IsRemoved        bool    `json:"-"`
+	PasswordHash     *string `json:"-"`
 }
 
 // Session is one browser session joined to its user.
@@ -51,12 +53,13 @@ type Store struct{ db *database.DB }
 func New(db *database.DB) *Store { return &Store{db: db} }
 
 const userCols = `u.id, u.email, u.email_verified, u.name, u.image, u.role, u.profile_complete,
-	u.agreed_to_terms, u.first_name, u.last_name, u.business_name, u.is_removed, u.password_hash`
+	u.agreed_to_terms, u.first_name, u.last_name, u.business_name, u.is_removed, u.password_hash,
+	u.business_verified_at IS NOT NULL`
 
 func scanUser(row pgx.Row, u *User) error {
 	return row.Scan(&u.ID, &u.Email, &u.EmailVerified, &u.Name, &u.Image, &u.Role,
 		&u.ProfileComplete, &u.AgreedToTerms, &u.FirstName, &u.LastName, &u.BusinessName,
-		&u.IsRemoved, &u.PasswordHash)
+		&u.IsRemoved, &u.PasswordHash, &u.BusinessVerified)
 }
 
 // NewUser is what sign-up and `admin create` hand to CreateUser.
@@ -202,7 +205,7 @@ func (s *Store) SessionsByHashes(ctx context.Context, hashes []string) ([]Sessio
 		err := rows.Scan(&sess.ID, &sess.TokenHash, &sess.CreatedAt, &sess.RefreshedAt, &sess.ExpiresAt,
 			&u.ID, &u.Email, &u.EmailVerified, &u.Name, &u.Image, &u.Role, &u.ProfileComplete,
 			&u.AgreedToTerms, &u.FirstName, &u.LastName, &u.BusinessName, &u.IsRemoved,
-			&u.PasswordHash)
+			&u.PasswordHash, &u.BusinessVerified)
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +229,7 @@ func (s *Store) SessionByID(ctx context.Context, id string) (Session, error) {
 		Scan(&sess.ID, &sess.TokenHash, &sess.CreatedAt, &sess.RefreshedAt, &sess.ExpiresAt,
 			&u.ID, &u.Email, &u.EmailVerified, &u.Name, &u.Image, &u.Role, &u.ProfileComplete,
 			&u.AgreedToTerms, &u.FirstName, &u.LastName, &u.BusinessName, &u.IsRemoved,
-			&u.PasswordHash)
+			&u.PasswordHash, &u.BusinessVerified)
 
 	return sess, err
 }

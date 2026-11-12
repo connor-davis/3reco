@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useAdminUsers,
   useSetUserRole,
+  useSetBusinessVerified,
   useDeleteUser,
   usePrivacyEvents,
 } from '@/lib/api/admin';
@@ -135,9 +136,11 @@ function UsersPage() {
     role: role === 'all' ? undefined : role,
   });
   const remove = useDeleteUser();
+  const verify = useSetBusinessVerified();
   const download = useExport('users');
   const [roleUser, setRoleUser] = useState<AdminUser | null>(null);
   const [removing, setRemoving] = useState<AdminUser | null>(null);
+  const [verifying, setVerifying] = useState<AdminUser | null>(null);
   const shown = list.data?.items ?? [];
 
   function removeButton(user: AdminUser) {
@@ -156,6 +159,22 @@ function UsersPage() {
     );
   }
 
+  function verifyButton(user: AdminUser) {
+    if (user.role !== 'business') return null;
+
+    return (
+      <Button
+        className="min-h-11"
+        variant="outline"
+        disabled={verify.isPending}
+        onClick={() => setVerifying(user)}
+      >
+        <ShieldCheck data-icon="inline-start" />
+        {user.business_verified ? 'Remove verification' : 'Verify business'}
+      </Button>
+    );
+  }
+
   const columns: ColumnDef<AdminUser>[] = [
     {
       accessorKey: 'name',
@@ -165,7 +184,10 @@ function UsersPage() {
         <span className="flex items-center gap-3">
           <PersonAvatar name={row.original.name} />
           <span>
-            <span className="block font-medium">{row.original.name}</span>
+            <span className="block font-medium">
+              {row.original.name}
+              {verifiedBadge(row.original)}
+            </span>
             <span className="text-xs text-muted-foreground">
               {row.original.email ?? 'No email'}
             </span>
@@ -194,7 +216,18 @@ function UsersPage() {
       header: 'Actions',
       meta: { sticky: 'right' },
       enableSorting: false,
-      cell: ({ row }) => removeButton(row.original),
+      cell: ({ row }) => {
+        const verifying = verifyButton(row.original);
+        const removing = removeButton(row.original);
+        if (!verifying && !removing) return null;
+
+        return (
+          <span className="flex flex-wrap gap-2">
+            {verifying}
+            {removing}
+          </span>
+        );
+      },
     },
   ];
 
@@ -224,9 +257,9 @@ function UsersPage() {
           {download.isPending ? 'Exporting…' : 'Export users'}
         </Button>
       </div>
-      {(remove.error || download.error) && (
+      {(remove.error || download.error || verify.error) && (
         <p role="alert" className="text-sm text-destructive">
-          {(remove.error ?? download.error)?.message} Try again.
+          {(remove.error ?? download.error ?? verify.error)?.message} Try again.
         </p>
       )}
       <DataState
@@ -251,7 +284,12 @@ function UsersPage() {
                   </span>
                 </>
               }
-              status={profileBadge(user)}
+              status={
+                <>
+                  {profileBadge(user)}
+                  {verifiedBadge(user)}
+                </>
+              }
               actions={
                 user.id === currentUser?.id
                   ? []
@@ -260,6 +298,16 @@ function UsersPage() {
                         label: `Change role for ${user.name}`,
                         onSelect: () => setRoleUser(user),
                       },
+                      ...(user.role === 'business'
+                        ? [
+                            {
+                              label: user.business_verified
+                                ? `Remove verification for ${user.name}`
+                                : `Verify business ${user.name}`,
+                              onSelect: () => setVerifying(user),
+                            },
+                          ]
+                        : []),
                       {
                         label: 'Remove user',
                         onSelect: () => setRemoving(user),
@@ -308,6 +356,41 @@ function UsersPage() {
         {roleUser && <RoleSelect key={roleUser.id} user={roleUser} labelled />}
       </ResponsiveOverlay>
       <ConfirmDialog
+        key={'verify-' + (verifying?.id ?? 'none')}
+        open={verifying !== null}
+        onOpenChange={(open) => !open && setVerifying(null)}
+        title={
+          verifying?.business_verified
+            ? `Remove verification for ${verifying.name}?`
+            : `Verify ${verifying?.name ?? 'this business'}?`
+        }
+        description={
+          verifying?.business_verified
+            ? 'They will no longer see or edit collectors added by others. Collectors they added stay theirs.'
+            : 'A verified business can see the contact and payout details of every collector, and edit any of them. Only verify a business you trust.'
+        }
+        confirmLabel={
+          verifying?.business_verified
+            ? 'Remove verification'
+            : 'Verify business'
+        }
+        onConfirm={() => {
+          if (!verifying) return;
+          const verified = !verifying.business_verified;
+          verify.mutate(
+            { id: verifying.id, verified },
+            {
+              onSuccess: () =>
+                toast.success(
+                  verified ? 'Business verified.' : 'Verification removed.'
+                ),
+              onError: (error) => toast.error(error.message),
+            }
+          );
+          setVerifying(null);
+        }}
+      />
+      <ConfirmDialog
         key={removing?.id ?? 'none'}
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
@@ -329,6 +412,17 @@ function UsersPage() {
   );
 }
 
+function verifiedBadge(user: AdminUser) {
+  if (user.role !== 'business' || !user.business_verified) return null;
+
+  return (
+    <Badge className="ml-2 align-middle" variant="secondary">
+      <ShieldCheck data-icon="inline-start" />
+      Verified
+    </Badge>
+  );
+}
+
 /** Admin and staff need no profile, so their rows never say "Incomplete". */
 function profileBadge(user: {
   role: string | null;
@@ -347,6 +441,7 @@ const privacyKinds: Record<string, string> = {
   export: 'Data download',
   delete: 'Account deletion',
   admin_full_view: 'Full identifier viewed',
+  business_verify: 'Business verification changed',
 };
 
 function eventLabel(event: PrivacyEvent) {

@@ -12,6 +12,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/invoices"
+	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/privacy"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	store "github.com/connor-davis/3reco/internal/stores/admin"
@@ -32,6 +33,7 @@ type Service struct {
 	audit    *pstore.Store
 	invoices *invoices.Service
 	hub      *realtime.Hub
+	notes    *notifications.Service
 }
 
 // New builds the service.
@@ -43,10 +45,11 @@ func New(
 	audit *pstore.Store,
 	invoiceService *invoices.Service,
 	hub *realtime.Hub,
+	notes *notifications.Service,
 ) *Service {
 	return &Service{
 		db: db, store: s, trades: trades, privacy: privacyService, audit: audit,
-		invoices: invoiceService, hub: hub,
+		invoices: invoiceService, hub: hub, notes: notes,
 	}
 }
 

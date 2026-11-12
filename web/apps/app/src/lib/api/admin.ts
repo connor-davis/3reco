@@ -23,6 +23,14 @@ export function useSetUserRole(id: string) {
     [['admin'], ['users']]
   );
 }
+export function useSetBusinessVerified() {
+  return useWrite<{ id: string; verified: boolean }, T.Ok>(
+    ({ id }) => `/admin/users/${idPath(id)}/business-verification`,
+    'PUT',
+    [['admin'], ['users'], ['collectors']],
+    ({ verified }) => ({ verified })
+  );
+}
 export function useDeleteUser() {
   return useWrite<string, T.Ok>(
     (id) => `/admin/users/${idPath(id)}`,

@@ -71,9 +71,15 @@ func (service *Service) own(ctx context.Context, user auth.User, item store.Coll
 	return phone != "" && phone == item.NormalizedPhone, err
 }
 
+// creator is the business that made the record, or any verified business: an
+// admin vouches for those, so they count as the creator of every collector.
 func creator(user auth.User, item store.Collector) bool {
-	return auth.HasRole(user, "business") && item.CreatedByBusinessID != nil &&
-		*item.CreatedByBusinessID == user.ID
+	return verifiedBusiness(user) || auth.HasRole(user, "business") &&
+		item.CreatedByBusinessID != nil && *item.CreatedByBusinessID == user.ID
+}
+
+func verifiedBusiness(user auth.User) bool {
+	return auth.HasRole(user, "business") && user.BusinessVerified
 }
 
 // manages is who may see the contact details and change the record.
