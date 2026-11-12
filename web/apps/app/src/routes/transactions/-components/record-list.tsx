@@ -207,7 +207,10 @@ export function RecordList({
           <div className="flex items-start gap-1 [&>span]:min-w-0 [&>span]:flex-1">
             <Parties row={row.original} />
           </div>
-          <Badge variant="outline" className="2xl:hidden">
+          <Badge
+            variant="outline"
+            className="max-w-full whitespace-normal 2xl:hidden"
+          >
             <TradeTypeLabel
               type={row.original.type}
               verified={row.original.business_verified}
@@ -221,7 +224,7 @@ export function RecordList({
       header: 'Type',
       meta: { className: 'hidden w-44 2xl:table-cell' },
       cell: ({ row }) => (
-        <Badge variant="outline">
+        <Badge variant="outline" className="max-w-full whitespace-normal">
           <TradeTypeLabel
             type={row.original.type}
             verified={row.original.business_verified}
