@@ -154,7 +154,6 @@ function cartHarness({ conflict = false } = {}) {
         useSaveCart: () => ({
           mutateAsync: async (body) => writes.push({ save: body }),
         }),
-        useClearCart: () => ({ mutateAsync: async () => writes.push('clear') }),
       },
       '@/lib/api/requests': {
         useCreateRequest: () => ({
@@ -184,10 +183,11 @@ test('sending a cart carries edited exact weights without saving stale rows firs
   const { tree, writes, values } = cartHarness();
   values.items[0].weight = ' 9,750001 ';
   await tree.find((node) => node.type === 'form').props.onSubmit();
-  assert.equal(writes.length, 3);
+  // The server empties the cart when it creates the request, so no clear call.
+  assert.equal(writes.length, 2);
   assert.equal(writes[0].create.from_cart, true);
   assert.equal(writes[0].create.items[0].weight, '9.750001');
-  assert.deepEqual(writes.slice(1), ['clear', 'navigate']);
+  assert.deepEqual(writes.slice(1), ['navigate']);
 });
 
 test('a changed cart is refetched, with no clear or navigation on refusal', async () => {

@@ -248,6 +248,14 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 			return strings.Compare(a.MaterialID, b.MaterialID)
 		})
 
+		// The cart's hold becomes the request's hold in this one transaction, so
+		// the stock is never free in between. The cart goes with it.
+		if in.FromCart {
+			if err := marketstore.New(s.db).ClearCart(ctx, user.ID, in.SellerID); err != nil {
+				return err
+			}
+		}
+
 		var terms []string
 		for _, item := range r.Items {
 			held, err := s.store.ReserveHold(

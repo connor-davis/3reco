@@ -270,6 +270,7 @@ func background(
 	hub *realtime.Hub,
 	a *auth.Service,
 	requests *requestssvc.Service,
+	market *marketsvc.Service,
 	p *privacysvc.Service,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -278,7 +279,7 @@ func background(
 		OnStart: func(context.Context) error {
 			go hub.Run(ctx)
 			go purgeLoop(ctx, a)
-			go offerExpiryLoop(ctx, requests)
+			go offerExpiryLoop(ctx, requests, market)
 			go retentionLoop(ctx, p)
 
 			return nil
@@ -291,7 +292,12 @@ func background(
 	})
 }
 
-func offerExpiryLoop(ctx context.Context, requests *requestssvc.Service) {
+// offerExpiryLoop frees ended offer holds and ended cart holds every 3 minutes.
+func offerExpiryLoop(
+	ctx context.Context,
+	requests *requestssvc.Service,
+	market *marketsvc.Service,
+) {
 	tick := time.NewTicker(3 * time.Minute)
 	defer tick.Stop()
 
@@ -302,6 +308,10 @@ func offerExpiryLoop(ctx context.Context, requests *requestssvc.Service) {
 		case <-tick.C:
 			if err := requests.ExpireOffers(ctx); err != nil {
 				slog.Warn("offer expiry failed", "err", err)
+			}
+
+			if err := market.ExpireCartHolds(ctx); err != nil {
+				slog.Warn("cart expiry failed", "err", err)
 			}
 		}
 	}

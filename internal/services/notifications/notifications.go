@@ -25,6 +25,7 @@ const (
 	RequestCancelled = "request_cancelled"
 	MessageReceived  = "message_received"
 	BusinessVerified = "business_verified"
+	CartExpired      = "cart_expired"
 )
 
 // Notify tells one user something. Call it in the same transaction as the

@@ -2,6 +2,7 @@ package market
 
 import (
 	"context"
+	"time"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
 )
@@ -13,6 +14,8 @@ type CartItem struct {
 	MaterialName string `json:"material_name,omitempty"`
 	Weight       string `json:"weight,omitempty"`
 	Price        string `json:"price,omitempty"`
+	// ReservedUntil is when this line's 48-hour stock hold ends; the server sets it.
+	ReservedUntil *time.Time `json:"reserved_until,omitempty"`
 }
 
 // CartStore is a seller with materials saved in the caller's cart.
@@ -26,9 +29,12 @@ type CartStore struct {
 func (records *Store) CartStores(ctx context.Context, buyer string) ([]CartStore, error) {
 	rows, err := records.db.Q(ctx).Query(ctx, `SELECT u.id, `+database.DisplayName("u")+`, count(*)
         FROM carts c JOIN cart_items i ON i.cart_id=c.id JOIN stock s ON s.id=i.stock_id
-        JOIN users u ON u.id=c.seller_id WHERE c.buyer_id=$1 AND NOT u.is_removed
+        JOIN users u ON u.id=c.seller_id
+        LEFT JOIN stock_holds h ON h.cart_id=c.id AND h.stock_id=i.stock_id
+        AND h.status='active' AND h.expires_at>clock_timestamp()
+        WHERE c.buyer_id=$1 AND NOT u.is_removed
         AND s.owner_id=u.id AND s.material_id=i.material_id AND s.is_listed
-        AND stock_available(s.id,s.weight)>0
+        AND stock_available(s.id,s.weight)+COALESCE(h.weight,0)>0
         GROUP BY u.id, `+database.DisplayName("u")+` ORDER BY 2,1`, buyer)
 	if err != nil {
 		return nil, err
@@ -55,12 +61,14 @@ type Cart struct {
 func (records *Store) Cart(ctx context.Context, buyer, seller string) (Cart, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT i.stock_id,i.material_id,m.name,i.weight::text,s.price::text
+		`SELECT i.stock_id,i.material_id,m.name,i.weight::text,s.price::text,h.expires_at
 		FROM carts c JOIN cart_items i ON i.cart_id=c.id JOIN stock s ON s.id=i.stock_id
 		JOIN materials m ON m.id=i.material_id JOIN users u ON u.id=c.seller_id
+		LEFT JOIN stock_holds h ON h.cart_id=c.id AND h.stock_id=i.stock_id
+		AND h.status='active' AND h.expires_at>clock_timestamp()
 		WHERE c.buyer_id=$1 AND c.seller_id=$2 AND s.owner_id=c.seller_id
 		AND s.material_id=i.material_id AND s.is_listed
-		AND stock_available(s.id,s.weight)>0 AND NOT u.is_removed
+		AND stock_available(s.id,s.weight)+COALESCE(h.weight,0)>0 AND NOT u.is_removed
 		ORDER BY i.stock_id`,
 		buyer,
 		seller,
@@ -79,6 +87,7 @@ func (records *Store) Cart(ctx context.Context, buyer, seller string) (Cart, err
 			&item.MaterialName,
 			&item.Weight,
 			&item.Price,
+			&item.ReservedUntil,
 		); err != nil {
 			return cart, err
 		}
@@ -89,27 +98,30 @@ func (records *Store) Cart(ctx context.Context, buyer, seller string) (Cart, err
 	return cart, rows.Err()
 }
 
-// ValidCartStock locks a matching available row until the cart write finishes.
-func (records *Store) ValidCartStock(ctx context.Context, seller string, item CartItem) (bool, error) {
+// LockCartStock takes the row lock that serializes every reservation of one stock
+// row. It fails with pgx.ErrNoRows when the row is not a listed row of this seller.
+// Availability is read by a later statement, so it sees what the lock waited for.
+func (records *Store) LockCartStock(ctx context.Context, seller string, item CartItem) error {
 	var id string
-	err := records.db.Q(ctx).QueryRow(
+
+	return records.db.Q(ctx).QueryRow(
 		ctx,
 		`SELECT s.id FROM stock s JOIN users u ON u.id=s.owner_id
 		WHERE s.id=$1 AND s.material_id=$2 AND s.owner_id=$3 AND s.is_listed
-		AND stock_available(s.id,s.weight)>0
-		AND u.role='business' AND NOT u.is_removed FOR SHARE OF s,u`,
+		AND u.role='business' AND NOT u.is_removed FOR UPDATE OF s FOR SHARE OF u`,
 		item.StockID,
 		item.MaterialID,
 		seller,
-	).Scan(
-		&id,
-	)
-
-	return id != "", err
+	).Scan(&id)
 }
 
-// ReplaceCart serializes concurrent edits with the buyer/seller unique constraint.
-func (records *Store) ReplaceCart(ctx context.Context, buyer, seller string, items []CartItem) error {
+// ReplaceCart rewrites the cart's lines and returns its id. The buyer/seller
+// unique constraint serializes concurrent edits.
+func (records *Store) ReplaceCart(
+	ctx context.Context,
+	buyer, seller string,
+	items []CartItem,
+) (string, error) {
 	var id string
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
@@ -122,11 +134,11 @@ func (records *Store) ReplaceCart(ctx context.Context, buyer, seller string, ite
 		&id,
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if _, err := records.db.Q(ctx).Exec(ctx, `DELETE FROM cart_items WHERE cart_id=$1`, id); err != nil {
-		return err
+		return "", err
 	}
 
 	for _, item := range items {
@@ -139,16 +151,42 @@ func (records *Store) ReplaceCart(ctx context.Context, buyer, seller string, ite
 			item.Weight,
 		)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	return nil
+	return id, nil
 }
 
-// ClearCart deletes only a cart belonging to the caller.
+// ClearCart releases the holds of only a cart belonging to the caller, then deletes it.
+// It locks the held stock rows first, in id order, like SaveCart, so the two never deadlock.
 func (records *Store) ClearCart(ctx context.Context, buyer, seller string) error {
 	_, err := records.db.Q(ctx).Exec(
+		ctx,
+		`SELECT id FROM stock WHERE id IN (
+			SELECT h.stock_id FROM stock_holds h JOIN carts c ON c.id=h.cart_id
+			WHERE c.buyer_id=$1 AND c.seller_id=$2 AND h.status='active')
+		ORDER BY id FOR UPDATE`,
+		buyer,
+		seller,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = records.db.Q(ctx).Exec(
+		ctx,
+		`UPDATE stock_holds SET status='released', released_at=clock_timestamp()
+		WHERE status='active' AND cart_id IN (
+			SELECT id FROM carts WHERE buyer_id=$1 AND seller_id=$2)`,
+		buyer,
+		seller,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = records.db.Q(ctx).Exec(
 		ctx,
 		`DELETE FROM carts WHERE buyer_id=$1 AND seller_id=$2`,
 		buyer,

@@ -79,7 +79,6 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
       '@/lib/api/cart': {
         useSaveCart: mutation('save'),
         useCart: () => ({}),
-        useClearCart: mutation('clear'),
       },
       '@/lib/api/requests': {
         useCreateRequest: mutation('create', { id: 'request' }),
@@ -104,14 +103,70 @@ test('cart restores the saved exact weight and sends edited weight at checkout',
     null
   );
   await find(tree, (node) => node.type === 'form').props.onSubmit();
-  assert.equal(
-    writes.map((write) => write.name).join(','),
-    'create,clear,navigate'
-  );
+  // The server empties the cart with the request; no second DELETE is sent.
+  assert.equal(writes.map((write) => write.name).join(','), 'create,navigate');
   assert.equal(writes[0].body.items[0].weight, '9.750001');
   assert.equal(writes[0].body.from_cart, true);
   assert.equal(writes[0].body.seller_id, 'seller');
   assert.equal(Object.hasOwn(writes[0].body.items[0], 'price'), false);
+});
+
+function words(node) {
+  if (typeof node === 'string') return node;
+  if (!node || typeof node !== 'object') return '';
+  return [node.props?.children].flat(Infinity).map(words).join('');
+}
+
+test('a cart line shows when its reservation ends and keeps its own kilos available', () => {
+  const format = compile('../src/lib/format.ts');
+  const { CartLine } = compile(
+    '../src/routes/cart.tsx',
+    {
+      'react/jsx-runtime': jsx,
+      react: { useEffect: () => {}, useCallback: (callback) => callback },
+      '@tanstack/react-router': { createFileRoute: () => () => ({}) },
+      '@/lib/api/listings': {
+        // The listing's free stock already excludes this buyer's own hold.
+        useListing: () => ({
+          data: { material_name: 'Glass', price: '8', weight: '0.5' },
+          isFetching: false,
+        }),
+      },
+      '@/lib/format': format,
+      '@/lib/quantity': {
+        quantityError: () => null,
+        weightCounter: (max) => ({ max }),
+      },
+      '@/components/data-state': { DataState: ({ children }) => children },
+    },
+    '\nexport { CartLine };'
+  );
+  const line = (reserved) =>
+    CartLine({
+      stockId: 'stock',
+      saved: {
+        stock_id: 'stock',
+        weight: '5',
+        ...(reserved ? { reserved_until: '2026-11-14T10:42:00Z' } : {}),
+      },
+      index: 0,
+      form: {
+        control: {},
+        watch: () => '5',
+        formState: { errors: {} },
+      },
+      busy: false,
+      onRemove: () => {},
+      onValidation: () => {},
+    });
+
+  const held = line(true);
+  assert.match(words(held), /Reserved until 14 Nov 2026, 12:42/);
+  assert.equal(
+    find(held, (node) => !!node.props?.counter).props.counter.max,
+    '5.500'
+  );
+  assert.doesNotMatch(words(line(false)), /Reserved until/);
 });
 
 test('both offer directions enforce recipient-first confirmation and allow counters', () => {

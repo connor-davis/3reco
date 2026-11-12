@@ -47,7 +47,8 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	}), 200)
 
 	tradeOffer(t, w.seller, id, w.material, "40.12", "9")
-	holdCount(t, w, "active", "1")
+	// The offer hold and the buyer's cart hold.
+	holdCount(t, w, "active", "2")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "100")
 	ttl := tradeText(t, w.app, `SELECT (expires_at-created_at BETWEEN
 		interval '47 hours 59 minutes' AND interval '48 hours 1 minute')::text
@@ -57,23 +58,25 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 	}
 
 	listing := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200)
-	holdDecimal(t, listing.Body["weight"], "59.88")
+	// 40.12 for the offer and 2.5 for the buyer's cart line are both held.
+	holdDecimal(t, listing.Body["weight"], "57.38")
 	cart := status(t, w.buyer.c.Do("GET", cartPath, nil), 200)
 	holdDecimal(t, tradeItems(cart)[0].(map[string]any)["weight"], "2.5")
 
 	stock := status(t, w.seller.c.Do("GET", "/api/stock/"+w.stock, nil), 200)
 	holdDecimal(t, stock.Body["weight"], "100")
-	holdDecimal(t, stock.Body["available_weight"], "59.88")
+	holdDecimal(t, stock.Body["available_weight"], "57.38")
 
 	list := pageItems(t, status(t, w.seller.c.Do("GET", "/api/stock", nil), 200))
-	holdDecimal(t, list[0]["available_weight"], "59.88")
+	holdDecimal(t, list[0]["available_weight"], "57.38")
+	// The request view still counts the buyer's own 2.5 kg cart hold.
 	request := status(t, w.buyer.c.Do("GET", "/api/requests/"+id, nil), 200)
-	holdDecimal(t, tradeItems(request)[0].(map[string]any)["available_weight"], "100")
+	holdDecimal(t, tradeItems(request)[0].(map[string]any)["available_weight"], "97.5")
 
 	// A separate buyer's hold must survive this acceptance.
 	other := tradeNewUser(t, w.app, "business")
 	otherID := tradeRequest(t, other, w.seller, w.stock)
-	tradeOffer(t, w.seller, otherID, w.material, "59.88", "9")
+	tradeOffer(t, w.seller, otherID, w.material, "57.38", "9")
 	reserved := status(t, w.buyer.c.Do("GET", "/api/market/listings/"+w.stock, nil), 200)
 	holdDecimal(t, reserved.Body["weight"], "0")
 	holdDecimal(t, reserved.Body["held_weight"], "100")
@@ -81,15 +84,16 @@ func TestStockHoldsAvailabilityAndAccept(t *testing.T) {
 		t.Fatalf("fully held listing missing: %+v", items)
 	}
 
-	if items := tradeItems(w.buyer.c.Do("GET", cartPath, nil)); len(items) != 0 {
-		t.Fatalf("fully held cart visible: %+v", items)
+	// The buyer's own hold keeps their line visible although nothing is free.
+	if items := tradeItems(w.buyer.c.Do("GET", cartPath, nil)); len(items) != 1 {
+		t.Fatalf("own held cart line hidden: %+v", items)
 	}
 
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/accept", nil), 409)
 	status(t, w.seller.c.Do("POST", "/api/requests/"+id+"/accept", nil), 200)
 	holdCount(t, w, "consumed", "1")
-	holdCount(t, w, "active", "1")
+	holdCount(t, w, "active", "2")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.seller.id, w.material), "59.88")
 	holdDecimal(t, tradeStockWeight(t, w.app, w.buyer.id, w.material), "40.12")
 }
@@ -284,7 +288,7 @@ func TestStockHoldsProtectEditsAndDirectSales(t *testing.T) {
 		w.seller.c.Do("DELETE", path, nil),
 	} {
 		status(t, result, 409)
-		if result.Body["message"] != "Some of this stock is held for open offers." {
+		if result.Body["message"] != "Some of this stock is held for open offers or carts." {
 			t.Fatalf("stock conflict: %s", result.Raw)
 		}
 	}
