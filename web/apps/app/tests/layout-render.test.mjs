@@ -63,10 +63,11 @@ listing = {'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'ma
 routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
 party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
 trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
-large_trade = dict(trade, id='large', type='c2b', invoice_number='GLH09G54', seller=party('collector', 'Zanele Both'), buyer=party('buyer', 'Cape Town Recycling'), total_price='2000000.00', items=[{'material_id': 'steel', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'weight': '1000000', 'price': '2.00'}])
+large_trade = dict(trade, id='large', type='c2b', invoice_number='GLH09G54', seller=party('collector', 'Zanele Both'), buyer=party('buyer', 'Kasi Collect Co'), total_price='2000000.00', items=[{'material_id': 'steel', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'weight': '1000000', 'price': '2.00'}])
 request = {'id': 'request', 'seller': large_trade['seller'], 'buyer': large_trade['buyer'], 'status': 'offered', 'offer_by': 'seller', 'offer_version': 1, 'buyer_confirmed_version': None, 'seller_confirmed_version': 1, 'created_at': trade['created_at'], 'updated_at': trade['created_at'], 'items': [{'material_id': 'glass', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'stock_id': 'stock', 'offer_price': '2.00', 'offer_weight': '1000000', 'requested_price': '8.00', 'requested_weight': '12.5', 'available_weight': '1000'}]}
 totals = {'count': 7, 'weight': '87.5', 'value': '700.00', 'carbon_savings': '100'}
 dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'series': [dict(totals, day=str(date(2026,10,10)+timedelta(days=i))) for i in range(30)], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
+admin_users = [{'id': 'buyer', 'name': 'Layout Buyer', 'email': 'admin@example.test', 'role': 'admin', 'profile_complete': True, 'business_verified': False, 'created_at': trade['created_at']}, {'id': 'business', 'name': 'Naledi Jacobs', 'email': 'naledi@kasicollect.co.za', 'role': 'business', 'profile_complete': True, 'business_verified': True, 'created_at': trade['created_at']}, {'id': 'unverified-business', 'name': 'Thandi Mokoena', 'email': 'thandi@metroscraptraders.co.za', 'role': 'business', 'profile_complete': False, 'business_verified': False, 'created_at': trade['created_at']}]
 with sync_playwright() as p:
     browser = p.chromium.launch()
     for mode in ['light', 'dark']:
@@ -78,6 +79,7 @@ with sync_playwright() as p:
                 path = urlparse(route.request.url).path.removeprefix('/api')
                 body = {'items': [], 'has_more': False, 'next_cursor': None, 'count': 0}
                 if path == '/auth/me': body = {'user': {'id': 'buyer', 'name': 'Layout Buyer', 'email': 'layout@example.test', 'role': role, 'emailVerified': True, 'profileComplete': True, 'agreedToTerms': True}}
+                elif path == '/admin/users': body['items'] = admin_users
                 elif path == '/auth/sessions': body = {'sessions': []}
                 elif path == '/profile': body = dict.fromkeys(['image', 'avatar_url', 'phone', 'id_number', 'business_name', 'business_registration_number', 'bank_account_holder_name', 'bank_name', 'bank_account_number', 'bank_branch_code', 'bank_account_type', 'street_address', 'city', 'province'], '') | {'id': 'buyer', 'name': 'Layout Buyer', 'first_name': 'Layout', 'last_name': 'Buyer', 'email': 'layout@example.test', 'role': role, 'profile_complete': True, 'agreed_to_terms': True, 'area_code': None}
                 elif path == '/collectors/selection' or (path == '/materials' and 'all=true' in route.request.url): body = []
@@ -200,12 +202,29 @@ with sync_playwright() as p:
                             for row in rows.all():
                                 assert row.bounding_box()['height'] <= 88, f'compact content too tall {route} {width}'
                                 meta = row.locator('[data-slot="record-meta"]')
+                                assert not re.search(r'\b(C2B|B2B)\b', meta.inner_text())
                                 assert meta.bounding_box()['height'] <= 20
                                 assert meta.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'footer clips {route} {width}'
                             stress = rows.nth(1) if route.startswith('/transactions') else rows.first
                             parties = stress.locator('[data-slot="record-parties"]')
-                            assert 'Zanele Both' in parties.inner_text() and 'Cape Town Recycling' in parties.inner_text()
+                            assert 'Zanele Both' in parties.inner_text() and 'Kasi Collect Co' in parties.inner_text()
                             assert parties.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1')
+                    if route == '/admin/users' and width >= 1024:
+                        container = page.locator('[data-slot="table-container"]')
+                        assert container.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'admin table scrolls {width}'
+                        remove_verification = page.get_by_role('button', name='Remove verification', exact=True)
+                        expect(remove_verification).to_have_count(1)
+                        action_group = remove_verification.locator('..')
+                        buttons = action_group.get_by_role('button')
+                        expect(buttons).to_have_count(2)
+                        boxes = [button.bounding_box() for button in buttons.all()]
+                        assert all(box['height'] >= 44 for box in boxes)
+                        if width < 1536: assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height']
+                        remove_verification.click()
+                        dialog = page.get_by_role('alertdialog')
+                        expect(dialog).to_be_visible()
+                        expect(dialog.get_by_role('heading', name='Remove verification for Naledi Jacobs?')).to_be_visible()
+                        dialog.get_by_role('button', name='Keep it', exact=True).click()
                     if route == '/profile' and width < 1024:
                         buttons = page.get_by_role('button', name='Cancel changes').first.locator('..').get_by_role('button')
                         expect(buttons).to_have_count(2)
@@ -213,6 +232,12 @@ with sync_playwright() as p:
                         assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
                     if route in ['/transactions', '/transactions/purchases', '/market/incoming', '/market/outgoing']:
                         expect(page.get_by_role('table')).to_have_count(1 if width >= 1024 else 0)
+                    if route in ['/transactions', '/transactions/purchases']:
+                        flow = page.locator('[data-slot="trade-parties"]').filter(has_text='Zanele Both').first
+                        assert flow.evaluate('(el) => getComputedStyle(el).display') == 'inline'
+                        expect(flow.locator('span.whitespace-nowrap').filter(has_text=re.compile(r'^→ Kasi$'))).to_have_count(1)
+                        for check in flow.get_by_role('img', name='Verified business').all():
+                            assert check.evaluate('(el) => getComputedStyle(el.parentElement).whiteSpace') == 'nowrap'
                     if route in ['/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade']:
                         assert 'Not available' not in page.locator('body').inner_text()
                         expect(page.get_by_role('heading', name='Invoice INV-2048')).to_be_visible()
@@ -232,7 +257,7 @@ with sync_playwright() as p:
                     if route in ['/transactions', '/market/incoming', '/market/outgoing']:
                         expect(page.get_by_role('link', name='Open messages')).to_have_count(0)
                     assert not errors, errors
-                    if os.environ.get('THREERECO_LAYOUT_SHOTS') and width in [390, 1280] and route in ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions', '/profile', '/market/incoming']:
+                    if os.environ.get('THREERECO_LAYOUT_SHOTS') and width in [390, 1280] and route in ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions', '/profile', '/market/incoming', '/admin/users']:
                         shots = Path(os.environ['THREERECO_LAYOUT_SHOTS'])
                         shots.mkdir(parents=True, exist_ok=True)
                         page.screenshot(path=str(shots / (mode + '-' + str(width) + '-' + route.strip('/').replace('/', '-').replace('?', '-').replace('=', '-') + '.png')), full_page=True)
