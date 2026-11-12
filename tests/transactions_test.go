@@ -89,8 +89,6 @@ func TestCollectorSaleAndDirectSale(t *testing.T) {
 	}
 }
 
-// Hole 10: only a business sells, the seller is the caller, the buyer must be
-// a real business, and the answer holds none of the buyer's private data.
 // A collection line may be priced below the material's default.
 func TestCollectionBelowDefaultPrice(t *testing.T) {
 	w := newTradeWorld(t)
@@ -102,6 +100,8 @@ func TestCollectionBelowDefaultPrice(t *testing.T) {
 	tradeWant(t, "collection below the default", res, 200)
 }
 
+// Hole 10: only a business sells, the seller is the caller, the buyer must be
+// a real business, and the answer holds none of the buyer's private data.
 func TestDirectSaleRoleAndBuyerLeak(t *testing.T) {
 	w := newTradeWorld(t)
 	collectorUser := tradeNewUser(t, w.app, "collector")
