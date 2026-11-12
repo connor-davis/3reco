@@ -63,7 +63,7 @@ export function VerifiedBadge({ verified }: { verified: boolean }) {
       <PopoverTrigger
         className={cn(
           'relative z-10 rounded-full outline-none',
-          'max-[780px]:inline-flex max-[780px]:min-h-11 max-[780px]:items-center',
+          'max-lg:inline-flex max-lg:min-h-11 max-lg:items-center',
           'focus-visible:ring-3 focus-visible:ring-ring/50'
         )}
       >

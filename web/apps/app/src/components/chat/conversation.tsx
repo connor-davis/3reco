@@ -176,7 +176,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
         <Link
           to="/messages"
           aria-label="Back to messages"
-          className="inline-flex size-11 items-center justify-center rounded-md hover:bg-muted min-[781px]:hidden"
+          className="inline-flex size-11 items-center justify-center rounded-md hover:bg-muted lg:hidden"
         >
           <ArrowLeft className="size-5" />
         </Link>
