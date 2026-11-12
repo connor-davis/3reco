@@ -1,14 +1,22 @@
 import { useState, type ReactNode } from 'react';
-import { Download, Upload } from 'lucide-react';
-import { BusinessName } from '@/components/badges';
+import { MoreHorizontal, Upload } from 'lucide-react';
+import { BusinessName, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { Panel } from '@/components/panel';
+import { ButtonRow } from '@/components/button-row';
+import { LinkButton } from '@/components/link-button';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import {
   kinds,
@@ -32,12 +40,11 @@ import {
 } from '@/lib/format';
 
 type Props = {
-  record: Transaction | null;
-  onClose: () => void;
+  record: Transaction;
 };
 
 /** One trade: who, when, every line, the invoice and its receipts. */
-export function TransactionDialog({ record, onClose }: Props) {
+export function TradeDetail({ record }: Props) {
   const { user } = useAuth();
   const fresh = useTransaction(record?.id ?? '');
   const upload = useUploadReceipt();
@@ -57,6 +64,11 @@ export function TransactionDialog({ record, onClose }: Props) {
       user.role === 'staff' ||
       shown.buyer.id === user.id ||
       (shown.type === 'b2b' && shown.seller.id === user.id));
+
+  const storeParty =
+    shown.type === 'c2b' || user?.id === shown.seller.id
+      ? shown.buyer
+      : shown.seller;
 
   function pick(file: File | undefined) {
     setFileError('');
@@ -83,171 +95,245 @@ export function TransactionDialog({ record, onClose }: Props) {
 
   return (
     <>
-      <ResponsiveOverlay
-        open={record !== null}
-        onOpenChange={(open) => !open && onClose()}
-        wide
-        title={shown ? `Invoice ${shown.invoice_number}` : 'Transaction'}
-        description="The lines, the invoice and the receipts for this trade."
-        footer={
-          shown && (
-            <Button
-              disabled={invoice.isPending}
-              onClick={() =>
-                invoice.mutate(shown, {
-                  onError: (error) => toast.error(errorText(error)),
-                })
-              }
-            >
-              <Download data-icon="inline-start" />
-              Download invoice
-            </Button>
-          )
-        }
-      >
-        {shown && (
-          <div className="space-y-4">
-            <dl className="space-y-2 text-sm">
-              <Line
-                label="Seller"
-                value={
-                  <BusinessName
-                    name={shown.seller.name}
-                    verified={shown.seller.business_verified}
+      {shown && (
+        <>
+          <header className="mb-6 flex items-start justify-between gap-4">
+            <div className="min-w-0 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-[26px] font-semibold tracking-tight lg:text-4xl">
+                  Invoice {shown.invoice_number}
+                </h1>
+                <StatusBadge
+                  status={
+                    shown.status === 'complete'
+                      ? 'Complete'
+                      : shown.status === 'pending'
+                        ? 'Pending'
+                        : 'Cancelled'
+                  }
+                />
+                <Badge variant="outline">
+                  <TradeTypeLabel
+                    type={shown.type}
+                    verified={shown.business_verified}
+                  />
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {formatDate(shown.collection_day ?? shown.effective_at)}
+              </p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Invoice actions"
                   />
                 }
-              />
-              <Line
-                label="Buyer"
-                value={
-                  <BusinessName
-                    name={shown.buyer.name}
-                    verified={shown.buyer.business_verified}
-                  />
-                }
-              />
-              <Line
-                label="Date"
-                value={formatDate(shown.collection_day ?? shown.effective_at)}
-              />
-            </dl>
-            <Separator />
-            <ul className="space-y-2 text-sm">
-              {shown.items.map((item) => (
-                <li
-                  key={item.material_id}
-                  className="flex justify-between gap-4"
+              >
+                <MoreHorizontal />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  disabled={invoice.isPending}
+                  onClick={() =>
+                    invoice.mutate(shown, {
+                      onError: (error) => toast.error(errorText(error)),
+                    })
+                  }
                 >
-                  <span>
-                    <span className="block font-medium">
-                      {item.material_name}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {formatKgFixed(item.weight)} kg · {formatRate(item.price)}
-                    </span>
-                  </span>
-                  <span className="text-right font-medium whitespace-nowrap tabular-nums">
-                    {formatRand(lineCents(item.price, item.weight))}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Separator />
-            <dl>
-              <Line
-                label="Total"
-                value={formatRand(toCents(shown.total_price))}
-              />
-            </dl>
-            <>
-              <Separator />
-              <section aria-label="Receipts" className="space-y-3">
-                <h3 className="font-medium">
-                  Receipts ({shown.receipts.length} of {maxReceipts} allowed)
-                </h3>
-                {shown.receipts.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No receipts yet.
-                  </p>
+                  Download invoice
+                </DropdownMenuItem>
+                {shown.request_id && (
+                  <DropdownMenuItem
+                    render={
+                      <LinkButton
+                        variant="ghost"
+                        to="/messages/$requestId"
+                        params={{ requestId: shown.request_id }}
+                      />
+                    }
+                  >
+                    View request
+                  </DropdownMenuItem>
                 )}
-                <ul className="space-y-2">
-                  {shown.receipts.map((receipt) => (
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <div className="order-2 min-w-0 space-y-4 lg:order-1">
+              <Panel title="Items">
+                <ul className="divide-y text-sm">
+                  {shown.items.map((item) => (
                     <li
-                      key={receipt.id}
-                      className="flex items-center justify-between gap-3 text-sm"
+                      key={item.material_id}
+                      className="flex justify-between gap-4 py-4 first:pt-0"
                     >
-                      <span className="min-w-0 truncate">
-                        {receipt.file_name}
+                      <span>
+                        <span className="block font-medium">
+                          {item.material_name}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {formatKgFixed(item.weight)} kg ×{' '}
+                          {formatRate(item.price)}
+                        </span>
                       </span>
-                      <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            download.mutate(receipt, {
-                              onError: (error) => toast.error(errorText(error)),
-                            })
-                          }
-                        >
-                          Download receipt
-                        </Button>
-                        {user &&
-                          (receipt.uploaded_by === user.id ||
-                            shown.can_remove_receipts) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              aria-label={`Remove receipt ${receipt.file_name}`}
-                              disabled={remove.isPending}
-                              onClick={() => setRemoving(receipt)}
-                            >
-                              Remove
-                            </Button>
-                          )}
-                      </div>
+                      <span className="text-right font-medium whitespace-nowrap tabular-nums">
+                        {formatRand(lineCents(item.price, item.weight))}
+                      </span>
                     </li>
                   ))}
                 </ul>
-                {canUpload && shown.receipts.length < maxReceipts && (
-                  <Field data-invalid={fileError !== ''}>
-                    <Input
-                      id="receipt-file"
-                      type="file"
-                      className="peer sr-only"
-                      accept="image/png,image/jpeg"
-                      disabled={upload.isPending}
-                      aria-invalid={fileError !== ''}
-                      onChange={(event) => {
-                        pick(event.target.files?.[0]);
-                        event.target.value = '';
-                      }}
-                    />
-                    <FieldLabel
-                      htmlFor="receipt-file"
-                      className={cn(
-                        buttonVariants({ variant: 'outline' }),
-                        'w-fit cursor-pointer peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50',
-                        upload.isPending && 'pointer-events-none opacity-50'
-                      )}
+                <Separator />
+                <dl className="pt-4">
+                  <Line
+                    label="Total"
+                    value={formatRand(toCents(shown.total_price))}
+                  />
+                </dl>
+              </Panel>
+              <Panel
+                title={`Receipts (${shown.receipts.length} of ${maxReceipts} allowed)`}
+              >
+                <section aria-label="Receipts" className="space-y-3">
+                  {shown.receipts.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No receipts yet.
+                    </p>
+                  )}
+                  <ul className="divide-y">
+                    {shown.receipts.map((receipt) => (
+                      <li key={receipt.id} className="space-y-2 py-3 text-sm">
+                        <span className="min-w-0 truncate">
+                          {receipt.file_name}
+                        </span>
+                        <ButtonRow>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              download.mutate(receipt, {
+                                onError: (error) =>
+                                  toast.error(errorText(error)),
+                              })
+                            }
+                          >
+                            Download receipt
+                          </Button>
+                          {user &&
+                            (receipt.uploaded_by === user.id ||
+                              shown.can_remove_receipts) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                aria-label={`Remove receipt ${receipt.file_name}`}
+                                disabled={remove.isPending}
+                                onClick={() => setRemoving(receipt)}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                        </ButtonRow>
+                      </li>
+                    ))}
+                  </ul>
+                  {canUpload && shown.receipts.length < maxReceipts && (
+                    <Field
+                      className="relative [&>.sr-only]:w-px"
+                      data-invalid={fileError !== ''}
                     >
-                      <Upload data-icon="inline-start" />
-                      Add a receipt
-                    </FieldLabel>
-                    <FieldDescription>
-                      PNG or JPEG, up to 5 MB. Up to {maxReceipts} receipts.
-                    </FieldDescription>
-                    {fileError && (
-                      <p role="alert" className="text-sm text-destructive">
-                        {fileError}
-                      </p>
+                      <input
+                        id="receipt-file"
+                        type="file"
+                        className="peer sr-only top-0 left-0"
+                        accept="image/png,image/jpeg"
+                        disabled={upload.isPending}
+                        aria-invalid={fileError !== ''}
+                        onChange={(event) => {
+                          pick(event.target.files?.[0]);
+                          event.target.value = '';
+                        }}
+                      />
+                      <FieldLabel
+                        htmlFor="receipt-file"
+                        className={cn(
+                          buttonVariants({ variant: 'secondary' }),
+                          'w-full cursor-pointer peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50',
+                          upload.isPending && 'pointer-events-none opacity-50'
+                        )}
+                      >
+                        <Upload data-icon="inline-start" />
+                        Add a receipt
+                      </FieldLabel>
+                      <FieldDescription>
+                        PNG or JPEG, up to 5 MB. Up to {maxReceipts} receipts.
+                      </FieldDescription>
+                      {fileError && (
+                        <p role="alert" className="text-sm text-destructive">
+                          {fileError}
+                        </p>
+                      )}
+                    </Field>
+                  )}
+                </section>
+              </Panel>
+            </div>
+            <aside className="order-1 min-w-0 space-y-4 lg:order-2">
+              <Panel title="Summary">
+                <dl className="space-y-3">
+                  <Line label="Invoice" value={shown.invoice_number} />
+                  <Line
+                    label="Date"
+                    value={formatDate(
+                      shown.collection_day ?? shown.effective_at
                     )}
-                  </Field>
+                  />
+                  <div className="border-t pt-3">
+                    <Line
+                      label="Total"
+                      value={formatRand(toCents(shown.total_price))}
+                    />
+                  </div>
+                </dl>
+              </Panel>
+              <Panel title="Parties">
+                <dl className="space-y-4">
+                  <Line
+                    label="Seller"
+                    value={
+                      <BusinessName
+                        name={shown.seller.name}
+                        verified={shown.seller.business_verified}
+                      />
+                    }
+                  />
+                  <Line
+                    label="Buyer"
+                    value={
+                      <BusinessName
+                        name={shown.buyer.name}
+                        verified={shown.buyer.business_verified}
+                      />
+                    }
+                  />
+                </dl>
+                {storeParty.name !== 'Removed account' && (
+                  <LinkButton
+                    className="mt-4 w-full"
+                    variant="secondary"
+                    to="/market/store/$sellerId"
+                    params={{ sellerId: storeParty.id }}
+                  >
+                    Visit store
+                  </LinkButton>
                 )}
-              </section>
-            </>
+              </Panel>
+            </aside>
           </div>
-        )}
-      </ResponsiveOverlay>
+        </>
+      )}
       <ConfirmDialog
         open={record !== null && removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}

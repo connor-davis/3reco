@@ -118,40 +118,37 @@ test('receipt remove is restricted and only mutates after confirmation', () => {
       uploaded_by: 'uploader',
     };
     let selected = null;
-    const { TransactionDialog } = compile(
-      'components/dialogs/record-dialogs.tsx',
-      {
-        react: {
-          useState: (value) =>
-            value === null
-              ? [
-                  receipt,
-                  (value) => {
-                    selected = value;
-                  },
-                ]
-              : [value, () => {}],
-        },
-        '@/lib/auth/use-auth': { useAuth: () => ({ user: { id, role } }) },
-        '@/components/ui/button-variants': { buttonVariants: () => '' },
-        '@/lib/utils': { cn: () => '' },
-        '@/lib/api/transactions': {
-          useTransaction: () => ({}),
-          useDownloadInvoice: () => ({}),
-        },
-        '@/lib/api/receipts': {
-          kinds: ['image/png', 'image/jpeg'],
-          maxBytes: 5 * 1024 * 1024,
-          maxReceipts: 5,
-          useUploadReceipt: () => ({}),
-          useDownloadReceipt: () => ({}),
-          useDeleteReceipt: () => ({ mutate: (id) => calls.push(id) }),
-        },
-        '@/lib/format': load('lib/format.ts'),
-      }
-    );
+    const { TradeDetail } = compile('components/dialogs/record-dialogs.tsx', {
+      react: {
+        useState: (value) =>
+          value === null
+            ? [
+                receipt,
+                (value) => {
+                  selected = value;
+                },
+              ]
+            : [value, () => {}],
+      },
+      '@/lib/auth/use-auth': { useAuth: () => ({ user: { id, role } }) },
+      '@/components/ui/button-variants': { buttonVariants: () => '' },
+      '@/lib/utils': { cn: () => '' },
+      '@/lib/api/transactions': {
+        useTransaction: () => ({}),
+        useDownloadInvoice: () => ({}),
+      },
+      '@/lib/api/receipts': {
+        kinds: ['image/png', 'image/jpeg'],
+        maxBytes: 5 * 1024 * 1024,
+        maxReceipts: 5,
+        useUploadReceipt: () => ({}),
+        useDownloadReceipt: () => ({}),
+        useDeleteReceipt: () => ({ mutate: (id) => calls.push(id) }),
+      },
+      '@/lib/format': load('lib/format.ts'),
+    });
     const tree = nodes(
-      TransactionDialog({
+      TradeDetail({
         record: {
           id: 't',
           type: 'b2b',
@@ -176,11 +173,13 @@ test('receipt remove is restricted and only mutates after confirmation', () => {
       tree.find((node) => node.type === 'ConfirmDialog').props.onConfirm();
       assert.deepEqual(calls, ['r']);
     }
-    const heading = tree.find((node) => node.type === 'h3');
-    assert.match(
-      heading.props.children.join(''),
-      /Receipts \(1 of 5 allowed\)/
+    const heading = tree.find(
+      (node) =>
+        node.type === 'Panel' &&
+        typeof node.props.title === 'string' &&
+        node.props.title.startsWith('Receipts')
     );
+    assert.match(heading.props.title, /Receipts \(1 of 5 allowed\)/);
   }
 });
 

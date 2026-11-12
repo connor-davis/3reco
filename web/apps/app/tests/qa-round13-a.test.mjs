@@ -47,36 +47,33 @@ test('receipt removal follows the server permission, including linked collectors
     ['admin', true, false, true, true],
     ['staff', false, true, true, true],
   ]) {
-    const { TransactionDialog } = compile(
-      'components/dialogs/record-dialogs.tsx',
-      {
-        react,
-        '@/components/ui/button-variants': {
-          buttonVariants: () => '',
-        },
-        '@/lib/utils': {
-          cn: (...classes) => classes.filter(Boolean).join(' '),
-        },
-        '@/lib/auth/use-auth': {
-          useAuth: () => ({ user: { id: 'caller', role } }),
-        },
-        '@/lib/api/transactions': {
-          useTransaction: () => ({}),
-          useDownloadInvoice: () => ({}),
-        },
-        '@/lib/api/receipts': {
-          kinds: ['image/png', 'image/jpeg'],
-          maxBytes: 5 * 1024 * 1024,
-          maxReceipts: 5,
-          useUploadReceipt: () => ({}),
-          useDownloadReceipt: () => ({}),
-          useDeleteReceipt: () => ({}),
-        },
-        '@/lib/format': load('lib/format.ts'),
-      }
-    );
+    const { TradeDetail } = compile('components/dialogs/record-dialogs.tsx', {
+      react,
+      '@/components/ui/button-variants': {
+        buttonVariants: () => '',
+      },
+      '@/lib/utils': {
+        cn: (...classes) => classes.filter(Boolean).join(' '),
+      },
+      '@/lib/auth/use-auth': {
+        useAuth: () => ({ user: { id: 'caller', role } }),
+      },
+      '@/lib/api/transactions': {
+        useTransaction: () => ({}),
+        useDownloadInvoice: () => ({}),
+      },
+      '@/lib/api/receipts': {
+        kinds: ['image/png', 'image/jpeg'],
+        maxBytes: 5 * 1024 * 1024,
+        maxReceipts: 5,
+        useUploadReceipt: () => ({}),
+        useDownloadReceipt: () => ({}),
+        useDeleteReceipt: () => ({}),
+      },
+      '@/lib/format': load('lib/format.ts'),
+    });
     const tree = nodes(
-      TransactionDialog({
+      TradeDetail({
         record: {
           id: 'trade',
           type: 'c2b',

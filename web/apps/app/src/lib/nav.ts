@@ -259,6 +259,15 @@ const guardedSingles: Record<string, PageId> = {
 /** The guard a path sits behind, if any (the pages `<Guarded>` wraps). */
 export function guardedPageFor(pathname: string): PageId | undefined {
   const [first = '', second = ''] = pathname.split('/').filter(Boolean);
+  // Trade detail is open to every trading role; the API checks the parties.
+  if (
+    first === 'transactions' &&
+    second &&
+    second !== 'sales' &&
+    second !== 'purchases'
+  )
+    return 'dashboard';
+
   return (
     guardedPairs[`${first}/${second}`] ??
     (Object.hasOwn(guardedSingles, first) ? guardedSingles[first] : undefined)
@@ -277,7 +286,11 @@ export function pageTitleFor(pathname: string, role?: Role | null): string {
   if (first === 'market' && second === 'outgoing') return 'Outgoing requests';
   if (isRequestPath(pathname)) return 'Messages';
   if (first === 'transactions' && second) {
-    return second === 'sales' ? 'Sales' : 'Purchases';
+    return second === 'sales'
+      ? 'Sales'
+      : second === 'purchases'
+        ? 'Purchases'
+        : 'Invoice';
   }
 
   return pageTitles[first] ?? 'Page not found';

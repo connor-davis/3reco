@@ -60,11 +60,11 @@ test('F16: a pending trade says who it is waiting for', () => {
   assert.equal(waitingFor(trade(2, 2), 'b'), 'Both sides confirmed');
 });
 
-test('F12: ?open=<id> opens that trade and clears itself on close', () => {
+test('F12: ?open=<id> redirects to the trade page and replaces the legacy URL', () => {
   const src = text('../src/routes/transactions/-components/record-list.tsx');
   assert.match(src, /open: openId/);
-  assert.match(src, /useTransaction\(/);
-  assert.match(src, /navigate\(\{ to: '\.', search: \{\}/);
+  assert.match(src, /transactionId: openId/);
+  assert.match(src, /replace: true/);
 });
 
 test('F9: counts use plural()', () => {
