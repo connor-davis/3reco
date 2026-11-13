@@ -1,7 +1,7 @@
 # Plan: businesses as tenants
 
-Date: 2026-11-13. Source map: `mystuff/maps/tenants.md`. Status: approved 2026-11-13, phase 1
-started.
+Date: 2026-11-13. Source map: `mystuff/maps/tenants.md`. Status: approved 2026-11-13;
+phase 2 implemented and verified locally, awaiting review and delivery.
 
 ## Owner decisions
 
@@ -40,9 +40,27 @@ started.
    checks and realtime switched to the active business. Every business has one Owner, so the
    app behaves exactly as today. Cross-business tests for every route. *Biggest and riskiest
    phase; it touches every area.*
-2. **Team and invites.** "Team" page for Owners: invite by email (reuses `auth_tokens` and the
-   Resend mail), resend, revoke, change role, remove. Joining with a new or existing account.
-   Role rules enforced on the server.
+2. **Team and invites.** "Team" page for Owners: invite by email (dedicated `business_invites`
+   records and the existing action mail), resend, revoke, change role, remove. Joining with a
+   new or existing account. Role rules enforced on the server.
+   **Implemented and verified locally (2026-11-13):** migration 0027, auth helpers,
+   business store extensions, owner-only Team service/routes, last-owner guard, seven-day
+   invites and realtime close code 4403 are on `cd/feat-tenants-team`. The web includes the
+   Team directory and invitations, confirmed role/removal actions, new-account and signed-in
+   acceptance, Owner navigation on desktop/phone/search, and live updates without polling.
+   A membership loss refetches identity and business data without signing the person out.
+   The role-change regression now uses the Manager-only cart action; removal regressions
+   prove access to private, unlisted stock before and after removal. In the old round-12
+   test, demoting an admin to business creates their own Owner membership, so its Team event
+   is legitimate. That test ignores only Team events with that business id. Unrelated admin
+   and platform staff sockets are explicitly checked for silence in `TestTeamEventsLive`.
+   Targeted backend regressions and the four light/dark phone/desktop Team/invite browser
+   combinations pass. The explicit web checks pass: Prettier, ESLint, `tsc -b --noEmit`,
+   all 380 tests and the production build. Full `task check` exited 0 using
+   `TEST_DB='postgres://threereco:threereco@localhost:5441/postgres?sslmode=disable'`;
+   the Go integration suite passed in 500 seconds, followed by all web checks. No Windows
+   startup retry was needed. Log: `mystuff/checks/task-check-2.log` in the implementation
+   worktree. No PR opened or merge performed.
 3. **Switcher and new business.** The workspace chooser moves out of the sidebar (the name and
    "workspace" block under the logo) into the left side of the desktop top bar, which is empty
    today (owner, 2026-11-13). It lists your businesses; switch, or create another. Verification is

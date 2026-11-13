@@ -29,6 +29,7 @@ import (
 	statsapi "github.com/connor-davis/3reco/internal/api/stats"
 	stockapi "github.com/connor-davis/3reco/internal/api/stock"
 	storesapi "github.com/connor-davis/3reco/internal/api/stores"
+	teamapi "github.com/connor-davis/3reco/internal/api/team"
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/crypt"
@@ -46,7 +47,9 @@ import (
 	statssvc "github.com/connor-davis/3reco/internal/services/stats"
 	stocksvc "github.com/connor-davis/3reco/internal/services/stock"
 	storessvc "github.com/connor-davis/3reco/internal/services/stores"
+	teamsvc "github.com/connor-davis/3reco/internal/services/team"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
+	"github.com/connor-davis/3reco/internal/stores/businesses"
 	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
@@ -68,6 +71,9 @@ var Module = fx.Module("api",
 		auth.New,
 		realtime.New,
 		authapi.New,
+		businesses.New,
+		teamsvc.New,
+		teamapi.New,
 		collectorsstore.New,
 		collectorssvc.New,
 		collectorsapi.New,
@@ -155,6 +161,7 @@ type routes struct {
 	Profile    *profileapi.Handler
 	Stock      *stockapi.Handler
 	Stores     *storesapi.Handler
+	Team       *teamapi.Handler
 	Trade      tradeRoutes
 }
 
@@ -222,6 +229,7 @@ func New(r routes) *fiber.App {
 	r.Profile.Register(api)
 	r.Stock.Register(api)
 	r.Stores.Register(api)
+	r.Team.Register(api)
 
 	// Unknown /api paths get a JSON 404.
 	api.Use(func(c fiber.Ctx) error { return apperr.NotFound("No such API endpoint.") })

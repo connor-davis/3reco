@@ -27,6 +27,9 @@ const (
 // out at once instead of reconnecting. 4000-4999 is the range for app codes.
 const CloseSessionEnded = 4401
 
+// CloseMembershipEnded drops the business connection while keeping the sign-in.
+const CloseMembershipEnded = 4403
+
 // Event is what a client receives. Type is "changed", "resync" or "pong";
 // only "changed" carries a Kind and an ID.
 type Event struct {
@@ -48,8 +51,9 @@ type Client struct {
 	closed chan struct{}
 	once   sync.Once
 
-	revoked atomic.Bool // set when the sign-in ended, so the close code says so
-	removed atomic.Bool // set when the account was erased, so the close reason says so
+	revoked         atomic.Bool // set when the sign-in ended, so the close code says so
+	removed         atomic.Bool // set when the account was erased, so the close reason says so
+	membershipEnded atomic.Bool // business access ended, but the session is still valid
 }
 
 // Send is the stream of encoded events for the socket writer.
@@ -63,6 +67,9 @@ func (c *Client) Revoked() bool { return c.revoked.Load() }
 
 // Removed reports whether the hub dropped the client because the account was erased.
 func (c *Client) Removed() bool { return c.removed.Load() }
+
+// MembershipEnded reports loss of the socket's selected business access.
+func (c *Client) MembershipEnded() bool { return c.membershipEnded.Load() }
 
 // Hub fans database changes out to clients.
 type Hub struct {
