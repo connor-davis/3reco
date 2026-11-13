@@ -91,7 +91,7 @@ export function DocsLayout() {
         )}
 
         <main id="docs-content" tabIndex={-1} className="min-w-0">
-          <article className="docs-prose mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
+          <article className="docs-prose w-full px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
             <MDXProvider components={mdxComponents}>
               <Outlet />
             </MDXProvider>
