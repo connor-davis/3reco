@@ -1,7 +1,7 @@
 # Plan: businesses as tenants
 
-Date: 2026-11-13. Source map: `mystuff/maps/tenants.md`. Status: approved 2026-11-13, phase 1
-started.
+Date: 2026-11-13. Source map: `mystuff/maps/tenants.md`. Status: approved 2026-11-13;
+phase 2 implemented and verified locally, awaiting review and delivery.
 
 ## Owner decisions
 
@@ -43,19 +43,24 @@ started.
 2. **Team and invites.** "Team" page for Owners: invite by email (dedicated `business_invites`
    records and the existing action mail), resend, revoke, change role, remove. Joining with a
    new or existing account. Role rules enforced on the server.
-   **Partial, blocked on map correction (2026-11-13):** migration 0027, auth helpers, business
-   store extensions, Team service/routes and realtime close code 4403 implemented on
-   `cd/feat-tenants-team`. Web work has not started. The required role-change test expects
-   Member stock creation to return 403, but Members already have stock access (200), as this
-   plan specifies. The map must identify a Manager-only action for that test or resolve the
-   permission change. Removal tests also need private, unlisted stock fixtures: listed stock
-   remains publicly readable after membership removal. Targeted backend tests currently fail
-   those three assertions; phase 2 is not complete.
-   Full `task check` with the `postgres` test database connection exited 201 after Go tests
-   (format, vet and staticcheck passed). It also found `TestRound12RoleChangeIsLive` receiving
-   the new `team` event during its silence assertion. The map needs to cover that existing
-   realtime test and its event-settling expectations. Log: `mystuff/checks/task-check.log` in
-   the implementation worktree. Web checks were not reached.
+   **Implemented and verified locally (2026-11-13):** migration 0027, auth helpers,
+   business store extensions, owner-only Team service/routes, last-owner guard, seven-day
+   invites and realtime close code 4403 are on `cd/feat-tenants-team`. The web includes the
+   Team directory and invitations, confirmed role/removal actions, new-account and signed-in
+   acceptance, Owner navigation on desktop/phone/search, and live updates without polling.
+   A membership loss refetches identity and business data without signing the person out.
+   The role-change regression now uses the Manager-only cart action; removal regressions
+   prove access to private, unlisted stock before and after removal. In the old round-12
+   test, demoting an admin to business creates their own Owner membership, so its Team event
+   is legitimate. That test ignores only Team events with that business id. Unrelated admin
+   and platform staff sockets are explicitly checked for silence in `TestTeamEventsLive`.
+   Targeted backend regressions and the four light/dark phone/desktop Team/invite browser
+   combinations pass. The explicit web checks pass: Prettier, ESLint, `tsc -b --noEmit`,
+   all 380 tests and the production build. Full `task check` exited 0 using
+   `TEST_DB='postgres://threereco:threereco@localhost:5441/postgres?sslmode=disable'`;
+   the Go integration suite passed in 500 seconds, followed by all web checks. No Windows
+   startup retry was needed. Log: `mystuff/checks/task-check-2.log` in the implementation
+   worktree. No PR opened or merge performed.
 3. **Switcher and new business.** The workspace chooser moves out of the sidebar (the name and
    "workspace" block under the logo) into the left side of the desktop top bar, which is empty
    today (owner, 2026-11-13). It lists your businesses; switch, or create another. Verification is

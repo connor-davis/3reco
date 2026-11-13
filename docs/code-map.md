@@ -237,6 +237,11 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
 | Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; page reset on filter change `src/components/transactions/pager-state.ts` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
+| Owner Team directory, invitations and confirmed role/removal actions | `web/apps/app/src/routes/team.tsx`, `src/lib/api/team.ts` |
+| Public invite preview, new account and signed-in acceptance | `web/apps/app/src/routes/accept-invite.tsx`; full-width auth layout option in `components/auth-shell.tsx` |
+| Active-business Owner gate and Team navigation on desktop, phone and search | `web/apps/app/src/lib/access.ts` (`canManageTeam`), `src/lib/nav.ts` (`navFor`), `components/shell/{app-sidebar,bottom-tabs,command-search}.tsx` |
+| Team invalidation, membership identity refresh and close 4403 without sign-out | `web/apps/app/src/lib/live/connection.ts`; tests in `web/apps/app/tests/team.test.mjs` |
+| Team/invite browser journeys, live directory refresh and light/dark responsive coverage | `web/apps/app/tests/team-render.test.mjs` |
 | One socket per tab and cache invalidation by `{kind, id}` | `web/apps/app/src/lib/live/use-live.ts`, `connection.ts` |
 | HTTP error/decimal contracts and socket lifecycle tests | `web/apps/app/tests/api.test.mjs` |
 | QA round 1 shell fixes (no mojibake, invoice filename, waiting tag, role copy, guest gating, session-ended close 4401) | `web/apps/app/tests/qa-round1-shell.test.mjs` |
