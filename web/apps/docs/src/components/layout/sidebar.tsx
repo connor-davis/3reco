@@ -11,6 +11,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BrandLogo } from './brand-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarProps {
@@ -176,11 +177,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         to="/"
         className="hidden h-14 items-center gap-2 px-4 text-lg font-semibold min-[781px]:flex"
       >
-        <span
-          className="size-2.5 shrink-0 rounded-full bg-primary"
-          aria-hidden="true"
-        />
-        <span>3REco Docs</span>
+        <BrandLogo />
+        <span className="text-muted-foreground">Docs</span>
       </Link>
       <ScrollArea className="h-full min-[781px]:h-[calc(100svh-3.5rem)]">
         <nav className="space-y-2 p-2">
