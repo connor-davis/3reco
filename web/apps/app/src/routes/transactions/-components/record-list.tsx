@@ -190,7 +190,7 @@ export function RecordList({
       header: 'From → To',
       meta: { className: 'max-xl:px-2' },
       cell: ({ row }) => (
-        <div className="max-w-md min-w-32 space-y-1 whitespace-normal 2xl:min-w-64">
+        <div className="max-w-md min-w-32 space-y-1 whitespace-normal">
           <div className="line-clamp-2">
             <Parties row={row.original} />
           </div>
