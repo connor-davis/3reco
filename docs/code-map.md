@@ -58,6 +58,8 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | --- | --- |
 | Users, sessions, one-time tokens, rate counts (SQL only) | `internal/stores/auth/auth.go` |
 | Business membership and default business selection for sessions | `internal/stores/businesses/businesses.go` |
+| Seven-day business invite records, audit and live Team events | `internal/platform/database/migrations/0027_business_invites.sql` |
+| Shared link-token hashing, email and password validation | `internal/services/auth/auth.go` (`NewToken`, `HashToken`, `CleanEmail`, `CheckPassword`) |
 | Active business identity, live membership, and minimum team roles | `internal/services/auth/business.go` |
 | Minimum business-role route gate | `internal/api/middleware/business.go` |
 | Password hashing (argon2id) and old Better Auth scrypt check | `internal/services/auth/password.go` |

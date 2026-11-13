@@ -84,12 +84,12 @@ func (s *Service) SignUp(ctx context.Context, name, email, password, noticeVersi
 		return apperr.Field("name", "Enter your name.")
 	}
 
-	email, err := cleanEmail(email)
+	email, err := CleanEmail(email)
 	if err != nil {
 		return err
 	}
 
-	if err := checkPassword(password); err != nil {
+	if err := CheckPassword(password); err != nil {
 		return err
 	}
 
@@ -157,7 +157,7 @@ func (s *Service) SignIn(
 		}
 	}
 
-	token, hash := newToken()
+	token, hash := NewToken()
 
 	if err := s.store.CreateSession(ctx, user.ID, hash, ip, userAgent, SessionTTL); err != nil {
 		return "", store.User{}, err
@@ -198,7 +198,7 @@ func (s *Service) Authenticate(
 	ctx context.Context,
 	token string,
 ) (sess store.Session, refreshed bool, err error) {
-	sessions, err := s.store.SessionsByHashes(ctx, []string{hashToken(token)})
+	sessions, err := s.store.SessionsByHashes(ctx, []string{HashToken(token)})
 	if err != nil {
 		return sess, false, err
 	}
@@ -247,7 +247,7 @@ func (s *Service) Devices(ctx context.Context, tokens []string) ([]store.Session
 
 	hashes := make([]string, len(tokens))
 	for i, token := range tokens {
-		hashes[i] = hashToken(token)
+		hashes[i] = HashToken(token)
 	}
 
 	return s.store.SessionsByHashes(ctx, hashes)
@@ -268,7 +268,7 @@ func (s *Service) DeviceToken(ctx context.Context, tokens []string, id string) (
 		}
 
 		for _, token := range tokens {
-			if hashToken(token) == sess.TokenHash {
+			if HashToken(token) == sess.TokenHash {
 				return token, true, nil
 			}
 		}
@@ -369,7 +369,7 @@ func (s *Service) RequestReset(ctx context.Context, email string) error {
 // ConfirmReset sets a new password. Reading the emailed link proves the
 // address, and every session of that user ends.
 func (s *Service) ConfirmReset(ctx context.Context, token, password string) error {
-	if err := checkPassword(password); err != nil {
+	if err := CheckPassword(password); err != nil {
 		return err
 	}
 
@@ -398,12 +398,12 @@ func (s *Service) ConfirmReset(ctx context.Context, token, password string) erro
 
 // CreateAdmin makes (or promotes) a verified admin. The `admin create` command uses it.
 func (s *Service) CreateAdmin(ctx context.Context, name, email, password string) error {
-	email, err := cleanEmail(email)
+	email, err := CleanEmail(email)
 	if err != nil {
 		return err
 	}
 
-	if err := checkPassword(password); err != nil {
+	if err := CheckPassword(password); err != nil {
 		return err
 	}
 
@@ -459,7 +459,7 @@ func (s *Service) newLink(
 	ttl time.Duration,
 	path string,
 ) (string, error) {
-	token, hash := newToken()
+	token, hash := NewToken()
 
 	if err := s.store.ReplaceToken(ctx, kind, userID, hash, ttl); err != nil {
 		return "", err
@@ -469,7 +469,7 @@ func (s *Service) newLink(
 }
 
 func (s *Service) consume(ctx context.Context, kind, token string) (string, error) {
-	userID, err := s.store.ConsumeToken(ctx, kind, hashToken(token))
+	userID, err := s.store.ConsumeToken(ctx, kind, HashToken(token))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", apperr.BadRequest("This link is not valid any more. Ask for a new one.", nil)
 	}
@@ -477,8 +477,8 @@ func (s *Service) consume(ctx context.Context, kind, token string) (string, erro
 	return userID, err
 }
 
-// newToken returns a random cookie or link token and the hash that is stored.
-func newToken() (token, hash string) {
+// NewToken returns a random cookie or link token and the hash that is stored.
+func NewToken() (token, hash string) {
 	buf := make([]byte, 32)
 
 	if _, err := rand.Read(buf); err != nil {
@@ -487,16 +487,18 @@ func newToken() (token, hash string) {
 
 	token = base64.RawURLEncoding.EncodeToString(buf)
 
-	return token, hashToken(token)
+	return token, HashToken(token)
 }
 
-func hashToken(token string) string {
+// HashToken returns the SHA-256 digest stored for a secret token.
+func HashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 
 	return hex.EncodeToString(sum[:])
 }
 
-func cleanEmail(email string) (string, error) {
+// CleanEmail validates and normalises an email address.
+func CleanEmail(email string) (string, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	addr, err := mail.ParseAddress(email)
@@ -507,7 +509,8 @@ func cleanEmail(email string) (string, error) {
 	return email, nil
 }
 
-func checkPassword(password string) error {
+// CheckPassword applies the shared password length rules.
+func CheckPassword(password string) error {
 	if len(password) < MinPassword {
 		return apperr.Field("password", "Use at least 8 characters.")
 	}
