@@ -51,7 +51,7 @@ func (s *Service) PrepareExport(
 
 	switch kind {
 	case "users":
-		if !auth.HasRole(user, auth.RoleAdmin) {
+		if !auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) {
 			return empty, denied
 		}
 	case "transactions":
@@ -165,7 +165,7 @@ func (s *Service) PrepareExport(
 				return err
 			}
 
-			return s.store.ExportUsers(ctx, role, paging.SearchPattern(search), write)
+			return s.store.ExportUsers(ctx, role, paging.SearchPattern(search), !auth.HasRole(user, auth.RoleAdmin), write)
 		}
 
 		header := append([]string{}, transactionColumns[:6]...)

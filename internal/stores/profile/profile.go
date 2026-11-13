@@ -134,7 +134,6 @@ func (records *Store) Find(ctx context.Context, id string, lock bool, business .
 		&item.BusinessID,
 	)
 
-
 	return item, err
 }
 
