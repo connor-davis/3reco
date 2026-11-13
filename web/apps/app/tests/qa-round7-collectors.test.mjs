@@ -42,7 +42,10 @@ test('phone menus and primary taps follow collector permissions; desktop keeps i
       if (name === '@/lib/use-debounced')
         return { useDebounced: (value) => value };
       if (name === '@/lib/api/collectors')
-        return { useCollectors: () => ({ data: { items: [] } }) };
+        return {
+          useCollectors: () => ({ data: { items: [] } }),
+          useCollector: () => ({ data: undefined }),
+        };
       if (name === '@/components/transactions/pager-state')
         return { usePager: () => ({ params: {} }) };
       return new Proxy({}, { get: (_, key) => key });

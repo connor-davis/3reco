@@ -1,6 +1,7 @@
 import {
   Boxes,
   ClipboardList,
+  History,
   Home,
   LayoutDashboard,
   type LucideIcon,
@@ -67,6 +68,7 @@ export function navFor(role: Role | null): NavGroup[] {
           links: [
             ...staffWorkspace,
             { label: 'User management', to: '/admin/users', icon: Users },
+            { label: 'Activity log', to: '/admin/activity', icon: History },
           ],
         },
       ];
@@ -247,6 +249,7 @@ const guardedPairs: Record<string, PageId> = {
   'transactions/purchases': 'purchases',
   'transactions/sales': 'sales',
   'admin/users': 'users',
+  'admin/activity': 'activity',
 };
 const guardedSingles: Record<string, PageId> = {
   '': 'dashboard',
@@ -286,6 +289,7 @@ export function pageTitleFor(pathname: string, role?: Role | null): string {
   if (page && role !== undefined && !canOpen(role, page))
     return 'Not available';
 
+  if (first === 'admin' && second === 'activity') return 'Activity log';
   if (first === 'market' && second === 'incoming') return 'Incoming requests';
   if (first === 'market' && second === 'outgoing') return 'Outgoing requests';
   if (isRequestPath(pathname)) return 'Messages';

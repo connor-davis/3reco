@@ -28,12 +28,14 @@ test('every table ends in an actions menu that does not trigger the row', () => 
   assert.match(menu, /destructive/);
 });
 
-test('collector account numbers are masked to the last four digits', () => {
+test('the collectors page shows the masked account number the server sends', () => {
   const { maskAccount } = load('lib/format.ts');
   assert.equal(maskAccount('0000009382135958'), '•••• 5958');
   assert.equal(maskAccount(''), '');
   const page = source('routes/collectors.tsx');
-  assert.match(page, /maskAccount\(collector\.bank_account_number/);
+  assert.doesNotMatch(page, /maskAccount\(/);
+  assert.match(page, /collector\.bank_account_number \?\? ''/);
+  assert.match(page, /useCollector\(/);
 });
 
 test('page content fills the screen, with no width cap in the app shell', () => {

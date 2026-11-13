@@ -16,6 +16,15 @@ export function usePrivacyEvents(params: Paging = {}) {
     true
   );
 }
+export function useActivity(
+  params: Paging & { table?: string; action?: string } = {}
+) {
+  return useResource<Page<T.ActivityLine>>(
+    ['admin', 'activity', params],
+    `/admin/activity${queryString(params)}`,
+    true
+  );
+}
 export function useSetUserRole(id: string) {
   return useWrite<{ role: T.Role }, T.Ok>(
     `/admin/users/${idPath(id)}/role`,
