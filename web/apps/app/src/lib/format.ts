@@ -149,8 +149,3 @@ export function today(): string {
     timeZone: 'Africa/Johannesburg',
   }).format(new Date());
 }
-
-/** The last four digits of an account number. The full number stays on the edit form. */
-export function maskAccount(account: string): string {
-  return account ? `•••• ${account.slice(-4)}` : '';
-}

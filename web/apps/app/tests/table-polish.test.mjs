@@ -29,9 +29,7 @@ test('every table ends in an actions menu that does not trigger the row', () => 
 });
 
 test('the collectors page shows the masked account number the server sends', () => {
-  const { maskAccount } = load('lib/format.ts');
-  assert.equal(maskAccount('0000009382135958'), '•••• 5958');
-  assert.equal(maskAccount(''), '');
+  assert.doesNotMatch(source('lib/format.ts'), /maskAccount/);
   const page = source('routes/collectors.tsx');
   assert.doesNotMatch(page, /maskAccount\(/);
   assert.match(page, /collector\.bank_account_number \?\? ''/);
