@@ -71,7 +71,7 @@ func TestFieldCryptRefusesBadInput(t *testing.T) {
 
 func TestFieldCryptMask(t *testing.T) {
 	for plain, want := range map[string]string{
-		"": "", "1": "******", "1234": "******", "62001234567": "******4567",
+		"": "", "1": "••••", "1234": "••••", "62001234567": "•••• 4567",
 	} {
 		if got := crypt.Mask(plain); got != want {
 			t.Errorf("Mask(%q) = %q, want %q", plain, got, want)

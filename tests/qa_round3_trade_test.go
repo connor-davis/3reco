@@ -50,11 +50,11 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 				tradeID = foreignID
 			}
 			pdf := status(t, test.user.c.Do("GET", "/api/transactions/"+tradeID+"/invoice", nil), 200)
-			want := "******1222"
+			want := "•••• 1222"
 			if test.full {
 				want = "62000111222"
 			}
-			if !bytes.Contains(pdf.Raw, []byte(want)) || (!test.full && bytes.Contains(pdf.Raw, []byte("62000111222"))) {
+			if !bytes.Contains(pdf.Raw, inPDF(want)) || (!test.full && bytes.Contains(pdf.Raw, []byte("62000111222"))) {
 				t.Fatalf("wrong payout projection in PDF: want %s", want)
 			}
 			view := status(t, test.user.c.Do("GET", "/api/collectors/"+collector, nil), 200)
@@ -231,6 +231,7 @@ func TestRound3WalletPayoutAccess(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE collectors SET payout_method='ewallet',
 		ewallet_platform_name='Frozen Wallet',ewallet_payment_id=$2 WHERE id=$1`,
 		collector, testutil.Seal(t, "0821112222"))
+	tradeBackfillLast4(t, w.app)
 	for _, buyer := range []tradeUser{w.buyer, other} {
 		got := status(t, buyer.c.Do("POST", "/api/transactions/collections",
 			tradeCollection(collector, "", tradeLine(w.material, "1", "2"))), 200)
@@ -238,11 +239,11 @@ func TestRound3WalletPayoutAccess(t *testing.T) {
 		for _, user := range []tradeUser{buyer, login, staff, admin} {
 			full := user.id == w.buyer.id || user.id == login.id || user.id == admin.id
 			pdf := status(t, user.c.Do("GET", "/api/transactions/"+id+"/invoice", nil), 200)
-			want := "******2222"
+			want := "•••• 2222"
 			if full {
 				want = "0821112222"
 			}
-			if !bytes.Contains(pdf.Raw, []byte(want)) || (!full && bytes.Contains(pdf.Raw, []byte("0821112222"))) {
+			if !bytes.Contains(pdf.Raw, inPDF(want)) || (!full && bytes.Contains(pdf.Raw, []byte("0821112222"))) {
 				t.Fatal("wallet PDF projection is wrong")
 			}
 			if user.id != login.id {

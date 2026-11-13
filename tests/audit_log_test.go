@@ -300,7 +300,7 @@ func TestCollectorListsCarryNoCiphertext(t *testing.T) {
 	// A caller without full access gets the mask from the stored last four,
 	// and the sealed number never leaves Postgres.
 	view := status(t, staff.c.Do("GET", "/api/collectors/"+collector, nil), 200)
-	if view.Body["bank_account_number"] != "******6789" || bytes.Contains(view.Raw, []byte("v1:")) {
+	if view.Body["bank_account_number"] != "•••• 6789" || bytes.Contains(view.Raw, []byte("v1:")) {
 		t.Fatalf("staff detail: %s", view.Raw)
 	}
 

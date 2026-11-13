@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
@@ -27,3 +28,7 @@ func tradeBackfillLast4(t *testing.T, app *testutil.App) {
 
 // payoutFull reads a document with the seller's payout whole.
 func payoutFull(tstore.Transaction) (tstore.Payout, error) { return tstore.PayoutFull, nil }
+
+// inPDF turns a mask into the bytes the invoice PDF holds: its Latin-1 font
+// writes each bullet as the single byte 0x95.
+func inPDF(mask string) []byte { return []byte(strings.ReplaceAll(mask, "•", "\x95")) }

@@ -77,6 +77,7 @@ func TestInvoiceNumberStable(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE businesses SET bank_account_holder_name='Invoice Holder',bank_name='Test Bank',
 		bank_account_number=$2,bank_branch_code='250655',bank_account_type='Cheque' WHERE id=$1`,
 		w.seller.id, testutil.Seal(t, "123456789"))
+	tradeBackfillLast4(t, w.app)
 	id := tradeSale(t, w.seller, w.buyer, w.material, "1.23", "8.12")
 	number := strings.ToUpper(id[len(id)-8:])
 	path := "/api/transactions/" + id + "/invoice"
@@ -103,7 +104,7 @@ func TestInvoiceNumberStable(t *testing.T) {
 	}
 	// Staff read a masked account: the full number is for the two parties and admins.
 	staffPDF := status(t, staff.c.Do("GET", path, nil), 200)
-	if bytes.Contains(staffPDF.Raw, []byte("123456789")) || !bytes.Contains(staffPDF.Raw, []byte("******6789")) {
+	if bytes.Contains(staffPDF.Raw, []byte("123456789")) || !bytes.Contains(staffPDF.Raw, inPDF("•••• 6789")) {
 		t.Error("staff invoice must show the masked account")
 	}
 	tradeWant(t, "invoice stranger", stranger.c.Do("GET", path, nil), 404)

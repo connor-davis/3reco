@@ -280,13 +280,13 @@ func TestRound12CollectorOwnPayout(t *testing.T) {
 	status(t, login.c.Do("PATCH", "/api/profile", map[string]any{"city": "Paarl"}), 200)
 
 	got := status(t, login.c.Do("GET", "/api/profile", nil), 200).Body
-	if got["bank_account_number"] != "62001234567" {
+	if got["bank_account_number"] != "•••• 4567" {
 		t.Fatalf("own profile payout: %v", got)
 	}
 
 	status(t, login.c.Do("PATCH", "/api/profile", map[string]any{"bank_account_number": got["bank_account_number"]}), 200)
 
-	if again := status(t, login.c.Do("GET", "/api/profile", nil), 200).Body; again["bank_account_number"] != "62001234567" {
+	if again := status(t, login.c.Do("GET", "/api/profile", nil), 200).Body; again["bank_account_number"] != "•••• 4567" {
 		t.Fatalf("a save erased the payout: %v", again)
 	}
 
