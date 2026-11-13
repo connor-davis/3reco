@@ -44,6 +44,7 @@ test(
         child.on('close', (code) => resolve({ code, output }));
       });
       assert.equal(result.code, 0, result.output);
+      if (process.env.THREERECO_B2_SHOTS) console.log(result.output);
     } finally {
       await server.close();
     }
@@ -68,17 +69,19 @@ request = {'id': 'request', 'seller': large_trade['seller'], 'buyer': large_trad
 totals = {'count': 7, 'weight': '87.5', 'value': '700.00', 'carbon_savings': '100'}
 dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'series': [dict(totals, day=str(date(2026,10,10)+timedelta(days=i))) for i in range(30)], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
 admin_users = [{'id': 'buyer', 'name': 'Layout Buyer', 'email': 'admin@example.test', 'role': 'admin', 'profile_complete': True, 'business_verified': False, 'created_at': trade['created_at']}, {'id': 'business', 'name': 'Naledi Jacobs', 'email': 'naledi@kasicollect.co.za', 'role': 'business', 'profile_complete': True, 'business_verified': True, 'created_at': trade['created_at']}, {'id': 'unverified-business', 'name': 'Thandi Mokoena', 'email': 'thandi@metroscraptraders.co.za', 'role': 'business', 'profile_complete': False, 'business_verified': False, 'created_at': trade['created_at']}]
+measurements = []
 with sync_playwright() as p:
     browser = p.chromium.launch()
     for mode in ['light', 'dark']:
-        for width in [390, 412, 820, 1280, 1920]:
+        for width in [1100, 1280, 1440, 1920, 390, 412, 820]:
             context = browser.new_context(viewport={'width': width, 'height': 1000}, color_scheme=mode)
             role = 'admin'
             errors = []
             def handle(route):
                 path = urlparse(route.request.url).path.removeprefix('/api')
                 body = {'items': [], 'has_more': False, 'next_cursor': None, 'count': 0}
-                if path == '/auth/me': body = {'user': {'id': 'buyer', 'name': 'Layout Buyer', 'email': 'layout@example.test', 'role': role, 'emailVerified': True, 'profileComplete': True, 'agreedToTerms': True}}
+                if path == '/auth/me': body = {'user': {'id': 'buyer', 'name': 'Layout Buyer', 'email': 'layout@example.test', 'role': role, 'emailVerified': True, 'profileComplete': True, 'agreedToTerms': True, 'business_verified': True}}
+                elif path == '/collectors': body['items'] = [{'id': 'collector', 'name': 'Zanele Both', 'email': 'zanele@example.test', 'phone': '0821234567', 'image': '', 'city': 'Cape Town', 'province': 'Western Cape', 'payout_method': 'bank', 'bank_name': 'FNB', 'bank_account_number': '1234567890', 'can_edit': True, 'can_view_payout': True, 'created_at': trade['created_at']}]
                 elif path == '/admin/users': body['items'] = admin_users
                 elif path == '/auth/sessions': body = {'sessions': []}
                 elif path == '/profile': body = dict.fromkeys(['image', 'avatar_url', 'phone', 'id_number', 'business_name', 'business_registration_number', 'bank_account_holder_name', 'bank_name', 'bank_account_number', 'bank_branch_code', 'bank_account_type', 'street_address', 'city', 'province'], '') | {'id': 'buyer', 'name': 'Layout Buyer', 'first_name': 'Layout', 'last_name': 'Buyer', 'email': 'layout@example.test', 'role': role, 'profile_complete': True, 'agreed_to_terms': True, 'area_code': None}
@@ -106,6 +109,7 @@ with sync_playwright() as p:
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.on('console', lambda message: errors.append(message.text) if message.type == 'error' else None)
             for route in routes:
+                if width in [1100, 1440] and route not in ['/transactions', '/collectors', '/admin/users']: continue
                 role = 'collector' if route == '/?role=collector' else 'admin' if route in ['/?role=admin', '/transactions', '/materials', '/admin/users'] else 'business'
                 try:
                     page.goto(base + route)
@@ -209,6 +213,28 @@ with sync_playwright() as p:
                             parties = stress.locator('[data-slot="record-parties"]')
                             assert 'Zanele Both' in parties.inner_text() and 'Kasi Collect Co' in parties.inner_text()
                             assert parties.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1')
+                    if route in ['/transactions', '/collectors', '/admin/users'] and width in [1100, 1280, 1440, 1920]:
+                        container = page.locator('[data-slot="table-container"]')
+                        expect(container).to_have_count(1)
+                        geometry = container.evaluate('(el) => ({width: el.clientWidth, scrollWidth: el.scrollWidth})')
+                        assert geometry['scrollWidth'] <= geometry['width'] + 1, f'table scrolls {route} {width}: {geometry}'
+                        if route == '/transactions':
+                            materials = page.locator('tbody tr').first.locator('td').nth(1)
+                            geometry['materials'] = materials.bounding_box()['width']
+                            geometry['materialsText'] = materials.locator('span').evaluate('(el) => el.clientWidth')
+                            assert geometry['materialsText'] >= 80, f'Materials squeezed {width}: {geometry}'
+                        if route == '/collectors':
+                            heading = page.get_by_role('heading', name='Collector directory', exact=True).locator('..')
+                            expect(heading.get_by_text('Verified business', exact=True)).to_be_visible()
+                            description = heading.locator('..').locator('p')
+                            assert description.evaluate('(el) => getComputedStyle(el).whiteSpace') == 'normal'
+                            assert description.evaluate('(el) => el.scrollHeight <= el.clientHeight + 1')
+                        measurements.append(dict(mode=mode, viewport=width, route=route, **geometry))
+                        print(f'B2 {mode} {width} {route}: {json.dumps(geometry)}', flush=True)
+                        if os.environ.get('THREERECO_B2_SHOTS'):
+                            shots = Path(os.environ['THREERECO_B2_SHOTS'])
+                            shots.mkdir(parents=True, exist_ok=True)
+                            page.screenshot(path=str(shots / (mode + '-' + str(width) + '-' + route.strip('/').replace('/', '-') + '.png')), full_page=True)
                     if route == '/admin/users' and width >= 1024:
                         container = page.locator('[data-slot="table-container"]')
                         assert container.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'admin table scrolls {width}'
@@ -265,5 +291,7 @@ with sync_playwright() as p:
                     raise
             context.close()
     browser.close()
-print('200 route/theme/viewport checks passed')
+if os.environ.get('THREERECO_B2_SHOTS'):
+    (Path(os.environ['THREERECO_B2_SHOTS']) / 'measurements.json').write_text(json.dumps(measurements, indent=2))
+print('212 route/theme/viewport checks passed')
 `;
