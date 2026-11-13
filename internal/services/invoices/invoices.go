@@ -16,7 +16,6 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
-	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/pdf"
@@ -191,7 +190,19 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 			return err
 		}
 
-		document, err = s.store.Document(ctx, id)
+		// Store and email only the buyer's authorized projection. Downloads
+		// render for their own reader so a cached full PDF never leaks to staff.
+		trade, err := s.store.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		buyer := auth.User{
+			ID: trade.Buyer.ID, ActiveBusinessID: trade.Buyer.ID,
+			BusinessRole: "manager", BusinessVerified: trade.Buyer.Verified,
+		}
+
+		document, _, err = s.Document(ctx, buyer, id)
 		if err != nil {
 			return err
 		}
@@ -201,13 +212,7 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 			return nil
 		}
 
-		// Store and email only the buyer's authorized projection. Downloads
-		// render for their own reader so a cached full PDF never leaks to staff.
-		projected, err := s.Project(ctx, document.BuyerUser, document)
-		if err != nil {
-			return err
-		}
-		data, err = pdf.Render(Compose(projected))
+		data, err = pdf.Render(Compose(document))
 		if err != nil {
 			return err
 		}
@@ -279,7 +284,9 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 		return nil, "", apperr.NotFound("Invoice not found.")
 	}
 
-	document, err := s.store.Document(ctx, id)
+	// Every read renders for its own reader: a cached PDF holds one reader's bank
+	// details, so it must never be handed to someone with less access.
+	document, whole, err := s.Document(ctx, user, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -288,21 +295,15 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 		return nil, "", apperr.NotFound("That invoice is no longer kept.")
 	}
 
-	// Every read renders for its own reader: a cached PDF holds one reader's bank
-	// details, so it must never be handed to someone with less access.
-	projected, err := s.Project(ctx, user, document)
-	if err != nil {
-		return nil, "", err
-	}
-	if auth.HasRole(user, auth.RoleAdmin) &&
-		(projected.Seller.Account != "" || projected.Seller.PaymentID != "") {
+	if auth.HasRole(user, auth.RoleAdmin) && whole &&
+		(document.Seller.Account != "" || document.Seller.PaymentID != "") {
 		subject := trade.Seller.ID
 		err := s.audit.RecordInvoice(ctx, user.ID, subject, privacy.KindAdminFullView, trade.InvoiceNumber)
 		if err != nil {
 			return nil, "", err
 		}
 	}
-	data, err := pdf.Render(Compose(projected))
+	data, err := pdf.Render(Compose(document))
 	if err != nil {
 		return nil, "", err
 	}
@@ -310,40 +311,48 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 	return io.NopCloser(bytes.NewReader(data)), trade.InvoiceNumber, nil
 }
 
-// Project masks the seller's bank details for readers who may not see them.
-// Business invoices show them to the seller, the buyer on that trade and admins
-// (the buyer needs them to pay). Collector invoices follow the collector
-// service's access check, where trade participation alone is not enough.
-func (s *Service) Project(ctx context.Context, user auth.User, document store.Document) (store.Document, error) {
-	if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
-		for _, contact := range []*store.Contact{&document.Seller, &document.Buyer} {
-			contact.Holder, contact.Bank, contact.Account, contact.Branch = "", "", "", ""
-			contact.AccountType, contact.PaymentID, contact.Platform, contact.PayoutMethod = "", "", "", ""
+// payoutFor decides how much of the seller's payout a reader gets, and
+// Postgres applies it. Business members never see bank details. On a business
+// invoice the seller's and the buyer's managers and owners get them whole (the
+// buyer needs them to pay), and so do admins; anyone else gets the mask.
+// Collector invoices follow the collector service's access check, where trade
+// participation alone is not enough.
+func (s *Service) payoutFor(ctx context.Context, user auth.User) store.PayoutFor {
+	return func(trade store.Transaction) (store.Payout, error) {
+		if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
+			return store.PayoutHidden, nil
 		}
 
-		return document, nil
-	}
+		if trade.Type != "c2b" {
+			party := auth.PartyID(user)
+			if (auth.BusinessAtLeast(user, "manager") && (party == trade.Seller.ID || party == trade.Buyer.ID)) ||
+				auth.HasRole(user, auth.RoleAdmin) {
+				return store.PayoutFull, nil
+			}
 
-	if document.Trade.Type != "c2b" {
-		trade := document.Trade
-		if (auth.BusinessAtLeast(user, "manager") && (auth.PartyID(user) == trade.Seller.ID || auth.PartyID(user) == trade.Buyer.ID)) || auth.HasRole(user, auth.RoleAdmin) {
-			return document, nil
+			return store.PayoutMasked, nil
 		}
-		document.Seller.Account = crypt.Mask(document.Seller.Account)
-		document.Seller.Branch = crypt.Mask(document.Seller.Branch)
 
-		return document, nil
-	}
+		full, err := s.collectors.CanReadFullPayout(ctx, user, trade.Seller.ID)
+		if full {
+			return store.PayoutFull, err
+		}
 
-	full, err := s.collectors.CanReadFullPayout(ctx, user, document.Trade.Seller.ID)
-	if err != nil {
-		return store.Document{}, err
+		return store.PayoutMasked, err
 	}
-	if !full {
-		document.Seller.Account = crypt.Mask(document.Seller.Account)
-		document.Seller.Branch = crypt.Mask(document.Seller.Branch)
-		document.Seller.PaymentID = crypt.Mask(document.Seller.PaymentID)
-	}
+}
 
-	return document, nil
+// Document reads the trade's document for this reader, with the seller's
+// payout already cut down to what the reader may see. Whole is true when the
+// payout came back whole.
+func (s *Service) Document(ctx context.Context, user auth.User, id string) (store.Document, bool, error) {
+	whole := false
+	document, err := s.store.Document(ctx, id, func(trade store.Transaction) (store.Payout, error) {
+		payout, err := s.payoutFor(ctx, user)(trade)
+		whole = payout == store.PayoutFull
+
+		return payout, err
+	})
+
+	return document, whole, err
 }

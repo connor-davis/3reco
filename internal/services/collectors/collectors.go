@@ -97,7 +97,7 @@ func full(user auth.User, item store.Collector, own bool) bool {
 // the sealed payout numbers from anyone who may not see them.
 func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewer, error) {
 	viewer := store.Viewer{
-		ID:       auth.PartyID(user),
+		ID:           auth.PartyID(user),
 		Admin:        auth.HasRole(user, auth.RoleAdmin),
 		Staff:        auth.HasRole(user, auth.RoleStaff),
 		Business:     auth.BusinessAtLeast(user, "manager"),
