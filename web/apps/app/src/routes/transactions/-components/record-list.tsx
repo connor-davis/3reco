@@ -387,7 +387,7 @@ export function RecordList({
             !readOnly && (
               <Button
                 variant="outline"
-                className="h-11 max-lg:w-11 max-lg:px-0"
+                className="h-11 max-lg:w-11 max-lg:px-0 max-lg:has-data-[icon=inline-start]:pl-0"
                 aria-label="Export"
                 disabled={
                   status !== 'complete' ||

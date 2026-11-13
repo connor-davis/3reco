@@ -1,7 +1,6 @@
 import {
   Boxes,
   ClipboardList,
-  FileText,
   Home,
   LayoutDashboard,
   type LucideIcon,
@@ -147,7 +146,12 @@ export function tabsFor(role: Role | null): Tab[] {
       return [
         home,
         search,
-        { label: 'Sell', to: '/collections', icon: FileText, raised: true },
+        {
+          label: 'Collect',
+          to: '/collections',
+          icon: ClipboardList,
+          raised: true,
+        },
         inbox,
         account,
       ];

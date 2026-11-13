@@ -133,7 +133,7 @@ test('A2: phone role menu opens the picker; cancel writes nothing and confirm wr
     0
   );
   const roleAction = phone.props.actions.find(
-    (action) => action.label === 'Change role for Zanele'
+    (action) => action.label === 'Change role'
   );
   assert.ok(roleAction);
   roleAction.onSelect();

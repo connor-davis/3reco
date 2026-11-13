@@ -70,10 +70,10 @@ test('phone menus and primary taps follow collector permissions; desktop keeps i
       assert.equal(phone.type, 'ListRow');
       assert.equal(!!phone.props.onOpen, can_edit === true);
       const menuEdit = phone.props.actions.find(
-        (action) => action.label === 'Edit Nomsa'
+        (action) => action.label === 'Edit'
       );
       const menuRemove = phone.props.actions.find(
-        (action) => action.label === 'Remove Nomsa'
+        (action) => action.label === 'Remove'
       );
       assert.equal(!!menuEdit, can_edit === true);
       assert.equal(!!menuRemove, role !== 'business');
