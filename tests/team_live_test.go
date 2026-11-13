@@ -13,6 +13,7 @@ func TestRemovedMemberLosesAccessAndSocket(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE stock SET is_listed=false WHERE id=$1`, w.stock)
 	member := tenantMember(t, w.app, w.seller.id, "manager")
 	sock := joinLive(t, w.app, member)[0]
+	status(t, member.c.Do("GET", "/api/stock/"+w.stock, nil), 200)
 	status(t, w.seller.c.Do("DELETE", "/api/team/members/"+member.id, nil), 200)
 	if code := closeCode(t, sock); code != realtime.CloseMembershipEnded || code == 4401 {
 		t.Fatalf("membership removal close code = %d", code)
@@ -29,6 +30,7 @@ func TestRemovedMemberFallsBackToOtherBusiness(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE stock SET is_listed=false WHERE id=$1`, w.stock)
 	member := tenantMember(t, w.app, w.seller.id, "member")
 	tradeExec(t, w.app, `INSERT INTO business_members VALUES($1,$2,'manager')`, w.buyer.id, member.id)
+	status(t, member.c.Do("GET", "/api/stock/"+w.stock, nil), 200)
 	status(t, w.seller.c.Do("DELETE", "/api/team/members/"+member.id, nil), 200)
 	if active := tradeText(t, w.app, `SELECT active_business_id FROM sessions WHERE user_id=$1`, member.id); active != "" {
 		t.Fatal("removal did not clear selection in its transaction")
