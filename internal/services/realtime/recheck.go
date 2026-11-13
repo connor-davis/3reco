@@ -79,10 +79,20 @@ func (h *Hub) recheck(ctx context.Context, userID string) {
 
 		// A guest may hold a socket to hear their role change; only someone who
 		// was not a guest when they joined is dropped for becoming one.
-		missingMember := session.business != "" && session.member == ""
-		if !ok || missingMember || (role == auth.RoleGuest && !c.guest) {
+		if !ok || (role == auth.RoleGuest && !c.guest) {
 			// A failed lookup is not proof: those browsers just reconnect.
 			c.revoked.Store(!failed)
+			h.dropLocked(c)
+
+			continue
+		}
+
+		// Removal clears session selection. It may already have fallen back to
+		// another business on HTTP; either way the old socket must lose access.
+		missingMember := session.business != "" && session.member == ""
+		leftBusiness := c.BusinessID != "" && session.business != c.BusinessID
+		if missingMember || leftBusiness {
+			c.membershipEnded.Store(true)
 			h.dropLocked(c)
 
 			continue

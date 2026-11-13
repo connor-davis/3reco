@@ -58,6 +58,14 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | --- | --- |
 | Users, sessions, one-time tokens, rate counts (SQL only) | `internal/stores/auth/auth.go` |
 | Business membership and default business selection for sessions | `internal/stores/businesses/businesses.go` |
+| Team directory, role updates, membership removal, invitee setup and selection SQL | `internal/stores/businesses/team.go` |
+| Business-scoped invitation persistence, token rotation and consumption SQL | `internal/stores/businesses/invites.go` |
+| Owner-only Team management and last-owner transaction guard | `internal/services/team/team.go` |
+| Invite creation, resend, revoke, masked preview and after-commit mail | `internal/services/team/invites.go` |
+| New-person and signed-in invitation acceptance with invited-business audit scope | `internal/services/team/accept.go` |
+| Team API and rate-limited invitation routes under `/api/auth` | `internal/api/team/handler.go` |
+| Team and invite API isolation tests | `tests/team_test.go` |
+| Team membership close code 4403, role resync, live events and audit tests | `tests/team_live_test.go`; `internal/services/realtime/{hub,recheck}.go`, `internal/api/sockets/handler.go` |
 | Seven-day business invite records, audit and live Team events | `internal/platform/database/migrations/0027_business_invites.sql` |
 | Shared link-token hashing, email and password validation | `internal/services/auth/auth.go` (`NewToken`, `HashToken`, `CleanEmail`, `CheckPassword`) |
 | Active business identity, live membership, and minimum team roles | `internal/services/auth/business.go` |

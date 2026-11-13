@@ -40,9 +40,17 @@ started.
    checks and realtime switched to the active business. Every business has one Owner, so the
    app behaves exactly as today. Cross-business tests for every route. *Biggest and riskiest
    phase; it touches every area.*
-2. **Team and invites.** "Team" page for Owners: invite by email (reuses `auth_tokens` and the
-   Resend mail), resend, revoke, change role, remove. Joining with a new or existing account.
-   Role rules enforced on the server.
+2. **Team and invites.** "Team" page for Owners: invite by email (dedicated `business_invites`
+   records and the existing action mail), resend, revoke, change role, remove. Joining with a
+   new or existing account. Role rules enforced on the server.
+   **Partial, blocked on map correction (2026-11-13):** migration 0027, auth helpers, business
+   store extensions, Team service/routes and realtime close code 4403 implemented on
+   `cd/feat-tenants-team`. Web work has not started. The required role-change test expects
+   Member stock creation to return 403, but Members already have stock access (200), as this
+   plan specifies. The map must identify a Manager-only action for that test or resolve the
+   permission change. Removal tests also need private, unlisted stock fixtures: listed stock
+   remains publicly readable after membership removal. Targeted backend tests currently fail
+   those three assertions; phase 2 is not complete.
 3. **Switcher and new business.** The workspace chooser moves out of the sidebar (the name and
    "workspace" block under the logo) into the left side of the desktop top bar, which is empty
    today (owner, 2026-11-13). It lists your businesses; switch, or create another. Verification is

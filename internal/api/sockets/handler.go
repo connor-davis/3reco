@@ -117,6 +117,9 @@ func (h *Handler) write(conn *websocket.Conn, client *realtime.Client) {
 			if client.Removed() {
 				reason = "account-removed"
 			}
+			if client.MembershipEnded() {
+				code, reason = realtime.CloseMembershipEnded, "membership-ended"
+			}
 
 			_ = conn.WriteControl(websocket.CloseMessage,
 				websocket.FormatCloseMessage(code, reason),
