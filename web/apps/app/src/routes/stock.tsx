@@ -233,11 +233,11 @@ function StockPage() {
               trailing={<ListingSwitch item={item} />}
               actions={[
                 {
-                  label: `Edit ${item.material_name}, ${formatKg(item.weight)} at ${formatRate(item.price)}`,
+                  label: 'Edit',
                   onSelect: () => openForm(item),
                 },
                 {
-                  label: `Remove ${item.material_name}, ${formatKg(item.weight)} at ${formatRate(item.price)}`,
+                  label: 'Remove',
                   onSelect: () => setRemoving(item),
                   destructive: true,
                 },

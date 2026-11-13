@@ -143,11 +143,11 @@ function MaterialsPage() {
                 isAdmin
                   ? [
                       {
-                        label: `Edit ${material.name}`,
+                        label: 'Edit',
                         onSelect: () => openForm(material),
                       },
                       {
-                        label: `Remove ${material.name}`,
+                        label: 'Remove',
                         onSelect: () => setRemoving(material),
                         destructive: true,
                       },

@@ -238,7 +238,7 @@ function UsersPage() {
         }
         action={
           <Button
-            className="min-h-11 max-lg:w-11 max-lg:px-0"
+            className="min-h-11 max-lg:w-11 max-lg:px-0 max-lg:has-data-[icon=inline-start]:pl-0"
             aria-label={download.isPending ? 'Exporting…' : 'Export users'}
             variant="outline"
             disabled={download.isPending}
@@ -291,15 +291,15 @@ function UsersPage() {
                   ? []
                   : [
                       {
-                        label: `Change role for ${user.name}`,
+                        label: 'Change role',
                         onSelect: () => setRoleUser(user),
                       },
                       ...(user.role === 'business'
                         ? [
                             {
                               label: user.business_verified
-                                ? `Remove verification for ${user.name}`
-                                : `Verify business ${user.name}`,
+                                ? 'Remove verification'
+                                : 'Verify business',
                               onSelect: () => setVerifying(user),
                             },
                           ]

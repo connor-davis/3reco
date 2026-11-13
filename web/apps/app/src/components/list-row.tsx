@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Link, type LinkProps } from '@tanstack/react-router';
-import { ChevronRight, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -55,8 +55,6 @@ export function ListRow({
   trailing,
   actions = [],
 }: ListRowProps) {
-  const interactive = !!(onOpen || to);
-
   return (
     <div className="flex min-h-14 items-center">
       <Item
@@ -143,12 +141,6 @@ export function ListRow({
           <span className="max-w-[45%] shrink-0 text-right font-semibold tabular-nums">
             {value}
           </span>
-        )}
-        {layout !== 'record' && interactive && !trailing && (
-          <ChevronRight
-            className="size-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
         )}
       </Item>
       {trailing && (

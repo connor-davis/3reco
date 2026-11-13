@@ -270,7 +270,7 @@ function CollectorsPage() {
                 ...(collector.can_edit
                   ? [
                       {
-                        label: `Edit ${collector.name}`,
+                        label: 'Edit',
                         onSelect: () => openForm(collector),
                       },
                     ]
@@ -278,7 +278,7 @@ function CollectorsPage() {
                 ...(canRemove
                   ? [
                       {
-                        label: `Remove ${collector.name}`,
+                        label: 'Remove',
                         onSelect: () => setRemoving(collector),
                         destructive: true,
                       },
