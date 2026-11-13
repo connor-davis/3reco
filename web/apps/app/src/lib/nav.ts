@@ -20,7 +20,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import { canOpen, type PageId } from '@/lib/access';
-import type { Role } from '@/lib/api/types';
+import type { BusinessRole, Role } from '@/lib/api/types';
 
 export type NavLink = {
   label: string;
@@ -58,7 +58,22 @@ const staffWorkspace: NavLink[] = [
 ];
 
 /** The sidebar for each role (map section 2.1). */
-export function navFor(role: Role | null): NavGroup[] {
+export function navFor(
+  role: Role | null,
+  businessRole?: BusinessRole | '',
+  activeBusinessId?: string
+): NavGroup[] {
+  const groups = roleNav(role);
+  if (role && activeBusinessId && businessRole === 'owner') {
+    const workspace = groups.find((group) => group.label === 'Workspace');
+    const team: NavLink = { label: 'Team', to: '/team', icon: Users };
+    if (workspace) workspace.links = [...workspace.links, team];
+    else groups.push({ label: 'Workspace', links: [team] });
+  }
+  return groups;
+}
+
+function roleNav(role: Role | null): NavGroup[] {
   switch (role) {
     case 'admin':
       return [
@@ -202,6 +217,7 @@ export const authPaths = [
   '/verify-email',
   '/forgot-password',
   '/reset-password',
+  '/accept-invite',
   '/setup',
 ];
 
@@ -241,6 +257,8 @@ const pageTitles: Record<string, string> = {
   'forgot-password': 'Forgot password',
   'reset-password': 'Reset password',
   setup: 'Finish setup',
+  team: 'Team',
+  'accept-invite': 'Join a team',
 };
 
 const guardedPairs: Record<string, PageId> = {

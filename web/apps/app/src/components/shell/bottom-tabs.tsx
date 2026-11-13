@@ -104,7 +104,7 @@ function MoreSheet({ open, onOpenChange }: SheetProps) {
   const about: NavLink = { label: 'About 3REco', to: '/about', icon: Info };
   const groups = [
     ...(user ? [{ links: [account] }] : []),
-    ...navFor(role),
+    ...navFor(role, user?.business_role, user?.active_business_id),
     { links: [about] },
   ];
 

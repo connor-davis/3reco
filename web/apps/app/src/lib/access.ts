@@ -1,4 +1,12 @@
-import type { Role } from '@/lib/api/types';
+import type { AuthUser, Role } from '@/lib/api/types';
+
+/** Team management belongs to Owners of the selected business. */
+export function canManageTeam(
+  user:
+    Pick<AuthUser, 'active_business_id' | 'business_role'> | null | undefined
+): boolean {
+  return !!user?.active_business_id && user.business_role === 'owner';
+}
 
 export type PageId =
   | 'dashboard'

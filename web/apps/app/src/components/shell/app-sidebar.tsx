@@ -88,29 +88,31 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {navFor(role).map((group, index) => (
-          <SidebarGroup key={group.label ?? index}>
-            {group.label && (
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            )}
-            <SidebarMenu>
-              {group.links.map((link) => (
-                <SidebarMenuItem key={link.to}>
-                  <SidebarMenuButton
-                    isActive={isActive(link.to, pathname)}
-                    render={<Link to={link.to} />}
-                  >
-                    <link.icon />
-                    <span>{link.label}</span>
-                  </SidebarMenuButton>
-                  {badgeFor(link) > 0 && (
-                    <SidebarMenuBadge>{badgeFor(link)}</SidebarMenuBadge>
-                  )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+        {navFor(role, user?.business_role, user?.active_business_id).map(
+          (group, index) => (
+            <SidebarGroup key={group.label ?? index}>
+              {group.label && (
+                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              )}
+              <SidebarMenu>
+                {group.links.map((link) => (
+                  <SidebarMenuItem key={link.to}>
+                    <SidebarMenuButton
+                      isActive={isActive(link.to, pathname)}
+                      render={<Link to={link.to} />}
+                    >
+                      <link.icon />
+                      <span>{link.label}</span>
+                    </SidebarMenuButton>
+                    {badgeFor(link) > 0 && (
+                      <SidebarMenuBadge>{badgeFor(link)}</SidebarMenuBadge>
+                    )}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          )
+        )}
       </SidebarContent>
 
       <SidebarFooter>
