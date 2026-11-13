@@ -3,6 +3,7 @@ package profile
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -68,7 +69,18 @@ type Store struct {
 func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
 // Find reads the caller's active profile and optionally locks it for PATCH.
+// The ID and account numbers come back masked, built in SQL.
 func (records *Store) Find(ctx context.Context, id string, lock bool, business ...string) (Profile, error) {
+	return records.find(ctx, id, lock, false, business)
+}
+
+// FindWhole is Find for the person's own data export, where they have the
+// right to every value whole: the sealed numbers are selected and opened.
+func (records *Store) FindWhole(ctx context.Context, id string, business ...string) (Profile, error) {
+	return records.find(ctx, id, false, true, business)
+}
+
+func (records *Store) find(ctx context.Context, id string, lock, whole bool, business []string) (Profile, error) {
 	active := id
 	if len(business) > 0 {
 		active = business[0]
@@ -83,12 +95,15 @@ func (records *Store) Find(ctx context.Context, id string, lock bool, business .
 		COALESCE(u.phone,''),
 		COALESCE(u.first_name,''),
 		COALESCE(u.last_name,''),
-		mask_sealed(u.id_number,u.id_number_last4),
+		CASE WHEN $3 THEN COALESCE(u.id_number,'') ELSE mask_sealed(u.id_number,u.id_number_last4) END,
 		COALESCE(b.business_name,''),
 		COALESCE(b.business_registration_number,''),
 		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_holder_name ELSE u.bank_account_holder_name END,''),
 		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_name ELSE u.bank_name END,''),
-		CASE WHEN b.id IS NOT NULL THEN mask_sealed(b.bank_account_number,b.bank_account_last4)
+		CASE WHEN $3 AND (b.id IS NULL OR EXISTS(SELECT 1 FROM business_members m
+			WHERE m.business_id=b.id AND m.user_id=u.id AND m.role<>'member'))
+			THEN COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_number ELSE u.bank_account_number END,'')
+			WHEN b.id IS NOT NULL THEN mask_sealed(b.bank_account_number,b.bank_account_last4)
 			ELSE mask_sealed(u.bank_account_number,u.bank_account_last4) END,
 		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_branch_code ELSE u.bank_branch_code END,''),
 		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_type ELSE u.bank_account_type END,''),
@@ -107,7 +122,7 @@ func (records *Store) Find(ctx context.Context, id string, lock bool, business .
 	}
 
 	var item Profile
-	err := records.db.Q(ctx).QueryRow(ctx, query, id, active).Scan(
+	err := records.db.Q(ctx).QueryRow(ctx, query, id, active, whole).Scan(
 		&item.ID,
 		&item.Email,
 		&item.Role,
@@ -133,6 +148,22 @@ func (records *Store) Find(ctx context.Context, id string, lock bool, business .
 		&item.AgreedToTerms,
 		&item.BusinessID,
 	)
+	if err != nil || !whole {
+		return item, err
+	}
+
+	if item.IDNumber, err = records.cipher.Decrypt(item.IDNumber); err != nil {
+		return item, err
+	}
+
+	// A business member is not allowed the business account, so SQL sent the
+	// mask, which is not sealed: leave it as it is.
+	account, err := records.cipher.Decrypt(item.BankAccountNumber)
+	if err == nil {
+		item.BankAccountNumber = account
+	} else if errors.Is(err, crypt.ErrNotEncrypted) {
+		err = nil
+	}
 
 	return item, err
 }

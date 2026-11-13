@@ -93,25 +93,16 @@ func full(user auth.User, item store.Collector, own bool) bool {
 	return auth.HasRole(user, "admin") || (auth.BusinessAtLeast(user, "manager") && creator(user, item)) || own
 }
 
-// shown is a payout number as a non-owner sees it: the stored last four when
-// there are any, else the mask of the whole number (empty when Postgres kept
-// it back).
-func shown(last4, plain string) string {
-	if last4 != "" {
-		return "******" + last4
-	}
-
-	return crypt.Mask(plain)
-}
-
-// viewer tells Postgres who is reading, so it can hold back the sealed payout
-// numbers from anyone who may not see them in full.
+// viewer tells Postgres who is reading, so it can hold back contact details and
+// the sealed payout numbers from anyone who may not see them.
 func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewer, error) {
 	viewer := store.Viewer{
 		ID:       auth.PartyID(user),
-		Admin:    auth.HasRole(user, auth.RoleAdmin),
-		Business: auth.BusinessAtLeast(user, "manager"),
-		Verified: verifiedBusiness(user),
+		Admin:        auth.HasRole(user, auth.RoleAdmin),
+		Staff:        auth.HasRole(user, auth.RoleStaff),
+		Business:     auth.BusinessAtLeast(user, "manager"),
+		BusinessRole: auth.HasRole(user, "business"),
+		Verified:     verifiedBusiness(user),
 	}
 
 	if auth.HasRole(user, "collector") {
@@ -125,33 +116,11 @@ func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewe
 	return viewer, nil
 }
 
+// redact sets the two flags the screen needs. What the caller may see is
+// already decided in SQL (see store.columnList), so nothing is blanked here.
 func redact(user auth.User, item store.Collector, own bool) store.Collector {
 	item.CanEdit = manages(user, item, false) && (!auth.HasRole(user, "business") || auth.BusinessAtLeast(user, "manager"))
 	item.CanViewPayout = full(user, item, own)
-
-	if !item.CanViewPayout {
-		item.BankAccountNumber = shown(item.BankAccountLast4, item.BankAccountNumber)
-		item.BankBranchCode = crypt.Mask(item.BankBranchCode)
-		item.EwalletPaymentID = shown(item.EwalletPaymentIDLast4, item.EwalletPaymentID)
-	}
-
-	if manages(user, item, own) {
-		return item
-	}
-
-	item.Email = ""
-	item.Phone = ""
-
-	item.BankAccountHolderName = ""
-	item.BankName = ""
-	item.BankBranchCode = ""
-	item.BankAccountType = ""
-
-	item.PayoutMethod = ""
-	item.EwalletPlatformName = ""
-
-	item.StreetAddress = ""
-	item.AreaCode = nil
 
 	return item
 }
@@ -205,22 +174,25 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 
 	phone := phoneDigits(strings.Trim(query.Like, "%"))
 
-	items, err := service.store.List(ctx, query, after, phone, desc)
+	viewer, err := service.viewer(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := service.store.List(ctx, query, after, phone, desc, viewer)
 	if err != nil {
 		return nil, err
 	}
 
 	// A list never carries a full payout number, for anyone: Postgres sends
-	// the last four. The full number is on the one-collector route, which
-	// writes the admin audit line.
+	// the mask. The full number is on the one-collector route, which writes
+	// the admin audit line.
 	for i := range items {
 		own, err := service.own(ctx, user, items[i])
 		if err != nil {
 			return nil, err
 		}
 
-		items[i].BankAccountNumber = shown(items[i].BankAccountLast4, "")
-		items[i].EwalletPaymentID = shown(items[i].EwalletPaymentIDLast4, "")
 		items[i] = redact(user, items[i], own)
 	}
 

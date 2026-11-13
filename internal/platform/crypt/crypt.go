@@ -92,7 +92,9 @@ func (c *Cipher) Decrypt(stored string) (string, error) {
 	return string(plain), nil
 }
 
-// Mask hides all but the last four characters: ******1234.
+// Mask hides all but the last four characters: "•••• 1234". It is the same
+// shape as the SQL mask_last4, so a form can send a masked value back and the
+// service can tell it is unchanged. Responses are masked in SQL, not here.
 func Mask(plain string) string {
 	if plain == "" {
 		return ""
@@ -100,8 +102,8 @@ func Mask(plain string) string {
 
 	runes := []rune(plain)
 	if len(runes) <= 4 {
-		return "******"
+		return "••••"
 	}
 
-	return "******" + string(runes[len(runes)-4:])
+	return "•••• " + string(runes[len(runes)-4:])
 }
