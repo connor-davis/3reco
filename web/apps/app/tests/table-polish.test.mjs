@@ -36,9 +36,9 @@ test('collector account numbers are masked to the last four digits', () => {
   assert.match(page, /maskAccount\(collector\.bank_account_number/);
 });
 
-test('page content is capped at max-w-screen-2xl in the app shell', () => {
+test('page content is centred and capped at 1080px in the app shell', () => {
   assert.match(
     source('components/shell/app-shell.tsx'),
-    /mx-auto w-full max-w-screen-2xl/
+    /mx-auto w-full max-w-\[1080px\]/
   );
 });

@@ -36,9 +36,10 @@ test('phone shell includes tablets and stops at 1024px; table and aside rules st
     source('components/shell/app-shell.tsx'),
     /pb-\[3\.25rem\] lg:pb-0/
   );
+  assert.doesNotMatch(source('components/shell/topbar.tsx'), /Breadcrumb/);
   assert.match(
     source('components/shell/topbar.tsx'),
-    /hidden min-w-0 lg:block/
+    /text-sm font-medium lg:hidden/
   );
 });
 

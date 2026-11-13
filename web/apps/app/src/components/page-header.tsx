@@ -18,14 +18,16 @@ import { cn } from '@/lib/utils';
 type PageHeaderProps = {
   title: string;
   description?: string;
+  badge?: ReactNode;
   actions?: ReactNode;
   compactActionsBelow?: boolean;
 };
 
-/** h1, one line of help, and the page's actions on the right (map section 1). */
+/** h1, wrapping help, an optional badge, and the page's actions on the right. */
 export function PageHeader({
   title,
   description,
+  badge,
   actions,
   compactActionsBelow = false,
 }: PageHeaderProps) {
@@ -43,17 +45,14 @@ export function PageHeader({
       )}
     >
       <div className="min-w-0 space-y-1">
-        <h1 className="text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
-          {title}
-        </h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
+            {title}
+          </h1>
+          {badge}
+        </div>
         {description && (
-          <p
-            className={cn(
-              'max-w-[56ch] text-[15px] text-muted-foreground',
-              !compactActionsBelow && 'truncate'
-            )}
-            title={description}
-          >
+          <p className="max-w-[56ch] text-[15px] text-muted-foreground">
             {description}
           </p>
         )}

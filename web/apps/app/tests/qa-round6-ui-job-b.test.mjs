@@ -113,16 +113,17 @@ test('qa-round6-ui: create state is discarded after save and stock validates whi
   );
 });
 
-test('qa-round6-ui: seller reviews, staff collector actions and guest breadcrumbs match roles', () => {
+test('qa-round6-ui: seller reviews, staff collector actions and shell controls match roles', () => {
   const store = source('routes/market/store/$sellerId.tsx');
   assert.match(store, /user\?\.id === sellerId &&/);
   assert.match(store, /Buyers review your store after a completed trade\./);
   assert.doesNotMatch(store, /You have reviewed all eligible trades/);
   assert.equal(
     source('routes/collectors.tsx').match(/!directory &&/g).length,
-    3
+    2
   );
-  assert.match(source('components/shell/topbar.tsx'), /user.role !== 'guest'/);
+  assert.doesNotMatch(source('components/shell/topbar.tsx'), /Breadcrumb/);
+  assert.match(source('components/shell/topbar.tsx'), /!user \? \(/);
   assert.match(
     source('routes/profile/-components/sessions-panel.tsx'),
     /roleLabel\(session.role\)/

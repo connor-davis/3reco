@@ -5,13 +5,6 @@ import { IconButton } from '@/components/icon-button';
 import { LinkButton } from '@/components/link-button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Kbd } from '@/components/ui/kbd';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AccountMenu } from './account-menu';
@@ -36,21 +29,6 @@ export function Topbar({ onSearch }: TopbarProps) {
         'bg-background/80 backdrop-blur-xl'
       )}
     >
-      <Breadcrumb className="hidden min-w-0 lg:block">
-        <BreadcrumbList>
-          {user &&
-            user.role !== 'guest' &&
-            pageTitleFor(pathname, role) !== 'Page not found' && (
-              <>
-                <BreadcrumbItem>Workspace</BreadcrumbItem>
-                <BreadcrumbSeparator />
-              </>
-            )}
-          <BreadcrumbItem>
-            <BreadcrumbPage>{pageTitleFor(pathname, role)}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
       {/* Phones and tablets: the page has its own heading, so show the logo,
           except in a chat or request, which have no heading of their own. */}
       {pathname.startsWith('/messages/') || isRequestPath(pathname) ? (

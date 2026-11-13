@@ -160,6 +160,7 @@ export function RecordList({
     {
       id: 'date',
       header: 'Date / Invoice',
+      meta: { className: 'max-xl:px-2' },
       cell: ({ row }) => (
         <div>
           <span className="block">{formatDate(dayOf(row.original))}</span>
@@ -172,7 +173,7 @@ export function RecordList({
     {
       id: 'materials',
       header: 'Materials',
-      meta: { main: true },
+      meta: { main: true, className: 'max-xl:px-2' },
       cell: ({ row }) => (
         <span
           className="block truncate"
@@ -187,8 +188,9 @@ export function RecordList({
     {
       id: 'parties',
       header: 'From → To',
+      meta: { className: 'max-xl:px-2' },
       cell: ({ row }) => (
-        <div className="max-w-md min-w-48 space-y-1 whitespace-normal 2xl:min-w-96">
+        <div className="max-w-md min-w-32 space-y-1 whitespace-normal">
           <div className="line-clamp-2">
             <Parties row={row.original} />
           </div>
@@ -206,6 +208,7 @@ export function RecordList({
     {
       id: 'status',
       header: 'Status',
+      meta: { className: 'max-xl:px-2' },
       cell: ({ row }) => (
         <StatusBadge
           status={
@@ -221,18 +224,19 @@ export function RecordList({
     {
       id: 'weight',
       header: 'Weight (kg)',
-      meta: { align: 'right' },
+      meta: { align: 'right', className: 'max-xl:px-2' },
       cell: ({ row }) => formatKgNumber(weightOf(row.original) / 1000),
     },
     {
       id: 'amount',
       header: 'Amount',
-      meta: { align: 'right' },
+      meta: { align: 'right', className: 'max-xl:px-2' },
       cell: ({ row }) => formatRand(toCents(row.original.total_price)),
     },
     {
       id: 'actions',
       header: 'Actions',
+      meta: { className: 'max-xl:px-2' },
       enableSorting: false,
       cell: ({ row }) => (
         <RowActions

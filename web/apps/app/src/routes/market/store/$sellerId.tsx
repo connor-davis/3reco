@@ -79,10 +79,11 @@ function StorePage() {
                 className="size-16"
               />
               <div className="min-w-0 flex-1 space-y-1">
-                <h1 className="text-2xl font-semibold">
+                <h1 className="text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
                   <BusinessName
                     name={store.data.name}
                     verified={store.data.business_verified}
+                    wrap
                   />
                 </h1>
                 <p>
