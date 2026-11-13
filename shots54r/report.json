@@ -1,0 +1,262 @@
+{
+  "status": "ok",
+  "urls_visited": [
+    "http://127.0.0.1:4317/docs/introduction",
+    "http://127.0.0.1:4317/docs/architecture"
+  ],
+  "coverage_complete": true,
+  "duration_ms": 5684,
+  "started_at": "2026-11-13T13:52:06Z",
+  "passed": 32,
+  "total": 32,
+  "variants": [
+    {
+      "theme": "docs",
+      "mode": "light"
+    },
+    {
+      "theme": "docs",
+      "mode": "dark"
+    }
+  ],
+  "results": [
+    {
+      "name": "[light] intro 412 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[light] intro 412 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] intro 412 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[light] intro 412 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    },
+    {
+      "name": "[light] architecture 412 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[light] architecture 412 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] architecture 412 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[light] architecture 412 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    },
+    {
+      "name": "[light] intro 1280 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[light] intro 1280 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] intro 1280 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[light] intro 1280 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    },
+    {
+      "name": "[light] architecture 1280 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[light] architecture 1280 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] architecture 1280 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[light] architecture 1280 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    },
+    {
+      "name": "[dark] intro 412 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[dark] intro 412 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] intro 412 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[dark] intro 412 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    },
+    {
+      "name": "[dark] architecture 412 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[dark] architecture 412 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] architecture 412 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[dark] architecture 412 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    },
+    {
+      "name": "[dark] intro 1280 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[dark] intro 1280 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] intro 1280 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[dark] intro 1280 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    },
+    {
+      "name": "[dark] architecture 1280 logo shows",
+      "ok": true,
+      "detail": "logos=4"
+    },
+    {
+      "name": "[dark] architecture 1280 no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] architecture 1280 square corners",
+      "ok": true,
+      "detail": "--radius=0"
+    },
+    {
+      "name": "[dark] architecture 1280 article fills the width",
+      "ok": true,
+      "detail": "gap=0"
+    }
+  ],
+  "console_errors": [],
+  "page_errors": [],
+  "journeys": [],
+  "journey_coverage_complete": true,
+  "tool_flows": [],
+  "server_provenance": {
+    "port": 4317,
+    "base_url": "http://127.0.0.1:4317",
+    "spawned_pid": 43296,
+    "listening_pids": [
+      43296
+    ],
+    "port_free_before_boot": null,
+    "probe": "netstat",
+    "verified": true,
+    "detail": "pid 43296 owns listener(s) [43296] on port 4317"
+  },
+  "data_provenance": null,
+  "ux_floor": null,
+  "measurement_provenance": null,
+  "screenshots": [
+    {
+      "file": "intro-412-light.png",
+      "step": "[light] intro 412",
+      "variant": "docs/light",
+      "bytes": 87047,
+      "exists": true
+    },
+    {
+      "file": "architecture-412-light.png",
+      "step": "[light] architecture 412",
+      "variant": "docs/light",
+      "bytes": 50292,
+      "exists": true
+    },
+    {
+      "file": "intro-1280-light.png",
+      "step": "[light] intro 1280",
+      "variant": "docs/light",
+      "bytes": 135893,
+      "exists": true
+    },
+    {
+      "file": "architecture-1280-light.png",
+      "step": "[light] architecture 1280",
+      "variant": "docs/light",
+      "bytes": 93106,
+      "exists": true
+    },
+    {
+      "file": "intro-412-dark.png",
+      "step": "[dark] intro 412",
+      "variant": "docs/dark",
+      "bytes": 87341,
+      "exists": true
+    },
+    {
+      "file": "architecture-412-dark.png",
+      "step": "[dark] architecture 412",
+      "variant": "docs/dark",
+      "bytes": 50584,
+      "exists": true
+    },
+    {
+      "file": "intro-1280-dark.png",
+      "step": "[dark] intro 1280",
+      "variant": "docs/dark",
+      "bytes": 137511,
+      "exists": true
+    },
+    {
+      "file": "architecture-1280-dark.png",
+      "step": "[dark] architecture 1280",
+      "variant": "docs/dark",
+      "bytes": 96239,
+      "exists": true
+    }
+  ]
+}
