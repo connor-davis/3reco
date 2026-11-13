@@ -91,7 +91,9 @@ export function Inbox({
   return (
     <div className="flex h-full min-w-0 flex-col gap-4 px-5 pt-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Messages</h1>
+        <h1 className="text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
+          Messages
+        </h1>
         {!admin && !staff && (
           <IconButton
             label="Start a new conversation"

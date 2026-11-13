@@ -28,7 +28,7 @@ const CommandSearch = lazy(() =>
 );
 
 const chatPad = 'pb-[3.25rem] lg:pb-0';
-// Pages use the full width beside the sidebar; wide screens just get more room.
+// Page padding sits inside the shared width cap, beside the sidebar.
 const pagePad = cn(
   'px-5 pt-3.5 pb-28 sm:px-6 sm:pt-8 lg:px-8',
   'lg:pt-10 lg:pb-24'
@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <div
               className={cn(
-                'mx-auto w-full max-w-screen-2xl flex-1',
+                'mx-auto w-full max-w-[1080px] flex-1',
                 chat ? chatPad : pagePad
               )}
             >

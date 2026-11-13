@@ -182,6 +182,14 @@ function CollectorsPage() {
     <>
       <PageHeader
         title="Collector directory"
+        badge={
+          verified && (
+            <Badge variant="secondary">
+              <ShieldCheck data-icon="inline-start" />
+              Verified business
+            </Badge>
+          )
+        }
         actions={
           !directory && (
             <Button aria-label="Add collector" onClick={() => openForm()}>
@@ -207,16 +215,6 @@ function CollectorsPage() {
           value={query}
           onChange={setQuery}
         />
-        {!directory && (
-          <>
-            {verified && (
-              <Badge variant="secondary">
-                <ShieldCheck data-icon="inline-start" />
-                Verified business
-              </Badge>
-            )}
-          </>
-        )}
       </div>
       <DataState
         query={list}

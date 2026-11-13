@@ -262,7 +262,7 @@ test('A3: staff cannot change any saved bank or wallet control; contact remains 
   }
 });
 
-test('A5: staff breadcrumb and browser title use the same unavailable label; admins keep the page title', () => {
+test('A5: desktop shell has no breadcrumb; unavailable browser titles remain role-aware', () => {
   const nav = compile('lib/nav.ts', { '@/lib/access': access });
   for (const role of ['staff', 'admin', 'business', null]) {
     const { Topbar } = compile('components/shell/topbar.tsx', {
@@ -276,7 +276,7 @@ test('A5: staff breadcrumb and browser title use the same unavailable label; adm
     assert.equal(nav.pageTitleFor('/admin/users', role), expected);
     assert.equal(
       tree.filter((node) => node.props.children === expected).length,
-      1
+      0
     );
   }
   assert.match(
@@ -623,7 +623,7 @@ with sync_playwright() as p:
             dialog.get_by_role('button', name='Close', exact=True).click()
         b.goto(base + '/admin/users')
         expect(b.get_by_text('This page is in another workspace.', exact=True)).to_be_visible()
-        expect(b.get_by_role('navigation', name='breadcrumb')).to_contain_text('Not available')
+        expect(b.get_by_role('navigation', name='breadcrumb')).to_have_count(0)
         expect(b).to_have_title('Not available · 3REco')
         b.goto(base + '/transactions/purchases')
         switch('Buyer')
