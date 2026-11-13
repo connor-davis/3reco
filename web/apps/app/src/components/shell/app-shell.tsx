@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <div
               className={cn(
-                'mx-auto w-full max-w-[1080px] flex-1',
+                'mx-auto w-full max-w-screen-2xl flex-1',
                 chat ? chatPad : pagePad
               )}
             >
