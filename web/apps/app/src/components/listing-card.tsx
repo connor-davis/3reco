@@ -62,7 +62,6 @@ export function ListingCard({
             <PersonAvatar
               name={listing.seller_name}
               image={listing.seller_avatar_url}
-              className="size-6"
             />
             <BusinessName
               name={listing.seller_name}

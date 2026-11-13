@@ -209,9 +209,12 @@ function Dashboard() {
               </ul>
             )}
 
-            <div className="grid items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+            <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
               <NeedsAttention collector={collector} />
-              <MaterialsPanel series={dashboard.series} />
+              <MaterialsPanel
+                series={dashboard.series}
+                className="[&>section]:h-full"
+              />
             </div>
             <RecentActivity collector={collector} />
             <CounterpartyRows
