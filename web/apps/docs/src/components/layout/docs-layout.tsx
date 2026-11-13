@@ -3,6 +3,7 @@ import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import { MDXProvider } from '@mdx-js/react';
 import { Sun, Moon, Menu, ChevronRight } from 'lucide-react';
 import { Sidebar } from './sidebar';
+import { BrandLogo } from './brand-logo';
 import { Button } from '@/components/ui/button';
 import { mdxComponents } from '@/components/mdx/mdx-components';
 import { useTheme } from '@/hooks/use-theme';
@@ -42,11 +43,8 @@ export function DocsLayout() {
             to="/"
             className="flex min-w-0 items-center gap-2 rounded-md text-base font-semibold min-[781px]:hidden"
           >
-            <span
-              className="size-2.5 shrink-0 rounded-full bg-primary"
-              aria-hidden="true"
-            />
-            <span>3REco Docs</span>
+            <BrandLogo />
+            <span className="text-muted-foreground">Docs</span>
           </Link>
           <nav
             aria-label="Breadcrumb"
