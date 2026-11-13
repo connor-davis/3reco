@@ -15,6 +15,12 @@ CREATE FUNCTION mask_last4(txt text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
 CREATE FUNCTION mask_stored4(last4 text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
   SELECT CASE WHEN COALESCE(last4, '') = '' THEN '' ELSE '•••• ' || last4 END $$;
 
+-- A sealed number with its stored last four: "•••• 1234". A number too short
+-- for a last four still shows "••••", so a form never reads it as empty.
+CREATE FUNCTION mask_sealed(sealed text, last4 text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
+  SELECT CASE WHEN COALESCE(sealed, '') = '' THEN ''
+    ELSE COALESCE(NULLIF(mask_stored4(last4), ''), '••••') END $$;
+
 CREATE FUNCTION mask_phone(txt text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
   SELECT CASE WHEN COALESCE(txt, '') = '' THEN ''
     ELSE '••• ••• ' || right(regexp_replace(txt, '\D', '', 'g'), 4) END $$;
