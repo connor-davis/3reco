@@ -28,13 +28,14 @@ func (handler *Handler) Register(router fiber.Router) {
 	router.Post("/profile/avatar", middleware.RequireUser, handler.uploadAvatar)
 	router.Delete("/profile/avatar", middleware.RequireUser, handler.deleteAvatar)
 	router.Get("/users/:id/avatar", handler.avatar)
+	router.Get("/stores/:id/logo", handler.logo)
 	router.Get("/users", middleware.RequireUser, handler.directory)
 	router.Get("/users/:id", handler.public)
 }
 
 func (handler *Handler) find(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	item, err := handler.svc.Find(c.Context(), user.ID)
+	item, err := handler.svc.Find(c.Context(), user.ID, user.ActiveBusinessID, user.BusinessRole)
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,7 @@ func (handler *Handler) update(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.Update(c.Context(), user.ID, in); err != nil {
+	if err := handler.svc.Update(c.Context(), user.ID, in, user.ActiveBusinessID, user.BusinessRole); err != nil {
 		return err
 	}
 
@@ -112,7 +113,7 @@ func (handler *Handler) setup(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.Setup(c.Context(), user.ID, in.Role); err != nil {
+	if err := handler.svc.Setup(c.Context(), user.ID, in.Role, user.ActiveBusinessID, user.BusinessRole); err != nil {
 		return err
 	}
 

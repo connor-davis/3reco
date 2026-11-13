@@ -129,6 +129,10 @@ func (s *Service) Remove(ctx context.Context, user auth.User, id, receiptID stri
 		return err
 	}
 
+	if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
+		return apperr.Forbidden("Only managers can remove receipts.")
+	}
+
 	return s.db.InTx(ctx, func(ctx context.Context) error {
 		key, uploadedBy, found, err := s.store.LockReceipt(ctx, id, receiptID)
 		if err != nil {

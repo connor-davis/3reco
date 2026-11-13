@@ -164,8 +164,7 @@ func (s *Store) ActiveBusiness(ctx context.Context, userID string) (bool, error)
 	var ok bool
 
 	err := s.db.Q(ctx).QueryRow(ctx, `
-		SELECT EXISTS (SELECT 1 FROM users
-			WHERE id = $1 AND role = 'business' AND NOT is_removed)`, userID).Scan(&ok)
+		SELECT EXISTS (SELECT 1 FROM businesses WHERE id = $1 AND NOT is_removed)`, userID).Scan(&ok)
 
 	return ok, err
 }

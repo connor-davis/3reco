@@ -47,7 +47,7 @@ func TestRound4BusinessInvoiceBankDetails(t *testing.T) {
 	admin := tradeNewUser(t, w.app, "admin")
 	staff := tradeNewUser(t, w.app, "staff")
 	other := tradeNewUser(t, w.app, "business")
-	tradeExec(t, w.app, `UPDATE users SET bank_account_holder_name='Metro Holder',bank_name='Metro Bank',
+	tradeExec(t, w.app, `UPDATE businesses SET bank_account_holder_name='Metro Holder',bank_name='Metro Bank',
 		bank_branch_code='250655',bank_account_type='Cheque',bank_account_number=$2 WHERE id=$1`,
 		w.seller.id, testutil.Seal(t, "62000111222"))
 
@@ -110,7 +110,7 @@ func TestRound4UsersExportBlanksBusinessFieldsForStaff(t *testing.T) {
 	w := newTradeWorld(t)
 	admin := tradeNewUser(t, w.app, "admin")
 	staff := tradeNewUser(t, w.app, "staff")
-	tradeExec(t, w.app, `UPDATE users SET business_name='Temp',business_registration_number='2020/467665/07'
+	tradeExec(t, w.app, `UPDATE businesses SET business_name='Temp',business_registration_number='2020/467665/07'
 		WHERE id = ANY($1)`, []string{staff.id, w.seller.id})
 
 	var staffRow, businessRow []string
@@ -240,7 +240,7 @@ func TestRound4CancelWritesSystemMessage(t *testing.T) {
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
 	status(t, w.buyer.c.Do("POST", "/api/requests/"+id+"/cancel", nil), 200)
 
-	name := tradeText(t, w.app, `SELECT business_name FROM users WHERE id=$1`, w.buyer.id)
+	name := tradeText(t, w.app, `SELECT business_name FROM businesses WHERE id=$1`, w.buyer.id)
 	for _, user := range []tradeUser{w.buyer, w.seller} {
 		var lines []string
 		for _, row := range pageItems(t, status(t, user.c.Do("GET", "/api/requests/"+id+"/messages", nil), 200)) {

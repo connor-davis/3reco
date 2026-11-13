@@ -30,7 +30,7 @@ func (handler *Handler) Register(router fiber.Router) {
 
 func (handler *Handler) find(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	item, err := handler.svc.Find(c.Context(), c.Params("id"), user.ID)
+	item, err := handler.svc.Find(c.Context(), c.Params("id"), auth.PartyID(user))
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (handler *Handler) list(c fiber.Ctx) error {
 	query.Like = paging.SearchPattern(c.Query("q"))
 
 	user, _ := middleware.CurrentUser(c)
-	items, err := handler.svc.List(c.Context(), user.ID, query, c.Query("status"))
+	items, err := handler.svc.List(c.Context(), auth.PartyID(user), query, c.Query("status"))
 	if err != nil {
 		return err
 	}

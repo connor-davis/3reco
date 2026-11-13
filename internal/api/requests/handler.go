@@ -26,15 +26,15 @@ func (h *Handler) Register(api fiber.Router) {
 	// The fixed paths come before /:id, or "incoming" would be read as an id.
 	requests.Get("/incoming", h.incoming)
 	requests.Get("/outgoing", h.outgoing)
-	requests.Post("/", h.create)
+	requests.Post("/", middleware.RequireBusiness("manager"), h.create)
 	requests.Get("/:id", h.get)
 
-	requests.Post("/:id/offer", h.offer)
-	requests.Post("/:id/accept", h.accept)
-	requests.Post("/:id/decline", h.move("decline"))
-	requests.Post("/:id/withdraw", h.move("withdraw"))
-	requests.Post("/:id/reject", h.move("reject"))
-	requests.Post("/:id/cancel", h.move("cancel"))
+	requests.Post("/:id/offer", middleware.RequireBusiness("manager"), h.offer)
+	requests.Post("/:id/accept", middleware.RequireBusiness("manager"), h.accept)
+	requests.Post("/:id/decline", middleware.RequireBusiness("manager"), h.move("decline"))
+	requests.Post("/:id/withdraw", middleware.RequireBusiness("manager"), h.move("withdraw"))
+	requests.Post("/:id/reject", middleware.RequireBusiness("manager"), h.move("reject"))
+	requests.Post("/:id/cancel", middleware.RequireBusiness("manager"), h.move("cancel"))
 
 	requests.Get("/:id/messages", h.messages)
 	requests.Post("/:id/messages", h.send)

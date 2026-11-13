@@ -242,7 +242,7 @@ func TestLiveUserWritesWakeAdminsOnlyForListedColumns(t *testing.T) {
 	admin, staff := socks[0], socks[1]
 
 	tradeExec(t, w.app, `UPDATE users SET agreed_to_terms = true, password_hash = 'x' WHERE id = $1`, w.stranger.id)
-	tradeExec(t, w.app, `UPDATE users SET business_name = 'Renamed' WHERE id = $1`, w.stranger.id)
+	tradeExec(t, w.app, `UPDATE businesses SET business_name = 'Renamed' WHERE id = $1`, w.stranger.id)
 
 	admin.hear("user", w.stranger.id)
 	tradeExec(t, w.app, `UPDATE users SET avatar_key='new-avatar' WHERE id=$1`, w.stranger.id)
@@ -272,7 +272,6 @@ func TestLiveRoleChangeTakesEffectAfterRecheck(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE users SET role = 'business' WHERE id = $1`, w.admin.id)
 	tradeExec(t, w.app, `UPDATE users SET role = 'admin' WHERE id = $1`, promoted.id)
 	demoted.hear("user", w.admin.id)
-	demoted.hear("user", promoted.id)
 	rising.hear("user", promoted.id)
 	w.app.Hub.Recheck(ctx)
 

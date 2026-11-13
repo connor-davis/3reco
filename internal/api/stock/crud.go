@@ -1,6 +1,7 @@
 package stock
 
 import (
+	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/gofiber/fiber/v3"
 
 	"github.com/connor-davis/3reco/internal/api/middleware"
@@ -15,7 +16,7 @@ func (handler *Handler) create(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	id, err := handler.svc.Create(c.Context(), user.ID, in)
+	id, err := handler.svc.Create(c.Context(), auth.PartyID(user), in)
 	if err != nil {
 		return err
 	}
@@ -30,7 +31,7 @@ func (handler *Handler) update(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.Update(c.Context(), c.Params("id"), user.ID, in); err != nil {
+	if err := handler.svc.Update(c.Context(), c.Params("id"), auth.PartyID(user), in); err != nil {
 		return err
 	}
 
@@ -39,7 +40,7 @@ func (handler *Handler) update(c fiber.Ctx) error {
 
 func (handler *Handler) remove(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.Delete(c.Context(), c.Params("id"), user.ID); err != nil {
+	if err := handler.svc.Delete(c.Context(), c.Params("id"), auth.PartyID(user)); err != nil {
 		return err
 	}
 

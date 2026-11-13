@@ -43,7 +43,7 @@ func TestReviewAccess(t *testing.T) {
 
 	tradeWant(t, "seller reviews own sale", w.seller.c.Do("POST", path, body), 404)
 	tradeWant(t, "outsider reviews", outsider.c.Do("POST", path, body), 404)
-	tradeWant(t, "admin reviews", admin.c.Do("POST", path, body), 404)
+	tradeWant(t, "admin reviews", admin.c.Do("POST", path, body), 403)
 	tradeWant(t, "anonymous reviews", anon.Do("POST", path, body), 401)
 	tradeWant(t, "missing transaction", w.buyer.c.Do("POST", "/api/transactions/nope/review", body), 404)
 

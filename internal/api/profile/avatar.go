@@ -5,10 +5,18 @@ import (
 
 	"github.com/connor-davis/3reco/internal/api/middleware"
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/services/auth"
 )
 
 func (handler *Handler) uploadAvatar(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
+	id := user.ID
+	if user.ActiveBusinessID != "" {
+		if err := auth.RequireBusiness(user, "owner"); err != nil {
+			return err
+		}
+		id = user.ActiveBusinessID
+	}
 	file, err := c.FormFile("file")
 	if err != nil {
 		return apperr.BadRequest("Choose an image in the file field.", nil)
@@ -20,7 +28,7 @@ func (handler *Handler) uploadAvatar(c fiber.Ctx) error {
 	}
 	defer reader.Close()
 
-	if err := handler.svc.UploadAvatar(c.Context(), user.ID, reader); err != nil {
+	if err := handler.svc.UploadAvatar(c.Context(), id, reader, user.ActiveBusinessID != ""); err != nil {
 		return err
 	}
 
@@ -29,7 +37,14 @@ func (handler *Handler) uploadAvatar(c fiber.Ctx) error {
 
 func (handler *Handler) deleteAvatar(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.DeleteAvatar(c.Context(), user.ID); err != nil {
+	id := user.ID
+	if user.ActiveBusinessID != "" {
+		if err := auth.RequireBusiness(user, "owner"); err != nil {
+			return err
+		}
+		id = user.ActiveBusinessID
+	}
+	if err := handler.svc.DeleteAvatar(c.Context(), id, user.ActiveBusinessID != ""); err != nil {
 		return err
 	}
 
@@ -37,7 +52,15 @@ func (handler *Handler) deleteAvatar(c fiber.Ctx) error {
 }
 
 func (handler *Handler) avatar(c fiber.Ctx) error {
-	reader, kind, err := handler.svc.Avatar(c.Context(), c.Params("id"))
+	return handler.serveAvatar(c, false)
+}
+
+func (handler *Handler) logo(c fiber.Ctx) error {
+	return handler.serveAvatar(c, true)
+}
+
+func (handler *Handler) serveAvatar(c fiber.Ctx, business bool) error {
+	reader, kind, err := handler.svc.Avatar(c.Context(), c.Params("id"), business)
 	if err != nil {
 		return err
 	}

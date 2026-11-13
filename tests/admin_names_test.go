@@ -20,7 +20,8 @@ func TestAdminUserListNamesThePerson(t *testing.T) {
 	staff := tradeNewUser(t, w.app, "staff")
 
 	// A staff member who was once a business keeps a stale business name.
-	tradeExec(t, w.app, `UPDATE users SET first_name='Sipho', last_name='Ndlovu', business_name='Temp'
+	tradeBusiness(t, w.app, staff.id, "Temp", false)
+	tradeExec(t, w.app, `UPDATE users SET first_name='Sipho', last_name='Ndlovu'
 		WHERE id = $1`, staff.id)
 
 	list := pageItems(t, status(t, admin.c.Do("GET", "/api/admin/users?limit=50", nil), 200))
@@ -30,7 +31,7 @@ func TestAdminUserListNamesThePerson(t *testing.T) {
 	}
 
 	biz := find(list, w.seller.id)["name"].(string)
-	if biz != tradeText(t, w.app, `SELECT business_name FROM users WHERE id=$1`, w.seller.id) {
+	if biz != tradeText(t, w.app, `SELECT business_name FROM businesses WHERE id=$1`, w.seller.id) {
 		t.Errorf("business shown as %q, want its business name", biz)
 	}
 
@@ -43,8 +44,8 @@ func TestPrivacyEventsCarryNamesAndRoles(t *testing.T) {
 	w := newTradeWorld(t)
 	admin := tradeNewUser(t, w.app, "admin")
 
-	tradeExec(t, w.app, `UPDATE users SET first_name='Ada', last_name='Admin',
-		business_name='Stale Business' WHERE id = $1`, admin.id)
+	tradeBusiness(t, w.app, admin.id, "Stale Business", false)
+	tradeExec(t, w.app, `UPDATE users SET first_name='Ada', last_name='Admin' WHERE id = $1`, admin.id)
 
 	collector := privacyCollector(t, w.buyer.c)
 	status(t, admin.c.Do("GET", "/api/collectors/"+collector, nil), 200)

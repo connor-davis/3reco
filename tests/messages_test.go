@@ -162,7 +162,7 @@ func TestRequestMessageRealtime(t *testing.T) {
 func TestFreshRequestSystemEventAndOfferInbox(t *testing.T) {
 	w := newTradeWorld(t)
 	outsider := tradeNewUser(t, w.app, "business")
-	tradeExec(t, w.app, `UPDATE users SET business_name='Greenline' WHERE id=$1`, w.buyer.id)
+	tradeExec(t, w.app, `UPDATE businesses SET business_name='Greenline' WHERE id=$1`, w.buyer.id)
 	id := tradeRequest(t, w.buyer, w.seller, w.stock)
 	path := "/api/requests/" + id + "/messages"
 

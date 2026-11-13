@@ -61,8 +61,8 @@ var selectRequest = `
 		r.buyer_confirmed_version, r.seller_confirmed_version,
         (SELECT t.id FROM transactions t WHERE t.request_id=r.id AND t.status='complete' LIMIT 1)
 	FROM transaction_requests r
-	JOIN users s ON s.id = r.seller_id
-	JOIN users b ON b.id = r.buyer_id`
+	JOIN business_profiles s ON s.id = r.seller_id
+	JOIN business_profiles b ON b.id = r.buyer_id`
 
 func scan(row pgx.Row) (Request, error) {
 	var r Request
@@ -303,12 +303,12 @@ func (s *Store) ListedStock(
 	return out, rows.Err()
 }
 
-// ActiveUser reports whether the id belongs to a user who was not removed.
+// ActiveUser reports whether the party id belongs to an active business.
 func (s *Store) ActiveUser(ctx context.Context, userID string) (bool, error) {
 	var ok bool
 
 	err := s.db.Q(ctx).QueryRow(ctx,
-		`SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND NOT is_removed)`, userID).Scan(&ok)
+		`SELECT EXISTS (SELECT 1 FROM businesses WHERE id = $1 AND NOT is_removed)`, userID).Scan(&ok)
 
 	return ok, err
 }

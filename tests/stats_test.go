@@ -29,7 +29,7 @@ func TestPublicStats(t *testing.T) {
 	tradeStock(t, app, removed.id, material, "100", "2")
 	tradeSale(t, seller, buyer, material, "12.12", "2")
 	tradeSale(t, removed, buyer, material, "20", "2")
-	tradeExec(t, app, `UPDATE users SET is_removed=true WHERE id=$1`, removed.id)
+	tradeExec(t, app, `UPDATE businesses SET is_removed=true WHERE id=$1`, removed.id)
 
 	collector := tradeCollector(t, app, buyer, "+27800000091")
 	collection := buyer.c.Do("POST", "/api/transactions/collections",

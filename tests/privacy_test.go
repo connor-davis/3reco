@@ -75,7 +75,7 @@ func TestPrivacyFieldsAreCiphertextAtRest(t *testing.T) {
 
 	raw := map[string][2]string{
 		"users.id_number":              {"SELECT id_number FROM users WHERE id=$1", w.seller.id},
-		"users.bank_account_number":    {"SELECT bank_account_number FROM users WHERE id=$1", w.seller.id},
+		"users.bank_account_number":    {"SELECT bank_account_number FROM businesses WHERE id=$1", w.seller.id},
 		"collectors.bank_account":      {"SELECT bank_account_number FROM collectors WHERE id=$1", collector},
 		"collectors.ewallet_id":        {"SELECT ewallet_payment_id FROM collectors WHERE id=$1", wallet},
 		"snapshot.bank_account_number": {"SELECT collector_snapshot->>'bank_account_number' FROM transactions WHERE id=$1", bankTrade},

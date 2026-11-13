@@ -44,7 +44,7 @@ func TestInboxSearchAndFiltersBeforePaging(t *testing.T) {
 			t.Fatalf("server did not search beyond first page: %s", found.Raw)
 		}
 
-		name := tradeText(t, w.app, `SELECT business_name FROM users WHERE id = $1`, w.seller.id)
+		name := tradeText(t, w.app, `SELECT business_name FROM businesses WHERE id = $1`, w.seller.id)
 		for _, term := range []string{name, "Glass"} {
 			matched := inbox.user.c.Do("GET", inbox.path+"?q="+url.QueryEscape(term), nil)
 			tradeWant(t, "name or material search", matched, 200)
@@ -154,7 +154,7 @@ func TestInboxOfferAndCounterActivity(t *testing.T) {
 			}
 			row := rows[0].(map[string]any)
 			message := row["latest_message"].(map[string]any)
-			name := tradeText(t, w.app, `SELECT business_name FROM users WHERE id=$1`, actor.id)
+			name := tradeText(t, w.app, `SELECT business_name FROM businesses WHERE id=$1`, actor.id)
 			want := name + " made an offer for Glass."
 			if i == 1 {
 				want = name + " made a counter-offer for Glass."

@@ -67,7 +67,7 @@ func (records *Store) Stats(ctx context.Context, item Collector) (Stats, error) 
 		t.total_price::text,CASE WHEN u.is_removed THEN 'Unknown' ELSE
 		`+database.DisplayName("u")+` END,
 		`+database.Verified("u")+`
-		FROM transactions t JOIN users u ON u.id=t.buyer_id WHERE t.status='complete' AND t.seller_id=$1 AND t.type='c2b'
+		FROM transactions t JOIN business_profiles u ON u.id=t.buyer_id WHERE t.status='complete' AND t.seller_id=$1 AND t.type='c2b'
 		ORDER BY t.created_at DESC,t.id DESC LIMIT 5`,
 		item.ID,
 	)

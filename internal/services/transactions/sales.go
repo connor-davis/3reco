@@ -31,11 +31,11 @@ func (s *Service) DirectSale(
 	buyerID string,
 	items []SaleItem,
 ) (string, error) {
-	if !auth.HasRole(user, auth.RoleBusiness) {
+	if !auth.BusinessAtLeast(user, "manager") {
 		return "", apperr.Forbidden("Only businesses can sell stock.")
 	}
 
-	if buyerID == user.ID {
+	if buyerID == auth.PartyID(user) {
 		return "", apperr.BadRequest("You cannot sell to yourself.", nil)
 	}
 
@@ -55,7 +55,7 @@ func (s *Service) DirectSale(
 			return errBuyerInvalid
 		}
 
-		id, err = s.settle(ctx, user.ID, buyerID, "", items, true, "")
+		id, err = s.settle(ctx, auth.PartyID(user), buyerID, "", items, true, "")
 
 		return err
 	})
@@ -264,8 +264,8 @@ func (s *Service) CollectorSale(
 // collectionBuyer decides which business buys: a business buys for itself;
 // admin and staff pick one; nobody else may.
 func (s *Service) collectionBuyer(user auth.User, businessID string) (string, error) {
-	if auth.HasRole(user, auth.RoleBusiness) {
-		return user.ID, nil
+	if auth.BusinessAtLeast(user, "manager") {
+		return auth.PartyID(user), nil
 	}
 
 	if !auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) {

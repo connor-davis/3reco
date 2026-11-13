@@ -15,13 +15,13 @@ import (
 // business, once, and cannot pick anything else. Someone who already has a
 // role (an older incomplete profile) sends no role and keeps theirs. Either
 // way the saved profile must hold every field that role needs.
-func (service *Service) Setup(ctx context.Context, id, role string) error {
+func (service *Service) Setup(ctx context.Context, id, role string, business ...string) error {
 	if role != "" && role != "collector" && role != "business" {
 		return apperr.BadRequest("Choose collector or business.", nil)
 	}
 
 	return service.db.InTx(ctx, func(ctx context.Context) error {
-		item, err := service.store.Find(ctx, id, true)
+		item, err := service.store.Find(ctx, id, true, business...)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return apperr.NotFound("No such profile.")
 		}

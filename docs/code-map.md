@@ -46,11 +46,20 @@ line when you add an owner.
 
 Never rename a merged migration. Add a new file.
 
+`0025_business_tenants.sql` owns businesses, memberships, the move of business-only columns off users,
+the business profile projection, session selection, and tenant audit scope. Bank and address
+columns remain on users for collector and guest personal profiles; businesses owns its own
+values. users.avatar_key and image remain the personal picture; businesses.avatar_key
+is the store logo, with businesses.image retaining legacy URL logos copied once.
+
 ## Auth
 
 | Job | Owner |
 | --- | --- |
 | Users, sessions, one-time tokens, rate counts (SQL only) | `internal/stores/auth/auth.go` |
+| Business membership and default business selection for sessions | `internal/stores/businesses/businesses.go` |
+| Active business identity, live membership, and minimum team roles | `internal/services/auth/business.go` |
+| Minimum business-role route gate | `internal/api/middleware/business.go` |
 | Password hashing (argon2id) and old Better Auth scrypt check | `internal/services/auth/password.go` |
 | Sign-up, sign-in, sessions, verify email, reset password, admin create, roles | `internal/services/auth/auth.go` |
 | Session cookie, device cookie, who is calling, `RequireUser`, `RequireRole`, CSRF, rate limit | `internal/api/middleware/middleware.go` |
@@ -68,6 +77,7 @@ Never rename a merged migration. Add a new file.
 | Encrypting ID and bank fields (AES-256-GCM, `v1:` prefix) and the `******1234` mask | `internal/platform/crypt/crypt.go` |
 | Notice version and retention periods (the one place to change them) | `internal/platform/config/privacy.go` |
 | Export, self-delete, notice, audit log, hourly retention: SQL, rules, `/api/privacy` routes | `internal/stores/privacy`, `internal/services/privacy`, `internal/api/privacy` |
+| Last-owner business anonymisation while retaining the business and team data | `internal/stores/privacy/businesses.go` |
 | Collector payout masks (including branch code), safe `can_edit` permission, staff contact-only form edits | `internal/services/collectors/collectors.go`, `internal/services/collectors/stats.go`, `web/apps/app/src/components/dialogs/collector-dialog.tsx` |
 | Reuse collector payout access for frozen invoice/CSV snapshots | `internal/services/collectors/payout_access.go` (`CanReadFullPayout`), `internal/services/invoices/invoices.go` (`Project`) |
 | Collector `can_view_payout`, six-digit branch code, phone-digit search, admin full-view audit only when disclosed | `internal/services/collectors/{collectors,validation}.go`, `internal/stores/collectors/collectors.go` (`searchTerms`) |
@@ -112,12 +122,12 @@ Never rename a merged migration. Add a new file.
 
 | Job | Owner |
 | --- | --- |
-| Who hears a row change (user ids or an audience word, never row data) | `notify_change()` and `notify_stock_hold()` in `0014_realtime_recipients.sql` |
-| Verifying a business reloads every market and trade list (`business_verified_notify`) | `0023_business_verified_notify.sql` |
-| Open sockets, indexed by user and role | `internal/services/realtime/hub.go` |
+| Who hears a row change (person ids, business ids or an audience word, never row data); current-member expansion and membership notifications | `notify_change()`, `realtime_send()`, `business_user_ids()` and `notify_membership()` in `0025_business_tenants.sql`; stock holds in `0022_cart_holds.sql` |
+| Verifying a business reloads every market and trade list (`business_verified_notify`) | `0025_business_tenants.sql` (moves the trigger from 0023 onto businesses) |
+| Open sockets, indexed by person, business and platform role | `internal/services/realtime/hub.go` |
 | Listen to Postgres | `internal/services/realtime/listen.go` |
 | Turn a NOTIFY into one encoded event for its recipients | `internal/services/realtime/routing.go` |
-| Every 30 s drop dead sessions and guests, refresh roles | `internal/services/realtime/recheck.go` |
+| Recheck membership and roles before delivery, at membership notifications, and every 30 s; close removed members' sockets | `internal/services/realtime/recheck.go`, `internal/services/realtime/listen.go` |
 | `GET /api/live` WebSocket route | `internal/api/sockets/handler.go` |
 
 ## Server
@@ -132,6 +142,7 @@ Never rename a merged migration. Add a new file.
 | Job | Owner |
 | --- | --- |
 | Fresh database per test, running API, cookie client, Mailpit reader | `tests/testutil/testutil.go` |
+| Tenant migration, membership, permissions, cross-business isolation, privacy, audit, retained data and live removal tests; explicit business fixture | `tests/tenants_{migration,session,access,privacy_live,retained_data,helpers}_test.go` |
 | Unique MinIO test bucket, required-service gate and object/bucket cleanup | `tests/testutil/storage.go` |
 | Receipt sniffing, access leaks, SHA duplicate cleanup, concurrent sixth upload and upload/removal role rules | `tests/receipts_test.go`, `tests/receipts_roles_test.go` |
 | Invoice authorization, exact decimals, pagination, snapshots, regeneration, rollback and attached Mailpit messages | `tests/invoices_test.go` |
@@ -284,6 +295,7 @@ Never rename a merged migration. Add a new file.
 | Job | Owner |
 | --- | --- |
 | Owner photo upload/removal and private cached photo stream | `internal/api/stock/image.go` |
+| Separate personal pictures and store logos, including shared migrated object references | `internal/stores/profile/avatar.go`, `internal/services/profile/avatar.go`, `GET /api/stores/:id/logo` in `internal/api/profile/avatar.go` |
 | Stock photo ownership, replacement compensation and after-commit cleanup | `internal/services/stock/image.go`; stock deletion in `stock.go` |
 | Market-visible photo reads and owner image reference writes | `internal/stores/stock/image.go` |
 | Versioned listing photo and seller logo projections | `internal/stores/market/listings.go`; stock photo projection in `internal/stores/stock/stock.go` |

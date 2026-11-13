@@ -141,7 +141,7 @@ func TestQARound5AInvoiceBranchMask(t *testing.T) {
 	admin := tradeNewUser(t, w.app, "admin")
 	collectorUser := tradeNewUser(t, w.app, "collector")
 	collector := tradeCollector(t, w.app, w.buyer, collectorUser.phone)
-	for _, table := range []string{"users", "collectors"} {
+	for _, table := range []string{"businesses", "collectors"} {
 		id := w.seller.id
 		if table == "collectors" {
 			id = collector
@@ -173,7 +173,7 @@ func TestQARound5AInvoiceBranchMask(t *testing.T) {
 			}{collectorUser, "collector", true})
 		}
 		for _, reader := range readers {
-			projected, err := w.app.Invoices.Project(context.Background(), auth.User{ID: reader.user.id, Role: &reader.role}, document)
+			projected, err := w.app.Invoices.Project(context.Background(), auth.User{ID: reader.user.id, Role: &reader.role, ActiveBusinessID: reader.user.id, BusinessRole: "owner"}, document)
 			if err != nil {
 				t.Fatal(err)
 			}

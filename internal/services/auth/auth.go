@@ -163,7 +163,12 @@ func (s *Service) SignIn(
 		return "", store.User{}, err
 	}
 
-	return token, *user, nil
+	sess, _, err := s.Authenticate(ctx, token)
+	if err != nil {
+		return "", store.User{}, err
+	}
+
+	return token, sess.User, nil
 }
 
 // ConfirmPassword checks the signed-in person's password again before a step
@@ -204,6 +209,10 @@ func (s *Service) Authenticate(
 
 	sess = sessions[0]
 
+	if err := s.loadBusiness(ctx, &sess); err != nil {
+		return sess, false, err
+	}
+
 	if time.Since(sess.RefreshedAt) > SlideAfter {
 		if err := s.store.SlideSession(ctx, sess.ID, SessionTTL); err != nil {
 			return sess, false, err
@@ -221,6 +230,10 @@ func (s *Service) SessionByID(ctx context.Context, id string) (store.Session, er
 	sess, err := s.store.SessionByID(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return sess, apperr.Unauthorized("Please sign in.")
+	}
+
+	if err == nil {
+		err = s.loadBusiness(ctx, &sess)
 	}
 
 	return sess, err
@@ -425,9 +438,19 @@ func (s *Service) Allow(ctx context.Context, key string, limit int) (bool, error
 // Purge deletes expired sessions, tokens and rate counts.
 func (s *Service) Purge(ctx context.Context) error { return s.store.Purge(ctx) }
 
-// HasRole reports whether the user's role is one of roles.
+// HasRole checks platform roles; business means a current active membership.
 func HasRole(user store.User, roles ...string) bool {
-	return user.Role != nil && slices.Contains(roles, *user.Role)
+	for _, role := range roles {
+		if role == RoleBusiness {
+			if BusinessAtLeast(user, "member") {
+				return true
+			}
+		} else if user.Role != nil && *user.Role == role {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *Service) newLink(

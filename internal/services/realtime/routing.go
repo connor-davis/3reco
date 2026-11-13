@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"encoding/json"
+	"slices"
 
 	"github.com/connor-davis/3reco/internal/services/auth"
 )
@@ -16,11 +17,12 @@ const (
 // change is one NOTIFY payload: what changed and who may hear about it. It
 // never holds row data.
 type change struct {
-	Kind  string   `json:"kind"`
-	ID    string   `json:"id"`
-	Op    string   `json:"op"`
-	Users []string `json:"users"`
-	Aud   string   `json:"aud"`
+	Businesses []string `json:"businesses"`
+	Kind       string   `json:"kind"`
+	ID         string   `json:"id"`
+	Op         string   `json:"op"`
+	Users      []string `json:"users"`
+	Aud        string   `json:"aud"`
 }
 
 // route tells every open socket of every recipient. The event is encoded
@@ -47,8 +49,16 @@ func (h *Hub) route(ch change) {
 		}
 	}
 
+	for _, id := range ch.Businesses {
+		push(h.byBusiness[id], true)
+	}
+
 	for _, id := range ch.Users {
-		push(h.byUser[id], true)
+		for c := range h.byUser[id] {
+			if len(ch.Businesses) == 0 || c.BusinessID == "" || slices.Contains(ch.Businesses, c.BusinessID) {
+				push(map[*Client]struct{}{c: {}}, true)
+			}
+		}
 	}
 
 	switch ch.Aud {

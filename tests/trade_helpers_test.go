@@ -42,7 +42,7 @@ func tradeNewUnverified(t *testing.T, app *testutil.App) tradeUser {
 func tradeUnverify(t *testing.T, app *testutil.App, user tradeUser) {
 	t.Helper()
 
-	tradeExec(t, app, `UPDATE users SET business_verified_at = NULL WHERE id = $1`, user.id)
+	tradeExec(t, app, `UPDATE businesses SET business_verified_at = NULL WHERE id = $1`, user.id)
 }
 
 func tradeNewUserVerified(t *testing.T, app *testutil.App, role string, verified bool) tradeUser {
@@ -56,11 +56,11 @@ func tradeNewUserVerified(t *testing.T, app *testutil.App, role string, verified
 	phone := fmt.Sprintf("+27821%06d", tradePhones.Add(1))
 
 	tradeExec(t, app, `
-		UPDATE users SET role = $2, business_name = $3, phone = $4, normalized_phone = $4,
-			profile_complete = true WHERE id = $1`, id, role, "Biz "+id[:6], phone)
+		UPDATE users SET role = $2, phone = $3, normalized_phone = $3,
+			profile_complete = true WHERE id = $1`, id, role, phone)
 
-	if verified && role == "business" {
-		tradeExec(t, app, `UPDATE users SET business_verified_at = now() WHERE id = $1`, id)
+	if role == "business" {
+		tradeBusiness(t, app, id, "Biz "+id[:6], verified)
 	}
 
 	return tradeUser{c: c, id: id, email: email, phone: phone}

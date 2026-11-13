@@ -19,7 +19,7 @@ func (records *Store) Unverified(ctx context.Context, id string) (bool, error) {
 	var unverified bool
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`SELECT EXISTS (SELECT 1 FROM users WHERE id=$1 AND role='business' AND business_verified_at IS NULL)`,
+		`SELECT EXISTS (SELECT 1 FROM businesses WHERE id=$1 AND business_verified_at IS NULL)`,
 		id,
 	).Scan(&unverified)
 

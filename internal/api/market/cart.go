@@ -1,6 +1,7 @@
 package market
 
 import (
+	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/gofiber/fiber/v3"
 
 	"github.com/connor-davis/3reco/internal/api/middleware"
@@ -10,7 +11,7 @@ import (
 
 func (handler *Handler) cartStores(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	items, err := handler.svc.CartStores(c.Context(), user.ID)
+	items, err := handler.svc.CartStores(c.Context(), auth.PartyID(user))
 	if err != nil {
 		return err
 	}
@@ -20,7 +21,7 @@ func (handler *Handler) cartStores(c fiber.Ctx) error {
 
 func (handler *Handler) cart(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	item, err := handler.svc.Cart(c.Context(), user.ID, c.Query("seller_id"))
+	item, err := handler.svc.Cart(c.Context(), auth.PartyID(user), c.Query("seller_id"))
 	if err != nil {
 		return err
 	}
@@ -38,7 +39,7 @@ func (handler *Handler) saveCart(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.SaveCart(c.Context(), user.ID, c.Query("seller_id"), in.Items); err != nil {
+	if err := handler.svc.SaveCart(c.Context(), auth.PartyID(user), c.Query("seller_id"), in.Items); err != nil {
 		return err
 	}
 
@@ -47,7 +48,7 @@ func (handler *Handler) saveCart(c fiber.Ctx) error {
 
 func (handler *Handler) clearCart(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.ClearCart(c.Context(), user.ID, c.Query("seller_id")); err != nil {
+	if err := handler.svc.ClearCart(c.Context(), auth.PartyID(user), c.Query("seller_id")); err != nil {
 		return err
 	}
 

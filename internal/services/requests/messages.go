@@ -81,7 +81,7 @@ func (s *Service) Send(
 		}
 
 		other := r.Seller.ID
-		if other == user.ID {
+		if other == auth.PartyID(user) {
 			other = r.Buyer.ID
 		}
 
@@ -131,7 +131,7 @@ func (s *Service) Inbox(
 		return empty, err
 	}
 
-	rows, err := s.store.Inbox(ctx, user.ID, cur, limit, strings.TrimSpace(search), filter)
+	rows, err := s.store.Inbox(ctx, auth.PartyID(user), user.ID, cur, limit, strings.TrimSpace(search), filter)
 	if err != nil {
 		return empty, err
 	}

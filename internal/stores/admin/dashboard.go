@@ -116,9 +116,9 @@ func (s *Store) Counterparties(
 		)
 		SELECT cp.id, cp.name, cp.verified, count(*), sum(tx.total_price)::text
 		FROM tx
-		LEFT JOIN users seller ON seller.id = tx.seller_id AND tx.type = 'b2b'
+		LEFT JOIN business_profiles seller ON seller.id = tx.seller_id AND tx.type = 'b2b'
 		LEFT JOIN collectors col ON col.id = tx.seller_id AND tx.type = 'c2b'
-		JOIN users buyer ON buyer.id = tx.buyer_id
+		JOIN business_profiles buyer ON buyer.id = tx.buyer_id
 		CROSS JOIN LATERAL (
 			SELECT tx.seller_id AS id, COALESCE(col.name, `+database.DisplayName("seller")+`) AS name,
 				`+database.Verified("seller")+` AS verified

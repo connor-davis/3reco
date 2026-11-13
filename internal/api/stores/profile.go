@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/gofiber/fiber/v3"
 
 	"github.com/connor-davis/3reco/internal/api/middleware"
@@ -14,7 +15,7 @@ func (handler *Handler) list(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	items, err := handler.svc.List(c.Context(), c.Query("q"), user.ID, query)
+	items, err := handler.svc.List(c.Context(), c.Query("q"), auth.PartyID(user), query)
 	if err != nil {
 		return err
 	}
@@ -25,7 +26,7 @@ func (handler *Handler) list(c fiber.Ctx) error {
 func (handler *Handler) find(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
 
-	item, err := handler.svc.Find(c.Context(), c.Params("id"), user.ID)
+	item, err := handler.svc.Find(c.Context(), c.Params("id"), auth.PartyID(user))
 	if err != nil {
 		return err
 	}

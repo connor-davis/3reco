@@ -81,7 +81,7 @@ func (service *Service) List(
 
 // Find allows the owner or the safe public projection of a listed row.
 func (service *Service) Find(ctx context.Context, id, caller string) (store.Item, error) {
-	item, err := service.store.Find(ctx, id, false)
+	item, err := service.store.Find(ctx, id, false, caller)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && item.OwnerID != caller && !item.IsListed) {
 		return item, apperr.NotFound("No such stock.")
 	}

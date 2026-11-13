@@ -16,7 +16,8 @@ func TestQARound5AExportSearchAndAudit(t *testing.T) {
 	collector := tradeCollector(t, w.app, w.buyer, "+27800001002")
 	c2b := status(t, w.buyer.c.Do("POST", "/api/transactions/collections",
 		tradeCollection(collector, "", tradeLine(w.material, "1", "2"))), 200).Body["transaction_id"].(string)
-	tradeExec(t, w.app, `UPDATE users SET business_name='Greenline',first_name='Alice',last_name='Recycler' WHERE id=$1`, w.seller.id)
+	tradeExec(t, w.app, `UPDATE users SET first_name='Alice',last_name='Recycler' WHERE id=$1`, w.seller.id)
+	tradeExec(t, w.app, `UPDATE businesses SET business_name='Greenline' WHERE id=$1`, w.seller.id)
 	for _, test := range []struct {
 		client            *testutil.Client
 		actor, kind, path string

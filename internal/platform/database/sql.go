@@ -4,7 +4,7 @@ package database
 // as alias. It never falls back to the email, so a name shown on screen can't
 // leak an address.
 func DisplayName(alias string) string {
-	return "COALESCE(NULLIF(" + alias + ".business_name, ''), " +
+	return "COALESCE(NULLIF((SELECT business_name FROM businesses WHERE id=" + alias + ".id), ''), " +
 		"NULLIF(btrim(concat_ws(' ', " + alias + ".first_name, " + alias + ".last_name)), ''), " +
 		"NULLIF(" + alias + ".name, ''), 'Unknown')"
 }
@@ -13,7 +13,7 @@ func DisplayName(alias string) string {
 // has been verified by 3REco. It is computed from the stored timestamp, never
 // kept as a second copy.
 func Verified(alias string) string {
-	return alias + ".business_verified_at IS NOT NULL"
+	return "EXISTS(SELECT 1 FROM businesses WHERE id=" + alias + ".id AND business_verified_at IS NOT NULL)"
 }
 
 // PersonName is the name to show for the person behind a user row aliased as

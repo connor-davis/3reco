@@ -34,7 +34,9 @@ func (s *Store) LockActive(ctx context.Context, id string) (bool, error) {
 func (s *Store) Trades(ctx context.Context, userID string) ([]string, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT id FROM transactions
-		WHERE status='complete' AND anonymised_at IS NULL AND (buyer_id = $1 OR (type = 'b2b' AND seller_id = $1))`, userID)
+		WHERE NOT EXISTS (SELECT 1 FROM business_members other JOIN users u ON u.id=other.user_id
+			WHERE other.business_id=$1 AND other.user_id<>$1 AND other.role='owner' AND NOT u.is_removed)
+		AND status='complete' AND anonymised_at IS NULL AND (buyer_id = $1 OR (type = 'b2b' AND seller_id = $1))`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +63,8 @@ func (s *Store) CancelOpenRequests(ctx context.Context, userID string) ([]Cancel
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		UPDATE transaction_requests SET status = 'cancelled', offer_by=NULL, buyer_confirmed_version=NULL, seller_confirmed_version=NULL, updated_at = now()
 		WHERE (buyer_id = $1 OR seller_id = $1) AND status IN ('pending', 'offered')
+		AND NOT EXISTS (SELECT 1 FROM business_members other JOIN users u ON u.id=other.user_id
+			WHERE other.business_id=$1 AND other.user_id<>$1 AND other.role='owner' AND NOT u.is_removed)
 		RETURNING id, CASE WHEN buyer_id = $1 THEN seller_id ELSE buyer_id END, buyer_id = $1`,
 		userID)
 	if err != nil {
@@ -109,6 +113,11 @@ func (s *Store) CancelOpenRequests(ctx context.Context, userID string) ([]Cancel
 // returns avatar and stock object keys for removal after commit. The caller
 // runs it inside a transaction, after CancelOpenRequests.
 func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, error) {
+	keys, err := s.AnonymiseOwnedBusinesses(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
 	q := s.db.Q(ctx)
 
 	var avatar *string
@@ -116,15 +125,20 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, erro
 		return nil, err
 	}
 
-	keys := []string{}
-	if avatar != nil {
+	var businessAvatar bool
+	if err := q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM businesses
+		WHERE avatar_key=$1)`, avatar).Scan(&businessAvatar); err != nil {
+		return nil, err
+	}
+
+	if avatar != nil && !businessAvatar {
 		keys = append(keys, *avatar)
 	}
 
 	// Read keys before deleting the stock rows that hold them.
 	rows, err := q.Query(
 		ctx,
-		`SELECT COALESCE(image_key,'') FROM stock WHERE owner_id=$1 FOR UPDATE`,
+		`SELECT COALESCE(image_key,'') FROM stock WHERE owner_id=$1 AND NOT EXISTS (SELECT 1 FROM businesses WHERE id=$1) FOR UPDATE`,
 		id,
 	)
 	if err != nil {
@@ -150,24 +164,25 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, erro
 	for _, stmt := range []string{
 		`DELETE FROM sessions WHERE user_id = $1`,
 		`DELETE FROM auth_tokens WHERE user_id = $1`,
+		`DELETE FROM business_members WHERE user_id = $1`,
 		`DELETE FROM notifications WHERE user_id = $1`,
-		`DELETE FROM carts WHERE buyer_id = $1 OR seller_id = $1`,
-		`DELETE FROM stock WHERE owner_id = $1`,
+		`DELETE FROM carts WHERE (buyer_id = $1 OR seller_id = $1) AND NOT EXISTS (SELECT 1 FROM businesses WHERE id=$1)`,
+		`DELETE FROM stock WHERE owner_id = $1 AND NOT EXISTS (SELECT 1 FROM businesses WHERE id=$1)`,
 		// Chat lines the app wrote for their actions ("X made an offer") keep
 		// the event and lose only the name, so the other side can still follow
 		// the trade. This runs before the user row is blanked below.
 		`UPDATE transaction_request_messages m
 			SET content = replace(m.content, n.name, 'Removed account')
 			FROM (SELECT ` + database.DisplayName("u") + ` AS name FROM users u WHERE u.id = $1) n
-			WHERE m.sender_id = $1 AND m.system`,
+			WHERE m.sender_id = $1 AND m.system AND NOT EXISTS(
+				SELECT 1 FROM business_members other WHERE other.business_id=$1
+				AND other.user_id<>$1 AND other.role='owner')`,
 		// Free text they wrote. The conversation and the review stay.
 		`UPDATE transaction_request_messages SET content = '[removed]' WHERE sender_id = $1 AND NOT system`,
-		`UPDATE store_reviews SET comment = NULL WHERE buyer_id = $1`,
-		// A business's own collector records go, unless an older trade has no
-		// frozen copy of the collector and still needs the row for its invoice.
-		// Collectors made by staff stay; created_by_user_id keeps pointing at
-		// the blanked user row, which is never deleted.
-		`DELETE FROM collectors c WHERE c.created_by_business_id = $1 AND NOT EXISTS (
+		`UPDATE store_reviews SET comment = NULL WHERE buyer_id = $1 AND NOT EXISTS (SELECT 1 FROM businesses WHERE id=$1)`,
+		// Only legacy records without a tenant use the old cleanup. Business
+		// collectors remain with the business, and retained trades keep their snapshots.
+		`DELETE FROM collectors c WHERE c.created_by_business_id = $1 AND NOT EXISTS (SELECT 1 FROM businesses WHERE id=$1) AND NOT EXISTS (
 			SELECT 1 FROM transactions t
 			WHERE t.type = 'c2b' AND t.seller_id = c.id AND t.collector_snapshot IS NULL
 				AND t.anonymised_at IS NULL)`,
@@ -179,21 +194,34 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, erro
 
 	_, err = q.Exec(ctx, `
 		UPDATE users SET
-			name = 'Removed account', business_name = 'Removed account',
+			name = 'Removed account',
 			email = NULL, email_verified = false, email_verified_at = NULL,
 			password_hash = NULL, image = NULL, avatar_key = NULL, phone = NULL,
 			normalized_phone = NULL, role = 'guest', profile_complete = false,
 			first_name = NULL, last_name = NULL,
-			id_number = NULL, business_registration_number = NULL,
+			id_number = NULL,
 			bank_account_holder_name = NULL, bank_name = NULL, bank_account_number = NULL,
 			bank_branch_code = NULL, bank_account_type = NULL, street_address = NULL,
 			city = NULL, area_code = NULL, province = NULL,
-			business_verified_at = NULL, business_verified_by = NULL,
 			is_removed = true, removed_at = now(), removed_by = $2, updated_at = now()
 		WHERE id = $1`, id, removedBy)
 	if err != nil {
 		return nil, err
 	}
 
-	return keys, nil
+	unused := keys[:0]
+	for _, key := range keys {
+		var used bool
+		if err := q.QueryRow(ctx, `SELECT
+			EXISTS(SELECT 1 FROM users WHERE avatar_key=$1) OR
+			EXISTS(SELECT 1 FROM businesses WHERE avatar_key=$1)`, key).Scan(&used); err != nil {
+			return nil, err
+		}
+
+		if !used {
+			unused = append(unused, key)
+		}
+	}
+
+	return unused, nil
 }

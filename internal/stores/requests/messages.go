@@ -110,7 +110,7 @@ func (s *Store) MarkRead(ctx context.Context, requestID, userID string) error {
 // itself when nobody has written yet.
 func (s *Store) Inbox(
 	ctx context.Context,
-	userID string,
+	businessID, userID string,
 	cur paging.Cursor,
 	limit int,
 	search, filter string,
@@ -126,9 +126,9 @@ func (s *Store) Inbox(
             r.seller_id, `+database.DisplayName("sl")+` AS seller_name, `+database.Verified("sl")+` AS seller_ok,
             r.offer_by, r.offer_version, r.buyer_confirmed_version, r.seller_confirmed_version
 		FROM transaction_requests r
-		JOIN users b ON b.id = r.buyer_id
-        JOIN users sl ON sl.id = r.seller_id
-        JOIN users o ON o.id = CASE WHEN r.seller_id = $1 THEN r.buyer_id ELSE r.seller_id END
+		JOIN business_profiles b ON b.id = r.buyer_id
+        JOIN business_profiles sl ON sl.id = r.seller_id
+        JOIN business_profiles o ON o.id = CASE WHEN r.seller_id = $1 THEN r.buyer_id ELSE r.seller_id END
 		LEFT JOIN LATERAL (
 			SELECT id, sender_id, content, created_at, system FROM transaction_request_messages
 			WHERE request_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) lm ON true
@@ -140,8 +140,8 @@ func (s *Store) Inbox(
 			AND ($6 <> 'offers' OR r.status = 'offered')
 			AND ($6 <> 'done' OR r.status IN ('accepted', 'rejected', 'cancelled'))
 			AND ($6 <> 'unread' OR EXISTS (SELECT 1 FROM transaction_request_messages m
-				WHERE m.request_id = r.id AND m.sender_id <> $1 AND NOT EXISTS (
-					SELECT 1 FROM request_message_reads x WHERE x.message_id = m.id AND x.user_id = $1)))
+				WHERE m.request_id = r.id AND m.sender_id <> $7 AND NOT EXISTS (
+					SELECT 1 FROM request_message_reads x WHERE x.message_id = m.id AND x.user_id = $7)))
 			AND ($2::timestamptz IS NULL OR (r.activity_at, r.id) < ($2, $3))
 		ORDER BY activity DESC, r.id DESC
 		LIMIT $4)
@@ -151,11 +151,11 @@ func (s *Store) Inbox(
             page.offer_by, page.offer_version, page.buyer_confirmed_version, page.seller_confirmed_version
 		FROM page
 		LEFT JOIN (SELECT m.request_id, count(*) AS n FROM transaction_request_messages m
-			WHERE m.request_id IN (SELECT id FROM page) AND m.sender_id <> $1 AND NOT EXISTS (
+			WHERE m.request_id IN (SELECT id FROM page) AND m.sender_id <> $7 AND NOT EXISTS (
 				SELECT 1 FROM request_message_reads x
-				WHERE x.message_id = m.id AND x.user_id = $1)
+				WHERE x.message_id = m.id AND x.user_id = $7)
 			GROUP BY m.request_id) un ON un.request_id = page.id
-		ORDER BY page.activity DESC, page.id DESC`, userID, cur.At, cur.ID, limit+1, search, filter)
+		ORDER BY page.activity DESC, page.id DESC`, businessID, cur.At, cur.ID, limit+1, search, filter, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -226,8 +226,8 @@ func (s *Store) AllThreads(
 			r.activity_at AS activity, lm.system,
             r.offer_by, r.offer_version, r.buyer_confirmed_version, r.seller_confirmed_version
         FROM transaction_requests r
-		JOIN users b ON b.id = r.buyer_id
-		JOIN users sl ON sl.id = r.seller_id
+		JOIN business_profiles b ON b.id = r.buyer_id
+		JOIN business_profiles sl ON sl.id = r.seller_id
 		LEFT JOIN LATERAL (
 			SELECT id, sender_id, content, created_at, system FROM transaction_request_messages
 			WHERE request_id = r.id ORDER BY created_at DESC, id DESC LIMIT 1) lm ON true

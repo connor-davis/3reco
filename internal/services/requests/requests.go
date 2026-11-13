@@ -72,7 +72,7 @@ func (s *Service) load(
 		return r, err
 	}
 
-	if r.Seller.ID != user.ID && r.Buyer.ID != user.ID {
+	if r.Seller.ID != auth.PartyID(user) && r.Buyer.ID != auth.PartyID(user) {
 		// An admin may read any chat but never act on one.
 		if auth.HasRole(user, auth.RoleAdmin) {
 			return store.Request{}, errAdminReadOnly
@@ -117,7 +117,7 @@ func (s *Service) Get(ctx context.Context, user auth.User, id string) (store.Req
 	}
 
 	staff := auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff)
-	if !staff && r.Seller.ID != user.ID && r.Buyer.ID != user.ID {
+	if !staff && r.Seller.ID != auth.PartyID(user) && r.Buyer.ID != auth.PartyID(user) {
 		return store.Request{}, errNotFound
 	}
 
@@ -134,7 +134,7 @@ func (s *Service) Incoming(
 	limit int,
 ) (paging.Page[store.Request], error) {
 	return s.page(cursor, limit, func(cur paging.Cursor) ([]store.Request, error) {
-		return s.store.ListIncoming(ctx, user.ID, cur, limit)
+		return s.store.ListIncoming(ctx, auth.PartyID(user), cur, limit)
 	})
 }
 
@@ -146,7 +146,7 @@ func (s *Service) Outgoing(
 	limit int,
 ) (paging.Page[store.Request], error) {
 	return s.page(cursor, limit, func(cur paging.Cursor) ([]store.Request, error) {
-		return s.store.ListOutgoing(ctx, user.ID, cur, limit)
+		return s.store.ListOutgoing(ctx, auth.PartyID(user), cur, limit)
 	})
 }
 
@@ -184,7 +184,7 @@ type CreateInput struct {
 
 // Create opens a request from the caller to a seller and tells the seller.
 func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (string, error) {
-	if in.SellerID == user.ID {
+	if in.SellerID == auth.PartyID(user) {
 		return "", apperr.BadRequest("You cannot request your own listing.", nil)
 	}
 
@@ -196,7 +196,7 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
 		if in.FromCart {
-			cart, err := marketstore.New(s.db).Cart(ctx, user.ID, in.SellerID)
+			cart, err := marketstore.New(s.db).Cart(ctx, auth.PartyID(user), in.SellerID)
 			if err != nil {
 				return err
 			}
@@ -240,7 +240,7 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 			return err
 		}
 
-		if err := s.store.Insert(ctx, id, in.SellerID, user.ID, items); err != nil {
+		if err := s.store.Insert(ctx, id, in.SellerID, auth.PartyID(user), items); err != nil {
 			return err
 		}
 
@@ -256,7 +256,7 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 		// The cart's hold becomes the request's hold in this one transaction, so
 		// the stock is never free in between. The cart goes with it.
 		if in.FromCart {
-			if err := marketstore.New(s.db).ClearCart(ctx, user.ID, in.SellerID); err != nil {
+			if err := marketstore.New(s.db).ClearCart(ctx, auth.PartyID(user), in.SellerID); err != nil {
 				return err
 			}
 		}

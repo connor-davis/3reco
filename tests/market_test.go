@@ -22,7 +22,7 @@ func domainUnverified(t *testing.T, app *testutil.App) (*testutil.Client, string
 	t.Helper()
 
 	client, id := domainUser(t, app, "business")
-	tradeExec(t, app, `UPDATE users SET business_verified_at = NULL WHERE id = $1`, id)
+	tradeExec(t, app, `UPDATE businesses SET business_verified_at = NULL WHERE id = $1`, id)
 
 	return client, id
 }
@@ -38,9 +38,7 @@ func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client,
 		`UPDATE users SET role=COALESCE(NULLIF($2,''),'guest'),
 		phone=$3,id_number=$4,bank_account_number=$5,
 		bank_account_holder_name='Private Holder',bank_name='Private Bank',bank_branch_code='123456',
-		bank_account_type='Savings',
-		business_name=CASE WHEN $2='business' THEN 'Business '||id ELSE NULL END,
-		business_verified_at=CASE WHEN $2='business' THEN now() END
+		bank_account_type='Savings'
 		WHERE email=$1 RETURNING id`,
 		email,
 		role,
@@ -52,6 +50,10 @@ func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client,
 	)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if role == "business" {
+		tradeBusiness(t, app, id, "Business "+id, true)
 	}
 
 	status(t, signIn(t, client, email, goodPassword), 200)
@@ -235,7 +237,7 @@ func TestMarketFiltersAndPagination(t *testing.T) {
 
 	_, err = app.DB.Pool.Exec(
 		context.Background(),
-		`UPDATE users SET is_removed=true WHERE id=$1`,
+		`UPDATE businesses SET is_removed=true WHERE id=$1`,
 		sellerID,
 	)
 	if err != nil {

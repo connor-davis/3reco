@@ -19,17 +19,19 @@ var ErrEmailTaken = errors.New("email already registered")
 // User is a signed-in person as the API shows them to themselves. The
 // password hash never leaves the server.
 type User struct {
-	ID              string  `json:"id"`
-	Email           *string `json:"email"`
-	EmailVerified   bool    `json:"emailVerified"`
-	Name            string  `json:"name"`
-	Image           *string `json:"image"`
-	Role            *string `json:"role"`
-	ProfileComplete bool    `json:"profileComplete"`
-	AgreedToTerms   bool    `json:"agreedToTerms"`
-	FirstName       *string `json:"firstName"`
-	LastName        *string `json:"lastName"`
-	BusinessName    *string `json:"businessName"`
+	ID               string  `json:"id"`
+	ActiveBusinessID string  `json:"active_business_id"`
+	BusinessRole     string  `json:"business_role"`
+	Email            *string `json:"email"`
+	EmailVerified    bool    `json:"emailVerified"`
+	Name             string  `json:"name"`
+	Image            *string `json:"image"`
+	Role             *string `json:"role"`
+	ProfileComplete  bool    `json:"profileComplete"`
+	AgreedToTerms    bool    `json:"agreedToTerms"`
+	FirstName        *string `json:"firstName"`
+	LastName         *string `json:"lastName"`
+	BusinessName     *string `json:"businessName"`
 	// BusinessVerified is true once an admin has verified this business.
 	BusinessVerified bool    `json:"business_verified"`
 	IsRemoved        bool    `json:"-"`
@@ -38,12 +40,13 @@ type User struct {
 
 // Session is one browser session joined to its user.
 type Session struct {
-	ID          string
-	TokenHash   string
-	User        User
-	CreatedAt   time.Time
-	RefreshedAt time.Time
-	ExpiresAt   time.Time
+	ID               string
+	ActiveBusinessID string
+	TokenHash        string
+	User             User
+	CreatedAt        time.Time
+	RefreshedAt      time.Time
+	ExpiresAt        time.Time
 }
 
 // Store runs the auth SQL.
@@ -53,8 +56,8 @@ type Store struct{ db *database.DB }
 func New(db *database.DB) *Store { return &Store{db: db} }
 
 const userCols = `u.id, u.email, u.email_verified, u.name, u.image, u.role, u.profile_complete,
-	u.agreed_to_terms, u.first_name, u.last_name, u.business_name, u.is_removed, u.password_hash,
-	u.business_verified_at IS NOT NULL`
+	u.agreed_to_terms, u.first_name, u.last_name, (SELECT b.business_name FROM businesses b WHERE b.id=u.id), u.is_removed, u.password_hash,
+	EXISTS(SELECT 1 FROM businesses b WHERE b.id=u.id AND b.business_verified_at IS NOT NULL)`
 
 func scanUser(row pgx.Row, u *User) error {
 	return row.Scan(&u.ID, &u.Email, &u.EmailVerified, &u.Name, &u.Image, &u.Role,
@@ -175,8 +178,10 @@ func (s *Store) CreateSession(
 	ttl time.Duration,
 ) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `
-		INSERT INTO sessions (id, user_id, token_hash, ip, user_agent, expires_at)
-		VALUES ($1, $2, $3, $4, $5, now() + make_interval(secs => $6))`,
+		INSERT INTO sessions (id, user_id, token_hash, ip, user_agent, expires_at, active_business_id)
+		VALUES ($1, $2, $3, $4, $5, now() + make_interval(secs => $6),
+		(SELECT business_id FROM business_members WHERE user_id=$2
+		 ORDER BY (business_id=$2) DESC, business_id LIMIT 1))`,
 		database.NewID(), userID, tokenHash, ip, userAgent, ttl.Seconds())
 
 	return err
@@ -186,7 +191,7 @@ func (s *Store) CreateSession(
 // whose token hash is in hashes, oldest first.
 func (s *Store) SessionsByHashes(ctx context.Context, hashes []string) ([]Session, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
-		SELECT s.id, s.token_hash, s.created_at, s.refreshed_at, s.expires_at, `+userCols+`
+		SELECT s.id, s.token_hash, s.created_at, s.refreshed_at, s.expires_at, COALESCE(s.active_business_id,''), `+userCols+`
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.token_hash = ANY($1) AND s.expires_at > now() AND NOT u.is_removed
 		ORDER BY s.created_at`, hashes)
@@ -202,7 +207,7 @@ func (s *Store) SessionsByHashes(ctx context.Context, hashes []string) ([]Sessio
 
 		u := &sess.User
 
-		err := rows.Scan(&sess.ID, &sess.TokenHash, &sess.CreatedAt, &sess.RefreshedAt, &sess.ExpiresAt,
+		err := rows.Scan(&sess.ID, &sess.TokenHash, &sess.CreatedAt, &sess.RefreshedAt, &sess.ExpiresAt, &sess.ActiveBusinessID,
 			&u.ID, &u.Email, &u.EmailVerified, &u.Name, &u.Image, &u.Role, &u.ProfileComplete,
 			&u.AgreedToTerms, &u.FirstName, &u.LastName, &u.BusinessName, &u.IsRemoved,
 			&u.PasswordHash, &u.BusinessVerified)
@@ -223,10 +228,10 @@ func (s *Store) SessionByID(ctx context.Context, id string) (Session, error) {
 	u := &sess.User
 
 	err := s.db.Q(ctx).QueryRow(ctx, `
-		SELECT s.id, s.token_hash, s.created_at, s.refreshed_at, s.expires_at, `+userCols+`
+		SELECT s.id, s.token_hash, s.created_at, s.refreshed_at, s.expires_at, COALESCE(s.active_business_id,''), `+userCols+`
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.id = $1 AND s.expires_at > now() AND NOT u.is_removed`, id).
-		Scan(&sess.ID, &sess.TokenHash, &sess.CreatedAt, &sess.RefreshedAt, &sess.ExpiresAt,
+		Scan(&sess.ID, &sess.TokenHash, &sess.CreatedAt, &sess.RefreshedAt, &sess.ExpiresAt, &sess.ActiveBusinessID,
 			&u.ID, &u.Email, &u.EmailVerified, &u.Name, &u.Image, &u.Role, &u.ProfileComplete,
 			&u.AgreedToTerms, &u.FirstName, &u.LastName, &u.BusinessName, &u.IsRemoved,
 			&u.PasswordHash, &u.BusinessVerified)

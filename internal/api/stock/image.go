@@ -1,6 +1,7 @@
 package stock
 
 import (
+	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/gofiber/fiber/v3"
 
 	"github.com/connor-davis/3reco/internal/api/middleware"
@@ -20,7 +21,7 @@ func (handler *Handler) uploadImage(c fiber.Ctx) error {
 	}
 	defer reader.Close()
 
-	if err := handler.svc.UploadImage(c.Context(), c.Params("id"), user.ID, reader); err != nil {
+	if err := handler.svc.UploadImage(c.Context(), c.Params("id"), auth.PartyID(user), reader); err != nil {
 		return err
 	}
 
@@ -29,7 +30,7 @@ func (handler *Handler) uploadImage(c fiber.Ctx) error {
 
 func (handler *Handler) deleteImage(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	if err := handler.svc.DeleteImage(c.Context(), c.Params("id"), user.ID); err != nil {
+	if err := handler.svc.DeleteImage(c.Context(), c.Params("id"), auth.PartyID(user)); err != nil {
 		return err
 	}
 
@@ -38,7 +39,7 @@ func (handler *Handler) deleteImage(c fiber.Ctx) error {
 
 func (handler *Handler) image(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	reader, kind, err := handler.svc.Image(c.Context(), c.Params("id"), user.ID)
+	reader, kind, err := handler.svc.Image(c.Context(), c.Params("id"), auth.PartyID(user))
 	if err != nil {
 		return err
 	}

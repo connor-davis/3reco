@@ -211,7 +211,7 @@ func TestCollectorDirectorySearch(t *testing.T) {
 func TestAdminUsersSearchFilters(t *testing.T) {
 	app := testutil.Server(t)
 	target := tradeNewUser(t, app, "business")
-	tradeExec(t, app, `UPDATE users SET business_name = 'Zebra Recyclers' WHERE id = $1`, target.id)
+	tradeExec(t, app, `UPDATE businesses SET business_name = 'Zebra Recyclers' WHERE id = $1`, target.id)
 
 	for range 4 {
 		tradeNewUser(t, app, "business")

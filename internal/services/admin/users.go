@@ -16,6 +16,7 @@ import (
 	"github.com/connor-davis/3reco/internal/services/privacy"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	store "github.com/connor-davis/3reco/internal/stores/admin"
+	"github.com/connor-davis/3reco/internal/stores/businesses"
 	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
 	tstore "github.com/connor-davis/3reco/internal/stores/transactions"
 )
@@ -121,6 +122,12 @@ func (s *Service) SetRole(ctx context.Context, user auth.User, id, role string) 
 
 		if err := s.store.SetRole(ctx, id, role); err != nil {
 			return err
+		}
+
+		if role == auth.RoleBusiness {
+			if err := businesses.New(s.db).EnsureOwner(ctx, id); err != nil {
+				return err
+			}
 		}
 
 		// Only after the commit: sockets keep their old rights until it lands.
