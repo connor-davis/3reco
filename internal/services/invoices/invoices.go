@@ -315,8 +315,8 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 // Postgres applies it. Business members never see bank details. On a business
 // invoice the seller's and the buyer's managers and owners get them whole (the
 // buyer needs them to pay), and so do admins; anyone else gets the mask.
-// Collector invoices follow the collector service's access check, where trade
-// participation alone is not enough.
+// Collector invoices give the buyer's manager or owner the frozen payout whole;
+// everyone else follows the collector service's access check.
 func (s *Service) payoutFor(ctx context.Context, user auth.User) store.PayoutFor {
 	return func(trade store.Transaction) (store.Payout, error) {
 		if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
@@ -331,6 +331,12 @@ func (s *Service) payoutFor(ctx context.Context, user auth.User) store.PayoutFor
 			}
 
 			return store.PayoutMasked, nil
+		}
+
+		// The buyer's manager or owner pays from this invoice, so the trade's own
+		// frozen payout is whole to them. The collector record itself is unchanged.
+		if auth.BusinessAtLeast(user, "manager") && auth.PartyID(user) == trade.Buyer.ID {
+			return store.PayoutFull, nil
 		}
 
 		full, err := s.collectors.CanReadFullPayout(ctx, user, trade.Seller.ID)
