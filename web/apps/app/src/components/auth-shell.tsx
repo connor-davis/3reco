@@ -14,6 +14,7 @@ type AuthShellProps = {
   feedback?: { tone: 'error' | 'info'; text: string } | null;
   children: ReactNode;
   footer?: ReactNode;
+  fullWidth?: boolean;
 };
 
 /** Two regions: a story panel on the left, the form panel on the right. */
@@ -23,6 +24,7 @@ export function AuthShell({
   feedback,
   children,
   footer,
+  fullWidth = false,
 }: AuthShellProps) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
@@ -34,7 +36,11 @@ export function AuthShell({
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
-        <div className="mx-auto w-full max-w-sm space-y-6">
+        <div
+          className={
+            fullWidth ? 'w-full space-y-6' : 'mx-auto w-full max-w-sm space-y-6'
+          }
+        >
           <Link
             to="/"
             className="flex items-center gap-2 font-semibold lg:hidden"
