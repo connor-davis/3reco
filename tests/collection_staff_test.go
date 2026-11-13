@@ -56,7 +56,7 @@ func TestAdminCollectionRefusesBadBusiness(t *testing.T) {
 	line := tradeLine(w.material, "10", "6")
 
 	removed := tradeNewUser(t, w.app, "business")
-	tradeExec(t, w.app, `UPDATE users SET is_removed = true WHERE id = $1`, removed.id)
+	tradeExec(t, w.app, `UPDATE businesses SET is_removed = true WHERE id = $1`, removed.id)
 
 	notBusiness := tradeNewUser(t, w.app, "collector")
 

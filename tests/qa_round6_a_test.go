@@ -188,7 +188,7 @@ func TestQARound6AOfferNotificationsAndReviewBody(t *testing.T) {
 // invoice names the invoice number.
 func TestQARound6AInvoiceTotalAndPrivacyEvent(t *testing.T) {
 	w := newTradeWorld(t)
-	tradeExec(t, w.app, `UPDATE users SET bank_account_holder_name='Holder',bank_name='Bank',
+	tradeExec(t, w.app, `UPDATE businesses SET bank_account_holder_name='Holder',bank_name='Bank',
 		bank_account_number=$2,bank_branch_code='250655',bank_account_type='Cheque' WHERE id=$1`,
 		w.seller.id, testutil.Seal(t, "123456789"))
 	admin := tradeNewUser(t, w.app, "admin")

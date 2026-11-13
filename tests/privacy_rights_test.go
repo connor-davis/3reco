@@ -34,8 +34,8 @@ func TestPrivacyExportIsOwnDataOnly(t *testing.T) {
 	}), 200)
 
 	// The other side has private values the seller must never get back.
-	tradeExec(t, w.app, `UPDATE users SET id_number=$2, bank_account_number=$3 WHERE id=$1`,
-		w.buyer.id, testutil.Seal(t, "BUYER-ID"), testutil.Seal(t, "BUYER-BANK"))
+	tradeExec(t, w.app, `UPDATE users SET id_number=$2 WHERE id=$1`, w.buyer.id, testutil.Seal(t, "BUYER-ID"))
+	tradeExec(t, w.app, `UPDATE businesses SET bank_account_number=$2 WHERE id=$1`, w.buyer.id, testutil.Seal(t, "BUYER-BANK"))
 	theirs := privacyCollector(t, w.buyer.c)
 	status(t, w.buyer.c.Do("PATCH", "/api/collectors/"+theirs, map[string]any{
 		"bank_account_number": "999888777",
@@ -106,7 +106,7 @@ func TestPrivacyDeleteAnonymisesAndCancels(t *testing.T) {
 	owned := privacyCollector(t, w.seller.c)
 
 	status(t, uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", receiptImage(1)), 200)
-	avatar := tradeText(t, w.app, `SELECT avatar_key FROM users WHERE id=$1`, w.seller.id)
+	avatar := tradeText(t, w.app, `SELECT avatar_key FROM businesses WHERE id=$1`, w.seller.id)
 
 	if avatar == "" {
 		t.Fatal("the avatar was not stored")
@@ -148,7 +148,6 @@ func TestPrivacyDeleteAnonymisesAndCancels(t *testing.T) {
 	for _, sql := range []string{
 		`SELECT count(*)::text FROM sessions WHERE user_id=$1`,
 		`SELECT count(*)::text FROM notifications WHERE user_id=$1`,
-		`SELECT count(*)::text FROM stock WHERE owner_id=$1`,
 		`SELECT count(*)::text FROM carts WHERE seller_id=$1 OR buyer_id=$1`,
 		`SELECT count(*)::text FROM auth_tokens WHERE user_id=$1`,
 	} {
@@ -157,8 +156,12 @@ func TestPrivacyDeleteAnonymisesAndCancels(t *testing.T) {
 		}
 	}
 
-	if tradeText(t, w.app, `SELECT count(*)::text FROM collectors WHERE id=$1`, owned) != "0" {
-		t.Error("a collector the person created was not scrubbed")
+	if tradeText(t, w.app, `SELECT count(*)::text FROM collectors WHERE id=$1`, owned) != "1" {
+		t.Error("erasing a person deleted a business collector")
+	}
+
+	if tradeText(t, w.app, `SELECT count(*)::text FROM stock WHERE owner_id=$1`, w.seller.id) != "1" {
+		t.Fatal("erasing a person deleted business stock")
 	}
 
 	// The open request is cancelled with the normal status, and the buyer is told.

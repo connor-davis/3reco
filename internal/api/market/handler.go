@@ -19,8 +19,8 @@ func (handler *Handler) Register(router fiber.Router) {
 	router.Get("/market/listings", handler.listings)
 	router.Get("/market/listings/:id", handler.detail)
 	router.Get("/stores/:id/listings", handler.sellerListings)
-	router.Get("/cart/stores", middleware.RequireUser, handler.cartStores)
-	router.Get("/cart", middleware.RequireUser, handler.cart)
-	router.Put("/cart", middleware.RequireUser, handler.saveCart)
-	router.Delete("/cart", middleware.RequireUser, handler.clearCart)
+	router.Get("/cart/stores", middleware.RequireBusiness("manager"), handler.cartStores)
+	router.Get("/cart", middleware.RequireBusiness("manager"), handler.cart)
+	router.Put("/cart", middleware.RequireBusiness("manager"), handler.saveCart)
+	router.Delete("/cart", middleware.RequireBusiness("manager"), handler.clearCart)
 }

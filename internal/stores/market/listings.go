@@ -42,12 +42,12 @@ var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
 	s.material_id,m.name,m.carbon_factor::text,m.gw_code,GREATEST(s.weight-COALESCE(h.held,0),0)::text,s.price::text,
 	s.created_at,COALESCE(h.held,0)::text,
 	CASE WHEN s.image_key IS NOT NULL THEN '/api/stock/'||s.id||'/image?v='||md5(s.image_key) ELSE '' END,
-	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END,
+	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/stores/'||u.id||'/logo?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END,
 	` + database.Verified("u")
 
 // Held weight is summed once for all stock, not once per row through stock_available().
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
-	JOIN users u ON u.id=s.owner_id
+	JOIN business_profiles u ON u.id=s.owner_id
 	LEFT JOIN (SELECT stock_id,sum(weight) AS held FROM stock_holds
 		WHERE status='active' AND expires_at>clock_timestamp() GROUP BY stock_id) h ON h.stock_id=s.id
 	WHERE s.is_listed AND s.weight>0

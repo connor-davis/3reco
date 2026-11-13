@@ -105,8 +105,8 @@ var selectTransaction = `
 // name buyer (b), seller (s) and collector (c) the same way everywhere.
 const fromJoins = `
 	FROM transactions t
-	JOIN users b ON b.id = t.buyer_id
-	LEFT JOIN users s ON t.type = 'b2b' AND s.id = t.seller_id
+	JOIN business_profiles b ON b.id = t.buyer_id
+	LEFT JOIN business_profiles s ON t.type = 'b2b' AND s.id = t.seller_id
 	LEFT JOIN collectors c ON t.type = 'c2b' AND c.id = t.seller_id`
 
 // Filter narrows a list. Every field is optional. Like is a paging.SearchPattern;

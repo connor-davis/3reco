@@ -46,7 +46,7 @@ func (s *Service) PrepareExport(
 	tradeFilter, role, search string,
 ) (Export, error) {
 	var empty Export
-	scope, owner, tradeType := tstore.ScopeAll, user.ID, ""
+	scope, owner, tradeType := tstore.ScopeAll, auth.PartyID(user), ""
 	denied := apperr.Forbidden("You are not allowed to export these records.")
 
 	switch kind {
@@ -61,14 +61,14 @@ func (s *Service) PrepareExport(
 	case "collections":
 		tradeType = "c2b"
 		if !auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) {
-			if !auth.HasRole(user, auth.RoleBusiness) {
+			if !auth.BusinessAtLeast(user, "manager") {
 				return empty, denied
 			}
 
 			scope = tstore.ScopePurchases
 		}
 	case "purchases", "sales":
-		if !auth.HasRole(user, auth.RoleBusiness) {
+		if !auth.BusinessAtLeast(user, "manager") {
 			return empty, denied
 		}
 

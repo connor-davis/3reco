@@ -31,7 +31,7 @@ const (
 // Notify tells one user something. Call it in the same transaction as the
 // change it reports, so both happen or neither does.
 func (s *Service) Notify(ctx context.Context, userID, kind, title, body, link string) error {
-	return s.store.Insert(ctx, userID, kind, title, body, link)
+	return s.store.InsertBusiness(ctx, userID, kind, title, body, link)
 }
 
 // OffersEnded marks a request's offer messages read, in the same transaction

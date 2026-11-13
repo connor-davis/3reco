@@ -75,7 +75,7 @@ func (service *Service) own(ctx context.Context, user auth.User, item store.Coll
 // admin vouches for those, so they count as the creator of every collector.
 func creator(user auth.User, item store.Collector) bool {
 	return verifiedBusiness(user) || auth.HasRole(user, "business") &&
-		item.CreatedByBusinessID != nil && *item.CreatedByBusinessID == user.ID
+		item.CreatedByBusinessID != nil && *item.CreatedByBusinessID == auth.PartyID(user)
 }
 
 func verifiedBusiness(user auth.User) bool {
@@ -90,7 +90,7 @@ func manages(user auth.User, item store.Collector, own bool) bool {
 // full is who may read the whole account number and e-wallet id. Staff may
 // manage a collector but only see them masked.
 func full(user auth.User, item store.Collector, own bool) bool {
-	return auth.HasRole(user, "admin") || creator(user, item) || own
+	return auth.HasRole(user, "admin") || (auth.BusinessAtLeast(user, "manager") && creator(user, item)) || own
 }
 
 // shown is a payout number as a non-owner sees it: the stored last four when
@@ -108,9 +108,9 @@ func shown(last4, plain string) string {
 // numbers from anyone who may not see them in full.
 func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewer, error) {
 	viewer := store.Viewer{
-		ID:       user.ID,
+		ID:       auth.PartyID(user),
 		Admin:    auth.HasRole(user, auth.RoleAdmin),
-		Business: auth.HasRole(user, "business"),
+		Business: auth.BusinessAtLeast(user, "manager"),
 		Verified: verifiedBusiness(user),
 	}
 
@@ -126,7 +126,7 @@ func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewe
 }
 
 func redact(user auth.User, item store.Collector, own bool) store.Collector {
-	item.CanEdit = manages(user, item, false)
+	item.CanEdit = manages(user, item, false) && (!auth.HasRole(user, "business") || auth.BusinessAtLeast(user, "manager"))
 	item.CanViewPayout = full(user, item, own)
 
 	if !item.CanViewPayout {
@@ -303,6 +303,10 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 		return "", apperr.Forbidden("You cannot manage collectors.")
 	}
 
+	if auth.HasRole(user, "business") && !auth.BusinessAtLeast(user, "manager") {
+		return "", apperr.Forbidden("Only managers can change collectors.")
+	}
+
 	creating := id == ""
 	if creating {
 		id = database.NewID()
@@ -313,7 +317,8 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 		func(ctx context.Context) error {
 			item := store.Collector{ID: id, CreatedByUserID: user.ID}
 			if creating && auth.HasRole(user, "business") {
-				item.CreatedByBusinessID = &user.ID
+				businessID := auth.PartyID(user)
+				item.CreatedByBusinessID = &businessID
 			}
 
 			if !creating {

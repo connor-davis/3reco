@@ -38,6 +38,27 @@ func (s *Store) Insert(ctx context.Context, userID, kind, title, body, link stri
 	return err
 }
 
+// InsertBusiness tells every current member, with an independent personal read state.
+// A recipient that is a person rather than a business keeps a personal notification.
+func (s *Store) InsertBusiness(ctx context.Context, recipient, kind, title, body, link string) error {
+	_, err := s.db.Q(ctx).Exec(ctx, `
+		INSERT INTO notifications (id, user_id, business_id, type, title, body, link)
+		SELECT md5($1 || m.user_id), m.user_id, m.business_id, $3, $4, $5, NULLIF($6,'')
+		FROM business_members m JOIN users u ON u.id=m.user_id
+		WHERE m.business_id=$2 AND NOT u.is_removed
+		UNION ALL
+		SELECT $1, $2, NULL, $3, $4, $5, NULLIF($6,'')
+		WHERE NOT EXISTS(SELECT 1 FROM businesses WHERE id=$2)`,
+		database.NewID(), recipient, kind, title, body, link)
+
+	return err
+}
+
+// notificationMembership also hides old business notices once membership ends.
+const notificationMembership = ` AND (business_id IS NULL OR EXISTS(
+	SELECT 1 FROM business_members m WHERE m.business_id=notifications.business_id
+	AND m.user_id=notifications.user_id))`
+
 // List returns a user's messages that were not dismissed, newest first. It
 // fetches up to limit+1 rows so the caller can tell whether more exist.
 func (s *Store) List(
@@ -49,7 +70,7 @@ func (s *Store) List(
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT id, type, title, body, link, read, created_at
 		FROM notifications
-		WHERE user_id = $1 AND NOT dismissed
+		WHERE user_id = $1`+notificationMembership+` AND NOT dismissed
 			AND ($2::timestamptz IS NULL OR (created_at, id) < ($2, $3))
 		ORDER BY created_at DESC, id DESC
 		LIMIT $4`, userID, cur.At, cur.ID, limit+1)
@@ -80,7 +101,7 @@ func (s *Store) UnreadCount(ctx context.Context, userID string) (int, error) {
 
 	err := s.db.Q(ctx).QueryRow(ctx, `
 		SELECT count(*) FROM notifications
-		WHERE user_id = $1 AND NOT dismissed AND NOT read`, userID).Scan(&n)
+		WHERE user_id = $1`+notificationMembership+` AND NOT dismissed AND NOT read`, userID).Scan(&n)
 
 	return n, err
 }
@@ -89,7 +110,7 @@ func (s *Store) UnreadCount(ctx context.Context, userID string) (int, error) {
 // user owns no such message.
 func (s *Store) MarkRead(ctx context.Context, userID, id string) (bool, error) {
 	tag, err := s.db.Q(ctx).Exec(ctx,
-		`UPDATE notifications SET read = true WHERE id = $1 AND user_id = $2`, id, userID)
+		`UPDATE notifications SET read = true WHERE id = $1 AND user_id = $2`+notificationMembership, id, userID)
 
 	return tag.RowsAffected() > 0, err
 }
@@ -97,7 +118,7 @@ func (s *Store) MarkRead(ctx context.Context, userID, id string) (bool, error) {
 // MarkAllRead marks every message of the user read.
 func (s *Store) MarkAllRead(ctx context.Context, userID string) error {
 	_, err := s.db.Q(ctx).Exec(ctx,
-		`UPDATE notifications SET read = true WHERE user_id = $1 AND NOT read`, userID)
+		`UPDATE notifications SET read = true WHERE user_id = $1 AND NOT read`+notificationMembership, userID)
 
 	return err
 }
@@ -133,7 +154,7 @@ func (s *Store) DeleteRequestActions(ctx context.Context, link string) error {
 // owns no such message.
 func (s *Store) Dismiss(ctx context.Context, userID, id string) (bool, error) {
 	tag, err := s.db.Q(ctx).Exec(ctx,
-		`UPDATE notifications SET dismissed = true WHERE id = $1 AND user_id = $2`, id, userID)
+		`UPDATE notifications SET dismissed = true WHERE id = $1 AND user_id = $2`+notificationMembership, id, userID)
 
 	return tag.RowsAffected() > 0, err
 }
@@ -141,7 +162,7 @@ func (s *Store) Dismiss(ctx context.Context, userID, id string) (bool, error) {
 // DismissAll hides every message of the user.
 func (s *Store) DismissAll(ctx context.Context, userID string) error {
 	_, err := s.db.Q(ctx).Exec(ctx,
-		`UPDATE notifications SET dismissed = true WHERE user_id = $1 AND NOT dismissed`, userID)
+		`UPDATE notifications SET dismissed = true WHERE user_id = $1`+notificationMembership+` AND NOT dismissed`, userID)
 
 	return err
 }

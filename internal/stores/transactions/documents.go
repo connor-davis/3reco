@@ -86,8 +86,8 @@ func (s *Store) Document(ctx context.Context, id string) (Document, error) {
 			THEN to_jsonb(trunc((value#>>'{}')::numeric)::int) ELSE value END)
 		FROM jsonb_each(COALESCE(t.collector_snapshot,'{}'::jsonb))
 		WHERE value <> 'null'::jsonb AND value <> '""'::jsonb),'{}'::jsonb) END,
-		`+userContact("b")+`, b.role FROM transactions t JOIN users b ON b.id=t.buyer_id
-		LEFT JOIN users s ON t.type='b2b' AND s.id=t.seller_id
+		`+userContact("b")+`, b.role FROM transactions t JOIN business_profiles b ON b.id=t.buyer_id
+		LEFT JOIN business_profiles s ON t.type='b2b' AND s.id=t.seller_id
 		LEFT JOIN collectors c ON t.type='c2b' AND c.id=t.seller_id WHERE t.id=$1`, id).Scan(
 		&out.InvoiceKey, &anonymised, &sellerJSON, &buyerJSON, &out.BuyerUser.Role)
 	if err != nil {
@@ -96,6 +96,9 @@ func (s *Store) Document(ctx context.Context, id string) (Document, error) {
 
 	out.Trade = trade
 	out.BuyerUser.ID = trade.Buyer.ID
+	out.BuyerUser.ActiveBusinessID = trade.Buyer.ID
+	out.BuyerUser.BusinessRole = "manager"
+	out.BuyerUser.BusinessVerified = trade.Buyer.Verified
 
 	// After the retention period the parties' details are gone for good.
 	if anonymised {

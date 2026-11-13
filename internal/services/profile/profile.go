@@ -54,10 +54,15 @@ type Input struct {
 
 // Find reads only the profile selected by the session. The ID number comes
 // back masked; the bank account number is the caller's own, so it is whole.
-func (service *Service) Find(ctx context.Context, id string) (store.Profile, error) {
-	item, err := service.store.Find(ctx, id, false)
+func (service *Service) Find(ctx context.Context, id string, business ...string) (store.Profile, error) {
+	item, err := service.store.Find(ctx, id, false, business...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return item, apperr.NotFound("No such profile.")
+	}
+
+	if len(business) > 1 && business[0] != "" && business[1] == "member" {
+		item.BankAccountHolderName, item.BankName, item.BankAccountNumber = "", "", ""
+		item.BankBranchCode, item.BankAccountType = "", ""
 	}
 
 	item.IDNumber = crypt.Mask(item.IDNumber)
@@ -91,11 +96,11 @@ func (service *Service) Directory(ctx context.Context, query paging.Query) (pagi
 }
 
 // Update preserves omitted values and never accepts a target user ID.
-func (service *Service) Update(ctx context.Context, id string, in Input) error {
+func (service *Service) Update(ctx context.Context, id string, in Input, business ...string) error {
 	return service.db.InTx(
 		ctx,
 		func(ctx context.Context) error {
-			item, err := service.store.Find(ctx, id, true)
+			item, err := service.store.Find(ctx, id, true, business...)
 			if errors.Is(err, pgx.ErrNoRows) {
 				return apperr.NotFound("No such profile.")
 			}
@@ -103,6 +108,16 @@ func (service *Service) Update(ctx context.Context, id string, in Input) error {
 			if err != nil {
 				return err
 			}
+
+			businessFields := in.BusinessName != nil || in.BusinessRegistrationNumber != nil ||
+				in.BankAccountHolderName != nil || in.BankName != nil || in.BankAccountNumber != nil ||
+				in.BankBranchCode != nil || in.BankAccountType != nil || in.StreetAddress != nil ||
+				in.City != nil || in.Province != nil || in.AreaCode != nil
+			if businessFields && ((len(business) > 1 && business[0] != "" && business[1] != "owner") ||
+				(item.Role == "business" && item.BusinessID == "")) {
+				return apperr.Forbidden("Only owners can change business details.")
+			}
+			item.BusinessChanged = businessFields
 
 			if in.Name != nil {
 				item.Name = strings.TrimSpace(*in.Name)

@@ -11,7 +11,7 @@ import (
 func TestEraseKeepsChatEventsWithoutTheName(t *testing.T) {
 	w := newTradeWorld(t)
 	request := tradeRequest(t, w.buyer, w.seller, w.stock)
-	name := tradeText(t, w.app, `SELECT business_name FROM users WHERE id=$1`, w.buyer.id)
+	name := tradeText(t, w.app, `SELECT business_name FROM businesses WHERE id=$1`, w.buyer.id)
 
 	tradeExec(t, w.app, `INSERT INTO transaction_request_messages (id, request_id, sender_id, content, system)
 		VALUES ('r20typed', $1, $2, 'call me on 082 000 0000', false)`, request, w.buyer.id)

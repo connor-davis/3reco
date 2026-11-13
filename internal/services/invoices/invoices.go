@@ -315,9 +315,18 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 // (the buyer needs them to pay). Collector invoices follow the collector
 // service's access check, where trade participation alone is not enough.
 func (s *Service) Project(ctx context.Context, user auth.User, document store.Document) (store.Document, error) {
+	if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
+		for _, contact := range []*store.Contact{&document.Seller, &document.Buyer} {
+			contact.Holder, contact.Bank, contact.Account, contact.Branch = "", "", "", ""
+			contact.AccountType, contact.PaymentID, contact.Platform, contact.PayoutMethod = "", "", "", ""
+		}
+
+		return document, nil
+	}
+
 	if document.Trade.Type != "c2b" {
 		trade := document.Trade
-		if user.ID == trade.Seller.ID || user.ID == trade.Buyer.ID || auth.HasRole(user, auth.RoleAdmin) {
+		if (auth.BusinessAtLeast(user, "manager") && (auth.PartyID(user) == trade.Seller.ID || auth.PartyID(user) == trade.Buyer.ID)) || auth.HasRole(user, auth.RoleAdmin) {
 			return document, nil
 		}
 		document.Seller.Account = crypt.Mask(document.Seller.Account)

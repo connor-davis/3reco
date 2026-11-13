@@ -121,11 +121,11 @@ func (s *Service) scope(
 			return "", "", denied
 		}
 
-		return store.ScopePurchases, user.ID, nil
+		return store.ScopePurchases, auth.PartyID(user), nil
 
 	case KindSales:
 		if auth.HasRole(user, auth.RoleBusiness) {
-			return store.ScopeBusinessSales, user.ID, nil
+			return store.ScopeBusinessSales, auth.PartyID(user), nil
 		}
 
 		if !auth.HasRole(user, auth.RoleCollector) {
@@ -149,7 +149,7 @@ func (s *Service) scope(
 			return store.ScopeAll, user.ID, nil
 		}
 
-		return store.ScopeMine, user.ID, nil
+		return store.ScopeMine, auth.PartyID(user), nil
 	}
 }
 
@@ -161,7 +161,7 @@ func (s *Service) canRead(ctx context.Context, user auth.User, t store.Transacti
 		return true, nil
 	}
 
-	return s.CanRemoveReceipts(ctx, user, t)
+	return s.party(ctx, user, t)
 }
 
 // CanRemoveReceipts checks the trade's parties, resolving collector record IDs
@@ -171,9 +171,17 @@ func (s *Service) CanRemoveReceipts(
 	user auth.User,
 	t store.Transaction,
 ) (bool, error) {
+	if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
+		return false, nil
+	}
+
+	return s.party(ctx, user, t)
+}
+
+func (s *Service) party(ctx context.Context, user auth.User, t store.Transaction) (bool, error) {
 	if auth.HasRole(user, auth.RoleAdmin) ||
-		t.Buyer.ID == user.ID ||
-		(t.Type == "b2b" && t.Seller.ID == user.ID) {
+		t.Buyer.ID == auth.PartyID(user) ||
+		(t.Type == "b2b" && t.Seller.ID == auth.PartyID(user)) {
 		return true, nil
 	}
 
@@ -223,13 +231,17 @@ func (s *Service) Participant(
 	user auth.User,
 	id string,
 ) (store.Transaction, error) {
+	if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
+		return store.Transaction{}, apperr.Forbidden("Only managers can upload receipts.")
+	}
+
 	t, err := s.Detail(ctx, user, id)
 	if err != nil {
 		return t, err
 	}
 
 	if !auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) &&
-		t.Buyer.ID != user.ID && !(t.Type == "b2b" && t.Seller.ID == user.ID) {
+		t.Buyer.ID != auth.PartyID(user) && !(t.Type == "b2b" && t.Seller.ID == auth.PartyID(user)) {
 		return store.Transaction{}, errNotFound
 	}
 

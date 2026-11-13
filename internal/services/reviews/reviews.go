@@ -106,7 +106,7 @@ func (s *Service) Add(
 
 		// A review is a new trade message. Use the existing notification kind so
 		// the bell and its realtime routing keep the same owner-only contract.
-		return notifications.New(s.db).Insert(
+		return notifications.New(s.db).InsertBusiness(
 			ctx,
 			trade.SellerID,
 			"message_received",

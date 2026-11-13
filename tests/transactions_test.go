@@ -143,7 +143,7 @@ func TestDirectSaleRoleAndBuyerLeak(t *testing.T) {
 	}
 
 	// A removed business cannot be sold to.
-	tradeExec(t, w.app, `UPDATE users SET is_removed = true WHERE id = $1`, w.buyer.id)
+	tradeExec(t, w.app, `UPDATE businesses SET is_removed = true WHERE id = $1`, w.buyer.id)
 	tradeWant(t, "sell to removed", w.seller.c.Do("POST", "/api/transactions/sales", sale(w.buyer.id)), 400)
 }
 

@@ -31,7 +31,7 @@ func (s *Service) MakeOffer(
 			return err
 		}
 
-		if r.Status == StatusOffered && r.OfferBy != nil && *r.OfferBy == user.ID {
+		if r.Status == StatusOffered && r.OfferBy != nil && *r.OfferBy == auth.PartyID(user) {
 			return apperr.Forbidden("Wait for the other side to respond, or withdraw your offer.")
 		}
 
@@ -75,7 +75,7 @@ func (s *Service) MakeOffer(
 			}
 		}
 
-		if err := s.store.StartOffer(ctx, id, user.ID); err != nil {
+		if err := s.store.StartOffer(ctx, id, auth.PartyID(user)); err != nil {
 			return err
 		}
 
@@ -87,7 +87,7 @@ func (s *Service) MakeOffer(
 		body := fmt.Sprintf("A new offer was made for %s. Review the terms and confirm or counter.", name)
 
 		actor := r.Seller.Name
-		if user.ID == r.Buyer.ID {
+		if auth.PartyID(user) == r.Buyer.ID {
 			actor = r.Buyer.Name
 		}
 		action := " made an offer for "
@@ -99,7 +99,7 @@ func (s *Service) MakeOffer(
 		}
 
 		other := r.Buyer.ID
-		if user.ID == other {
+		if auth.PartyID(user) == other {
 			other = r.Seller.ID
 		}
 
@@ -190,10 +190,10 @@ func (s *Service) Accept(
 
 		buyerConfirmed := r.BuyerConfirmedVersion != nil && *r.BuyerConfirmedVersion == r.OfferVersion
 		sellerConfirmed := r.SellerConfirmedVersion != nil && *r.SellerConfirmedVersion == r.OfferVersion
-		if (user.ID == r.Buyer.ID && buyerConfirmed) || (user.ID == r.Seller.ID && sellerConfirmed) {
+		if (auth.PartyID(user) == r.Buyer.ID && buyerConfirmed) || (auth.PartyID(user) == r.Seller.ID && sellerConfirmed) {
 			return apperr.Conflict("You already confirmed this offer.")
 		}
-		if !buyerConfirmed && !sellerConfirmed && (r.OfferBy == nil || *r.OfferBy == user.ID) {
+		if !buyerConfirmed && !sellerConfirmed && (r.OfferBy == nil || *r.OfferBy == auth.PartyID(user)) {
 			return apperr.Forbidden("The other side must accept your offer first.")
 		}
 
@@ -204,12 +204,12 @@ func (s *Service) Accept(
 		if !live {
 			return transactions.ErrOfferRanOut
 		}
-		if err := s.store.Confirm(ctx, r, user.ID); err != nil {
+		if err := s.store.Confirm(ctx, r, auth.PartyID(user)); err != nil {
 			return err
 		}
 
 		other := r.Seller.ID
-		if user.ID == other {
+		if auth.PartyID(user) == other {
 			other = r.Buyer.ID
 		}
 		if !buyerConfirmed && !sellerConfirmed {
@@ -350,27 +350,27 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 			actor, other = r.Buyer, r.Seller
 		}
 
-		if action == "decline" && r.OfferBy != nil && *r.OfferBy == user.ID {
+		if action == "decline" && r.OfferBy != nil && *r.OfferBy == auth.PartyID(user) {
 			return apperr.Forbidden("Only the other side can decline your offer.")
 		}
 
-		if action == "withdraw" && r.OfferBy != nil && *r.OfferBy == user.ID {
-			actor.ID = user.ID
+		if action == "withdraw" && r.OfferBy != nil && *r.OfferBy == auth.PartyID(user) {
+			actor.ID = auth.PartyID(user)
 			other = r.Buyer
-			if user.ID == r.Buyer.ID {
+			if auth.PartyID(user) == r.Buyer.ID {
 				other = r.Seller
 			}
 		} else if action == "withdraw" {
 			return apperr.Forbidden("Only the offer maker can withdraw it.")
 		}
-		if (action == "reject" || action == "decline") && r.Status == StatusOffered && r.OfferBy != nil && *r.OfferBy != user.ID {
-			actor.ID = user.ID
+		if (action == "reject" || action == "decline") && r.Status == StatusOffered && r.OfferBy != nil && *r.OfferBy != auth.PartyID(user) {
+			actor.ID = auth.PartyID(user)
 			other = r.Buyer
-			if user.ID == r.Buyer.ID {
+			if auth.PartyID(user) == r.Buyer.ID {
 				other = r.Seller
 			}
 		}
-		if actor.ID != user.ID {
+		if actor.ID != auth.PartyID(user) {
 			return apperr.Forbidden(step.denied)
 		}
 
@@ -411,7 +411,7 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 
 		// The chat keeps a record of who ended the request, for both sides.
 		name := r.Seller.Name
-		if user.ID == r.Buyer.ID {
+		if auth.PartyID(user) == r.Buyer.ID {
 			name = r.Buyer.Name
 		}
 		event := fmt.Sprintf(step.event, name)

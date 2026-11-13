@@ -63,14 +63,21 @@ func (records *Store) Held(ctx context.Context, id string) (string, error) {
 }
 
 // Find returns a row; lock serializes owner changes and trades.
-func (records *Store) Find(ctx context.Context, id string, lock bool) (Item, error) {
+func (records *Store) Find(ctx context.Context, id string, lock bool, caller ...string) (Item, error) {
 	query := `SELECT ` + columns + ` FROM stock s JOIN materials m ON m.id=s.material_id WHERE s.id=$1`
+	args := []any{id}
+	if len(caller) > 0 {
+		query += ` AND (s.owner_id=$2 OR (s.is_listed AND EXISTS(
+			SELECT 1 FROM businesses b WHERE b.id=s.owner_id AND NOT b.is_removed)))`
+		args = append(args, caller[0])
+	}
+
 	if lock {
 		query += ` FOR UPDATE OF s FOR SHARE OF m`
 	}
 
 	var item Item
-	err := scan(records.db.Q(ctx).QueryRow(ctx, query, id), &item)
+	err := scan(records.db.Q(ctx).QueryRow(ctx, query, args...), &item)
 
 	return item, err
 }

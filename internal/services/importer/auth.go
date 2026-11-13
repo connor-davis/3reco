@@ -89,6 +89,31 @@ func (p *planner) planUsers() {
 		rows = append(rows, out)
 	}
 
+	for _, person := range rows {
+		if person["role"] == "business" {
+			business := store.Row{"id": person["id"], "created_at": person["created_at"], "updated_at": person["updated_at"]}
+			for _, column := range []string{"business_name", "business_registration_number",
+				"bank_account_holder_name", "bank_name", "bank_account_number", "bank_branch_code",
+				"bank_account_type", "street_address", "city", "area_code", "province", "avatar_key", "image"} {
+				if value, ok := person[column]; ok {
+					business[column] = value
+				}
+
+				if column != "avatar_key" && column != "image" {
+					delete(person, column)
+				}
+			}
+
+			p.rows["businesses"] = append(p.rows["businesses"], business)
+			p.rows["business_members"] = append(p.rows["business_members"], store.Row{
+				"business_id": person["id"], "user_id": person["id"], "role": "owner",
+			})
+		}
+
+		delete(person, "business_name")
+		delete(person, "business_registration_number")
+	}
+
 	p.rows["users"] = rows
 	p.users = idsOf(docsFromRows(rows))
 

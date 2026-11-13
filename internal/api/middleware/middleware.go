@@ -275,7 +275,7 @@ func ActorTx(db *database.DB) fiber.Handler {
 
 		outer := c.Context()
 
-		return db.InTx(database.WithActor(outer, user.ID), func(ctx context.Context) error {
+		return db.InTx(database.WithActor(outer, user.ID, user.ActiveBusinessID), func(ctx context.Context) error {
 			c.SetContext(ctx)
 
 			// Back to the plain context before the commit, so the after-commit

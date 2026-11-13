@@ -7,7 +7,7 @@ func (records *Store) ImageKey(ctx context.Context, id, caller string) (string, 
 	var key string
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`SELECT s.image_key FROM stock s JOIN users u ON u.id=s.owner_id
+		`SELECT s.image_key FROM stock s JOIN business_profiles u ON u.id=s.owner_id
 		WHERE s.id=$1 AND s.image_key IS NOT NULL AND
 		(s.owner_id=$2 OR (s.is_listed AND s.weight>0 AND u.role='business' AND NOT u.is_removed))`,
 		id,

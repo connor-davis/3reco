@@ -16,12 +16,13 @@ func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
 	stranger := tradeNewUser(t, app, "business")
 	legacy := "https://identity.example.test/picture.png"
 	tradeExec(t, app, `UPDATE users SET image=$2 WHERE id=$1`, owner.id, legacy)
+	tradeExec(t, app, `UPDATE businesses SET image=$2 WHERE id=$1`, owner.id, legacy)
 	before := owner.c.Do("GET", "/api/profile", nil)
 	if before.Body["avatar_url"] != legacy {
 		t.Fatal("legacy image fallback missing")
 	}
 
-	path := "/api/users/" + owner.id + "/avatar"
+	path := "/api/stores/" + owner.id + "/logo"
 	tradeWant(t, "foreign avatar write", uploadImage(t, app, stranger.c, path, receiptImage(1)), 404)
 	tradeWant(t, "foreign avatar delete", stranger.c.Do("DELETE", path, nil), 404)
 	tradeWant(t, "anonymous upload", uploadImage(t, app, app.NewClient(t), "/api/profile/avatar", receiptImage(1)), 401)
@@ -40,7 +41,7 @@ func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
 	if public.Status != 200 || !bytes.Equal(public.Raw, image) {
 		t.Fatal("public avatar bytes differ")
 	}
-	for _, route := range []string{"/api/users/" + owner.id, "/api/stores/" + owner.id} {
+	for _, route := range []string{"/api/stores/" + owner.id} {
 		if got := stranger.c.Do("GET", route, nil); got.Body["avatar_url"] != path {
 			t.Fatalf("avatar URL missing in %s: %s", route, got.Raw)
 		}
@@ -49,7 +50,7 @@ func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
 		t.Fatal("upload changed someone else's avatar")
 	}
 
-	old := tradeText(t, app, `SELECT avatar_key FROM users WHERE id=$1`, owner.id)
+	old := tradeText(t, app, `SELECT avatar_key FROM businesses WHERE id=$1`, owner.id)
 	// The multipart name and declared MIME are ignored; detection permits WEBP.
 	webp := []byte("RIFF1234WEBPVP8 " + strings.Repeat("x", 32))
 	tradeWant(t, "replace WEBP", uploadImage(t, app, owner.c, "/api/profile/avatar", webp), 200)
@@ -168,6 +169,7 @@ func TestUserDirectoryDoesNotLeakPrivateFields(t *testing.T) {
 	}
 
 	status(t, anonymous.Do("GET", "/api/users/"+ownerID, nil), 404)
+	tradeExec(t, app, `UPDATE businesses SET is_removed=true WHERE id=$1`, ownerID)
 	status(t, anonymous.Do("GET", "/api/stores/"+ownerID, nil), 404)
 }
 

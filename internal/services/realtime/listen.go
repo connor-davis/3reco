@@ -69,6 +69,13 @@ func (h *Hub) listen(ctx context.Context) error {
 			continue
 		}
 
+		if ch.Kind == "membership" {
+			h.RecheckUser(ctx, ch.ID)
+			continue
+		}
+
+		// Recheck before delivery, including changes queued just before removal.
+		h.Recheck(ctx)
 		h.route(ch)
 	}
 }

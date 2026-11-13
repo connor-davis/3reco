@@ -134,7 +134,7 @@ func (s *Service) Business(
 		return Dashboard{}, apperr.Forbidden("Only a business can see this.")
 	}
 
-	return s.build(ctx, store.ScopeBusiness, user.ID, from, to)
+	return s.build(ctx, store.ScopeBusiness, auth.PartyID(user), from, to)
 }
 
 // Collector is a collector's own dashboard. A collector with no linked

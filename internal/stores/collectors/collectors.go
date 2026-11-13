@@ -261,7 +261,8 @@ func (records *Store) createdPage(
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT `+columns+` FROM collectors
- WHERE (created_by_user_id=$1 OR created_by_business_id=$1)
+ WHERE ((created_by_user_id=$1 AND created_by_business_id IS NULL) OR created_by_business_id IN
+ (SELECT business_id FROM business_members WHERE user_id=$1))
  AND ($2::timestamptz IS NULL OR (created_at,id)>($2,$3))
  ORDER BY created_at,id LIMIT $4`,
 		userID,

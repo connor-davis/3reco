@@ -74,7 +74,7 @@ func TestInvoiceResendAttachmentEncoding(t *testing.T) {
 
 func TestInvoiceNumberStable(t *testing.T) {
 	w := newTradeWorld(t)
-	tradeExec(t, w.app, `UPDATE users SET bank_account_holder_name='Invoice Holder',bank_name='Test Bank',
+	tradeExec(t, w.app, `UPDATE businesses SET bank_account_holder_name='Invoice Holder',bank_name='Test Bank',
 		bank_account_number=$2,bank_branch_code='250655',bank_account_type='Cheque' WHERE id=$1`,
 		w.seller.id, testutil.Seal(t, "123456789"))
 	id := tradeSale(t, w.seller, w.buyer, w.material, "1.23", "8.12")

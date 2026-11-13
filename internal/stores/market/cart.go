@@ -30,7 +30,7 @@ type CartStore struct {
 func (records *Store) CartStores(ctx context.Context, buyer string) ([]CartStore, error) {
 	rows, err := records.db.Q(ctx).Query(ctx, `SELECT u.id, `+database.DisplayName("u")+`, `+database.Verified("u")+`, count(*)
         FROM carts c JOIN cart_items i ON i.cart_id=c.id JOIN stock s ON s.id=i.stock_id
-        JOIN users u ON u.id=c.seller_id
+        JOIN business_profiles u ON u.id=c.seller_id
         LEFT JOIN stock_holds h ON h.cart_id=c.id AND h.stock_id=i.stock_id
         AND h.status='active' AND h.expires_at>clock_timestamp()
         WHERE c.buyer_id=$1 AND NOT u.is_removed
@@ -64,7 +64,7 @@ func (records *Store) Cart(ctx context.Context, buyer, seller string) (Cart, err
 		ctx,
 		`SELECT i.stock_id,i.material_id,m.name,i.weight::text,s.price::text,h.expires_at
 		FROM carts c JOIN cart_items i ON i.cart_id=c.id JOIN stock s ON s.id=i.stock_id
-		JOIN materials m ON m.id=i.material_id JOIN users u ON u.id=c.seller_id
+		JOIN materials m ON m.id=i.material_id JOIN business_profiles u ON u.id=c.seller_id
 		LEFT JOIN stock_holds h ON h.cart_id=c.id AND h.stock_id=i.stock_id
 		AND h.status='active' AND h.expires_at>clock_timestamp()
 		WHERE c.buyer_id=$1 AND c.seller_id=$2 AND s.owner_id=c.seller_id
@@ -107,7 +107,7 @@ func (records *Store) LockCartStock(ctx context.Context, seller string, item Car
 
 	return records.db.Q(ctx).QueryRow(
 		ctx,
-		`SELECT s.id FROM stock s JOIN users u ON u.id=s.owner_id
+		`SELECT s.id FROM stock s JOIN business_profiles u ON u.id=s.owner_id
 		WHERE s.id=$1 AND s.material_id=$2 AND s.owner_id=$3 AND s.is_listed
 		AND u.role='business' AND NOT u.is_removed FOR UPDATE OF s FOR SHARE OF u`,
 		item.StockID,

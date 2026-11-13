@@ -66,13 +66,13 @@ func TestStockImageAccessValidationAndProjection(t *testing.T) {
 	avatar := uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", receiptImage(9))
 	tradeWant(t, "store logo", avatar, 200)
 	store := anonymous.Do("GET", "/api/stores/"+w.seller.id, nil)
-	if store.Body["avatar_url"] != "/api/users/"+w.seller.id+"/avatar" {
+	if store.Body["avatar_url"] != "/api/stores/"+w.seller.id+"/logo" {
 		t.Fatalf("store logo projection: %s", store.Raw)
 	}
 	listing := anonymous.Do("GET", "/api/market/listings/"+w.stock, nil)
 	tradeWant(t, "listing detail", listing, 200)
 	logo, ok := listing.Body["seller_avatar_url"].(string)
-	if !ok || !strings.HasPrefix(logo, "/api/users/"+w.seller.id+"/avatar?v=") || listing.Body["image_url"] != url {
+	if !ok || !strings.HasPrefix(logo, "/api/stores/"+w.seller.id+"/logo?v=") || listing.Body["image_url"] != url {
 		t.Fatalf("listing image projection: %s", listing.Raw)
 	}
 	for _, route := range []string{"/api/market/listings", "/api/stores/" + w.seller.id + "/listings"} {
@@ -97,10 +97,8 @@ func TestStockImageVisibilityMatchesMarket(t *testing.T) {
 	for _, change := range []struct{ hide, restore string }{
 		{`UPDATE stock SET is_listed=false WHERE id=$1`, `UPDATE stock SET is_listed=true WHERE id=$1`},
 		{`UPDATE stock SET weight=0 WHERE id=$1`, `UPDATE stock SET weight=100 WHERE id=$1`},
-		{`UPDATE users SET is_removed=true WHERE id=(SELECT owner_id FROM stock WHERE id=$1)`,
-			`UPDATE users SET is_removed=false WHERE id=(SELECT owner_id FROM stock WHERE id=$1)`},
-		{`UPDATE users SET role='collector' WHERE id=(SELECT owner_id FROM stock WHERE id=$1)`,
-			`UPDATE users SET role='business' WHERE id=(SELECT owner_id FROM stock WHERE id=$1)`},
+		{`UPDATE businesses SET is_removed=true WHERE id=(SELECT owner_id FROM stock WHERE id=$1)`,
+			`UPDATE businesses SET is_removed=false WHERE id=(SELECT owner_id FROM stock WHERE id=$1)`},
 	} {
 		tradeExec(t, w.app, change.hide, w.stock)
 		for _, client := range []*testutil.Client{stranger.c, anonymous} {
@@ -206,7 +204,7 @@ func TestStockImageDeleteAndPrivacyWaitForCommit(t *testing.T) {
 	stockObject(t, w.app, key, true)
 	deleted := w.seller.c.Do("POST", "/api/privacy/delete", map[string]any{"password": goodPassword})
 	tradeWant(t, "privacy erase", deleted, 200)
-	stockObject(t, w.app, key, false)
+	stockObject(t, w.app, key, true)
 }
 
 func stockObject(t *testing.T, app *testutil.App, key string, exists bool) {

@@ -74,7 +74,6 @@ func TestAdminRemoveUser(t *testing.T) {
 	tradeWant(t, "old session", w.seller.c.Do("GET", "/api/notifications", nil), 401)
 
 	for _, sql := range []string{
-		`SELECT count(*)::text FROM stock WHERE owner_id = $1`,
 		`SELECT count(*)::text FROM notifications WHERE user_id = $1`,
 		`SELECT count(*)::text FROM sessions WHERE user_id = $1`,
 		`SELECT count(*)::text FROM transaction_requests WHERE seller_id = $1 AND status <> 'cancelled'`,
@@ -82,6 +81,10 @@ func TestAdminRemoveUser(t *testing.T) {
 		if n := tradeText(t, w.app, sql, w.seller.id); n != "0" {
 			t.Errorf("%s: %s rows left, want 0", sql, n)
 		}
+	}
+
+	if got := tradeText(t, w.app, `SELECT count(*)::text FROM stock WHERE owner_id=$1`, w.seller.id); got != "1" {
+		t.Fatal("removing a person deleted business stock")
 	}
 
 	if tradeText(t, w.app, `SELECT email FROM users WHERE id = $1`, w.seller.id) != "" {

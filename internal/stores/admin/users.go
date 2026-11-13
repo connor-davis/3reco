@@ -45,11 +45,11 @@ func (s *Store) Users(
 ) ([]User, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `
 		SELECT u.id, `+database.PersonName("u")+`, u.email, u.role, u.profile_complete, u.created_at,
-			u.business_verified_at IS NOT NULL, u.business_verified_at
-		FROM users u
+			b.business_verified_at IS NOT NULL, b.business_verified_at
+		FROM users u LEFT JOIN businesses b ON b.id=u.id
 		WHERE NOT u.is_removed
 			AND ($1::timestamptz IS NULL OR (u.created_at, u.id) < ($1, $2))
-			AND ($4 = '' OR u.name ILIKE $4 OR u.email ILIKE $4 OR u.business_name ILIKE $4
+			AND ($4 = '' OR u.name ILIKE $4 OR u.email ILIKE $4 OR b.business_name ILIKE $4
 				OR concat_ws(' ', u.first_name, u.last_name) ILIKE $4)
 			AND ($5 = '' OR u.role = $5)
 		ORDER BY u.created_at DESC, u.id DESC
@@ -94,10 +94,7 @@ func (s *Store) LockActive(ctx context.Context, id string) (bool, error) {
 // SetRole changes a user's role.
 func (s *Store) SetRole(ctx context.Context, id, role string) error {
 	_, err := s.db.Q(ctx).Exec(ctx,
-		`UPDATE users SET role = $2, updated_at = now(),
-			business_verified_at = CASE WHEN $2 = 'business' THEN business_verified_at END,
-			business_verified_by = CASE WHEN $2 = 'business' THEN business_verified_by END
-		WHERE id = $1`, id, role)
+		`UPDATE users SET role = $2, updated_at = now() WHERE id = $1`, id, role)
 
 	return err
 }
@@ -123,7 +120,7 @@ func (s *Store) LockActiveRole(ctx context.Context, id string) (role string, fou
 // SetBusinessVerified marks a business verified by an admin, or clears it.
 func (s *Store) SetBusinessVerified(ctx context.Context, id, adminID string, verified bool) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `
-		UPDATE users SET updated_at = now(),
+		UPDATE businesses SET updated_at = now(),
 			business_verified_at = CASE WHEN $3 THEN now() END,
 			business_verified_by = CASE WHEN $3 THEN $2 END
 		WHERE id = $1`, id, adminID, verified)

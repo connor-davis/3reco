@@ -70,11 +70,17 @@ func (h *Hub) recheck(ctx context.Context, userID string) {
 	defer h.mu.Unlock()
 
 	for _, c := range all {
-		role, ok := live[c.SessionID]
+		if _, here := h.clients[c]; !here {
+			continue
+		}
+
+		session, ok := live[c.SessionID]
+		role := session.role
 
 		// A guest may hold a socket to hear their role change; only someone who
 		// was not a guest when they joined is dropped for becoming one.
-		if !ok || (role == auth.RoleGuest && !c.guest) {
+		missingMember := session.business != "" && session.member == ""
+		if !ok || missingMember || (role == auth.RoleGuest && !c.guest) {
 			// A failed lookup is not proof: those browsers just reconnect.
 			c.revoked.Store(!failed)
 			h.dropLocked(c)
@@ -82,37 +88,54 @@ func (h *Hub) recheck(ctx context.Context, userID string) {
 			continue
 		}
 
-		if _, here := h.clients[c]; here && role != c.role {
+		if role != c.role {
 			removeFrom(h.byRole, c.role, c)
 			c.role = role
 			addTo(h.byRole, role, c)
 		}
 
+		// Setup can select the first business on an existing personal session.
+		// Keep that sign-in, move its routing index, and ask the app to refetch.
+		if session.business != c.BusinessID || session.member != c.MemberRole {
+			removeFrom(h.byBusiness, c.BusinessID, c)
+			c.BusinessID = session.business
+			addTo(h.byBusiness, c.BusinessID, c)
+			h.pushLocked(c, []byte(`{"type":"resync"}`))
+		}
+
+		c.MemberRole = session.member
 		c.guest = role == auth.RoleGuest
 	}
 }
 
 // liveSessions maps each of the session ids that are unexpired and belong to
 // a user who has not been removed to that user's current role.
-func (h *Hub) liveSessions(ctx context.Context, ids []string) (map[string]string, error) {
+func (h *Hub) liveSessions(ctx context.Context, ids []string) (map[string]liveSession, error) {
 	rows, err := h.db.Pool.Query(ctx, `
-		SELECT s.id, u.role FROM sessions s JOIN users u ON u.id = s.user_id
+		SELECT s.id, u.role, COALESCE(s.active_business_id,''), COALESCE(m.role,'')
+		FROM sessions s JOIN users u ON u.id = s.user_id
+		LEFT JOIN business_members m ON m.business_id=s.active_business_id AND m.user_id=s.user_id
 		WHERE s.id = ANY($1) AND s.expires_at > now() AND NOT u.is_removed`, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	live := map[string]string{}
+	live := map[string]liveSession{}
 
 	for rows.Next() {
-		var id, role string
-		if err := rows.Scan(&id, &role); err != nil {
+		var id string
+		var session liveSession
+		if err := rows.Scan(&id, &session.role, &session.business, &session.member); err != nil {
 			return nil, err
 		}
 
-		live[id] = role
+		live[id] = session
 	}
 
 	return live, rows.Err()
+}
+
+type liveSession struct {
+	role, business, member string
 }

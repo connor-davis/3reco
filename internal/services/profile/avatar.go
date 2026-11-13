@@ -15,7 +15,7 @@ import (
 )
 
 // UploadAvatar validates the caller's image before replacing its object reference.
-func (service *Service) UploadAvatar(ctx context.Context, id string, reader io.Reader) error {
+func (service *Service) UploadAvatar(ctx context.Context, id string, reader io.Reader, business ...bool) error {
 	data, kind, err := storage.Image(reader, 2<<20, true)
 	if err != nil {
 		return err
@@ -32,7 +32,7 @@ func (service *Service) UploadAvatar(ctx context.Context, id string, reader io.R
 		return err
 	}
 
-	if err := service.replaceAvatar(ctx, id, key); err != nil {
+	if err := service.replaceAvatar(ctx, id, key, business...); err != nil {
 		_ = service.objects.Remove(context.WithoutCancel(ctx), key)
 
 		return err
@@ -42,13 +42,13 @@ func (service *Service) UploadAvatar(ctx context.Context, id string, reader io.R
 }
 
 // DeleteAvatar clears the uploaded image and removes its object after commit.
-func (service *Service) DeleteAvatar(ctx context.Context, id string) error {
-	return service.replaceAvatar(ctx, id, "")
+func (service *Service) DeleteAvatar(ctx context.Context, id string, business ...bool) error {
+	return service.replaceAvatar(ctx, id, "", business...)
 }
 
-func (service *Service) replaceAvatar(ctx context.Context, id, key string) error {
+func (service *Service) replaceAvatar(ctx context.Context, id, key string, business ...bool) error {
 	return service.db.InTx(ctx, func(ctx context.Context) error {
-		old, err := service.store.AvatarKey(ctx, id, true)
+		old, err := service.store.AvatarKey(ctx, id, true, business...)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return apperr.NotFound("No such profile.")
 		}
@@ -56,12 +56,19 @@ func (service *Service) replaceAvatar(ctx context.Context, id, key string) error
 			return err
 		}
 
-		if err := service.store.SetAvatar(ctx, id, key); err != nil {
+		if err := service.store.SetAvatar(ctx, id, key, business...); err != nil {
 			return err
 		}
 
 		if old != "" {
-			service.objects.RemoveAfterCommit(ctx, old)
+			used, err := service.store.AvatarReferenced(ctx, old)
+			if err != nil {
+				return err
+			}
+
+			if !used {
+				service.objects.RemoveAfterCommit(ctx, old)
+			}
 		}
 
 		return nil
@@ -69,8 +76,8 @@ func (service *Service) replaceAvatar(ctx context.Context, id, key string) error
 }
 
 // Avatar opens the public image of an active user without exposing its object key.
-func (service *Service) Avatar(ctx context.Context, id string) (io.ReadCloser, string, error) {
-	key, err := service.store.AvatarKey(ctx, id, false)
+func (service *Service) Avatar(ctx context.Context, id string, business ...bool) (io.ReadCloser, string, error) {
+	key, err := service.store.AvatarKey(ctx, id, false, business...)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && key == "") {
 		return nil, "", apperr.NotFound("Avatar not found.")
 	}

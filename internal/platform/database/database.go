@@ -65,11 +65,15 @@ func (d *DB) Close() { d.Pool.Close() }
 type txKey struct{}
 
 type actorKey struct{}
+type businessKey struct{}
 
-// WithActor says which user the writes made with ctx belong to. InTx hands it
-// to Postgres, where the audit trigger reads it. Without one the audit line
-// names the system.
-func WithActor(ctx context.Context, userID string) context.Context {
+// WithActor identifies the person and optional active business behind a write.
+// InTx gives both to Postgres for audit triggers. With no actor it names the system.
+func WithActor(ctx context.Context, userID string, businessID ...string) context.Context {
+	if len(businessID) > 0 {
+		ctx = context.WithValue(ctx, businessKey{}, businessID[0])
+	}
+
 	return context.WithValue(ctx, actorKey{}, userID)
 }
 
@@ -104,12 +108,14 @@ func (d *DB) InTx(ctx context.Context, fn func(ctx context.Context) error) error
 	state := &txState{tx: tx}
 
 	// Transaction-local (true): Postgres clears it at commit or rollback.
-	if actor, ok := ctx.Value(actorKey{}).(string); ok && actor != "" {
-		if _, err := tx.Exec(ctx, `SELECT set_config('app.actor_id', $1, true)`, actor); err != nil {
-			_ = tx.Rollback(context.WithoutCancel(ctx))
+	actor, _ := ctx.Value(actorKey{}).(string)
+	business, _ := ctx.Value(businessKey{}).(string)
+	if _, err := tx.Exec(ctx,
+		`SELECT set_config('app.actor_id', $1, true), set_config('app.business_id', $2, true)`,
+		actor, business); err != nil {
+		_ = tx.Rollback(context.WithoutCancel(ctx))
 
-			return err
-		}
+		return err
 	}
 
 	if err := fn(context.WithValue(ctx, txKey{}, state)); err != nil {

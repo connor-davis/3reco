@@ -37,8 +37,10 @@ type Event struct {
 
 // Client is one open WebSocket as the hub sees it.
 type Client struct {
-	UserID    string
-	SessionID string
+	BusinessID string
+	MemberRole string
+	UserID     string
+	SessionID  string
 
 	role   string // guarded by Hub.mu; the recheck keeps it current
 	guest  bool   // guarded by Hub.mu; a guest hears only events sent to their own id
@@ -67,20 +69,22 @@ type Hub struct {
 	db   *database.DB
 	auth *auth.Service
 
-	mu      sync.Mutex
-	clients map[*Client]struct{}
-	byUser  map[string]map[*Client]struct{}
-	byRole  map[string]map[*Client]struct{}
+	mu         sync.Mutex
+	clients    map[*Client]struct{}
+	byUser     map[string]map[*Client]struct{}
+	byRole     map[string]map[*Client]struct{}
+	byBusiness map[string]map[*Client]struct{}
 }
 
 // New builds a hub. Call Run to start listening.
 func New(db *database.DB, a *auth.Service) *Hub {
 	return &Hub{
-		db:      db,
-		auth:    a,
-		clients: map[*Client]struct{}{},
-		byUser:  map[string]map[*Client]struct{}{},
-		byRole:  map[string]map[*Client]struct{}{},
+		db:         db,
+		auth:       a,
+		clients:    map[*Client]struct{}{},
+		byUser:     map[string]map[*Client]struct{}{},
+		byRole:     map[string]map[*Client]struct{}{},
+		byBusiness: map[string]map[*Client]struct{}{},
 	}
 }
 
@@ -88,10 +92,12 @@ func New(db *database.DB, a *auth.Service) *Hub {
 // may see from this moment on.
 func (h *Hub) Join(sess auth.Session) *Client {
 	c := &Client{
-		UserID:    sess.User.ID,
-		SessionID: sess.ID,
-		send:      make(chan []byte, sendBuffer),
-		closed:    make(chan struct{}),
+		UserID:     sess.User.ID,
+		BusinessID: sess.User.ActiveBusinessID,
+		MemberRole: sess.User.BusinessRole,
+		SessionID:  sess.ID,
+		send:       make(chan []byte, sendBuffer),
+		closed:     make(chan struct{}),
 	}
 
 	if sess.User.Role != nil {
@@ -104,6 +110,7 @@ func (h *Hub) Join(sess auth.Session) *Client {
 	h.clients[c] = struct{}{}
 	addTo(h.byUser, c.UserID, c)
 	addTo(h.byRole, c.role, c)
+	addTo(h.byBusiness, c.BusinessID, c)
 	h.mu.Unlock()
 
 	return c
@@ -139,6 +146,7 @@ func (h *Hub) dropLocked(c *Client) {
 	delete(h.clients, c)
 	removeFrom(h.byUser, c.UserID, c)
 	removeFrom(h.byRole, c.role, c)
+	removeFrom(h.byBusiness, c.BusinessID, c)
 
 	c.once.Do(func() { close(c.closed) })
 }

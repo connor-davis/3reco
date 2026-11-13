@@ -33,7 +33,7 @@ type Report struct {
 
 // tableOrder is the load order (foreign keys decide it) and the print order.
 var tableOrder = []string{
-	"users", "collectors", "materials", "stock", "transactions", "transaction_items",
+	"users", "businesses", "business_members", "collectors", "materials", "stock", "transactions", "transaction_items",
 	"transaction_receipts", "transaction_requests", "transaction_request_items",
 	"transaction_request_messages", "request_message_reads", "notifications",
 	"carts", "cart_items", "store_reviews",

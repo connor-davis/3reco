@@ -15,6 +15,8 @@ import (
 // Profile is the caller's editable profile, without credentials.
 type Profile struct {
 	ID                         string `json:"id"`
+	BusinessID                 string `json:"-"`
+	BusinessChanged            bool   `json:"-"`
 	Email                      string `json:"email"`
 	Role                       string `json:"role"`
 	Name                       string `json:"name"`
@@ -60,15 +62,45 @@ type Store struct {
 func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
 // Find reads the caller's active profile and optionally locks it for PATCH.
-func (records *Store) Find(ctx context.Context, id string, lock bool) (Profile, error) {
-	query := `SELECT id,COALESCE(email,''),COALESCE(role,''),COALESCE(name,''),COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE(phone,''),COALESCE(first_name,''),COALESCE(last_name,''),COALESCE(id_number,''),COALESCE(business_name,''),COALESCE(business_registration_number,''),COALESCE(bank_account_holder_name,''),COALESCE(bank_name,''),COALESCE(bank_account_number,''),COALESCE(bank_branch_code,''),COALESCE(bank_account_type,''),COALESCE(street_address,''),COALESCE(city,''),COALESCE(province,''),
- area_code,profile_complete,agreed_to_terms FROM users WHERE id=$1 AND NOT is_removed`
+func (records *Store) Find(ctx context.Context, id string, lock bool, business ...string) (Profile, error) {
+	active := id
+	if len(business) > 0 {
+		active = business[0]
+	}
+
+	query := `SELECT u.id,
+		COALESCE(u.email,''),
+		u.role,
+		u.name,
+		COALESCE(u.image,''),
+		CASE WHEN b.avatar_key IS NOT NULL THEN '/api/stores/'||b.id||'/logo' WHEN b.id IS NOT NULL THEN COALESCE(b.image,'') WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar' ELSE COALESCE(u.image,'') END,
+		COALESCE(u.phone,''),
+		COALESCE(u.first_name,''),
+		COALESCE(u.last_name,''),
+		COALESCE(u.id_number,''),
+		COALESCE(b.business_name,''),
+		COALESCE(b.business_registration_number,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_holder_name ELSE u.bank_account_holder_name END,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_name ELSE u.bank_name END,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_number ELSE u.bank_account_number END,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_branch_code ELSE u.bank_branch_code END,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_type ELSE u.bank_account_type END,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.street_address ELSE u.street_address END,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.city ELSE u.city END,''),
+		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.province ELSE u.province END,''),
+		CASE WHEN b.id IS NOT NULL THEN b.area_code ELSE u.area_code END,
+		u.profile_complete,
+		u.agreed_to_terms,
+		COALESCE(b.id,'')
+		FROM users u LEFT JOIN businesses b ON b.id=$2
+		AND EXISTS(SELECT 1 FROM business_members m WHERE m.business_id=b.id AND m.user_id=u.id)
+		WHERE u.id=$1 AND NOT u.is_removed`
 	if lock {
-		query += ` FOR UPDATE`
+		query += ` FOR UPDATE OF u`
 	}
 
 	var item Profile
-	err := records.db.Q(ctx).QueryRow(ctx, query, id).Scan(
+	err := records.db.Q(ctx).QueryRow(ctx, query, id, active).Scan(
 		&item.ID,
 		&item.Email,
 		&item.Role,
@@ -92,6 +124,7 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Profile, 
 		&item.AreaCode,
 		&item.ProfileComplete,
 		&item.AgreedToTerms,
+		&item.BusinessID,
 	)
 
 	if err != nil {
@@ -119,49 +152,77 @@ func (records *Store) Save(ctx context.Context, item Profile) error {
 		return err
 	}
 
-	_, err = records.db.Q(ctx).Exec(
-		ctx,
-		`UPDATE users SET
+	_, err = records.db.Q(ctx).Exec(ctx, `UPDATE users SET
 		name=$2,
 		image=NULLIF($3,''),
 		phone=NULLIF($4,''),
 		first_name=NULLIF($5,''),
 		last_name=NULLIF($6,''),
 		id_number=NULLIF($7,''),
-		business_name=NULLIF($8,''),
-		business_registration_number=NULLIF($9,''),
-		bank_account_holder_name=NULLIF($10,''),
-		bank_name=NULLIF($11,''),
-		bank_account_number=NULLIF($12,''),
-		bank_branch_code=NULLIF($13,''),
-		bank_account_type=NULLIF($14,''),
-		street_address=NULLIF($15,''),
-		city=NULLIF($16,''),
-		province=NULLIF($17,''),
-		area_code=$18,profile_complete=$19,agreed_to_terms=$20,
-		normalized_phone=NULLIF($21,''),updated_at=now() WHERE id=$1 AND NOT is_removed`,
-		item.ID,
-		item.Name,
-		item.Image,
-		item.Phone,
-		item.FirstName,
-		item.LastName,
-		idNumber,
-		item.BusinessName,
-		item.BusinessRegistrationNumber,
-		item.BankAccountHolderName,
-		item.BankName,
-		account,
-		item.BankBranchCode,
-		item.BankAccountType,
-		item.StreetAddress,
-		item.City,
-		item.Province,
-		item.AreaCode,
-		item.ProfileComplete,
-		item.AgreedToTerms,
-		item.Phone,
-	)
+		profile_complete=$8,
+		agreed_to_terms=$9,
+		normalized_phone=NULLIF($10,''), updated_at=now() WHERE id=$1 AND NOT is_removed`,
+		item.ID, item.Name, item.Image, item.Phone, item.FirstName, item.LastName, idNumber, item.ProfileComplete, item.AgreedToTerms, item.Phone)
+	if err != nil {
+		return err
+	}
+
+	if item.BusinessID != "" {
+		if item.BusinessChanged {
+			return records.saveBusiness(ctx, item, account)
+		}
+
+		return nil
+	}
+
+	if item.BusinessName != "" || item.BusinessRegistrationNumber != "" {
+		return records.saveBusiness(ctx, item, account)
+	}
+
+	_, err = records.db.Q(ctx).Exec(ctx, `UPDATE users SET
+		bank_account_holder_name=NULLIF($2,''),
+		bank_name=NULLIF($3,''),
+		bank_account_number=NULLIF($4,''),
+		bank_branch_code=NULLIF($5,''),
+		bank_account_type=NULLIF($6,''),
+		street_address=NULLIF($7,''),
+		city=NULLIF($8,''),
+		province=NULLIF($9,''),
+		area_code=$10, updated_at=now() WHERE id=$1`,
+		item.ID, item.BankAccountHolderName, item.BankName, account, item.BankBranchCode, item.BankAccountType, item.StreetAddress, item.City, item.Province, item.AreaCode)
+
+	return err
+}
+
+func (records *Store) saveBusiness(ctx context.Context, item Profile, account string) error {
+	id := item.BusinessID
+	if id == "" {
+		id = item.ID
+	}
+
+	_, err := records.db.Q(ctx).Exec(ctx, `INSERT INTO businesses
+		(id,business_name,business_registration_number,bank_account_holder_name,bank_name,bank_account_number,bank_branch_code,bank_account_type,street_address,city,province,area_code,image)
+		VALUES ($1,NULLIF($2,''),NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),NULLIF($8,''),NULLIF($9,''),NULLIF($10,''),NULLIF($11,''),$12,(SELECT image FROM users WHERE id=$1))
+		ON CONFLICT(id) DO UPDATE SET
+		business_name=EXCLUDED.business_name,
+		business_registration_number=EXCLUDED.business_registration_number,
+		bank_account_holder_name=EXCLUDED.bank_account_holder_name,
+		bank_name=EXCLUDED.bank_name,
+		bank_account_number=EXCLUDED.bank_account_number,
+		bank_branch_code=EXCLUDED.bank_branch_code,
+		bank_account_type=EXCLUDED.bank_account_type,
+		street_address=EXCLUDED.street_address,
+		city=EXCLUDED.city,
+		province=EXCLUDED.province,
+		area_code=EXCLUDED.area_code, updated_at=now()`,
+		id, item.BusinessName, item.BusinessRegistrationNumber,
+		item.BankAccountHolderName, item.BankName, account, item.BankBranchCode, item.BankAccountType, item.StreetAddress, item.City, item.Province, item.AreaCode)
+	if err != nil || item.BusinessID != "" {
+		return err
+	}
+
+	_, err = records.db.Q(ctx).Exec(ctx, `INSERT INTO business_members VALUES($1,$2,'owner')
+		ON CONFLICT DO NOTHING`, id, item.ID)
 
 	return err
 }
@@ -171,7 +232,7 @@ func (records *Store) Public(ctx context.Context, id string) (PublicUser, error)
 	var item PublicUser
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`SELECT id,name,COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE(business_name,''),
+		`SELECT id,name,COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE((SELECT b.business_name FROM businesses b WHERE b.id=users.id),''),
  COALESCE(role,''),created_at FROM users WHERE id=$1 AND NOT is_removed`,
 		id,
 	).Scan(
@@ -191,7 +252,7 @@ func (records *Store) Public(ctx context.Context, id string) (PublicUser, error)
 func (records *Store) Directory(ctx context.Context, query paging.Query) ([]PublicUser, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT id,name,COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE(business_name,''),
+		`SELECT id,name,COALESCE(image,''),CASE WHEN avatar_key IS NOT NULL THEN '/api/users/'||id||'/avatar' ELSE COALESCE(image,'') END,COALESCE((SELECT b.business_name FROM businesses b WHERE b.id=users.id),''),
  role,created_at FROM users WHERE role='collector' AND NOT is_removed
  AND ($1='' OR (created_at,id)<($2,$1))
  ORDER BY created_at DESC,id DESC LIMIT NULLIF($3,0)`,

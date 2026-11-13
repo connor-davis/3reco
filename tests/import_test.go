@@ -127,7 +127,7 @@ func TestImportCountsAndIdsKept(t *testing.T) {
 	}
 
 	want := map[string]int{
-		"users": 6, "collectors": 1, "materials": 2, "stock": 1, "transactions": 3,
+		"users": 6, "businesses": 2, "business_members": 2, "collectors": 1, "materials": 2, "stock": 1, "transactions": 3,
 		"transaction_items": 3, "transaction_receipts": 1, "transaction_requests": 2,
 		"transaction_request_items": 3, "transaction_request_messages": 2,
 		"request_message_reads": 2, "notifications": 1, "carts": 1, "cart_items": 1,

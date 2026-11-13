@@ -49,7 +49,7 @@ func TestExportsScopeAndColumns(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE transactions SET created_at='2026-11-04T23:30:00Z' WHERE id=$1`, id)
 	tradeExec(t, w.app, `UPDATE transactions SET created_at='2026-11-04T23:30:00Z' WHERE id=$1`, c2b)
 	tradeExec(t, w.app, `UPDATE transactions SET collection_day='2026-10-01' WHERE id=$1`, c2b)
-	tradeExec(t, w.app, `UPDATE users SET business_name='=SUM(1,2)',street_address=$2 WHERE id=$1`,
+	tradeExec(t, w.app, `UPDATE businesses SET business_name='=SUM(1,2)',street_address=$2 WHERE id=$1`,
 		w.seller.id, "Street, \"quoted\"\nsecond line")
 	tradeExec(t, w.app, `UPDATE materials SET name=$2 WHERE id=$1`, w.material, "Copper, \"clean\"\nwire")
 
@@ -152,9 +152,8 @@ func TestExportsItemisedAndUsers(t *testing.T) {
 		t.Fatal("empty transaction missing blank item row")
 	}
 
-	tradeExec(t, w.app, `UPDATE users SET bank_account_number=$2,id_number=$3,
-		first_name='+formula',last_name='-formula' WHERE id=$1`, w.buyer.id,
-		testutil.Seal(t, "never-export-bank"), testutil.Seal(t, "never-export-id"))
+	tradeExec(t, w.app, `UPDATE users SET id_number=$2, first_name='+formula',last_name='-formula' WHERE id=$1`, w.buyer.id, testutil.Seal(t, "never-export-id"))
+	tradeExec(t, w.app, `UPDATE businesses SET bank_account_number=$2 WHERE id=$1`, w.buyer.id, testutil.Seal(t, "never-export-bank"))
 	tradeExec(t, w.app, `UPDATE users SET is_removed=true WHERE id=$1`, w.seller.id)
 	tradeExec(t, w.app, `UPDATE users SET created_at='2026-11-04T23:30:00Z' WHERE id=$1`, w.buyer.id)
 	rows = csvRows(t, admin.c, "/api/admin/exports/users")

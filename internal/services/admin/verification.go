@@ -8,6 +8,7 @@ import (
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/privacy"
+	"github.com/connor-davis/3reco/internal/stores/businesses"
 )
 
 // SetBusinessVerified verifies a business, or takes the verification away. A
@@ -19,16 +20,20 @@ func (s *Service) SetBusinessVerified(ctx context.Context, user auth.User, id st
 	}
 
 	return s.db.InTx(ctx, func(ctx context.Context) error {
-		role, found, err := s.store.LockActiveRole(ctx, id)
+		found, err := businesses.New(s.db).Lock(ctx, id)
 		if err != nil {
 			return err
 		}
 
 		if !found {
-			return apperr.NotFound("User not found.")
-		}
+			_, personFound, err := s.store.LockActiveRole(ctx, id)
+			if err != nil {
+				return err
+			}
+			if !personFound {
+				return apperr.NotFound("Business not found.")
+			}
 
-		if role != auth.RoleBusiness {
 			return apperr.Field("verified", "Only a business can be verified.")
 		}
 

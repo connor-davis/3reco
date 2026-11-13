@@ -18,6 +18,7 @@ import (
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	"github.com/connor-davis/3reco/internal/services/transactions"
+	"github.com/connor-davis/3reco/internal/stores/businesses"
 	collectors "github.com/connor-davis/3reco/internal/stores/collectors"
 	store "github.com/connor-davis/3reco/internal/stores/privacy"
 	profile "github.com/connor-davis/3reco/internal/stores/profile"
@@ -121,8 +122,24 @@ func (s *Service) Export(ctx context.Context, user auth.User) (map[string]any, e
 		out[name] = json.RawMessage(rows)
 	}
 
-	if out["profile"], err = s.profiles.Find(ctx, user.ID, false); err != nil {
+	profile, err := s.profiles.Find(ctx, user.ID, false, user.ActiveBusinessID)
+	if err != nil {
 		return nil, err
+	}
+
+	if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
+		profile.BankAccountHolderName, profile.BankName, profile.BankAccountNumber = "", "", ""
+		profile.BankBranchCode, profile.BankAccountType = "", ""
+	}
+	out["profile"] = profile
+	out["person"] = profile
+	if user.ActiveBusinessID != "" {
+		person, err := s.profiles.Find(ctx, user.ID, false, "")
+		if err != nil {
+			return nil, err
+		}
+
+		out["person"] = person
 	}
 
 	created, err := s.collectors.Created(ctx, user.ID)
@@ -133,8 +150,18 @@ func (s *Service) Export(ctx context.Context, user auth.User) (map[string]any, e
 	// Staff and admins who recorded a collector do not get the full number
 	// back; the creating business does, as everywhere else.
 	for i := range created {
-		if created[i].CreatedByBusinessID == nil || *created[i].CreatedByBusinessID != user.ID {
+		full := false
+		if created[i].CreatedByBusinessID != nil {
+			role, _, err := businesses.New(s.db).Membership(ctx, *created[i].CreatedByBusinessID, user.ID)
+			if err != nil {
+				return nil, err
+			}
+			full = role == "owner" || role == "manager"
+		}
+
+		if !full {
 			created[i].BankAccountNumber = crypt.Mask(created[i].BankAccountNumber)
+			created[i].BankBranchCode = crypt.Mask(created[i].BankBranchCode)
 			created[i].EwalletPaymentID = crypt.Mask(created[i].EwalletPaymentID)
 		}
 	}

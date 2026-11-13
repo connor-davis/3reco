@@ -52,10 +52,10 @@ func (records *Store) Summary(ctx context.Context) (Summary, error) {
 	rows, err := records.db.Q(ctx).Query(ctx, `
 		SELECT u.id, COALESCE(u.business_name,''), u.business_verified_at IS NOT NULL, sum(ti.weight)::text
 		FROM transactions t JOIN transaction_items ti ON ti.transaction_id=t.id
-		JOIN users u ON u.role='business' AND NOT u.is_removed AND u.business_verified_at IS NOT NULL
+		JOIN business_profiles u ON u.role='business' AND NOT u.is_removed AND u.business_verified_at IS NOT NULL
 			AND u.id = CASE WHEN t.type='b2b' THEN t.seller_id ELSE t.buyer_id END
 		WHERE t.status='complete'
-		GROUP BY u.id,u.business_name
+		GROUP BY u.id,u.business_name,u.business_verified_at
 		ORDER BY sum(ti.weight) DESC,u.id ASC LIMIT 5`)
 	if err != nil {
 		return result, err

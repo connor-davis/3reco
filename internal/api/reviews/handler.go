@@ -24,7 +24,7 @@ func (h *Handler) Register(api fiber.Router) {
 	api.Get("/stores/:seller_id/reviews/summary", h.summary)
 
 	api.Get("/reviews/reviewable", middleware.RequireUser, h.reviewable)
-	api.Post("/transactions/:id/review", middleware.RequireUser, h.add)
+	api.Post("/transactions/:id/review", middleware.RequireBusiness("manager"), h.add)
 	api.Delete("/admin/reviews/:id", middleware.RequireRole(auth.RoleAdmin), h.remove)
 }
 
@@ -54,7 +54,7 @@ func (h *Handler) summary(c fiber.Ctx) error {
 }
 
 func (h *Handler) reviewable(c fiber.Ctx) error {
-	items, err := h.svc.Reviewable(c.Context(), caller(c).ID, c.Query("seller_id"))
+	items, err := h.svc.Reviewable(c.Context(), auth.PartyID(caller(c)), c.Query("seller_id"))
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (h *Handler) add(c fiber.Ctx) error {
 		return apperr.BadRequest("Send a JSON body.", nil)
 	}
 
-	id, err := h.svc.Add(c.Context(), caller(c).ID, c.Params("id"), in.Rating, in.Comment)
+	id, err := h.svc.Add(c.Context(), auth.PartyID(caller(c)), c.Params("id"), in.Rating, in.Comment)
 	if err != nil {
 		return err
 	}

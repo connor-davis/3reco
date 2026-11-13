@@ -108,7 +108,7 @@ func TestVerificationRouteIsAdminOnly(t *testing.T) {
 		tradeWant(t, name, caller.c.Do("PUT", w.verifyURL(w.bizB.id), map[string]any{"verified": true}), 403)
 	}
 
-	if tradeText(t, w.app, `SELECT business_verified_at::text FROM users WHERE id = $1`, w.bizB.id) != "" {
+	if tradeText(t, w.app, `SELECT business_verified_at::text FROM businesses WHERE id = $1`, w.bizB.id) != "" {
 		t.Fatal("a refused call verified the business")
 	}
 
@@ -179,19 +179,19 @@ func TestVerificationNotifiesAndAudits(t *testing.T) {
 	}
 }
 
-func TestRoleChangeAndEraseClearVerification(t *testing.T) {
+func TestRoleChangeKeepsBusinessAndLastOwnerEraseClearsVerification(t *testing.T) {
 	w := newVerifyWorld(t)
 	w.setVerified(t, w.bizA.id, true)
 	w.setVerified(t, w.bizB.id, true)
 
 	stored := func(id string) string {
 		return tradeText(t, w.app, `SELECT coalesce(business_verified_at::text, '') || coalesce(business_verified_by, '')
-			FROM users WHERE id = $1`, id)
+			FROM businesses WHERE id = $1`, id)
 	}
 
 	tradeWant(t, "role", w.admin.c.Do("PATCH", "/api/admin/users/"+w.bizA.id+"/role", map[string]any{"role": "collector"}), 200)
-	if stored(w.bizA.id) != "" {
-		t.Fatal("verification survived a role change")
+	if stored(w.bizA.id) == "" {
+		t.Fatal("a person role change cleared business verification")
 	}
 
 	if stored(w.bizB.id) == "" {

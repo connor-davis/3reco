@@ -25,7 +25,7 @@ type Profile struct {
 }
 
 var profileColumns = `u.id,` + database.DisplayName("u") + `,
-	COALESCE(u.image,''),CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar' ELSE COALESCE(u.image,'') END,COALESCE(u.city,''),COALESCE(u.province,''),
+	COALESCE(u.image,''),CASE WHEN u.avatar_key IS NOT NULL THEN '/api/stores/'||u.id||'/logo' ELSE COALESCE(u.image,'') END,COALESCE(u.city,''),COALESCE(u.province,''),
 	COALESCE(st.items,0),COALESCE(st.names,'{}'::text[]),
 	u.created_at,` + database.Verified("u")
 
@@ -47,7 +47,7 @@ func (records *Store) Find(ctx context.Context, id, viewer string) (Profile, err
 	var item Profile
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		profileSelect(`SELECT * FROM users u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed
+		profileSelect(`SELECT * FROM business_profiles u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed
 		AND (`+database.Verified("u")+` OR u.id=$2)`),
 		id,
 		viewer,
@@ -71,7 +71,7 @@ func (records *Store) Find(ctx context.Context, id, viewer string) (Profile, err
 func (records *Store) List(ctx context.Context, search, exclude string, query paging.Query) ([]Profile, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		profileSelect(`SELECT * FROM users u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
+		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
 		AND `+database.Verified("u")+`
 		AND ($2='' OR u.business_name ILIKE '%'||$2||'%' OR u.name ILIKE '%'||$2||'%')
 		AND ($3='' OR (u.created_at,u.id)<($4,$3))

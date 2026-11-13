@@ -147,9 +147,10 @@ func (records *Store) ExpireCartHolds(ctx context.Context) ([]ExpiredCart, error
 		)
 		SELECT c.buyer_id, c.seller_id, `+database.DisplayName("u")+`,
 			array_agg(DISTINCT m.name ORDER BY m.name)
-		FROM removed r JOIN carts c ON c.id=r.cart_id JOIN users u ON u.id=c.seller_id
+		FROM removed r JOIN carts c ON c.id=r.cart_id JOIN business_profiles u ON u.id=c.seller_id
 		JOIN materials m ON m.id=r.material_id
-		GROUP BY c.id, c.buyer_id, c.seller_id, u.id ORDER BY c.id`,
+		GROUP BY c.id, c.buyer_id, c.seller_id, u.id, u.first_name, u.last_name, u.name
+		ORDER BY c.id`,
 		ids,
 	)
 	if err != nil {
