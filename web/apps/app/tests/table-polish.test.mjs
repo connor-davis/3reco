@@ -36,9 +36,14 @@ test('collector account numbers are masked to the last four digits', () => {
   assert.match(page, /maskAccount\(collector\.bank_account_number/);
 });
 
-test('page content uses the wide max-w-screen-2xl cap in the app shell', () => {
-  assert.match(
-    source('components/shell/app-shell.tsx'),
-    /mx-auto w-full max-w-screen-2xl/
-  );
+test('page content fills the screen, with no width cap in the app shell', () => {
+  const shell = source('components/shell/app-shell.tsx');
+  assert.match(shell, /'w-full flex-1'/);
+  assert.doesNotMatch(shell, /max-w-/);
+});
+
+test('the open chat row uses a neutral fill with a green bar, so its text stays readable', () => {
+  const inbox = source('components/chat/inbox.tsx');
+  assert.match(inbox, /'bg-muted shadow-\[inset_3px_0_0_var\(--primary\)\]'/);
+  assert.doesNotMatch(inbox, /'bg-accent'/);
 });

@@ -159,7 +159,8 @@ export function Inbox({
                   }
                   className={cn(
                     'flex min-h-28 items-start gap-3 rounded-lg p-4 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
-                    activeId === thread.request_id && 'bg-accent'
+                    activeId === thread.request_id &&
+                      'bg-muted shadow-[inset_3px_0_0_var(--primary)]'
                   )}
                 >
                   <PersonAvatar name={thread.other.name} />
