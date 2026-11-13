@@ -186,8 +186,9 @@ func TestStockImageDeleteAndPrivacyWaitForCommit(t *testing.T) {
 	export := w.seller.c.Do("GET", "/api/privacy/export", nil)
 	tradeWant(t, "export", export, 200)
 	stock := export.Body["stock"].([]any)
-	if len(stock) != 1 || stock[0].(map[string]any)["image_key"] != key {
-		t.Fatalf("own export omitted photo: %s", export.Raw)
+	if len(stock) != 1 || stock[0].(map[string]any)["has_image"] != true ||
+		bytes.Contains(export.Raw, []byte(key)) {
+		t.Fatalf("own export must flag the photo without its object key: %s", export.Raw)
 	}
 
 	err = w.app.DB.InTx(ctx, func(ctx context.Context) error {
