@@ -98,12 +98,28 @@ var Module = fx.Module("api",
 	),
 	tradeProviders,
 	fx.Invoke(storageLifecycle),
+	fx.Invoke(backfillPayoutLast4),
 	fx.Invoke(background),
 	fx.Invoke(func(*Listener) {}),
 )
 
 func storageLifecycle(lc fx.Lifecycle, objects *storage.Client) {
 	lc.Append(fx.Hook{OnStart: objects.EnsureBucket})
+}
+
+// backfillPayoutLast4 fills the last four payout digits of collectors saved
+// before the columns existed. It needs the key, so it runs here, not in SQL.
+func backfillPayoutLast4(lc fx.Lifecycle, records *collectorsstore.Store) {
+	lc.Append(fx.Hook{OnStart: func(ctx context.Context) error {
+		filled, err := records.BackfillLast4(ctx)
+		if err != nil {
+			slog.Warn("payout last four not filled", "err", err)
+		} else if filled > 0 {
+			slog.Info("payout last four filled", "collectors", filled)
+		}
+
+		return nil
+	}})
 }
 
 // routes is everything that registers routes under /api.
@@ -175,6 +191,9 @@ func New(r routes) *fiber.App {
 
 	// A guest cannot use anything but their own profile until setup is done.
 	api.Use(middleware.RequireSetup)
+
+	// Writes by a signed-in user share one transaction that names them.
+	api.Use(middleware.ActorTx(r.DB))
 
 	r.AuthH.Register(api.Group("/auth"))
 	r.Socket.Register(api)

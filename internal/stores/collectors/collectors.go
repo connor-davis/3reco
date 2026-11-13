@@ -36,6 +36,8 @@ type Collector struct {
 	Province              string    `json:"province"`
 	AreaCode              *int      `json:"area_code,omitempty"`
 	NormalizedPhone       string    `json:"-"`
+	BankAccountLast4      string    `json:"-"`
+	EwalletPaymentIDLast4 string    `json:"-"`
 	CreatedByUserID       string    `json:"-"`
 	CreatedByBusinessID   *string   `json:"-"`
 	CreatedAt             time.Time `json:"created_at"`
@@ -50,8 +52,39 @@ type Store struct {
 // New builds the store. The cipher seals the account number and ewallet id.
 func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
-const columns = `id,COALESCE(name,''),COALESCE(email,''),COALESCE(phone,''),COALESCE(image,''),COALESCE(bank_account_holder_name,''),COALESCE(bank_name,''),COALESCE(bank_account_number,''),COALESCE(bank_branch_code,''),COALESCE(bank_account_type,''),COALESCE(payout_method,''),COALESCE(ewallet_platform_name,''),COALESCE(ewallet_payment_id,''),COALESCE(street_address,''),COALESCE(city,''),COALESCE(province,''),
- area_code,COALESCE(normalized_phone,''),created_by_user_id,created_by_business_id,created_at`
+// columnList is the collector SELECT list. The two payout numbers are
+// ciphertext, so each caller says what to select for them: the sealed column,
+// an empty string, or the column only when the viewer may read it in full.
+func columnList(bank, ewallet string) string {
+	return `id,COALESCE(name,''),COALESCE(email,''),COALESCE(phone,''),COALESCE(image,''),COALESCE(bank_account_holder_name,''),COALESCE(bank_name,''),` + bank + `,COALESCE(bank_branch_code,''),COALESCE(bank_account_type,''),COALESCE(payout_method,''),COALESCE(ewallet_platform_name,''),` + ewallet + `,COALESCE(street_address,''),COALESCE(city,''),COALESCE(province,''),
+ area_code,COALESCE(normalized_phone,''),created_by_user_id,created_by_business_id,created_at,
+ COALESCE(bank_account_last4,''),COALESCE(ewallet_payment_id_last4,'')`
+}
+
+// columns reads the sealed numbers, for writes and the owner's own export.
+var columns = columnList(`COALESCE(bank_account_number,'')`, `COALESCE(ewallet_payment_id,'')`)
+
+// listColumns never selects the sealed numbers: a list shows the last four.
+var listColumns = columnList(`''`, `''`)
+
+// Viewer is who is reading, so Postgres can decide whether the sealed payout
+// numbers may leave the database. It repeats the service's full-access rule:
+// an admin, a verified business, the creating business, or the collector's own
+// login (OwnPhone).
+type Viewer struct {
+	ID       string
+	Admin    bool
+	Business bool
+	Verified bool
+	OwnPhone string
+}
+
+// gated selects a sealed column only for a viewer with full access, numbered
+// from the first placeholder after the row id ($1).
+func gated(column string) string {
+	return `CASE WHEN ($3 OR ($4 AND ($5 OR created_by_business_id=$2)) OR
+ ($6<>'' AND normalized_phone=$6)) THEN COALESCE(` + column + `,'') ELSE '' END`
+}
 
 // scan reads one row and opens the sealed fields, so a Collector always holds
 // plain values. Services mask them for people who may not see the whole value.
@@ -78,6 +111,8 @@ func (records *Store) scan(row pgx.Row, item *Collector) error {
 		&item.CreatedByUserID,
 		&item.CreatedByBusinessID,
 		&item.CreatedAt,
+		&item.BankAccountLast4,
+		&item.EwalletPaymentIDLast4,
 	)
 	if err != nil {
 		return err
@@ -101,6 +136,19 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 
 	var item Collector
 	err := records.scan(records.db.Q(ctx).QueryRow(ctx, query, id), &item)
+
+	return item, err
+}
+
+// FindFor reads a collector for a viewer. The sealed payout numbers only come
+// out of Postgres when the viewer may read them in full.
+func (records *Store) FindFor(ctx context.Context, id string, viewer Viewer) (Collector, error) {
+	var item Collector
+
+	err := records.scan(records.db.Q(ctx).QueryRow(ctx,
+		`SELECT `+columnList(gated("bank_account_number"), gated("ewallet_payment_id"))+
+			` FROM collectors WHERE id=$1`,
+		id, viewer.ID, viewer.Admin, viewer.Business, viewer.Verified, viewer.OwnPhone), &item)
 
 	return item, err
 }
@@ -147,7 +195,7 @@ func (records *Store) List(ctx context.Context, query paging.Query, after *After
 
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT `+columns+` FROM collectors
+		`SELECT `+listColumns+` FROM collectors
  WHERE ($1::text IS NULL OR (lower(name),id)`+past+`(lower($1::text),$2::text))
  AND (`+searchTerms("$4", "$5")+`)
  ORDER BY `+order+` LIMIT NULLIF($3,0)`,
@@ -283,9 +331,9 @@ func (records *Store) Create(ctx context.Context, item Collector) error {
 	_, err := records.db.Q(ctx).Exec(
 		ctx,
 		`INSERT INTO collectors(id,name,email,phone,image,bank_account_holder_name,bank_name,bank_account_number,bank_branch_code,bank_account_type,payout_method,ewallet_platform_name,ewallet_payment_id,street_address,city,province,
- normalized_phone,area_code,created_by_user_id,created_by_business_id)
+ normalized_phone,area_code,created_by_user_id,created_by_business_id,bank_account_last4,ewallet_payment_id_last4)
  VALUES($1,$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),NULLIF($8,''),NULLIF($9,''),NULLIF($10,''),NULLIF($11,''),NULLIF($12,''),NULLIF($13,''),NULLIF($14,''),NULLIF($15,''),NULLIF($16,''),
- NULLIF($17,''),$18,$19,$20)`,
+ NULLIF($17,''),$18,$19,$20,NULLIF($21,''),NULLIF($22,''))`,
 		item.ID,
 		item.Name,
 		item.Email,
@@ -306,6 +354,8 @@ func (records *Store) Create(ctx context.Context, item Collector) error {
 		item.AreaCode,
 		item.CreatedByUserID,
 		item.CreatedByBusinessID,
+		item.BankAccountLast4,
+		item.EwalletPaymentIDLast4,
 	)
 
 	return err
@@ -335,7 +385,8 @@ func (records *Store) Save(ctx context.Context, item Collector) error {
 		street_address=NULLIF($14,''),
 		city=NULLIF($15,''),
 		province=NULLIF($16,''),
-		normalized_phone=NULLIF($17,''),area_code=$18,updated_at=now() WHERE id=$1`,
+		normalized_phone=NULLIF($17,''),area_code=$18,
+		bank_account_last4=NULLIF($19,''),ewallet_payment_id_last4=NULLIF($20,''),updated_at=now() WHERE id=$1`,
 		item.ID,
 		item.Name,
 		item.Email,
@@ -354,6 +405,8 @@ func (records *Store) Save(ctx context.Context, item Collector) error {
 		item.Province,
 		item.Phone,
 		item.AreaCode,
+		item.BankAccountLast4,
+		item.EwalletPaymentIDLast4,
 	)
 
 	return err
@@ -361,6 +414,9 @@ func (records *Store) Save(ctx context.Context, item Collector) error {
 
 func (records *Store) seal(item *Collector) error {
 	var err error
+
+	item.BankAccountLast4 = Last4(item.BankAccountNumber)
+	item.EwalletPaymentIDLast4 = Last4(item.EwalletPaymentID)
 
 	if item.BankAccountNumber, err = records.cipher.Encrypt(item.BankAccountNumber); err != nil {
 		return err
@@ -413,4 +469,75 @@ func (records *Store) ByPhone(ctx context.Context, phone, creator string) (Colle
 	)
 
 	return item, err
+}
+
+// Last4 is the last four characters of a payout number, or nothing when the
+// number is empty or too short to show any of it.
+func Last4(plain string) string {
+	runes := []rune(plain)
+	if len(runes) <= 4 {
+		return ""
+	}
+
+	return string(runes[len(runes)-4:])
+}
+
+// BackfillLast4 fills the last four digits of rows saved before the columns
+// existed. It opens each sealed number, so it runs from Go at start-up; once
+// every row has them it finds nothing. It returns how many rows it filled.
+func (records *Store) BackfillLast4(ctx context.Context) (int, error) {
+	rows, err := records.db.Q(ctx).Query(ctx, `
+		SELECT id, COALESCE(bank_account_number,''), COALESCE(ewallet_payment_id,'')
+		FROM collectors
+		WHERE (bank_account_number IS NOT NULL AND bank_account_last4 IS NULL)
+			OR (ewallet_payment_id IS NOT NULL AND ewallet_payment_id_last4 IS NULL)`)
+	if err != nil {
+		return 0, err
+	}
+
+	type fill struct{ id, bank, ewallet string }
+
+	var fills []fill
+
+	for rows.Next() {
+		var id, bank, ewallet string
+
+		if err := rows.Scan(&id, &bank, &ewallet); err != nil {
+			rows.Close()
+
+			return 0, err
+		}
+
+		if bank, err = records.cipher.Decrypt(bank); err != nil {
+			rows.Close()
+
+			return 0, err
+		}
+
+		if ewallet, err = records.cipher.Decrypt(ewallet); err != nil {
+			rows.Close()
+
+			return 0, err
+		}
+
+		fills = append(fills, fill{id, Last4(bank), Last4(ewallet)})
+	}
+
+	rows.Close()
+
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	for _, f := range fills {
+		// '' (not NULL) marks "looked at, nothing to show", so the row is not found again.
+		_, err := records.db.Q(ctx).Exec(ctx, `UPDATE collectors
+			SET bank_account_last4=$2, ewallet_payment_id_last4=$3 WHERE id=$1`,
+			f.id, f.bank, f.ewallet)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return len(fills), nil
 }

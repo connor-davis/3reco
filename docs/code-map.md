@@ -42,6 +42,7 @@ line when you add an owner.
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
 | `0022_cart_holds.sql` | `stock_holds.cart_id` (request or cart owner, never both), active cart-hold indexes, realtime trigger for cart holds, notification type `cart_expired` |
 | `0023_business_verified_notify.sql` | trigger `business_verified_notify`: a change to `users.business_verified_at` sends `listing` and `transaction` events to `all` |
+| `0024_audit_log.sql` | `audit_log` table, `audit_mask()`, generic `audit_row()` trigger on 12 business tables, append-only guard (delete only after 5 years), `collectors.bank_account_last4` and `ewallet_payment_id_last4` |
 
 Never rename a merged migration. Add a new file.
 
@@ -292,3 +293,10 @@ Never rename a merged migration. Add a new file.
 | Marketplace card photos and seller logos, smaller listing gallery | `web/apps/app/src/components/listing-card.tsx`, `src/routes/market/listing/-components/gallery.tsx` |
 | Stock photo access, visibility, replacement, rollback, privacy and live routing tests | `tests/stock_images_test.go`, `tests/stock_images_live_test.go` |
 | Photo/placeholder, avatar, stock photo validation, staged-save and default-price prefill web tests | `web/apps/app/tests/stock-images.test.mjs` |
+| Audit log: actor for every write (`database.WithActor`, `app.actor_id` set in `InTx`), request transaction (`middleware.ActorTx`) | `internal/platform/database/database.go`, `internal/api/middleware/middleware.go`, registered in `internal/api/server.go` |
+| What the audit trigger masks and which tables it covers (one place to change) | `internal/platform/database/migrations/0024_audit_log.sql` (`audit_mask`) |
+| Admin activity feed: audit lines and privacy events in one cursor-paged list, `GET /api/admin/activity` | `internal/stores/privacy/activity.go`, `internal/services/privacy/activity.go`, `internal/api/privacy/handler.go` |
+| Audit lines older than 5 years deleted by the retention job | `internal/stores/privacy/retention.go` (`PurgeActivity`), `internal/platform/config/privacy.go` (`ActivityRetentionYears`) |
+| Collector payout last-4 columns, list queries without ciphertext, `FindFor`, `BackfillLast4` (run at start from `backfillPayoutLast4`) | `internal/stores/collectors/collectors.go`, `internal/services/collectors/collectors.go`, `internal/api/server.go` |
+| Audit log, actor, mask, guard, activity feed and collector last-4 tests | `tests/audit_log_test.go` |
+| Activity log page (`/admin/activity`, admin only) and its tests | `web/apps/app/src/routes/admin/activity.tsx`, `src/lib/api/admin.ts` (`useActivity`), `web/apps/app/tests/activity-log.test.mjs` |

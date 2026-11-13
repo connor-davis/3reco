@@ -3,6 +3,7 @@
 package middleware
 
 import (
+	"context"
 	"slices"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/config"
+	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/services/auth"
 )
 
@@ -251,5 +253,36 @@ func RequireSetup(c fiber.Ctx) error {
 		Status:  fiber.StatusForbidden,
 		Code:    "setup_required",
 		Message: "Finish your setup first.",
+	}
+}
+
+// ActorTx runs every change a signed-in user makes (POST, PUT, PATCH, DELETE)
+// in one transaction that knows who they are, so the audit log can name them.
+// Store calls made with c.Context() join it. A handler that returns an error
+// rolls everything back. Sign-in routes stay out: their rate-limit counts must
+// survive a refused try, and nobody is signed in yet.
+func ActorTx(db *database.DB) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		switch c.Method() {
+		case fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions:
+			return c.Next()
+		}
+
+		user, ok := CurrentUser(c)
+		if !ok || strings.HasPrefix(c.Path(), "/api/auth/") {
+			return c.Next()
+		}
+
+		outer := c.Context()
+
+		return db.InTx(database.WithActor(outer, user.ID), func(ctx context.Context) error {
+			c.SetContext(ctx)
+
+			// Back to the plain context before the commit, so the after-commit
+			// callbacks run on the pool, not on a finished transaction.
+			defer c.SetContext(outer)
+
+			return c.Next()
+		})
 	}
 }

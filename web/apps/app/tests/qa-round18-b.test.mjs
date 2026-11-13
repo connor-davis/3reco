@@ -577,10 +577,10 @@ with sync_playwright() as p:
                 totals = {'count': 1, 'weight': '1000000', 'value': '1000000', 'carbon_savings': '1500000'}
                 body = {'from': '2026-10-10', 'to': '2026-11-08', 'totals': totals, 'series': [dict(totals, day='2026-11-08')], 'counterparties': []}
             elif path == '/stats': body = {'total_kg': '0', 'co2_kg': '0', 'deals': 0, 'top_stores': []}
-            elif path == '/collectors':
+            elif path in ('/collectors', '/collectors/collector'):
                 collector = {'id': 'collector', 'name': 'Zanele Both', 'email': 'zanele@example.test', 'phone': '+27820001010', 'street_address': '5 Dump Street', 'city': 'Soweto', 'area_code': 1818, 'province': 'Gauteng', 'payout_method': payout, 'bank_name': 'FNB', 'bank_account_type': 'Cheque', 'bank_account_holder_name': 'Zanele Both', 'bank_account_number': '******1222', 'bank_branch_code': '******0655', 'ewallet_platform_name': 'FNB eWallet', 'ewallet_payment_id': '******1010'}
                 collector.update(can_edit=True, can_view_payout=True)
-                body = {'items': [collector], 'has_more': False, 'next_cursor': None}
+                body = collector if path.endswith('/collector') else {'items': [collector], 'has_more': False, 'next_cursor': None}
             elif path.endswith('/unread-count'): body = {'count': 0}
             else: body = {'items': [], 'has_more': False, 'next_cursor': None, 'count': 0}
             route.fulfill(status=status, content_type='application/json', body=json.dumps(body), headers=headers)

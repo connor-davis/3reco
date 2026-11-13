@@ -64,6 +64,15 @@ func (d *DB) Close() { d.Pool.Close() }
 
 type txKey struct{}
 
+type actorKey struct{}
+
+// WithActor says which user the writes made with ctx belong to. InTx hands it
+// to Postgres, where the audit trigger reads it. Without one the audit line
+// names the system.
+func WithActor(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, actorKey{}, userID)
+}
+
 type txState struct {
 	tx    pgx.Tx
 	mu    sync.Mutex
@@ -93,6 +102,15 @@ func (d *DB) InTx(ctx context.Context, fn func(ctx context.Context) error) error
 	}
 
 	state := &txState{tx: tx}
+
+	// Transaction-local (true): Postgres clears it at commit or rollback.
+	if actor, ok := ctx.Value(actorKey{}).(string); ok && actor != "" {
+		if _, err := tx.Exec(ctx, `SELECT set_config('app.actor_id', $1, true)`, actor); err != nil {
+			_ = tx.Rollback(context.WithoutCancel(ctx))
+
+			return err
+		}
+	}
 
 	if err := fn(context.WithValue(ctx, txKey{}, state)); err != nil {
 		// A fresh context: the caller's may be what failed.

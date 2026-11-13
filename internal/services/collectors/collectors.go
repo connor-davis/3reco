@@ -93,14 +93,46 @@ func full(user auth.User, item store.Collector, own bool) bool {
 	return auth.HasRole(user, "admin") || creator(user, item) || own
 }
 
+// shown is a payout number as a non-owner sees it: the stored last four when
+// there are any, else the mask of the whole number (empty when Postgres kept
+// it back).
+func shown(last4, plain string) string {
+	if last4 != "" {
+		return "******" + last4
+	}
+
+	return crypt.Mask(plain)
+}
+
+// viewer tells Postgres who is reading, so it can hold back the sealed payout
+// numbers from anyone who may not see them in full.
+func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewer, error) {
+	viewer := store.Viewer{
+		ID:       user.ID,
+		Admin:    auth.HasRole(user, auth.RoleAdmin),
+		Business: auth.HasRole(user, "business"),
+		Verified: verifiedBusiness(user),
+	}
+
+	if auth.HasRole(user, "collector") {
+		var err error
+
+		viewer.OwnPhone, err = service.store.OwnPhone(ctx, user.ID)
+
+		return viewer, err
+	}
+
+	return viewer, nil
+}
+
 func redact(user auth.User, item store.Collector, own bool) store.Collector {
 	item.CanEdit = manages(user, item, false)
 	item.CanViewPayout = full(user, item, own)
 
 	if !item.CanViewPayout {
-		item.BankAccountNumber = crypt.Mask(item.BankAccountNumber)
+		item.BankAccountNumber = shown(item.BankAccountLast4, item.BankAccountNumber)
 		item.BankBranchCode = crypt.Mask(item.BankBranchCode)
-		item.EwalletPaymentID = crypt.Mask(item.EwalletPaymentID)
+		item.EwalletPaymentID = shown(item.EwalletPaymentIDLast4, item.EwalletPaymentID)
 	}
 
 	if manages(user, item, own) {
@@ -132,7 +164,12 @@ func (service *Service) Find(ctx context.Context, user auth.User, id string) (st
 		return store.Collector{}, apperr.Unauthorized("Please sign in.")
 	}
 
-	item, err := service.store.Find(ctx, id, false)
+	viewer, err := service.viewer(ctx, user)
+	if err != nil {
+		return store.Collector{}, err
+	}
+
+	item, err := service.store.FindFor(ctx, id, viewer)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return item, apperr.NotFound("No such collector.")
 	}
@@ -173,26 +210,17 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		return nil, err
 	}
 
-	// Each row an admin sees with a full identifier is one audit line naming
-	// that collector; rows cut off by the page limit are never shown.
-	shown := min(len(items), query.Limit)
-	if selection {
-		shown = min(len(items), 200)
-	}
-
+	// A list never carries a full payout number, for anyone: Postgres sends
+	// the last four. The full number is on the one-collector route, which
+	// writes the admin audit line.
 	for i := range items {
 		own, err := service.own(ctx, user, items[i])
 		if err != nil {
 			return nil, err
 		}
 
-		if i < shown && service.disclosed(user, items[i], own) {
-			err := service.audit.Record(ctx, user.ID, items[i].ID, privacy.KindAdminFullView)
-			if err != nil {
-				return nil, err
-			}
-		}
-
+		items[i].BankAccountNumber = shown(items[i].BankAccountLast4, "")
+		items[i].EwalletPaymentID = shown(items[i].EwalletPaymentIDLast4, "")
 		items[i] = redact(user, items[i], own)
 	}
 

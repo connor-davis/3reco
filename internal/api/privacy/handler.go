@@ -37,6 +37,7 @@ func (h *Handler) Register(api fiber.Router) {
 	api.Get("/privacy/notice/current", h.currentNotice)
 	api.Post("/privacy/notice/accept", middleware.RequireUser, h.accept)
 	api.Get("/admin/privacy-events", middleware.RequireRole(auth.RoleAdmin), h.events)
+	api.Get("/admin/activity", middleware.RequireRole(auth.RoleAdmin), h.activity)
 }
 
 func caller(c fiber.Ctx) auth.User {
@@ -96,6 +97,19 @@ func (h *Handler) accept(c fiber.Ctx) error {
 
 func (h *Handler) events(c fiber.Ctx) error {
 	page, err := h.svc.Events(c.Context(), caller(c), c.Query("cursor"), paging.Limit(c.Query("limit")))
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(page)
+}
+
+func (h *Handler) activity(c fiber.Ctx) error {
+	page, err := h.svc.Activity(c.Context(), caller(c), svc.ActivityQuery{
+		Cursor: c.Query("cursor"), Limit: c.Query("limit"),
+		Actor: c.Query("actor"), Table: c.Query("table"), Action: c.Query("action"),
+		From: c.Query("from"), To: c.Query("to"), Search: c.Query("q"),
+	})
 	if err != nil {
 		return err
 	}

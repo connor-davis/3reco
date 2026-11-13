@@ -18,11 +18,15 @@ import { errorText, usePager } from '@/components/transactions/pager-state';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
 import { ListRow } from '@/components/list-row';
-import { useCollectors, useDeleteCollector } from '@/lib/api/collectors';
+import {
+  useCollector,
+  useCollectors,
+  useDeleteCollector,
+} from '@/lib/api/collectors';
 import type { Collector } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { isStaffRole } from '@/lib/access';
-import { formatPhone, maskAccount, plural } from '@/lib/format';
+import { formatPhone, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/collectors')({
   component: () => (
@@ -34,7 +38,8 @@ export const Route = createFileRoute('/collectors')({
 
 function payoutText(collector: Collector): string {
   if (collector.payout_method === 'bank') {
-    const account = maskAccount(collector.bank_account_number ?? '');
+    // The server already sends only the last four digits.
+    const account = collector.bank_account_number ?? '';
 
     return `Bank · ${collector.bank_name ?? ''} ${account}`.trim();
   }
@@ -94,6 +99,9 @@ function CollectorsPage() {
   const [editing, setEditing] = useState<Collector | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [removing, setRemoving] = useState<Collector | null>(null);
+  // The list never carries the full payout number. The edit form asks for the
+  // one collector, and the server sends the full value only to those allowed.
+  const detail = useCollector(formOpen && editing ? editing.id : '');
 
   // Only admin and staff may remove a collector. Businesses add and edit.
   const canRemove = user?.role === 'admin' || user?.role === 'staff';
@@ -297,7 +305,7 @@ function CollectorsPage() {
       <CollectorDialog
         open={formOpen}
         onOpenChange={setFormOpen}
-        collector={editing}
+        collector={detail.data ?? editing}
       />
       <RemoveCollector collector={removing} onClose={() => setRemoving(null)} />
     </>

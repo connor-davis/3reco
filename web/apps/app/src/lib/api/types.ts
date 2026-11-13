@@ -367,6 +367,22 @@ export interface Dashboard {
   by_type?: { type: 'c2b' | 'b2b'; count: number; weight: Decimal }[];
   collector_linked?: boolean;
 }
+/** One line of the admin activity feed. Values are masked by the server. */
+export interface ActivityLine {
+  source: 'audit' | 'privacy';
+  id: string;
+  at: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  actor_role: string | null;
+  table: string;
+  action: string;
+  row_key: Record<string, unknown>;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  subject_name: string | null;
+}
+
 export interface PrivacyEvent {
   details: {
     export_kind?: string;
