@@ -10,7 +10,6 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/config"
-	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/platform/storage"
@@ -18,7 +17,6 @@ import (
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	"github.com/connor-davis/3reco/internal/services/transactions"
-	"github.com/connor-davis/3reco/internal/stores/businesses"
 	collectors "github.com/connor-davis/3reco/internal/stores/collectors"
 	store "github.com/connor-davis/3reco/internal/stores/privacy"
 	profile "github.com/connor-davis/3reco/internal/stores/profile"
@@ -122,7 +120,7 @@ func (s *Service) Export(ctx context.Context, user auth.User) (map[string]any, e
 		out[name] = json.RawMessage(rows)
 	}
 
-	profile, err := s.profiles.Find(ctx, user.ID, false, user.ActiveBusinessID)
+	profile, err := s.profiles.FindWhole(ctx, user.ID, user.ActiveBusinessID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +132,7 @@ func (s *Service) Export(ctx context.Context, user auth.User) (map[string]any, e
 	out["profile"] = profile
 	out["person"] = profile
 	if user.ActiveBusinessID != "" {
-		person, err := s.profiles.Find(ctx, user.ID, false, "")
+		person, err := s.profiles.FindWhole(ctx, user.ID, "")
 		if err != nil {
 			return nil, err
 		}
@@ -145,25 +143,6 @@ func (s *Service) Export(ctx context.Context, user auth.User) (map[string]any, e
 	created, err := s.collectors.Created(ctx, user.ID)
 	if err != nil {
 		return nil, err
-	}
-
-	// Staff and admins who recorded a collector do not get the full number
-	// back; the creating business does, as everywhere else.
-	for i := range created {
-		full := false
-		if created[i].CreatedByBusinessID != nil {
-			role, _, err := businesses.New(s.db).Membership(ctx, *created[i].CreatedByBusinessID, user.ID)
-			if err != nil {
-				return nil, err
-			}
-			full = role == "owner" || role == "manager"
-		}
-
-		if !full {
-			created[i].BankAccountNumber = crypt.Mask(created[i].BankAccountNumber)
-			created[i].BankBranchCode = crypt.Mask(created[i].BankBranchCode)
-			created[i].EwalletPaymentID = crypt.Mask(created[i].EwalletPaymentID)
-		}
 	}
 
 	out["collectors_created"] = created

@@ -42,7 +42,7 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 		full bool
 	}{
 		{"owner", w.buyer, true}, {"collector", login, true}, {"admin", admin, true},
-		{"staff", staff, false}, {"other business participant", other, false},
+		{"staff", staff, false}, {"other business participant", other, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tradeID := id
@@ -50,15 +50,20 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 				tradeID = foreignID
 			}
 			pdf := status(t, test.user.c.Do("GET", "/api/transactions/"+tradeID+"/invoice", nil), 200)
-			want := "******1222"
+			want := "•••• 1222"
 			if test.full {
 				want = "62000111222"
 			}
-			if !bytes.Contains(pdf.Raw, []byte(want)) || (!test.full && bytes.Contains(pdf.Raw, []byte("62000111222"))) {
+			if !bytes.Contains(pdf.Raw, inPDF(want)) || (!test.full && bytes.Contains(pdf.Raw, []byte("62000111222"))) {
 				t.Fatalf("wrong payout projection in PDF: want %s", want)
 			}
 			view := status(t, test.user.c.Do("GET", "/api/collectors/"+collector, nil), 200)
-			if view.Body["bank_account_number"] != want {
+			apiWant := want
+			if test.user.id == other.id {
+				// The collector record itself stays masked for a business that did not create it.
+				apiWant = "•••• 1222"
+			}
+			if view.Body["bank_account_number"] != apiWant {
 				t.Fatalf("collector API: %s", view.Raw)
 			}
 			detail := status(t, test.user.c.Do("GET", "/api/transactions/"+tradeID, nil), 200)
@@ -85,7 +90,7 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 		id    string
 		full  bool
 	}{
-		{w.buyer, id, true}, {other, foreignID, false},
+		{w.buyer, id, true}, {other, foreignID, true},
 	} {
 		number := strings.ToUpper(test.id[len(test.id)-8:])
 		message := testutil.WaitMail(t, test.buyer.email, number)
@@ -231,18 +236,19 @@ func TestRound3WalletPayoutAccess(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE collectors SET payout_method='ewallet',
 		ewallet_platform_name='Frozen Wallet',ewallet_payment_id=$2 WHERE id=$1`,
 		collector, testutil.Seal(t, "0821112222"))
+	tradeBackfillLast4(t, w.app)
 	for _, buyer := range []tradeUser{w.buyer, other} {
 		got := status(t, buyer.c.Do("POST", "/api/transactions/collections",
 			tradeCollection(collector, "", tradeLine(w.material, "1", "2"))), 200)
 		id := got.Body["transaction_id"].(string)
 		for _, user := range []tradeUser{buyer, login, staff, admin} {
-			full := user.id == w.buyer.id || user.id == login.id || user.id == admin.id
+			full := user.id == buyer.id || user.id == login.id || user.id == admin.id
 			pdf := status(t, user.c.Do("GET", "/api/transactions/"+id+"/invoice", nil), 200)
-			want := "******2222"
+			want := "•••• 2222"
 			if full {
 				want = "0821112222"
 			}
-			if !bytes.Contains(pdf.Raw, []byte(want)) || (!full && bytes.Contains(pdf.Raw, []byte("0821112222"))) {
+			if !bytes.Contains(pdf.Raw, inPDF(want)) || (!full && bytes.Contains(pdf.Raw, []byte("0821112222"))) {
 				t.Fatal("wallet PDF projection is wrong")
 			}
 			if user.id != login.id {
@@ -257,7 +263,7 @@ func TestRound3WalletPayoutAccess(t *testing.T) {
 		number := strings.ToUpper(id[len(id)-8:])
 		testutil.WaitMail(t, buyer.email, number)
 		attachment := round3MailPDF(t, buyer.email, number)
-		if bytes.Contains(attachment, []byte("0821112222")) != (buyer.id == w.buyer.id) {
+		if !bytes.Contains(attachment, []byte("0821112222")) {
 			t.Fatal("wallet email projection is wrong")
 		}
 	}
@@ -366,5 +372,42 @@ func TestRound3FutureCollectionPaths(t *testing.T) {
 	status(t, w.buyer.c.Do("PATCH", "/api/transactions/missing", map[string]any{"collection_day": tomorrow.Format(time.DateOnly)}), 404)
 	if count := tradeText(t, w.app, `SELECT count(*)::text FROM transactions`); count != "0" {
 		t.Fatal(count)
+	}
+}
+
+// A buyer business pays from the invoice of its own trade, so its manager gets
+// the frozen payout whole there; a member and an outsider do not.
+func TestRound3BuyerManagerReadsFrozenPayoutOnInvoice(t *testing.T) {
+	w := newTradeWorld(t)
+	buyer := tradeNewUnverified(t, w.app)
+	manager := tenantMember(t, w.app, buyer.id, "manager")
+	member := tenantMember(t, w.app, buyer.id, "member")
+	outsider := tradeNewUser(t, w.app, "business")
+	collector := tradeCollector(t, w.app, w.seller, "+27800000099")
+	tradeExec(t, w.app, `UPDATE collectors SET bank_account_holder_name='Frozen Holder',bank_name='Frozen Bank',
+		bank_branch_code='250655',bank_account_type='Cheque',bank_account_number=$2,bank_account_last4='1222'
+		WHERE id=$1`, collector, testutil.Seal(t, "62000111222"))
+
+	got := status(t, buyer.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(collector, "", tradeLine(w.material, "1", "2"))), 200)
+	path := "/api/transactions/" + got.Body["transaction_id"].(string) + "/invoice"
+
+	status(t, manager.c.Do("GET", path, nil), 200)
+	if pdf := manager.c.Do("GET", path, nil); !bytes.Contains(pdf.Raw, []byte("62000111222")) {
+		t.Error("buyer manager must read the payout whole on the invoice")
+	}
+
+	if pdf := member.c.Do("GET", path, nil); pdf.Status == 200 && bytes.Contains(pdf.Raw, []byte("62000111222")) {
+		t.Error("buyer member must not read the whole payout")
+	}
+
+	// The collector record keeps its own rule: masked for this buyer's manager.
+	detail := status(t, manager.c.Do("GET", "/api/collectors/"+collector, nil), 200)
+	if bytes.Contains(detail.Raw, []byte("62000111222")) {
+		t.Errorf("collector detail widened: %s", detail.Raw)
+	}
+
+	if got := outsider.c.Do("GET", path, nil); got.Status != 404 {
+		t.Errorf("unrelated business: status %d, want 404", got.Status)
 	}
 }

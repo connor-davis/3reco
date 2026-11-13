@@ -46,7 +46,7 @@ func (s *Store) AnonymiseOwnedBusinesses(ctx context.Context, userID string) ([]
 
 	_, err = s.db.Q(ctx).Exec(ctx, `UPDATE businesses SET business_name='Removed account',
 		business_registration_number=NULL, bank_account_holder_name=NULL, bank_name=NULL,
-		bank_account_number=NULL, bank_branch_code=NULL, bank_account_type=NULL,
+		bank_account_number=NULL, bank_account_last4=NULL, bank_branch_code=NULL, bank_account_type=NULL,
 		street_address=NULL, city=NULL, area_code=NULL, province=NULL, avatar_key=NULL, image=NULL,
 		business_verified_at=NULL, business_verified_by=NULL, is_removed=true, updated_at=now()
 		WHERE id=ANY($1)`, ids)

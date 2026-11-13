@@ -199,7 +199,7 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, erro
 			password_hash = NULL, image = NULL, avatar_key = NULL, phone = NULL,
 			normalized_phone = NULL, role = 'guest', profile_complete = false,
 			first_name = NULL, last_name = NULL,
-			id_number = NULL,
+			id_number = NULL, id_number_last4 = NULL, bank_account_last4 = NULL,
 			bank_account_holder_name = NULL, bank_name = NULL, bank_account_number = NULL,
 			bank_branch_code = NULL, bank_account_type = NULL, street_address = NULL,
 			city = NULL, area_code = NULL, province = NULL,

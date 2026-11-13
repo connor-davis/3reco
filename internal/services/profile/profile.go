@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
-	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/platform/storage"
@@ -52,8 +51,8 @@ type Input struct {
 	AgreedToTerms              *bool   `json:"agreed_to_terms"`
 }
 
-// Find reads only the profile selected by the session. The ID number comes
-// back masked; the bank account number is the caller's own, so it is whole.
+// Find reads only the profile selected by the session. Postgres masks the ID
+// and bank account numbers ("•••• 1234"), so no whole number reaches Go.
 func (service *Service) Find(ctx context.Context, id string, business ...string) (store.Profile, error) {
 	item, err := service.store.Find(ctx, id, false, business...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -65,7 +64,6 @@ func (service *Service) Find(ctx context.Context, id string, business ...string)
 		item.BankBranchCode, item.BankAccountType = "", ""
 	}
 
-	item.IDNumber = crypt.Mask(item.IDNumber)
 	return item, err
 }
 
@@ -141,6 +139,7 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 
 			if in.IDNumber != nil && !isMask(*in.IDNumber, item.IDNumber) {
 				item.IDNumber = strings.TrimSpace(*in.IDNumber)
+				item.ReplaceIDNumber = true
 			}
 
 			if in.BusinessName != nil {
@@ -161,6 +160,7 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 
 			if in.BankAccountNumber != nil && !isMask(*in.BankAccountNumber, item.BankAccountNumber) {
 				item.BankAccountNumber = strings.TrimSpace(*in.BankAccountNumber)
+				item.ReplaceBankAccount = true
 			}
 
 			if in.BankBranchCode != nil {
@@ -234,6 +234,8 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 	)
 }
 
-func isMask(sent, current string) bool {
-	return current != "" && strings.TrimSpace(sent) == crypt.Mask(current)
+// isMask tells an unchanged form field: the caller sent back the masked value
+// they were given, so the stored number stays.
+func isMask(sent, masked string) bool {
+	return masked != "" && strings.TrimSpace(sent) == masked
 }

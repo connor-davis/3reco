@@ -97,7 +97,7 @@ func TestProfileUpdateCannotDesyncEmail(t *testing.T) {
 	)
 	after := status(t, owner.Do("GET", "/api/profile", nil), 200)
 	if after.Body["phone"] != "+27821234567" || after.Body["email"] != before.Body["email"] ||
-		after.Body["name"] != "Updated Name" || after.Body["bank_account_number"] != "private-account" {
+		after.Body["name"] != "Updated Name" || after.Body["bank_account_number"] != crypt.Mask("private-account") {
 		t.Fatalf("profile: %s", after.Raw)
 	}
 
@@ -209,9 +209,9 @@ func TestProfileReadOwnPayoutAndPatchKeepsIt(t *testing.T) {
 	idMask, bankMask := crypt.Mask("private-id"), crypt.Mask("private-account")
 
 	got := status(t, owner.Do("GET", "/api/profile", nil), 200)
-	if got.Body["id_number"] != idMask || got.Body["bank_account_number"] != "private-account" ||
+	if got.Body["id_number"] != idMask || got.Body["bank_account_number"] != bankMask ||
 		strings.Contains(string(got.Raw), "private-id") {
-		t.Fatalf("profile id not masked or own account not whole: %s", got.Raw)
+		t.Fatalf("profile id not masked or own account not masked: %s", got.Raw)
 	}
 
 	export := func() map[string]any {
@@ -239,7 +239,7 @@ func TestProfileReadOwnPayoutAndPatchKeepsIt(t *testing.T) {
 	if p := export(); p["bank_account_number"] != "9876543210" || p["id_number"] != "private-id" {
 		t.Fatalf("export after change: %v", p)
 	}
-	if got := status(t, owner.Do("GET", "/api/profile", nil), 200); got.Body["bank_account_number"] != "9876543210" {
-		t.Fatalf("changed value not whole: %s", got.Raw)
+	if got := status(t, owner.Do("GET", "/api/profile", nil), 200); got.Body["bank_account_number"] != "•••• 3210" {
+		t.Fatalf("changed value not masked: %s", got.Raw)
 	}
 }

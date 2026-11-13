@@ -50,6 +50,7 @@ func TestRound4BusinessInvoiceBankDetails(t *testing.T) {
 	tradeExec(t, w.app, `UPDATE businesses SET bank_account_holder_name='Metro Holder',bank_name='Metro Bank',
 		bank_branch_code='250655',bank_account_type='Cheque',bank_account_number=$2 WHERE id=$1`,
 		w.seller.id, testutil.Seal(t, "62000111222"))
+	tradeBackfillLast4(t, w.app)
 
 	id := tradeSale(t, w.seller, w.buyer, w.material, "2", "8")
 	// The stored invoice is the buyer's; staff must still get a masked one.
@@ -67,7 +68,7 @@ func TestRound4BusinessInvoiceBankDetails(t *testing.T) {
 			pdf := status(t, test.user.c.Do("GET", "/api/transactions/"+id+"/invoice", nil), 200)
 			full := bytes.Contains(pdf.Raw, []byte("62000111222"))
 			branch := bytes.Contains(pdf.Raw, []byte("250655"))
-			masked := bytes.Contains(pdf.Raw, []byte("******1222"))
+			masked := bytes.Contains(pdf.Raw, inPDF("•••• 1222"))
 			if full != test.full || branch != test.full || masked == test.full {
 				t.Fatalf("bank details: full=%v branch=%v masked=%v, want full=%v", full, branch, masked, test.full)
 			}
@@ -133,7 +134,32 @@ func TestRound4UsersExportBlanksBusinessFieldsForStaff(t *testing.T) {
 		t.Fatalf("business row lost its data: %v", businessRow)
 	}
 
-	status(t, staff.c.Do("GET", "/api/admin/exports/users", nil), 403)
+	// Staff get the export too, but masked in SQL: no street, no registration number.
+	tradeExec(t, w.app, `UPDATE businesses SET street_address='1 Long Street' WHERE id=$1`, w.seller.id)
+	tradeExec(t, w.app, `UPDATE users SET phone='0821234567' WHERE id=$1`, w.seller.id)
+
+	var adminRow []string
+	for _, row := range csvRows(t, admin.c, "/api/admin/exports/users")[1:] {
+		if row[0] == w.seller.email {
+			adminRow = row
+		}
+	}
+	if adminRow == nil || adminRow[5] != "2020/467665/07" || adminRow[7] != "1 Long Street" {
+		t.Fatalf("admin row is not full: %v", adminRow)
+	}
+
+	rows := csvRows(t, staff.c, "/api/admin/exports/users")
+	if len(rows) < 2 {
+		t.Fatal("staff export is empty")
+	}
+	for _, row := range rows[1:] {
+		if strings.Contains(row[0], w.seller.email) || !strings.Contains(row[0], "***@") ||
+			strings.Contains(row[6], "0821234567") || row[5] != "" || row[7] != "" {
+			t.Fatalf("staff row is not masked: %v", row)
+		}
+	}
+
+	status(t, w.buyer.c.Do("GET", "/api/admin/exports/users", nil), 403)
 }
 
 // H5: an erased account's socket says why; a plain sign-out keeps its reason.

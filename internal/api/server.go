@@ -105,6 +105,7 @@ var Module = fx.Module("api",
 	tradeProviders,
 	fx.Invoke(storageLifecycle),
 	fx.Invoke(backfillPayoutLast4),
+	fx.Invoke(backfillProfileLast4),
 	fx.Invoke(background),
 	fx.Invoke(func(*Listener) {}),
 )
@@ -122,6 +123,21 @@ func backfillPayoutLast4(lc fx.Lifecycle, records *collectorsstore.Store) {
 			slog.Warn("payout last four not filled", "err", err)
 		} else if filled > 0 {
 			slog.Info("payout last four filled", "collectors", filled)
+		}
+
+		return nil
+	}})
+}
+
+// backfillProfileLast4 does the same for the sealed ID and bank account
+// numbers on users and businesses.
+func backfillProfileLast4(lc fx.Lifecycle, records *profilestore.Store) {
+	lc.Append(fx.Hook{OnStart: func(ctx context.Context) error {
+		filled, err := records.BackfillLast4(ctx)
+		if err != nil {
+			slog.Warn("profile last four not filled", "err", err)
+		} else if filled > 0 {
+			slog.Info("profile last four filled", "rows", filled)
 		}
 
 		return nil

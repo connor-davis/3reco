@@ -28,7 +28,12 @@ func (service *Service) Stats(ctx context.Context, user auth.User, phone string)
 		creator = auth.PartyID(user)
 	}
 
-	item, err := service.store.ByPhone(ctx, phone, creator)
+	viewer, err := service.viewer(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := service.store.ByPhone(ctx, phone, creator, viewer)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}

@@ -4,6 +4,7 @@ package collectors
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -52,43 +53,71 @@ type Store struct {
 // New builds the store. The cipher seals the account number and ewallet id.
 func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
-// columnList is the collector SELECT list. The two payout numbers are
-// ciphertext, so each caller says what to select for them: the sealed column,
-// an empty string, or the column only when the viewer may read it in full.
-func columnList(bank, ewallet string) string {
-	return `id,COALESCE(name,''),COALESCE(email,''),COALESCE(phone,''),COALESCE(image,''),COALESCE(bank_account_holder_name,''),COALESCE(bank_name,''),` + bank + `,COALESCE(bank_branch_code,''),COALESCE(bank_account_type,''),COALESCE(payout_method,''),COALESCE(ewallet_platform_name,''),` + ewallet + `,COALESCE(street_address,''),COALESCE(city,''),COALESCE(province,''),
- area_code,COALESCE(normalized_phone,''),created_by_user_id,created_by_business_id,created_at,
- COALESCE(bank_account_last4,''),COALESCE(ewallet_payment_id_last4,'')`
+// columnList is the collector SELECT list. Every private column is decided
+// here, in SQL, from two conditions: manage (the viewer may see contact and
+// payout details) and full (the viewer may read the payout numbers whole).
+// Contact and payout columns come back empty without manage. The two sealed
+// numbers come back sealed only with full; otherwise the row carries just
+// their masked form ("•••• 1234"), so ciphertext never leaves Postgres for a
+// viewer who may not open it.
+func columnList(manage, full string) string {
+	hide := func(column string) string {
+		return `CASE WHEN ` + manage + ` THEN COALESCE(` + column + `,'') ELSE '' END`
+	}
+
+	return `id,COALESCE(name,''),` + hide("email") + `,` + hide("phone") + `,COALESCE(image,''),` +
+		hide("bank_account_holder_name") + `,` + hide("bank_name") + `,` +
+		`CASE WHEN ` + full + ` THEN COALESCE(bank_account_number,'') ELSE '' END,` +
+		`CASE WHEN ` + full + ` THEN COALESCE(bank_branch_code,'')
+			WHEN ` + manage + ` THEN mask_last4(COALESCE(bank_branch_code,'')) ELSE '' END,` +
+		hide("bank_account_type") + `,` + hide("payout_method") + `,` + hide("ewallet_platform_name") + `,` +
+		`CASE WHEN ` + full + ` THEN COALESCE(ewallet_payment_id,'') ELSE '' END,` +
+		hide("street_address") + `,COALESCE(city,''),COALESCE(province,''),
+ CASE WHEN ` + manage + ` THEN area_code END,COALESCE(normalized_phone,''),created_by_user_id,created_by_business_id,created_at,
+ COALESCE(bank_account_last4,''),COALESCE(ewallet_payment_id_last4,''),
+ mask_sealed(bank_account_number,bank_account_last4),mask_sealed(ewallet_payment_id,ewallet_payment_id_last4)`
 }
 
-// columns reads the sealed numbers, for writes and the owner's own export.
-var columns = columnList(`COALESCE(bank_account_number,'')`, `COALESCE(ewallet_payment_id,'')`)
+// columns reads everything, for writes and lookups that are already scoped.
+var columns = columnList("true", "true")
 
-// listColumns never selects the sealed numbers: a list shows the last four.
-var listColumns = columnList(`''`, `''`)
-
-// Viewer is who is reading, so Postgres can decide whether the sealed payout
-// numbers may leave the database. It repeats the service's full-access rule:
-// an admin, a verified business, the creating business, or the collector's own
-// login (OwnPhone).
+// Viewer is who is reading, so Postgres can decide what may leave the
+// database. It repeats the service's rules: an admin or staff member, a
+// verified business, the creating business, or the collector's own login
+// (OwnPhone). Only an admin, a manager of a verified or the creating
+// business, or the collector themself reads payout numbers whole.
 type Viewer struct {
-	ID       string
-	Admin    bool
-	Business bool
-	Verified bool
-	OwnPhone string
+	ID           string
+	Admin        bool
+	Staff        bool
+	Business     bool // manager or owner of the active business
+	BusinessRole bool // any member of a business
+	Verified     bool
+	OwnPhone     string
 }
 
-// gated selects a sealed column only for a viewer with full access, numbered
-// from the first placeholder after the row id ($1).
-func gated(column string) string {
-	return `CASE WHEN ($3 OR ($4 AND ($5 OR created_by_business_id=$2)) OR
- ($6<>'' AND normalized_phone=$6)) THEN COALESCE(` + column + `,'') ELSE '' END`
+// rights is the SQL for what the viewer may do with a collectors row. The
+// yes/no facts are written in as literals (they are Go booleans, never input);
+// the viewer's id and own phone are the two placeholders, numbered from first.
+func (viewer Viewer) rights(first int) (manage, full string, args []any) {
+	id, phone := "$"+strconv.Itoa(first), "$"+strconv.Itoa(first+1)
+	admin, staff := strconv.FormatBool(viewer.Admin), strconv.FormatBool(viewer.Staff)
+	manager, verified := strconv.FormatBool(viewer.Business), strconv.FormatBool(viewer.Verified)
+	business := strconv.FormatBool(viewer.BusinessRole)
+
+	own := `(` + phone + `<>'' AND normalized_phone=` + phone + `)`
+	full = `(` + admin + ` OR (` + manager + ` AND (` + verified + ` OR created_by_business_id=` + id + `)) OR ` + own + `)`
+	manage = `(` + admin + ` OR ` + staff + ` OR ` + verified + ` OR (` + business +
+		` AND created_by_business_id=` + id + `) OR ` + own + `)`
+
+	return manage, full, []any{viewer.ID, viewer.OwnPhone}
 }
 
 // scan reads one row and opens the sealed fields, so a Collector always holds
 // plain values. Services mask them for people who may not see the whole value.
 func (records *Store) scan(row pgx.Row, item *Collector) error {
+	var bankMask, walletMask string
+
 	err := row.Scan(
 		&item.ID,
 		&item.Name,
@@ -113,6 +142,8 @@ func (records *Store) scan(row pgx.Row, item *Collector) error {
 		&item.CreatedAt,
 		&item.BankAccountLast4,
 		&item.EwalletPaymentIDLast4,
+		&bankMask,
+		&walletMask,
 	)
 	if err != nil {
 		return err
@@ -122,9 +153,20 @@ func (records *Store) scan(row pgx.Row, item *Collector) error {
 		return err
 	}
 
-	item.EwalletPaymentID, err = records.cipher.Decrypt(item.EwalletPaymentID)
+	if item.EwalletPaymentID, err = records.cipher.Decrypt(item.EwalletPaymentID); err != nil {
+		return err
+	}
 
-	return err
+	// Without the whole number, the API shows its mask, built in SQL.
+	if item.BankAccountNumber == "" {
+		item.BankAccountNumber = bankMask
+	}
+
+	if item.EwalletPaymentID == "" {
+		item.EwalletPaymentID = walletMask
+	}
+
+	return nil
 }
 
 // Find reads a collector with an optional edit lock.
@@ -140,15 +182,15 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 	return item, err
 }
 
-// FindFor reads a collector for a viewer. The sealed payout numbers only come
-// out of Postgres when the viewer may read them in full.
+// FindFor reads a collector for a viewer. Contact details and the sealed
+// payout numbers only come out of Postgres when the viewer may see them.
 func (records *Store) FindFor(ctx context.Context, id string, viewer Viewer) (Collector, error) {
 	var item Collector
 
+	manage, full, args := viewer.rights(2)
 	err := records.scan(records.db.Q(ctx).QueryRow(ctx,
-		`SELECT `+columnList(gated("bank_account_number"), gated("ewallet_payment_id"))+
-			` FROM collectors WHERE id=$1`,
-		id, viewer.ID, viewer.Admin, viewer.Business, viewer.Verified, viewer.OwnPhone), &item)
+		`SELECT `+columnList(manage, full)+` FROM collectors WHERE id=$1`,
+		append([]any{id}, args...)...), &item)
 
 	return item, err
 }
@@ -181,7 +223,14 @@ func (records *Store) Count(ctx context.Context, query paging.Query, phone strin
 // List retains the legacy managed directory, A to Z (or Z to A when desc) by
 // name then id, so a cursor over (lower(name), id) never skips or repeats a
 // row. Search runs in SQL before LIMIT. Services redact each row by scope.
-func (records *Store) List(ctx context.Context, query paging.Query, after *After, phone string, desc bool) ([]Collector, error) {
+func (records *Store) List(
+	ctx context.Context,
+	query paging.Query,
+	after *After,
+	phone string,
+	desc bool,
+	viewer Viewer,
+) ([]Collector, error) {
 	// Fixed SQL text, never built from input.
 	past, order := ">", "lower(name),id"
 	if desc {
@@ -193,17 +242,16 @@ func (records *Store) List(ctx context.Context, query paging.Query, after *After
 		name, id = &after.Name, &after.ID
 	}
 
+	// A list never carries a whole payout number, for anyone: the account and
+	// wallet id come back masked whatever the viewer's rights.
+	manage, _, args := viewer.rights(6)
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT `+listColumns+` FROM collectors
+		`SELECT `+columnList(manage, "false")+` FROM collectors
  WHERE ($1::text IS NULL OR (lower(name),id)`+past+`(lower($1::text),$2::text))
  AND (`+searchTerms("$4", "$5")+`)
  ORDER BY `+order+` LIMIT NULLIF($3,0)`,
-		name,
-		id,
-		query.Size(),
-		query.Like,
-		phone,
+		append([]any{name, id, query.Size(), query.Like, phone}, args...)...,
 	)
 	if err != nil {
 		return nil, err
@@ -258,9 +306,13 @@ func (records *Store) createdPage(
 	after *time.Time,
 	afterID string,
 ) ([]Collector, error) {
+	// The person gets a payout number whole only as a manager or owner of the
+	// creating business; otherwise the export carries the mask.
+	full := `(created_by_business_id IS NOT NULL AND EXISTS(SELECT 1 FROM business_members m
+ WHERE m.business_id=created_by_business_id AND m.user_id=$1 AND m.role IN ('owner','manager')))`
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT `+columns+` FROM collectors
+		`SELECT `+columnList("true", full)+` FROM collectors
  WHERE ((created_by_user_id=$1 AND created_by_business_id IS NULL) OR created_by_business_id IN
  (SELECT business_id FROM business_members WHERE user_id=$1))
  AND ($2::timestamptz IS NULL OR (created_at,id)>($2,$3))
@@ -452,19 +504,20 @@ func (records *Store) Delete(ctx context.Context, id string) error {
 }
 
 // ByPhone scopes phone lookups in SQL so an unrelated business cannot distinguish missing records.
-func (records *Store) ByPhone(ctx context.Context, phone, creator string) (Collector, error) {
+func (records *Store) ByPhone(ctx context.Context, phone, creator string, viewer Viewer) (Collector, error) {
 	if phone == "" {
 		return Collector{}, pgx.ErrNoRows
 	}
 
 	var item Collector
+
+	manage, full, args := viewer.rights(3)
 	err := records.scan(
 		records.db.Q(ctx).QueryRow(
 			ctx,
-			`SELECT `+columns+` FROM collectors
+			`SELECT `+columnList(manage, full)+` FROM collectors
  WHERE normalized_phone=$1 AND ($2='' OR created_by_business_id=$2)`,
-			phone,
-			creator,
+			append([]any{phone, creator}, args...)...,
 		),
 		&item,
 	)

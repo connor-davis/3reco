@@ -95,7 +95,8 @@ func TestExportsScopeAndColumns(t *testing.T) {
 		tradeWant(t, "anonymous denied", w.app.NewClient(t).Do("GET", path, nil), 401)
 	}
 	tradeWant(t, "business admin export", w.buyer.c.Do("GET", "/api/admin/exports/transactions", nil), 403)
-	tradeWant(t, "staff users", staff.c.Do("GET", "/api/admin/exports/users", nil), 403)
+	tradeWant(t, "staff users", staff.c.Do("GET", "/api/admin/exports/users", nil), 200)
+	tradeWant(t, "business users", w.buyer.c.Do("GET", "/api/admin/exports/users", nil), 403)
 	tradeWant(t, "admin personal purchases", admin.c.Do("GET", "/api/exports/purchases", nil), 403)
 
 	bound := url.QueryEscape("2026-10-01T00:00:00+02:00")

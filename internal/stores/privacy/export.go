@@ -24,14 +24,14 @@ func (s *Store) section(ctx context.Context, query string, userID string) (json.
 // hashes and other people's profiles are never selected.
 var exportQueries = []struct{ name, sql string }{
 	{"businesses", `SELECT b.id,b.business_name,b.business_registration_number,b.street_address,
-		b.city,b.province,b.area_code,b.avatar_key,b.business_verified_at,m.role
+		b.city,b.province,b.area_code,(b.avatar_key IS NOT NULL) AS has_logo,b.business_verified_at,m.role
 		FROM businesses b JOIN business_members m ON m.business_id=b.id
 		WHERE m.user_id=$1 ORDER BY b.id`},
 	{"sessions", `SELECT id, ip, user_agent, created_at, refreshed_at, expires_at
 		FROM sessions WHERE user_id = $1 ORDER BY created_at`},
 	{"notice_acceptances", `SELECT version, accepted_at FROM privacy_notice_acceptances
 		WHERE user_id = $1 ORDER BY accepted_at`},
-	{"stock", `SELECT id, material_id, weight, price, is_listed, image_key, created_at, updated_at
+	{"stock", `SELECT id, material_id, weight, price, is_listed, (image_key IS NOT NULL) AS has_image, created_at, updated_at
 		FROM stock WHERE owner_id IN (SELECT business_id FROM business_members WHERE user_id=$1) ORDER BY created_at`},
 	{"requests", `SELECT r.id, r.status, r.seller_id, r.buyer_id, r.created_at, r.updated_at,
 		(SELECT COALESCE(jsonb_agg(jsonb_build_object('material_id', i.material_id,
@@ -57,13 +57,13 @@ var exportQueries = []struct{ name, sql string }{
 		(SELECT COALESCE(jsonb_agg(jsonb_build_object('stock_id', i.stock_id,
 			'material_id', i.material_id)), '[]'::jsonb) FROM cart_items i WHERE i.cart_id = c.id) AS items
 		FROM carts c WHERE c.buyer_id IN (SELECT business_id FROM business_members WHERE user_id=$1) OR c.seller_id IN (SELECT business_id FROM business_members WHERE user_id=$1) ORDER BY c.created_at`},
-	{"receipt_files", `SELECT id, transaction_id, object_key, file_name, content_type, size, uploaded_at
+	{"receipt_files", `SELECT id, transaction_id, file_name, content_type, size, uploaded_at
 		FROM transaction_receipts r WHERE uploaded_by = $1 AND EXISTS(
 		SELECT 1 FROM transactions t WHERE t.id=r.transaction_id AND
 		(t.buyer_id IN (SELECT business_id FROM business_members WHERE user_id=$1)
 		OR (t.type='b2b' AND t.seller_id IN (SELECT business_id FROM business_members WHERE user_id=$1))
 		OR EXISTS(SELECT 1 FROM users WHERE id=$1 AND role IN ('admin','staff')))) ORDER BY uploaded_at`},
-	{"invoice_files", `SELECT id AS transaction_id, invoice_key FROM transactions
+	{"invoice_files", `SELECT id AS transaction_id, true AS stored FROM transactions
 		WHERE status='complete' AND invoice_key IS NOT NULL AND (buyer_id IN (SELECT business_id FROM business_members WHERE user_id=$1) OR (type = 'b2b' AND seller_id IN (SELECT business_id FROM business_members WHERE user_id=$1)))
 		ORDER BY created_at`},
 }
@@ -83,13 +83,14 @@ func (s *Store) Export(ctx context.Context, userID string) (map[string]json.RawM
 		out[q.name] = rows
 	}
 
-	var avatar *string
-	err := s.db.Q(ctx).QueryRow(ctx, `SELECT avatar_key FROM users WHERE id = $1`, userID).Scan(&avatar)
+	var hasAvatar bool
+	err := s.db.Q(ctx).QueryRow(ctx,
+		`SELECT avatar_key IS NOT NULL FROM users WHERE id = $1`, userID).Scan(&hasAvatar)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := json.Marshal(map[string]*string{"avatar_key": avatar})
+	file, err := json.Marshal(map[string]bool{"has_avatar": hasAvatar})
 	if err != nil {
 		return nil, err
 	}

@@ -56,6 +56,8 @@ func domainUser(t *testing.T, app *testutil.App, role string) (*testutil.Client,
 		tradeBusiness(t, app, id, "Business "+id, true)
 	}
 
+	tradeBackfillLast4(t, app)
+
 	status(t, signIn(t, client, email, goodPassword), 200)
 
 	return client, id

@@ -51,7 +51,7 @@ func (s *Service) PrepareExport(
 
 	switch kind {
 	case "users":
-		if !auth.HasRole(user, auth.RoleAdmin) {
+		if !auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) {
 			return empty, denied
 		}
 	case "transactions":
@@ -165,7 +165,7 @@ func (s *Service) PrepareExport(
 				return err
 			}
 
-			return s.store.ExportUsers(ctx, role, paging.SearchPattern(search), write)
+			return s.store.ExportUsers(ctx, role, paging.SearchPattern(search), !auth.HasRole(user, auth.RoleAdmin), write)
 		}
 
 		header := append([]string{}, transactionColumns[:6]...)
@@ -189,16 +189,11 @@ func (s *Service) PrepareExport(
 
 		audited := false
 		return s.trades.ExportIDs(ctx, scope, owner, tradeType, paging.SearchPattern(search), from, to, func(id string) error {
-			document, err := s.trades.Document(ctx, id)
+			document, whole, err := s.invoices.Document(ctx, user, id)
 			if err != nil {
 				return err
 			}
-
-			document, err = s.invoices.Project(ctx, user, document)
-			if err != nil {
-				return err
-			}
-			if !audited && auth.HasRole(user, auth.RoleAdmin) && document.Trade.Type == "c2b" &&
+			if !audited && auth.HasRole(user, auth.RoleAdmin) && whole && document.Trade.Type == "c2b" &&
 				(document.Seller.Account != "" || document.Seller.PaymentID != "") {
 				subject := document.Trade.Seller.ID
 				if err := s.audit.Record(ctx, user.ID, subject, privacy.KindAdminFullView); err != nil {

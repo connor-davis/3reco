@@ -152,7 +152,7 @@ func noPrivateKeysButMasks(t *testing.T, value any) {
 	case map[string]any:
 		for _, key := range []string{"bank_account_number", "ewallet_payment_id"} {
 			if got, ok := node[key].(string); ok {
-				if got != "" && !strings.HasPrefix(got, "******") {
+				if got != "" && !strings.HasPrefix(got, "••••") {
 					t.Errorf("%s %q is not masked", key, got)
 				}
 
@@ -185,7 +185,7 @@ func TestCollectorDetailsRedactPayout(t *testing.T) {
 	status(t, anonymous.Do("GET", "/api/collectors/"+id, nil), 401)
 	for _, client := range []*testutil.Client{member, other} {
 		result := status(t, client.Do("GET", "/api/collectors/"+id, nil), 200)
-		if result.Body["bank_account_number"] != "******6789" {
+		if result.Body["bank_account_number"] != "•••• 6789" {
 			t.Fatalf("account number not masked: %s", result.Raw)
 		}
 
@@ -393,7 +393,7 @@ func TestCollectorStatsPhoneLeak(t *testing.T) {
 		collector := result.Body["collector"].(map[string]any)
 		branch := "123456"
 		if client == staff {
-			branch = "******3456"
+			branch = "•••• 3456"
 		}
 		if collector["bank_branch_code"] != branch || collector["can_edit"] != true {
 			t.Fatalf("stats collector privacy: %v", collector)
@@ -418,7 +418,7 @@ func TestCollectorEditScopeAndBranchPrivacy(t *testing.T) {
 		client  *testutil.Client
 		canEdit bool
 		branch  string
-	}{{owner, true, "123456"}, {other, false, ""}, {staff, true, "******3456"}} {
+	}{{owner, true, "123456"}, {other, false, ""}, {staff, true, "•••• 3456"}} {
 		for _, path := range []string{"/api/collectors/" + id, "/api/collectors", "/api/collectors/selection"} {
 			response := status(t, viewer.client.Do("GET", path, nil), 200)
 			row := response.Body
@@ -436,7 +436,12 @@ func TestCollectorEditScopeAndBranchPrivacy(t *testing.T) {
 				t.Fatalf("incorrect edit permission: %v", row)
 			}
 			branch, _ := row["bank_branch_code"].(string)
-			if branch != viewer.branch {
+			want := viewer.branch
+			if want == "123456" && path != "/api/collectors/"+id {
+				// Lists never carry a whole payout, even for the creator.
+				want = "•••• 3456"
+			}
+			if branch != want {
 				t.Fatalf("incorrect branch visibility: %v", row)
 			}
 			for _, key := range []string{"created_by_user_id", "created_by_business_id"} {
@@ -450,7 +455,7 @@ func TestCollectorEditScopeAndBranchPrivacy(t *testing.T) {
 	status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_branch_code": "654321"}), 404)
 	status(t, staff.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_branch_code": "654321"}), 403)
 	status(t, staff.Do("PATCH", "/api/collectors/"+id, map[string]any{
-		"bank_branch_code": "******3456", "bank_account_number": "******6789", "city": "Durban",
+		"bank_branch_code": "•••• 3456", "bank_account_number": "•••• 6789", "city": "Durban",
 	}), 200)
 	status(t, staff.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "New name"}), 200)
 	row := status(t, owner.Do("GET", "/api/collectors/"+id, nil), 200).Body

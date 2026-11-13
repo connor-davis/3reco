@@ -100,9 +100,9 @@ func TestPrivacyFieldsAreCiphertextAtRest(t *testing.T) {
 		}
 	}
 
-	// The owner reads their own account number whole and the id masked; the export has both in full.
+	// The owner reads both numbers masked on the profile; the export has them in full.
 	own := status(t, w.seller.c.Do("GET", "/api/profile", nil), 200).Body
-	if own["id_number"] != "******9087" || own["bank_account_number"] != "62001234567" {
+	if own["id_number"] != "•••• 9087" || own["bank_account_number"] != "•••• 4567" {
 		t.Errorf("owner's own profile is not readable: %v", own)
 	}
 }
@@ -145,11 +145,11 @@ func TestPrivacyMaskAndFullView(t *testing.T) {
 
 	for name, who := range map[string]tradeUser{"staff": staff, "other business": other, "other login": stranger} {
 		got := view(who)
-		if got["bank_account_number"] != "******6789" {
+		if got["bank_account_number"] != "•••• 6789" {
 			t.Errorf("%s should see the masked values: %v", name, got)
 		}
 
-		if w := status(t, who.c.Do("GET", "/api/collectors/"+wallet, nil), 200).Body; w["ewallet_payment_id"] != "******2222" {
+		if w := status(t, who.c.Do("GET", "/api/collectors/"+wallet, nil), 200).Body; w["ewallet_payment_id"] != "•••• 2222" {
 			t.Errorf("%s should see the masked e-wallet id: %v", name, w)
 		}
 	}
@@ -161,7 +161,7 @@ func TestPrivacyMaskAndFullView(t *testing.T) {
 
 	// A masked value sent back from a form means "unchanged", never a new number.
 	status(t, staff.c.Do("PATCH", "/api/collectors/"+collector, map[string]any{
-		"bank_account_number": "******6789", "city": "Paarl",
+		"bank_account_number": "•••• 6789", "city": "Paarl",
 	}), 200)
 
 	if got := view(creator)["bank_account_number"]; got != "123456789" {
@@ -238,7 +238,7 @@ func TestPrivacyCollectorLoginCountsOnlyWithSamePhone(t *testing.T) {
 
 	// Not linked yet: the login sees only the mask.
 	got := status(t, login.c.Do("GET", "/api/collectors/"+collector, nil), 200).Body
-	if got["bank_account_number"] != "******6789" {
+	if got["bank_account_number"] != "•••• 6789" {
 		t.Errorf("unlinked login: %v", got)
 	}
 

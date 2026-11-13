@@ -33,9 +33,9 @@ func (s *Store) Lock(ctx context.Context, id string) (bool, error) {
 func (s *Store) EnsureOwner(ctx context.Context, userID string) error {
 	tag, err := s.db.Q(ctx).Exec(ctx, `INSERT INTO businesses
 		(id,business_name,bank_account_holder_name,bank_name,bank_account_number,bank_branch_code,
-		bank_account_type,street_address,city,province,area_code,avatar_key,image)
+		bank_account_type,street_address,city,province,area_code,avatar_key,image,bank_account_last4)
 		SELECT id,name,bank_account_holder_name,bank_name,bank_account_number,bank_branch_code,
-		bank_account_type,street_address,city,province,area_code,avatar_key,image FROM users WHERE id=$1
+		bank_account_type,street_address,city,province,area_code,avatar_key,image,bank_account_last4 FROM users WHERE id=$1
 		ON CONFLICT DO NOTHING`, userID)
 	if err != nil || tag.RowsAffected() == 0 {
 		return err
