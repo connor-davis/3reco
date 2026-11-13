@@ -42,6 +42,7 @@ line when you add an owner.
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
 | `0022_cart_holds.sql` | `stock_holds.cart_id` (request or cart owner, never both), active cart-hold indexes, realtime trigger for cart holds, notification type `cart_expired` |
 | `0023_business_verified_notify.sql` | trigger `business_verified_notify`: a change to `users.business_verified_at` sends `listing` and `transaction` events to `all` |
+| `0026_pii_last4.sql` | `users.bank_account_last4`, `users.id_number_last4`, `businesses.bank_account_last4`; SQL `mask_last4`, `mask_stored4`, `mask_sealed`, `mask_phone`, `mask_email`; `audit_mask` rebuilt on them |
 | `0024_audit_log.sql` | `audit_log` table, `audit_mask()`, generic `audit_row()` trigger on 12 business tables, append-only guard (delete only after 5 years), `collectors.bank_account_last4` and `ewallet_payment_id_last4` |
 
 Never rename a merged migration. Add a new file.
@@ -74,12 +75,12 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Cursor paging: page shape, cursor, limit, list search pattern | `internal/platform/paging/paging.go` |
 | Transaction list filters (q, type, days) and totals | `internal/services/transactions/filter.go`, `internal/stores/transactions/transactions.go` |
 | Shared SQL: safe display name, SAST effective date, `Verified(alias)`, `TradeVerified()`, `Party` | `internal/platform/database/sql.go` |
-| Encrypting ID and bank fields (AES-256-GCM, `v1:` prefix) and the `******1234` mask | `internal/platform/crypt/crypt.go` |
+| Encrypting ID and bank fields (AES-256-GCM, `v1:` prefix) and the `•••• 1234` mask (`crypt.Mask`; SQL does the masking for readers, see `mask_*` in `0026_pii_last4.sql`) | `internal/platform/crypt/crypt.go` |
 | Notice version and retention periods (the one place to change them) | `internal/platform/config/privacy.go` |
 | Export, self-delete, notice, audit log, hourly retention: SQL, rules, `/api/privacy` routes | `internal/stores/privacy`, `internal/services/privacy`, `internal/api/privacy` |
 | Last-owner business anonymisation while retaining the business and team data | `internal/stores/privacy/businesses.go` |
 | Collector payout masks (including branch code), safe `can_edit` permission, staff contact-only form edits | `internal/services/collectors/collectors.go`, `internal/services/collectors/stats.go`, `web/apps/app/src/components/dialogs/collector-dialog.tsx` |
-| Reuse collector payout access for frozen invoice/CSV snapshots | `internal/services/collectors/payout_access.go` (`CanReadFullPayout`), `internal/services/invoices/invoices.go` (`Project`) |
+| Reuse collector payout access for frozen invoice/CSV snapshots | `internal/services/collectors/payout_access.go` (`CanReadFullPayout`), `internal/services/invoices/invoices.go` (`payoutFor`, `Document`: the seller's payout is cut down inside the SQL in `internal/stores/transactions/documents.go`) |
 | Collector `can_view_payout`, six-digit branch code, phone-digit search, admin full-view audit only when disclosed | `internal/services/collectors/{collectors,validation}.go`, `internal/stores/collectors/collectors.go` (`searchTerms`) |
 | Collection total of at least R 0.01 | `internal/services/transactions/parse.go` (`checkCollectionTotal`), `web/apps/app/src/components/dialogs/collection-dialog.tsx` |
 | Role change is live: `RecheckUser` after commit, guest sockets hear only their own id | `internal/services/realtime/{hub,recheck,routing}.go`, `internal/services/admin/users.go` (`SetRole`) |
