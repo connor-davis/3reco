@@ -10,6 +10,9 @@ const (
 	CartRetentionDays          = 90
 	TradeRetentionYears        = 5
 	PrivacyEventRetentionYears = 2
+	// ActivityRetentionYears is how long the admin activity log keeps a line.
+	// The audit_log table itself refuses to delete anything younger (0024).
+	ActivityRetentionYears = 5
 )
 
 // NoticeTerms is a plain-words document the sign-up

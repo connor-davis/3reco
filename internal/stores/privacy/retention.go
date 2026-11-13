@@ -26,6 +26,15 @@ func (s *Store) PurgeEvents(ctx context.Context, years int) error {
 	return err
 }
 
+// PurgeActivity deletes activity log lines older than the given years. The
+// table refuses any other delete.
+func (s *Store) PurgeActivity(ctx context.Context, years int) error {
+	_, err := s.db.Q(ctx).Exec(ctx,
+		`DELETE FROM audit_log WHERE at < now() - make_interval(years => $1)`, years)
+
+	return err
+}
+
 // AnonymiseTrades removes the personal details of trades older than the given
 // years: the frozen collector copy and the invoice. Amounts, materials and
 // dates stay for statistics. It returns the invoice keys so the caller can

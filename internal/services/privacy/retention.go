@@ -9,7 +9,7 @@ import (
 )
 
 // Retain runs the hourly clean-up: old notifications, forgotten carts, the
-// personal details of trades past the retention period, and old audit lines.
+// personal details of trades past the retention period, old privacy audit lines and old activity log lines.
 // Every step is one statement that only touches rows that are due, so running
 // it again does nothing new. One failing step does not stop the others.
 func (s *Service) Retain(ctx context.Context) error {
@@ -28,5 +28,6 @@ func (s *Service) Retain(ctx context.Context) error {
 		s.store.PurgeNotifications(ctx, config.NotificationRetentionDays),
 		s.store.PurgeCarts(ctx, config.CartRetentionDays),
 		s.store.PurgeEvents(ctx, config.PrivacyEventRetentionYears),
+		s.store.PurgeActivity(ctx, config.ActivityRetentionYears),
 	)
 }

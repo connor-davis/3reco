@@ -77,6 +77,7 @@ func (s *Store) SnapshotCollector(ctx context.Context, transactionID, collectorI
 	_, err := s.db.Q(ctx).Exec(ctx, `
 		UPDATE transactions SET collector_snapshot = (
 			SELECT to_jsonb(c) - 'id' - 'created_by_user_id' - 'created_by_business_id'
+				- 'bank_account_last4' - 'ewallet_payment_id_last4'
 			FROM collectors c WHERE c.id = $2)
 		WHERE id = $1`, transactionID, collectorID)
 

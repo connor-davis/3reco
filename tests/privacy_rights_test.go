@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"slices"
 	"testing"
@@ -347,9 +348,10 @@ func TestPrivacyDeleteReleasesTheSellersHold(t *testing.T) {
 	holdCount(t, w, "released", "2")
 }
 
-// Opening the collector list leaves no "No individual subject" line. A named
-// line is written only for a collector whose full identifier an admin sees.
-func TestPrivacyCollectorListAuditsOnlyNamedFullViews(t *testing.T) {
+// A collector list never carries a full identifier, so opening it writes no
+// audit line at all. Only the one-collector route, which does carry it for an
+// admin, writes a named line.
+func TestPrivacyCollectorListAuditsNothing(t *testing.T) {
 	w := newTradeWorld(t)
 	admin := tradeNewUser(t, w.app, "admin")
 	staff := tradeNewUser(t, w.app, "staff")
@@ -357,21 +359,24 @@ func TestPrivacyCollectorListAuditsOnlyNamedFullViews(t *testing.T) {
 
 	anonymous := len(privacyKinds(t, admin, ""))
 
-	status(t, w.buyer.c.Do("GET", "/api/collectors", nil), 200)
-	status(t, staff.c.Do("GET", "/api/collectors", nil), 200)
-	status(t, w.seller.c.Do("GET", "/api/collectors", nil), 200)
-
-	if len(privacyKinds(t, admin, collector)) != 0 {
-		t.Error("creator, staff or another business left a full-view line")
+	for _, who := range []tradeUser{w.buyer, staff, w.seller, admin} {
+		list := status(t, who.c.Do("GET", "/api/collectors", nil), 200)
+		if bytes.Contains(list.Raw, []byte("123456789")) {
+			t.Error("a collector list carries a full account number")
+		}
 	}
 
-	status(t, admin.c.Do("GET", "/api/collectors", nil), 200)
-
-	if !slices.Contains(privacyKinds(t, admin, collector), "admin_full_view") {
-		t.Error("admin list showing a full identifier was not logged for that collector")
+	if len(privacyKinds(t, admin, collector)) != 0 {
+		t.Error("a list left a full-view line")
 	}
 
 	if len(privacyKinds(t, admin, "")) != anonymous {
 		t.Error("a line with no subject was written")
+	}
+
+	status(t, admin.c.Do("GET", "/api/collectors/"+collector, nil), 200)
+
+	if !slices.Contains(privacyKinds(t, admin, collector), "admin_full_view") {
+		t.Error("admin detail showing a full identifier was not logged for that collector")
 	}
 }

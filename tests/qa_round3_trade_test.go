@@ -27,7 +27,7 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 	collector := tradeCollector(t, w.app, w.buyer, login.phone)
 	tradeExec(t, w.app, `UPDATE collectors SET created_by_business_id=$2,
 		bank_account_holder_name='Frozen Holder',bank_name='Frozen Bank',bank_branch_code='250655',
-		bank_account_type='Cheque',bank_account_number=$3 WHERE id=$1`,
+		bank_account_type='Cheque',bank_account_number=$3,bank_account_last4='1222' WHERE id=$1`,
 		collector, w.buyer.id, testutil.Seal(t, "62000111222"))
 	makeCollection := func(buyer tradeUser) string {
 		got := status(t, buyer.c.Do("POST", "/api/transactions/collections",
