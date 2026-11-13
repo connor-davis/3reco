@@ -10,6 +10,7 @@ import (
 
 func TestRemovedMemberLosesAccessAndSocket(t *testing.T) {
 	w := newTradeWorld(t)
+	tradeExec(t, w.app, `UPDATE stock SET is_listed=false WHERE id=$1`, w.stock)
 	member := tenantMember(t, w.app, w.seller.id, "manager")
 	sock := joinLive(t, w.app, member)[0]
 	status(t, w.seller.c.Do("DELETE", "/api/team/members/"+member.id, nil), 200)
@@ -25,6 +26,7 @@ func TestRemovedMemberLosesAccessAndSocket(t *testing.T) {
 
 func TestRemovedMemberFallsBackToOtherBusiness(t *testing.T) {
 	w := newTradeWorld(t)
+	tradeExec(t, w.app, `UPDATE stock SET is_listed=false WHERE id=$1`, w.stock)
 	member := tenantMember(t, w.app, w.seller.id, "member")
 	tradeExec(t, w.app, `INSERT INTO business_members VALUES($1,$2,'manager')`, w.buyer.id, member.id)
 	status(t, w.seller.c.Do("DELETE", "/api/team/members/"+member.id, nil), 200)
@@ -53,36 +55,48 @@ func TestRoleChangeIsLive(t *testing.T) {
 	w := newTradeWorld(t)
 	member := tenantMember(t, w.app, w.seller.id, "member")
 	sock := joinLive(t, w.app, member)[0]
-	body := map[string]any{"material_id": w.material, "weight": "1", "price": "2"}
-	status(t, member.c.Do("POST", "/api/stock", body), 403)
+	body := map[string]any{"items": []any{}}
+	path := "/api/cart?seller_id=" + w.buyer.id
+	status(t, member.c.Do("PUT", path, body), 403)
 	status(t, w.seller.c.Do("PATCH", "/api/team/members/"+member.id, map[string]any{"role": "manager"}), 200)
 	hearResync(t, sock)
-	status(t, member.c.Do("POST", "/api/stock", body), 200)
+	status(t, member.c.Do("PUT", path, body), 200)
 	settle(t, w.app, sock)
 	status(t, w.seller.c.Do("PATCH", "/api/team/members/"+member.id, map[string]any{"role": "member"}), 200)
 	hearResync(t, sock)
-	status(t, member.c.Do("POST", "/api/stock", body), 403)
+	status(t, member.c.Do("PUT", path, body), 403)
+	status(t, member.c.Do("GET", "/api/auth/me", nil), 200)
 	status(t, member.c.Do("GET", "/api/team", nil), 403)
 }
 
 func TestTeamEventsLive(t *testing.T) {
 	w := newTradeWorld(t)
 	member := tenantMember(t, w.app, w.seller.id, "member")
-	socks := joinLive(t, w.app, w.seller, w.buyer)
+	admin := tradeNewUser(t, w.app, "admin")
+	staff := tradeNewUser(t, w.app, "staff")
+	socks := joinLive(t, w.app, w.seller, w.buyer, admin, staff)
 	id, _ := teamInvite(t, w.app, w.seller, testutil.Email("live"), "member")
 	socks[0].hear("team", w.seller.id)
 	socks[1].quiet("another business")
+	socks[2].quiet("unrelated admin")
+	socks[3].quiet("unrelated staff")
 	status(t, w.seller.c.Do("PATCH", "/api/team/members/"+member.id, map[string]any{"role": "manager"}), 200)
 	socks[0].hear("team", w.seller.id)
 	socks[1].quiet("another business")
+	socks[2].quiet("unrelated admin")
+	socks[3].quiet("unrelated staff")
 	status(t, w.seller.c.Do("DELETE", "/api/team/members/"+member.id, nil), 200)
 	socks[0].hear("team", w.seller.id)
 	socks[1].quiet("another business")
+	socks[2].quiet("unrelated admin")
+	socks[3].quiet("unrelated staff")
 	status(t, w.seller.c.Do("POST", "/api/team/invites/"+id+"/resend", nil), 200)
 	socks[0].hear("team", w.seller.id)
 	status(t, w.seller.c.Do("DELETE", "/api/team/invites/"+id, nil), 200)
 	socks[0].hear("team", w.seller.id)
 	socks[1].quiet("another business")
+	socks[2].quiet("unrelated admin")
+	socks[3].quiet("unrelated staff")
 }
 
 func TestTeamAuditScope(t *testing.T) {
