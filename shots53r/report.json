@@ -1,0 +1,3444 @@
+{
+  "status": "ok",
+  "urls_visited": [
+    "http://127.0.0.1:8190/",
+    "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg",
+    "http://127.0.0.1:8190/transactions?open=r2fcpsl5titwjuvqomjrhu1o2t39wwrg",
+    "http://127.0.0.1:8190/transactions",
+    "http://127.0.0.1:8190/transactions/purchases",
+    "http://127.0.0.1:8190/collections",
+    "http://127.0.0.1:8190/market/outgoing",
+    "http://127.0.0.1:8190/market/incoming",
+    "http://127.0.0.1:8190/stock",
+    "http://127.0.0.1:8190/collectors",
+    "http://127.0.0.1:8190/materials",
+    "http://127.0.0.1:8190/admin/users",
+    "http://127.0.0.1:8190/messages",
+    "http://127.0.0.1:8190/profile",
+    "http://127.0.0.1:8190/market/store/6v9y15yk5r9v0dg1kjjt2sq2pi89rm40",
+    "http://127.0.0.1:8190/market/listing/dd6t084fxsl5et0kddxqzs95whhnzhjq"
+  ],
+  "coverage_complete": true,
+  "duration_ms": 154412,
+  "started_at": "2026-11-13T10:53:30Z",
+  "passed": 576,
+  "total": 576,
+  "variants": [
+    {
+      "theme": "3reco",
+      "mode": "light"
+    },
+    {
+      "theme": "3reco",
+      "mode": "dark"
+    }
+  ],
+  "results": [
+    {
+      "name": "[light] dashboard-business phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-business phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-business phone no long tail",
+      "ok": true,
+      "detail": "2306"
+    },
+    {
+      "name": "[light] dashboard-collector phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-collector phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-collector phone no long tail",
+      "ok": true,
+      "detail": "1967"
+    },
+    {
+      "name": "[light] dashboard-admin phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-admin phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-admin phone no long tail",
+      "ok": true,
+      "detail": "2741"
+    },
+    {
+      "name": "[light] trade phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade phone trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] trade-open-link phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade-open-link phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade-open-link phone trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] transactions phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] transactions phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] transactions phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] transactions phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] transactions phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] purchases phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] purchases phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] purchases phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] purchases phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] purchases phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collections phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collections phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collections phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] collections phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] outgoing phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] outgoing phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] outgoing phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] outgoing phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] outgoing phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] incoming phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] incoming phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] incoming phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] incoming phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] incoming phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] stock phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] stock phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] stock phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] stock phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collectors phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collectors phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collectors phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] materials phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] materials phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] materials phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] admin-users phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] admin-users phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] admin-users phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] admin-users phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] admin-users phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] inbox phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] inbox phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] inbox phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] inbox phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] profile phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] profile phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] profile phone button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[155, 155]]"
+    },
+    {
+      "name": "[light] profile phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] store phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] store phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] store phone button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[155, 155]]"
+    },
+    {
+      "name": "[light] store phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] listing phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] listing phone button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[171, 171]]"
+    },
+    {
+      "name": "[light] listing phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-business tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-business tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-business tablet no long tail",
+      "ok": true,
+      "detail": "2252"
+    },
+    {
+      "name": "[light] dashboard-collector tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-collector tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-collector tablet no long tail",
+      "ok": true,
+      "detail": "1949"
+    },
+    {
+      "name": "[light] dashboard-admin tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-admin tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-admin tablet no long tail",
+      "ok": true,
+      "detail": "2640"
+    },
+    {
+      "name": "[light] trade tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade tablet trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] trade-open-link tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade-open-link tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade-open-link tablet trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] transactions tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] transactions tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] transactions tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] transactions tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] transactions tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] purchases tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] purchases tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] purchases tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] purchases tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] purchases tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collections tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collections tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collections tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] collections tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] outgoing tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] outgoing tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] outgoing tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] outgoing tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] outgoing tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] incoming tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] incoming tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] incoming tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] incoming tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] incoming tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] stock tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] stock tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] stock tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] stock tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collectors tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collectors tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collectors tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] materials tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] materials tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] materials tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] admin-users tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] admin-users tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] admin-users tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] admin-users tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[light] admin-users tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] inbox tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] inbox tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] inbox tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] inbox tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] profile tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] profile tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] profile tablet button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[366, 366]]"
+    },
+    {
+      "name": "[light] profile tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] store tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] store tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] store tablet button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[366, 366]]"
+    },
+    {
+      "name": "[light] store tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] listing tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] listing tablet button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[386, 386]]"
+    },
+    {
+      "name": "[light] listing tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-business laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-business laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-business laptop no long tail",
+      "ok": true,
+      "detail": "2046"
+    },
+    {
+      "name": "[light] dashboard-collector laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-collector laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-collector laptop no long tail",
+      "ok": true,
+      "detail": "1743"
+    },
+    {
+      "name": "[light] dashboard-admin laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-admin laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-admin laptop no long tail",
+      "ok": true,
+      "detail": "2284"
+    },
+    {
+      "name": "[light] trade laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade laptop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] trade-open-link laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade-open-link laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade-open-link laptop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] transactions laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] transactions laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] transactions laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] transactions laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] transactions laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] transactions laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] purchases laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] purchases laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] purchases laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] purchases laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] purchases laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] purchases laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collections laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collections laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collections laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] collections laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] collections laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] outgoing laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] outgoing laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] outgoing laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] outgoing laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] outgoing laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] outgoing laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] incoming laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] incoming laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] incoming laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] incoming laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] incoming laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] incoming laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] stock laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] stock laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] stock laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] stock laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] stock laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collectors laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collectors laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collectors laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] collectors laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] materials laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] materials laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] materials laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] materials laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] admin-users laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] admin-users laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] admin-users laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] admin-users laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] admin-users laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] admin-users laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] inbox laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] inbox laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] inbox laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] inbox laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] profile laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] profile laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] profile laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] store laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] store laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] store laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] listing laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] listing laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-business desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-business desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-business desktop no long tail",
+      "ok": true,
+      "detail": "2066"
+    },
+    {
+      "name": "[light] dashboard-collector desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-collector desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-collector desktop no long tail",
+      "ok": true,
+      "detail": "1763"
+    },
+    {
+      "name": "[light] dashboard-admin desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] dashboard-admin desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] dashboard-admin desktop no long tail",
+      "ok": true,
+      "detail": "2304"
+    },
+    {
+      "name": "[light] trade desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade desktop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] trade-open-link desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] trade-open-link desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] trade-open-link desktop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[light] transactions desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] transactions desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] transactions desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] transactions desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] transactions desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] transactions desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] purchases desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] purchases desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] purchases desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] purchases desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] purchases desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] purchases desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collections desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collections desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collections desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] collections desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] collections desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] outgoing desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] outgoing desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] outgoing desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] outgoing desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] outgoing desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] outgoing desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] incoming desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] incoming desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] incoming desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] incoming desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] incoming desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] incoming desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] stock desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] stock desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] stock desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] stock desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] stock desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] collectors desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] collectors desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] collectors desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] collectors desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] materials desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] materials desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] materials desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] materials desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] admin-users desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] admin-users desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] admin-users desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] admin-users desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[light] admin-users desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[light] admin-users desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] inbox desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] inbox desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[light] inbox desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] inbox desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] profile desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] profile desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] profile desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] store desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] store desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[light] store desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[light] listing desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[light] listing desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-business phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business phone no long tail",
+      "ok": true,
+      "detail": "2306"
+    },
+    {
+      "name": "[dark] dashboard-collector phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-collector phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-collector phone no long tail",
+      "ok": true,
+      "detail": "1967"
+    },
+    {
+      "name": "[dark] dashboard-admin phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-admin phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-admin phone no long tail",
+      "ok": true,
+      "detail": "2741"
+    },
+    {
+      "name": "[dark] trade phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade phone trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] trade-open-link phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade-open-link phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade-open-link phone trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] transactions phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] transactions phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] transactions phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] transactions phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] transactions phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] purchases phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] purchases phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] purchases phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] purchases phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] purchases phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collections phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collections phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collections phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] collections phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] outgoing phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] outgoing phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] outgoing phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] outgoing phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] outgoing phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] incoming phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] incoming phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] incoming phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] incoming phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] incoming phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] stock phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] stock phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] stock phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] stock phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collectors phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collectors phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collectors phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] materials phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] materials phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] materials phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] admin-users phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] admin-users phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] admin-users phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] admin-users phone table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] admin-users phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] inbox phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] inbox phone toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] inbox phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] inbox phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] profile phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] profile phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] profile phone button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[155, 155]]"
+    },
+    {
+      "name": "[dark] profile phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] store phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] store phone tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] store phone button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[155, 155]]"
+    },
+    {
+      "name": "[dark] store phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] listing phone no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] listing phone button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[171, 171]]"
+    },
+    {
+      "name": "[dark] listing phone no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-business tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business tablet no long tail",
+      "ok": true,
+      "detail": "2252"
+    },
+    {
+      "name": "[dark] dashboard-collector tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-collector tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-collector tablet no long tail",
+      "ok": true,
+      "detail": "1949"
+    },
+    {
+      "name": "[dark] dashboard-admin tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-admin tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-admin tablet no long tail",
+      "ok": true,
+      "detail": "2640"
+    },
+    {
+      "name": "[dark] trade tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade tablet trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] trade-open-link tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade-open-link tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade-open-link tablet trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] transactions tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] transactions tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] transactions tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] transactions tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] transactions tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] purchases tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] purchases tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] purchases tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] purchases tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] purchases tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collections tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collections tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collections tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] collections tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] outgoing tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] outgoing tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] outgoing tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] outgoing tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] outgoing tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] incoming tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] incoming tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] incoming tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] incoming tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] incoming tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] stock tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] stock tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] stock tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] stock tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collectors tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collectors tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collectors tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] materials tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] materials tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] materials tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] admin-users tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] admin-users tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] admin-users tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] admin-users tablet table on wide only",
+      "ok": true,
+      "detail": "tables=0"
+    },
+    {
+      "name": "[dark] admin-users tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] inbox tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] inbox tablet toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] inbox tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] inbox tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] profile tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] profile tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] profile tablet button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[366, 366]]"
+    },
+    {
+      "name": "[dark] profile tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] store tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] store tablet tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] store tablet button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[366, 366]]"
+    },
+    {
+      "name": "[dark] store tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] listing tablet no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] listing tablet button pairs split the row evenly",
+      "ok": true,
+      "detail": "[[386, 386]]"
+    },
+    {
+      "name": "[dark] listing tablet no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-business laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business laptop no long tail",
+      "ok": true,
+      "detail": "2046"
+    },
+    {
+      "name": "[dark] dashboard-collector laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-collector laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-collector laptop no long tail",
+      "ok": true,
+      "detail": "1743"
+    },
+    {
+      "name": "[dark] dashboard-admin laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-admin laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-admin laptop no long tail",
+      "ok": true,
+      "detail": "2284"
+    },
+    {
+      "name": "[dark] trade laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade laptop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] trade-open-link laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade-open-link laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade-open-link laptop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] transactions laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] transactions laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] transactions laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] transactions laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] transactions laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] transactions laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] purchases laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] purchases laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] purchases laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] purchases laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] purchases laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] purchases laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collections laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collections laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collections laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] collections laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] collections laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] outgoing laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] outgoing laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] outgoing laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] outgoing laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] outgoing laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] outgoing laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] incoming laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] incoming laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] incoming laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] incoming laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] incoming laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] incoming laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] stock laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] stock laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] stock laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] stock laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] stock laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collectors laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collectors laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collectors laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] collectors laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] materials laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] materials laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] materials laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] materials laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] admin-users laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] admin-users laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] admin-users laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] admin-users laptop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] admin-users laptop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] admin-users laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] inbox laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] inbox laptop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] inbox laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] inbox laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] profile laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] profile laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] profile laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] store laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] store laptop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] store laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] listing laptop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] listing laptop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-business desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-business desktop no long tail",
+      "ok": true,
+      "detail": "2066"
+    },
+    {
+      "name": "[dark] dashboard-collector desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-collector desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-collector desktop no long tail",
+      "ok": true,
+      "detail": "1763"
+    },
+    {
+      "name": "[dark] dashboard-admin desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] dashboard-admin desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] dashboard-admin desktop no long tail",
+      "ok": true,
+      "detail": "2304"
+    },
+    {
+      "name": "[dark] trade desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade desktop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] trade-open-link desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] trade-open-link desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] trade-open-link desktop trade page opens",
+      "ok": true,
+      "detail": "http://127.0.0.1:8190/transactions/r2fcpsl5titwjuvqomjrhu1o2t39wwrg"
+    },
+    {
+      "name": "[dark] transactions desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] transactions desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] transactions desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] transactions desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] transactions desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] transactions desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] purchases desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] purchases desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] purchases desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] purchases desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] purchases desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] purchases desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collections desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collections desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collections desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] collections desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] collections desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] outgoing desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] outgoing desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] outgoing desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] outgoing desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] outgoing desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] outgoing desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] incoming desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] incoming desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] incoming desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] incoming desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] incoming desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] incoming desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] stock desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] stock desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] stock desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] stock desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] stock desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] collectors desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] collectors desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] collectors desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] collectors desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] materials desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] materials desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] materials desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] materials desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] admin-users desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] admin-users desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] admin-users desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] admin-users desktop table on wide only",
+      "ok": true,
+      "detail": "tables=1"
+    },
+    {
+      "name": "[dark] admin-users desktop table fits its panel",
+      "ok": true,
+      "detail": "[0]"
+    },
+    {
+      "name": "[dark] admin-users desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] inbox desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] inbox desktop toolbar is one row",
+      "ok": true,
+      "detail": "[44]"
+    },
+    {
+      "name": "[dark] inbox desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] inbox desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] profile desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] profile desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] profile desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] store desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] store desktop tabs stay on one row",
+      "ok": true,
+      "detail": "rows=[1]"
+    },
+    {
+      "name": "[dark] store desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    },
+    {
+      "name": "[dark] listing desktop no sideways scroll",
+      "ok": true,
+      "detail": "overflow=0"
+    },
+    {
+      "name": "[dark] listing desktop no zebra rows",
+      "ok": true,
+      "detail": "zebra=0"
+    }
+  ],
+  "console_errors": [],
+  "page_errors": [],
+  "journeys": [],
+  "journey_coverage_complete": true,
+  "tool_flows": [],
+  "server_provenance": {
+    "port": 8190,
+    "base_url": "http://127.0.0.1:8190",
+    "spawned_pid": 33800,
+    "listening_pids": [
+      33800
+    ],
+    "port_free_before_boot": null,
+    "probe": "netstat",
+    "verified": true,
+    "detail": "pid 33800 owns listener(s) [33800] on port 8190"
+  },
+  "data_provenance": null,
+  "ux_floor": null,
+  "measurement_provenance": null,
+  "screenshots": [
+    {
+      "file": "dashboard-business-phone-light.png",
+      "step": "[light] dashboard-business phone",
+      "variant": "3reco/light",
+      "bytes": 292779,
+      "exists": true
+    },
+    {
+      "file": "dashboard-collector-phone-light.png",
+      "step": "[light] dashboard-collector phone",
+      "variant": "3reco/light",
+      "bytes": 233801,
+      "exists": true
+    },
+    {
+      "file": "dashboard-admin-phone-light.png",
+      "step": "[light] dashboard-admin phone",
+      "variant": "3reco/light",
+      "bytes": 363290,
+      "exists": true
+    },
+    {
+      "file": "trade-phone-light.png",
+      "step": "[light] trade phone",
+      "variant": "3reco/light",
+      "bytes": 133948,
+      "exists": true
+    },
+    {
+      "file": "trade-open-link-phone-light.png",
+      "step": "[light] trade-open-link phone",
+      "variant": "3reco/light",
+      "bytes": 133948,
+      "exists": true
+    },
+    {
+      "file": "transactions-phone-light.png",
+      "step": "[light] transactions phone",
+      "variant": "3reco/light",
+      "bytes": 179822,
+      "exists": true
+    },
+    {
+      "file": "purchases-phone-light.png",
+      "step": "[light] purchases phone",
+      "variant": "3reco/light",
+      "bytes": 116335,
+      "exists": true
+    },
+    {
+      "file": "collections-phone-light.png",
+      "step": "[light] collections phone",
+      "variant": "3reco/light",
+      "bytes": 174073,
+      "exists": true
+    },
+    {
+      "file": "outgoing-phone-light.png",
+      "step": "[light] outgoing phone",
+      "variant": "3reco/light",
+      "bytes": 162173,
+      "exists": true
+    },
+    {
+      "file": "incoming-phone-light.png",
+      "step": "[light] incoming phone",
+      "variant": "3reco/light",
+      "bytes": 120666,
+      "exists": true
+    },
+    {
+      "file": "stock-phone-light.png",
+      "step": "[light] stock phone",
+      "variant": "3reco/light",
+      "bytes": 145429,
+      "exists": true
+    },
+    {
+      "file": "collectors-phone-light.png",
+      "step": "[light] collectors phone",
+      "variant": "3reco/light",
+      "bytes": 167591,
+      "exists": true
+    },
+    {
+      "file": "materials-phone-light.png",
+      "step": "[light] materials phone",
+      "variant": "3reco/light",
+      "bytes": 155949,
+      "exists": true
+    },
+    {
+      "file": "admin-users-phone-light.png",
+      "step": "[light] admin-users phone",
+      "variant": "3reco/light",
+      "bytes": 151993,
+      "exists": true
+    },
+    {
+      "file": "inbox-phone-light.png",
+      "step": "[light] inbox phone",
+      "variant": "3reco/light",
+      "bytes": 162699,
+      "exists": true
+    },
+    {
+      "file": "profile-phone-light.png",
+      "step": "[light] profile phone",
+      "variant": "3reco/light",
+      "bytes": 111328,
+      "exists": true
+    },
+    {
+      "file": "store-phone-light.png",
+      "step": "[light] store phone",
+      "variant": "3reco/light",
+      "bytes": 97880,
+      "exists": true
+    },
+    {
+      "file": "listing-phone-light.png",
+      "step": "[light] listing phone",
+      "variant": "3reco/light",
+      "bytes": 94175,
+      "exists": true
+    },
+    {
+      "file": "dashboard-business-laptop-light.png",
+      "step": "[light] dashboard-business laptop",
+      "variant": "3reco/light",
+      "bytes": 166194,
+      "exists": true
+    },
+    {
+      "file": "dashboard-collector-laptop-light.png",
+      "step": "[light] dashboard-collector laptop",
+      "variant": "3reco/light",
+      "bytes": 125367,
+      "exists": true
+    },
+    {
+      "file": "dashboard-admin-laptop-light.png",
+      "step": "[light] dashboard-admin laptop",
+      "variant": "3reco/light",
+      "bytes": 197205,
+      "exists": true
+    },
+    {
+      "file": "trade-laptop-light.png",
+      "step": "[light] trade laptop",
+      "variant": "3reco/light",
+      "bytes": 87194,
+      "exists": true
+    },
+    {
+      "file": "trade-open-link-laptop-light.png",
+      "step": "[light] trade-open-link laptop",
+      "variant": "3reco/light",
+      "bytes": 87194,
+      "exists": true
+    },
+    {
+      "file": "transactions-laptop-light.png",
+      "step": "[light] transactions laptop",
+      "variant": "3reco/light",
+      "bytes": 113707,
+      "exists": true
+    },
+    {
+      "file": "purchases-laptop-light.png",
+      "step": "[light] purchases laptop",
+      "variant": "3reco/light",
+      "bytes": 88543,
+      "exists": true
+    },
+    {
+      "file": "collections-laptop-light.png",
+      "step": "[light] collections laptop",
+      "variant": "3reco/light",
+      "bytes": 116269,
+      "exists": true
+    },
+    {
+      "file": "outgoing-laptop-light.png",
+      "step": "[light] outgoing laptop",
+      "variant": "3reco/light",
+      "bytes": 95796,
+      "exists": true
+    },
+    {
+      "file": "incoming-laptop-light.png",
+      "step": "[light] incoming laptop",
+      "variant": "3reco/light",
+      "bytes": 84439,
+      "exists": true
+    },
+    {
+      "file": "stock-laptop-light.png",
+      "step": "[light] stock laptop",
+      "variant": "3reco/light",
+      "bytes": 106205,
+      "exists": true
+    },
+    {
+      "file": "collectors-laptop-light.png",
+      "step": "[light] collectors laptop",
+      "variant": "3reco/light",
+      "bytes": 108465,
+      "exists": true
+    },
+    {
+      "file": "materials-laptop-light.png",
+      "step": "[light] materials laptop",
+      "variant": "3reco/light",
+      "bytes": 93491,
+      "exists": true
+    },
+    {
+      "file": "admin-users-laptop-light.png",
+      "step": "[light] admin-users laptop",
+      "variant": "3reco/light",
+      "bytes": 110871,
+      "exists": true
+    },
+    {
+      "file": "inbox-laptop-light.png",
+      "step": "[light] inbox laptop",
+      "variant": "3reco/light",
+      "bytes": 112453,
+      "exists": true
+    },
+    {
+      "file": "profile-laptop-light.png",
+      "step": "[light] profile laptop",
+      "variant": "3reco/light",
+      "bytes": 81917,
+      "exists": true
+    },
+    {
+      "file": "store-laptop-light.png",
+      "step": "[light] store laptop",
+      "variant": "3reco/light",
+      "bytes": 77511,
+      "exists": true
+    },
+    {
+      "file": "listing-laptop-light.png",
+      "step": "[light] listing laptop",
+      "variant": "3reco/light",
+      "bytes": 86368,
+      "exists": true
+    },
+    {
+      "file": "dashboard-business-phone-dark.png",
+      "step": "[dark] dashboard-business phone",
+      "variant": "3reco/dark",
+      "bytes": 298207,
+      "exists": true
+    },
+    {
+      "file": "dashboard-collector-phone-dark.png",
+      "step": "[dark] dashboard-collector phone",
+      "variant": "3reco/dark",
+      "bytes": 239288,
+      "exists": true
+    },
+    {
+      "file": "dashboard-admin-phone-dark.png",
+      "step": "[dark] dashboard-admin phone",
+      "variant": "3reco/dark",
+      "bytes": 371149,
+      "exists": true
+    },
+    {
+      "file": "trade-phone-dark.png",
+      "step": "[dark] trade phone",
+      "variant": "3reco/dark",
+      "bytes": 136327,
+      "exists": true
+    },
+    {
+      "file": "trade-open-link-phone-dark.png",
+      "step": "[dark] trade-open-link phone",
+      "variant": "3reco/dark",
+      "bytes": 136327,
+      "exists": true
+    },
+    {
+      "file": "transactions-phone-dark.png",
+      "step": "[dark] transactions phone",
+      "variant": "3reco/dark",
+      "bytes": 182923,
+      "exists": true
+    },
+    {
+      "file": "purchases-phone-dark.png",
+      "step": "[dark] purchases phone",
+      "variant": "3reco/dark",
+      "bytes": 116972,
+      "exists": true
+    },
+    {
+      "file": "collections-phone-dark.png",
+      "step": "[dark] collections phone",
+      "variant": "3reco/dark",
+      "bytes": 176615,
+      "exists": true
+    },
+    {
+      "file": "outgoing-phone-dark.png",
+      "step": "[dark] outgoing phone",
+      "variant": "3reco/dark",
+      "bytes": 164064,
+      "exists": true
+    },
+    {
+      "file": "incoming-phone-dark.png",
+      "step": "[dark] incoming phone",
+      "variant": "3reco/dark",
+      "bytes": 121649,
+      "exists": true
+    },
+    {
+      "file": "stock-phone-dark.png",
+      "step": "[dark] stock phone",
+      "variant": "3reco/dark",
+      "bytes": 147008,
+      "exists": true
+    },
+    {
+      "file": "collectors-phone-dark.png",
+      "step": "[dark] collectors phone",
+      "variant": "3reco/dark",
+      "bytes": 169860,
+      "exists": true
+    },
+    {
+      "file": "materials-phone-dark.png",
+      "step": "[dark] materials phone",
+      "variant": "3reco/dark",
+      "bytes": 158868,
+      "exists": true
+    },
+    {
+      "file": "admin-users-phone-dark.png",
+      "step": "[dark] admin-users phone",
+      "variant": "3reco/dark",
+      "bytes": 156112,
+      "exists": true
+    },
+    {
+      "file": "inbox-phone-dark.png",
+      "step": "[dark] inbox phone",
+      "variant": "3reco/dark",
+      "bytes": 166122,
+      "exists": true
+    },
+    {
+      "file": "profile-phone-dark.png",
+      "step": "[dark] profile phone",
+      "variant": "3reco/dark",
+      "bytes": 113795,
+      "exists": true
+    },
+    {
+      "file": "store-phone-dark.png",
+      "step": "[dark] store phone",
+      "variant": "3reco/dark",
+      "bytes": 100265,
+      "exists": true
+    },
+    {
+      "file": "listing-phone-dark.png",
+      "step": "[dark] listing phone",
+      "variant": "3reco/dark",
+      "bytes": 93308,
+      "exists": true
+    },
+    {
+      "file": "dashboard-business-laptop-dark.png",
+      "step": "[dark] dashboard-business laptop",
+      "variant": "3reco/dark",
+      "bytes": 170292,
+      "exists": true
+    },
+    {
+      "file": "dashboard-collector-laptop-dark.png",
+      "step": "[dark] dashboard-collector laptop",
+      "variant": "3reco/dark",
+      "bytes": 128856,
+      "exists": true
+    },
+    {
+      "file": "dashboard-admin-laptop-dark.png",
+      "step": "[dark] dashboard-admin laptop",
+      "variant": "3reco/dark",
+      "bytes": 202806,
+      "exists": true
+    },
+    {
+      "file": "trade-laptop-dark.png",
+      "step": "[dark] trade laptop",
+      "variant": "3reco/dark",
+      "bytes": 88356,
+      "exists": true
+    },
+    {
+      "file": "trade-open-link-laptop-dark.png",
+      "step": "[dark] trade-open-link laptop",
+      "variant": "3reco/dark",
+      "bytes": 88356,
+      "exists": true
+    },
+    {
+      "file": "transactions-laptop-dark.png",
+      "step": "[dark] transactions laptop",
+      "variant": "3reco/dark",
+      "bytes": 116651,
+      "exists": true
+    },
+    {
+      "file": "purchases-laptop-dark.png",
+      "step": "[dark] purchases laptop",
+      "variant": "3reco/dark",
+      "bytes": 90079,
+      "exists": true
+    },
+    {
+      "file": "collections-laptop-dark.png",
+      "step": "[dark] collections laptop",
+      "variant": "3reco/dark",
+      "bytes": 118933,
+      "exists": true
+    },
+    {
+      "file": "outgoing-laptop-dark.png",
+      "step": "[dark] outgoing laptop",
+      "variant": "3reco/dark",
+      "bytes": 97864,
+      "exists": true
+    },
+    {
+      "file": "incoming-laptop-dark.png",
+      "step": "[dark] incoming laptop",
+      "variant": "3reco/dark",
+      "bytes": 86193,
+      "exists": true
+    },
+    {
+      "file": "stock-laptop-dark.png",
+      "step": "[dark] stock laptop",
+      "variant": "3reco/dark",
+      "bytes": 109097,
+      "exists": true
+    },
+    {
+      "file": "collectors-laptop-dark.png",
+      "step": "[dark] collectors laptop",
+      "variant": "3reco/dark",
+      "bytes": 111282,
+      "exists": true
+    },
+    {
+      "file": "materials-laptop-dark.png",
+      "step": "[dark] materials laptop",
+      "variant": "3reco/dark",
+      "bytes": 94506,
+      "exists": true
+    },
+    {
+      "file": "admin-users-laptop-dark.png",
+      "step": "[dark] admin-users laptop",
+      "variant": "3reco/dark",
+      "bytes": 112993,
+      "exists": true
+    },
+    {
+      "file": "inbox-laptop-dark.png",
+      "step": "[dark] inbox laptop",
+      "variant": "3reco/dark",
+      "bytes": 114199,
+      "exists": true
+    },
+    {
+      "file": "profile-laptop-dark.png",
+      "step": "[dark] profile laptop",
+      "variant": "3reco/dark",
+      "bytes": 84061,
+      "exists": true
+    },
+    {
+      "file": "store-laptop-dark.png",
+      "step": "[dark] store laptop",
+      "variant": "3reco/dark",
+      "bytes": 78021,
+      "exists": true
+    },
+    {
+      "file": "listing-laptop-dark.png",
+      "step": "[dark] listing laptop",
+      "variant": "3reco/dark",
+      "bytes": 87473,
+      "exists": true
+    }
+  ]
+}
