@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
@@ -22,6 +23,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CollectorsRouteImport } from './routes/collectors'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CartRouteImport } from './routes/cart'
+import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TransactionsIndexRouteImport } from './routes/transactions/index'
@@ -48,6 +50,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StockRoute = StockRouteImport.update({
@@ -103,6 +110,11 @@ const CollectionsRoute = CollectionsRouteImport.update({
 const CartRoute = CartRouteImport.update({
   id: '/cart',
   path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcceptInviteRoute = AcceptInviteRouteImport.update({
+  id: '/accept-invite',
+  path: '/accept-invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -195,6 +207,7 @@ const MarketListingListingIdRoute = MarketListingListingIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
@@ -206,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
+  '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/activity': typeof AdminActivityRoute
@@ -227,6 +241,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
@@ -238,6 +253,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
+  '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/activity': typeof AdminActivityRoute
@@ -260,6 +276,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
@@ -271,6 +288,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/stock': typeof StockRoute
+  '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/activity': typeof AdminActivityRoute
@@ -294,6 +312,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/accept-invite'
     | '/cart'
     | '/collections'
     | '/collectors'
@@ -305,6 +324,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/stock'
+    | '/team'
     | '/terms'
     | '/verify-email'
     | '/admin/activity'
@@ -326,6 +346,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/accept-invite'
     | '/cart'
     | '/collections'
     | '/collectors'
@@ -337,6 +358,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/stock'
+    | '/team'
     | '/terms'
     | '/verify-email'
     | '/admin/activity'
@@ -358,6 +380,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/accept-invite'
     | '/cart'
     | '/collections'
     | '/collectors'
@@ -369,6 +392,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/stock'
+    | '/team'
     | '/terms'
     | '/verify-email'
     | '/admin/activity'
@@ -391,6 +415,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AcceptInviteRoute: typeof AcceptInviteRoute
   CartRoute: typeof CartRoute
   CollectionsRoute: typeof CollectionsRoute
   CollectorsRoute: typeof CollectorsRoute
@@ -402,6 +427,7 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   StockRoute: typeof StockRoute
+  TeamRoute: typeof TeamRoute
   TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   AdminActivityRoute: typeof AdminActivityRoute
@@ -435,6 +461,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stock': {
@@ -512,6 +545,13 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/cart'
       preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accept-invite': {
+      id: '/accept-invite'
+      path: '/accept-invite'
+      fullPath: '/accept-invite'
+      preLoaderRoute: typeof AcceptInviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -639,6 +679,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AcceptInviteRoute: AcceptInviteRoute,
   CartRoute: CartRoute,
   CollectionsRoute: CollectionsRoute,
   CollectorsRoute: CollectorsRoute,
@@ -650,6 +691,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   StockRoute: StockRoute,
+  TeamRoute: TeamRoute,
   TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   AdminActivityRoute: AdminActivityRoute,

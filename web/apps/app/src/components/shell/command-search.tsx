@@ -44,7 +44,11 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
 
   const needle = text.trim().toLowerCase();
   const pages = [
-    ...navFor(user?.role ?? null).flatMap((group) => group.links),
+    ...navFor(
+      user?.role ?? null,
+      user?.business_role,
+      user?.active_business_id
+    ).flatMap((group) => group.links),
     ...(user ? [{ label: 'Profile', to: '/profile', icon: undefined }] : []),
     { label: 'About 3REco', to: '/about', icon: undefined },
   ].filter((page) => page.label.toLowerCase().includes(needle));

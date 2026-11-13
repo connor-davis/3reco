@@ -2,6 +2,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 // The close code the server sends when a sign-in ended (see the Go hub).
 export const sessionEndedCode = 4401;
+export const membershipEndedCode = 4403;
 export const accountRemovedReason = 'account-removed';
 
 // A burst of events for one key (a chat flurry) refetches it once.
@@ -14,6 +15,10 @@ const settleMs = 300;
  */
 export function keysFor(kind: string, id?: string): QueryKey[] {
   switch (kind) {
+    case 'team':
+      return [['team']];
+    case 'membership':
+      return [['auth'], ['team']];
     case 'notification':
       return [['notifications']];
     case 'stock':
@@ -150,6 +155,10 @@ export class LiveConnection {
     socket.onclose = (event) => {
       if (this.stopped) return;
       this.socket = undefined;
+
+      // Losing one business keeps the account signed in. Refetch now, even
+      // if the next socket cannot connect until another business is selected.
+      if (event.code === membershipEndedCode) this.invalidateAll();
 
       // The server closes with this code for an ended, removed or guest
       // session. Reconnecting would only be refused, so sign out instead.

@@ -1,6 +1,7 @@
 // Decimal values remain exact text throughout the client.
 export type Decimal = string;
 export type Role = 'guest' | 'admin' | 'staff' | 'business' | 'collector';
+export type BusinessRole = 'owner' | 'manager' | 'member';
 export type RequestStatus =
   'pending' | 'offered' | 'accepted' | 'rejected' | 'cancelled';
 export interface Ok {
@@ -11,6 +12,8 @@ export interface Created {
 }
 export interface AuthUser {
   id: string;
+  active_business_id: string;
+  business_role: BusinessRole | '';
   email: string | null;
   emailVerified: boolean;
   name: string;

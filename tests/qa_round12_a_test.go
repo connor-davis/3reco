@@ -85,7 +85,19 @@ func TestRound12RoleChangeIsLive(t *testing.T) {
 	rename()
 	barrier.hear("user", w.stranger.id)
 	rising.hear("user", w.stranger.id)
-	falling.quiet("demoted admin")
+	// Becoming a business creates their own Owner membership. Its Team event
+	// is legitimate; every other event must still fail this silence check.
+	falling.send(map[string]string{"type": "ping"})
+	for range 20 {
+		event := falling.next()
+		if event["type"] == "pong" {
+			return
+		}
+		if event["type"] != "changed" || event["kind"] != "team" || event["id"] != demoted.id {
+			t.Fatalf("demoted admin heard %v, want silence", event)
+		}
+	}
+	t.Fatal("demoted admin did not answer ping")
 }
 
 // SN1: a bank payout needs a six digit branch code; no payout needs none.
