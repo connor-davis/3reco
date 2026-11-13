@@ -44,7 +44,7 @@ func TestTenantRemovedFounderLosesBillingAndPrivateHistory(t *testing.T) {
 	trade := tradeSale(t, w.buyer, w.seller, w.material, "1", "8")
 
 	status(t, w.seller.c.Do("GET", "/api/transactions/"+trade, nil), 404)
-	document, err := tstore.New(w.app.DB, testutil.Cipher(t)).Document(context.Background(), trade)
+	document, err := tstore.New(w.app.DB, testutil.Cipher(t)).Document(context.Background(), trade, payoutFull)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -430,7 +430,7 @@ func TestImportRollsBackFilesWhenTheDatabaseFails(t *testing.T) {
 func TestImportDeletedCollectorKeepsTheSnapshot(t *testing.T) {
 	app, _ := importFixture(t)
 
-	doc, err := tstore.New(app.DB, testutil.Cipher(t)).Document(context.Background(), fxTxGone)
+	doc, err := tstore.New(app.DB, testutil.Cipher(t)).Document(context.Background(), fxTxGone, payoutFull)
 	if err != nil {
 		t.Fatal(err)
 	}

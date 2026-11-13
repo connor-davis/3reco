@@ -8,7 +8,6 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/services/auth"
-	tstore "github.com/connor-davis/3reco/internal/stores/transactions"
 	"github.com/connor-davis/3reco/tests/testutil"
 )
 
@@ -152,12 +151,8 @@ func TestQARound5AInvoiceBranchMask(t *testing.T) {
 	b2b := tradeSale(t, w.seller, w.buyer, w.material, "1", "8")
 	c2b := status(t, w.buyer.c.Do("POST", "/api/transactions/collections",
 		tradeCollection(collector, "", tradeLine(w.material, "1", "2"))), 200).Body["transaction_id"].(string)
-	store := tstore.New(w.app.DB, testutil.Cipher(t))
+	tradeBackfillLast4(t, w.app)
 	for _, id := range []string{b2b, c2b} {
-		document, err := store.Document(context.Background(), id)
-		if err != nil {
-			t.Fatal(err)
-		}
 		readers := []struct {
 			user tradeUser
 			role string
@@ -173,11 +168,12 @@ func TestQARound5AInvoiceBranchMask(t *testing.T) {
 			}{collectorUser, "collector", true})
 		}
 		for _, reader := range readers {
-			projected, err := w.app.Invoices.Project(context.Background(), auth.User{ID: reader.user.id, Role: &reader.role, ActiveBusinessID: reader.user.id, BusinessRole: "owner"}, document)
+			user := auth.User{ID: reader.user.id, Role: &reader.role, ActiveBusinessID: reader.user.id, BusinessRole: "owner"}
+			projected, _, err := w.app.Invoices.Document(context.Background(), user, id)
 			if err != nil {
 				t.Fatal(err)
 			}
-			account, branch := "******6789", "******0655"
+			account, branch := "•••• 6789", "•••• 0655"
 			if reader.full {
 				account, branch = "123456789", "250655"
 			}

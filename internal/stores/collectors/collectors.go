@@ -96,25 +96,21 @@ type Viewer struct {
 	OwnPhone     string
 }
 
-// rights is the SQL for what the viewer may do with a collectors row. first is
-// the placeholder number of the viewer's id; the rest follow in the order of
-// args.
-func rights(first int) (manage, full string) {
-	at := func(offset int) string { return "$" + strconv.Itoa(first+offset) }
-	id, admin, manager, verified, own, staff, business := at(0), at(1), at(2), at(3), at(4), at(5), at(6)
+// rights is the SQL for what the viewer may do with a collectors row. The
+// yes/no facts are written in as literals (they are Go booleans, never input);
+// the viewer's id and own phone are the two placeholders, numbered from first.
+func (viewer Viewer) rights(first int) (manage, full string, args []any) {
+	id, phone := "$"+strconv.Itoa(first), "$"+strconv.Itoa(first+1)
+	admin, staff := strconv.FormatBool(viewer.Admin), strconv.FormatBool(viewer.Staff)
+	manager, verified := strconv.FormatBool(viewer.Business), strconv.FormatBool(viewer.Verified)
+	business := strconv.FormatBool(viewer.BusinessRole)
 
-	own = `(` + own + `<>'' AND normalized_phone=` + own + `)`
+	own := `(` + phone + `<>'' AND normalized_phone=` + phone + `)`
 	full = `(` + admin + ` OR (` + manager + ` AND (` + verified + ` OR created_by_business_id=` + id + `)) OR ` + own + `)`
 	manage = `(` + admin + ` OR ` + staff + ` OR ` + verified + ` OR (` + business +
 		` AND created_by_business_id=` + id + `) OR ` + own + `)`
 
-	return manage, full
-}
-
-// args are the viewer's values for rights, in placeholder order.
-func (viewer Viewer) args() []any {
-	return []any{viewer.ID, viewer.Admin, viewer.Business, viewer.Verified, viewer.OwnPhone,
-		viewer.Staff, viewer.BusinessRole}
+	return manage, full, []any{viewer.ID, viewer.OwnPhone}
 }
 
 // scan reads one row and opens the sealed fields, so a Collector always holds
@@ -191,10 +187,10 @@ func (records *Store) Find(ctx context.Context, id string, lock bool) (Collector
 func (records *Store) FindFor(ctx context.Context, id string, viewer Viewer) (Collector, error) {
 	var item Collector
 
-	manage, full := rights(2)
+	manage, full, args := viewer.rights(2)
 	err := records.scan(records.db.Q(ctx).QueryRow(ctx,
 		`SELECT `+columnList(manage, full)+` FROM collectors WHERE id=$1`,
-		append([]any{id}, viewer.args()...)...), &item)
+		append([]any{id}, args...)...), &item)
 
 	return item, err
 }
@@ -248,14 +244,14 @@ func (records *Store) List(
 
 	// A list never carries a whole payout number, for anyone: the account and
 	// wallet id come back masked whatever the viewer's rights.
-	manage, _ := rights(6)
+	manage, _, args := viewer.rights(6)
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		`SELECT `+columnList(manage, "false")+` FROM collectors
  WHERE ($1::text IS NULL OR (lower(name),id)`+past+`(lower($1::text),$2::text))
  AND (`+searchTerms("$4", "$5")+`)
  ORDER BY `+order+` LIMIT NULLIF($3,0)`,
-		append([]any{name, id, query.Size(), query.Like, phone}, viewer.args()...)...,
+		append([]any{name, id, query.Size(), query.Like, phone}, args...)...,
 	)
 	if err != nil {
 		return nil, err
@@ -515,13 +511,13 @@ func (records *Store) ByPhone(ctx context.Context, phone, creator string, viewer
 
 	var item Collector
 
-	manage, full := rights(3)
+	manage, full, args := viewer.rights(3)
 	err := records.scan(
 		records.db.Q(ctx).QueryRow(
 			ctx,
 			`SELECT `+columnList(manage, full)+` FROM collectors
  WHERE normalized_phone=$1 AND ($2='' OR created_by_business_id=$2)`,
-			append([]any{phone, creator}, viewer.args()...)...,
+			append([]any{phone, creator}, args...)...,
 		),
 		&item,
 	)

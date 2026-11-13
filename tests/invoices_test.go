@@ -178,7 +178,7 @@ func TestInvoiceAndExportWithoutCollectorPhone(t *testing.T) {
 	id := got.Body["transaction_id"].(string)
 	testutil.WaitMail(t, w.buyer.email, strings.ToUpper(id[len(id)-8:]))
 
-	document, err := tstore.New(w.app.DB, testutil.Cipher(t)).Document(context.Background(), id)
+	document, err := tstore.New(w.app.DB, testutil.Cipher(t)).Document(context.Background(), id, payoutFull)
 	if err != nil || document.Seller.Phone != "" || document.Seller.Email != "collector@example.test" {
 		t.Fatalf("email-only document: %+v, %v", document.Seller, err)
 	}
