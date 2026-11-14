@@ -8,13 +8,15 @@ line when you add an owner.
 | Job | Owner |
 | --- | --- |
 | Duplicate state, dismissal history, audit/live dismissal events and caller-scoped 24-hour collection keys | `internal/platform/database/migrations/0030_duplicate_trades.sql` |
-| Live numeric multiset matching, ordered trade locks, mark metadata and dismissal persistence | `internal/stores/admin/duplicates.go` |
-| Admin-only review, exact c2b confirmation, stock Take/Give with audit entries and atomic undo | `internal/services/admin/duplicates.go` |
-| Admin review, mark, undo and dismissal HTTP handlers | `internal/api/admin/duplicates.go`; registration in `handler.go` |
-| Collection key reservation, unique-key serialization and saved result | `internal/stores/transactions/idempotency.go`; service integration in `internal/services/transactions/sales.go` |
-| Side-by-side review, marked copies, loading/empty/error and decisions | `web/apps/app/src/routes/admin/duplicates.tsx`, `src/lib/api/duplicates.ts` |
-| Collection dialog opening key and retry preservation | `web/apps/app/src/components/dialogs/collection-dialog.tsx`, `src/lib/api/transactions.ts` |
-| Matching, dismissal, mark/undo, access, stock/audit, invoices, read surfaces and idempotency regression | `tests/duplicates_test.go` |
+| Delete-copy guard lift (transaction-local `threereco.allow_duplicate_delete`; plain DELETE stays blocked) | `internal/platform/database/migrations/0031_delete_duplicate_copy.sql` |
+| Shared-line pairs, ordered trade locks, audited delete of a copy and dismissal persistence | `internal/stores/admin/duplicates.go` |
+| Line keys, containment and the collector's own matching trades | `internal/stores/transactions/lines.go` |
+| Admin-only connected groups, delete-copy rules (stock Take, review/legacy refusals, files removed after commit) | `internal/services/admin/duplicates.go` |
+| Admin review, delete-copy and dismissal HTTP handlers | `internal/api/admin/duplicates.go`; registration in `handler.go` |
+| Collection key reservation, unique-key serialization and saved result | `internal/stores/transactions/idempotency.go`; service integration and the `possible_duplicate` 409 in `internal/services/transactions/sales.go` |
+| Group review, delete-copy confirm, loading/empty/error and decisions; reached only by the admin-only Duplicates button in `src/routes/collections.tsx` (no nav link) | `web/apps/app/src/routes/admin/duplicates.tsx`, `src/lib/api/duplicates.ts` |
+| Collection dialog opening key and retry preservation | `web/apps/app/src/components/dialogs/collection-dialog.tsx`, `src/lib/api/transactions.ts`; possible-copy confirm in `src/components/dialogs/duplicate-warning.tsx` |
+| Groups, delete-copy, refusals, guard, collection warning, access and idempotency regression | `tests/duplicates_test.go` |
 | Admin guards, live invalidation, collection header and responsive review/dialog browser regression | `web/apps/app/tests/duplicates.test.mjs`, `duplicates-render.test.mjs` |
 
 ## Platform (`internal/platform`)

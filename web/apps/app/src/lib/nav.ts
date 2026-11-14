@@ -97,11 +97,6 @@ function roleNav(role: Role | null): NavGroup[] {
             ...staffWorkspace,
             { label: 'User management', to: '/admin/users', icon: Users },
             { label: 'Activity log', to: '/admin/activity', icon: History },
-            {
-              label: 'Duplicates',
-              to: '/admin/duplicates',
-              icon: ClipboardList,
-            },
           ],
         },
       ];

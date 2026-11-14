@@ -19,6 +19,7 @@ import {
 } from '@/components/form-fields';
 import { IconButton } from '@/components/icon-button';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { DuplicateWarning } from '@/components/dialogs/duplicate-warning';
 import { errorText } from '@/components/transactions/pager-state';
 import { Calendar } from '@/components/ui/calendar';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -44,6 +45,8 @@ import {
   useUploadReceipt,
 } from '@/lib/api/receipts';
 import { useStores } from '@/lib/api/stores';
+import { ApiError } from '@/lib/api/client';
+import type { CollectionMatch } from '@/lib/api/types';
 import { useCreateCollection } from '@/lib/api/transactions';
 import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
@@ -156,6 +159,11 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const create = useCreateCollection();
   const upload = useUploadReceipt();
   const [serverError, setServerError] = useState('');
+  // The saved-before matches, and the values to re-post if the person confirms.
+  const [warning, setWarning] = useState<{
+    matches: CollectionMatch[];
+    values: Values;
+  } | null>(null);
   const [receipts, setReceipts] = useState<File[]>([]);
   const [receiptError, setReceiptError] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -254,7 +262,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     setReceipts(next);
   }
 
-  async function onSubmit(values: Values) {
+  async function onSubmit(values: Values, confirmDuplicate = false) {
     if (saving.current) return;
     setServerError('');
 
@@ -269,11 +277,19 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     try {
       const created = await create.mutateAsync({
         ...collectionBody(values, chooseBusiness),
+        ...(confirmDuplicate && { confirm_duplicate: true }),
         idempotencyKey: collectionKey.current,
       });
       id = created.transaction_id;
+      setWarning(null);
     } catch (error) {
       saving.current = false;
+      if (error instanceof ApiError && error.code === 'possible_duplicate') {
+        // Nothing was saved. The form stays as typed behind the question.
+        setWarning({ matches: error.details as CollectionMatch[], values });
+        return;
+      }
+      setWarning(null);
       setServerError(errorText(error));
       return;
     }
@@ -325,13 +341,23 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
       footer={
         <Button
           disabled={create.isPending || uploading}
-          onClick={handleSubmit(onSubmit)}
+          onClick={handleSubmit((values) => onSubmit(values))}
         >
           Record collection
         </Button>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <DuplicateWarning
+        matches={warning?.matches ?? null}
+        pending={create.isPending}
+        onBack={() => setWarning(null)}
+        onSaveAnyway={() => warning && void onSubmit(warning.values, true)}
+      />
+      <form
+        onSubmit={handleSubmit((values) => onSubmit(values))}
+        className="space-y-4"
+        noValidate
+      >
         {chooseBusiness && (
           <ComboboxField
             control={control}

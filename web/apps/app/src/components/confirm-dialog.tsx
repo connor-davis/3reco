@@ -25,6 +25,8 @@ type ConfirmDialogProps = {
   // False for a safe yes (like verifying a business): the button is the plain
   // brand colour instead of red.
   destructive?: boolean;
+  // True while the action runs: the button is off so it cannot be sent twice.
+  pending?: boolean;
 };
 
 /** The one confirm for every action that needs a second yes (remove, cancel, verify). */
@@ -38,6 +40,7 @@ export function ConfirmDialog({
   onConfirm,
   typedName,
   destructive = true,
+  pending = false,
 }: ConfirmDialogProps) {
   const [typed, setTyped] = useState('');
   const blocked = typedName !== undefined && typed !== typedName;
@@ -72,7 +75,7 @@ export function ConfirmDialog({
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             variant={destructive ? 'destructive' : 'default'}
-            disabled={blocked}
+            disabled={blocked || pending}
             onClick={onConfirm}
           >
             {confirmLabel}

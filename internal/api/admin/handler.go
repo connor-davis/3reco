@@ -25,8 +25,7 @@ func (h *Handler) Register(api fiber.Router) {
 
 	api.Get("/admin/duplicates", admin, h.duplicates)
 	api.Post("/admin/duplicates/dismiss", admin, h.dismissDuplicates)
-	api.Post("/admin/duplicates/:id/mark", admin, h.markDuplicate)
-	api.Post("/admin/duplicates/:id/undo", admin, h.undoDuplicate)
+	api.Post("/admin/duplicates/:id/delete", admin, h.deleteDuplicate)
 
 	api.Get("/admin/users", admin, h.users)
 	api.Delete("/admin/users/:id", admin, h.remove)

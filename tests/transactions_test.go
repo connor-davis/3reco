@@ -22,7 +22,7 @@ func tradeCollector(t *testing.T, app *testutil.App, by tradeUser, phone string)
 }
 
 func tradeCollection(collector, business string, items ...map[string]any) map[string]any {
-	body := map[string]any{"collector_id": collector, "items": items}
+	body := map[string]any{"collector_id": collector, "items": items, "confirm_duplicate": true}
 	if business != "" {
 		body["business_id"] = business
 	}

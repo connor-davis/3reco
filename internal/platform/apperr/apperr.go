@@ -10,6 +10,7 @@ type Error struct {
 	Code    string            // short machine word, such as "invalid"
 	Message string            // sentence shown on screen
 	Data    map[string]string // optional per-field messages, keyed by field name
+	Details any               // optional extra answer for one case, such as matching trades
 }
 
 // Error returns the message, so *Error satisfies the error interface.

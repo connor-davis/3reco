@@ -297,7 +297,7 @@ func errorHandler(c fiber.Ctx, err error) error {
 	var app *apperr.Error
 	if errors.As(err, &app) {
 		return c.Status(app.Status).JSON(fiber.Map{
-			"code": app.Code, "message": app.Message, "fields": app.Data,
+			"code": app.Code, "message": app.Message, "fields": app.Data, "details": app.Details,
 		})
 	}
 

@@ -2,12 +2,15 @@ export interface ErrorBody {
   code: string;
   message: string;
   fields: Record<string, string> | null;
+  // Extra data for one case, such as the trades behind a duplicate warning.
+  details?: unknown;
 }
 
 export class ApiError extends Error implements ErrorBody {
   readonly status: number;
   readonly code: string;
   readonly fields: Record<string, string> | null;
+  readonly details: unknown;
   readonly retryAfter: string | null;
 
   constructor(status: number, body: ErrorBody, retryAfter: string | null) {
@@ -16,6 +19,7 @@ export class ApiError extends Error implements ErrorBody {
     this.status = status;
     this.code = body.code;
     this.fields = body.fields;
+    this.details = body.details;
     this.retryAfter = retryAfter;
   }
 }
@@ -35,6 +39,7 @@ export async function apiResponse(path: string, init: RequestInit = {}) {
         code: body?.code ?? 'error',
         message: body?.message ?? 'The request could not be completed.',
         fields: body?.fields ?? null,
+        details: body?.details,
       },
       response.headers.get('Retry-After')
     );

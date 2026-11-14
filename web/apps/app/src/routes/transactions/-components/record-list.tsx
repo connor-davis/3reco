@@ -372,7 +372,6 @@ export function RecordList({
             options={[
               { value: 'complete', label: 'Complete' },
               { value: 'pending', label: 'Pending' },
-              { value: 'duplicate', label: 'Duplicates' },
             ]}
           />
         )}

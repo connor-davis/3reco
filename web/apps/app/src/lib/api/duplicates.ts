@@ -1,14 +1,20 @@
 import { useResource, useWrite, idPath } from './resource';
 import type { Transaction, Ok } from './types';
 
+export interface DuplicateTrade extends Transaction {
+  /** Per line, in order: another trade in the group has the same line. */
+  shared_lines: boolean[];
+  /** Another trade in the group has exactly the same lines. */
+  exact_copy: boolean;
+  /** The trade this one can be deleted as a copy of; empty when it cannot. */
+  contained_in: string;
+}
 export interface DuplicateGroup {
-  kind: 'exact' | 'possible';
   original_id: string;
-  trades: Transaction[];
+  trades: DuplicateTrade[];
 }
 export interface DuplicateReview {
   groups: DuplicateGroup[];
-  marked: Transaction[];
 }
 
 const changed = [
@@ -27,20 +33,12 @@ export function useDuplicates() {
     true
   );
 }
-export function useMarkDuplicate() {
+export function useDeleteDuplicate() {
   return useWrite<{ id: string; original_id: string }, Ok>(
-    ({ id }) => `/admin/duplicates/${idPath(id)}/mark`,
+    ({ id }) => `/admin/duplicates/${idPath(id)}/delete`,
     'POST',
     changed,
     ({ original_id }) => ({ original_id })
-  );
-}
-export function useUndoDuplicate() {
-  return useWrite<string, Ok>(
-    (id) => `/admin/duplicates/${idPath(id)}/undo`,
-    'POST',
-    changed,
-    () => ({})
   );
 }
 export function useDismissDuplicates() {

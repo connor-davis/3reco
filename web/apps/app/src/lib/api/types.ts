@@ -337,6 +337,17 @@ export interface CollectionInput {
   business_id?: string;
   items: SaleItem[];
   collection_day?: string;
+  // Save even when the lines match a collection already recorded.
+  confirm_duplicate?: boolean;
+}
+/** A recorded collection that shares a line with the one being saved. */
+export interface CollectionMatch {
+  id: string;
+  invoice_number: string;
+  effective_at: string;
+  total_price: Decimal;
+  matching_lines: (SaleItem & { material_name: string })[];
+  exact_copy: boolean;
 }
 export interface TransactionCreated {
   transaction_id: string;
