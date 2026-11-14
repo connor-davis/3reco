@@ -10,7 +10,8 @@ import type { Dashboard } from '@/lib/api/types';
 import { formatDate, formatKg } from '@/lib/format';
 
 const config = {
-  kg: { label: 'Materials traded (kg)', color: 'var(--chart-1)' },
+  // The brand teal, so the chart matches buttons and the logo in both themes.
+  kg: { label: 'Materials traded (kg)', color: 'var(--primary)' },
 } satisfies ChartConfig;
 
 /** "12 Oct" for the axis; the tooltip and the rest of the app say "12 Oct 2026". */

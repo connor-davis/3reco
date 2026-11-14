@@ -54,10 +54,10 @@ export function AppSidebar() {
       collapsible="none"
       className="sticky top-0 h-svh w-60 shrink-0 border-r max-lg:hidden"
     >
-      {/* Same height as the top bar, so the two borders meet in one line. */}
-      <SidebarHeader className="h-14 justify-center border-b px-4">
+      {/* The big logo from the client mockup, with no line under it. */}
+      <SidebarHeader className="h-16 justify-center px-4">
         <Link to="/" aria-label="Home" className="w-fit">
-          <BrandLogo className="h-8" />
+          <BrandLogo className="h-12" />
         </Link>
       </SidebarHeader>
       <SidebarContent>
