@@ -36,7 +36,7 @@ type Input struct {
 	FirstName                  *string `json:"first_name"`
 	LastName                   *string `json:"last_name"`
 	IDNumber                   *string `json:"id_number"`
-	BusinessName               *string `json:"business_name"`
+	BusinessName               *string `json:"business_name"` // refused: see Update
 	BusinessRegistrationNumber *string `json:"business_registration_number"`
 	BankAccountHolderName      *string `json:"bank_account_holder_name"`
 	BankName                   *string `json:"bank_name"`
@@ -53,15 +53,10 @@ type Input struct {
 
 // Find reads only the profile selected by the session. Postgres masks the ID
 // and bank account numbers ("•••• 1234"), so no whole number reaches Go.
-func (service *Service) Find(ctx context.Context, id string, business ...string) (store.Profile, error) {
-	item, err := service.store.Find(ctx, id, false, business...)
+func (service *Service) Find(ctx context.Context, id string) (store.Profile, error) {
+	item, err := service.store.Find(ctx, id, false)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return item, apperr.NotFound("No such profile.")
-	}
-
-	if len(business) > 1 && business[0] != "" && business[1] == "member" {
-		item.BankAccountHolderName, item.BankName, item.BankAccountNumber = "", "", ""
-		item.BankBranchCode, item.BankAccountType = "", ""
 	}
 
 	return item, err
@@ -98,7 +93,7 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 	return service.db.InTx(
 		ctx,
 		func(ctx context.Context) error {
-			item, err := service.store.Find(ctx, id, true, business...)
+			item, err := service.store.Find(ctx, id, true)
 			if errors.Is(err, pgx.ErrNoRows) {
 				return apperr.NotFound("No such profile.")
 			}
@@ -107,15 +102,16 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 				return err
 			}
 
-			businessFields := in.BusinessName != nil || in.BusinessRegistrationNumber != nil ||
-				in.BankAccountHolderName != nil || in.BankName != nil || in.BankAccountNumber != nil ||
-				in.BankBranchCode != nil || in.BankAccountType != nil || in.StreetAddress != nil ||
+			// A business's details are not part of the person: they have their own
+			// page, and only its Owner may change them.
+			businessFields := in.BankAccountHolderName != nil || in.BankName != nil ||
+				in.BankAccountNumber != nil || in.BankBranchCode != nil ||
+				in.BankAccountType != nil || in.StreetAddress != nil ||
 				in.City != nil || in.Province != nil || in.AreaCode != nil
-			if businessFields && ((len(business) > 1 && business[0] != "" && business[1] != "owner") ||
-				(item.Role == "business" && item.BusinessID == "")) {
-				return apperr.Forbidden("Only owners can change business details.")
+			if in.BusinessName != nil || in.BusinessRegistrationNumber != nil || (businessFields &&
+				(item.Role == "business" || (len(business) > 0 && business[0] != ""))) {
+				return apperr.BadRequest("Change business details on the Business page.", nil)
 			}
-			item.BusinessChanged = businessFields
 
 			if in.Name != nil {
 				item.Name = strings.TrimSpace(*in.Name)
@@ -137,17 +133,9 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 				item.LastName = strings.TrimSpace(*in.LastName)
 			}
 
-			if in.IDNumber != nil && !isMask(*in.IDNumber, item.IDNumber) {
+			if in.IDNumber != nil && !IsMask(*in.IDNumber, item.IDNumber) {
 				item.IDNumber = strings.TrimSpace(*in.IDNumber)
 				item.ReplaceIDNumber = true
-			}
-
-			if in.BusinessName != nil {
-				item.BusinessName = strings.TrimSpace(*in.BusinessName)
-			}
-
-			if in.BusinessRegistrationNumber != nil {
-				item.BusinessRegistrationNumber = strings.TrimSpace(*in.BusinessRegistrationNumber)
 			}
 
 			if in.BankAccountHolderName != nil {
@@ -158,7 +146,7 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 				item.BankName = strings.TrimSpace(*in.BankName)
 			}
 
-			if in.BankAccountNumber != nil && !isMask(*in.BankAccountNumber, item.BankAccountNumber) {
+			if in.BankAccountNumber != nil && !IsMask(*in.BankAccountNumber, item.BankAccountNumber) {
 				item.BankAccountNumber = strings.TrimSpace(*in.BankAccountNumber)
 				item.ReplaceBankAccount = true
 			}
@@ -210,7 +198,7 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 				}
 			}
 
-			complete, err := Bank(
+			_, err = Bank(
 				item.BankAccountHolderName,
 				item.BankName,
 				item.BankAccountNumber,
@@ -219,10 +207,6 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 			)
 			if err != nil {
 				return err
-			}
-
-			if item.Role == "business" && item.ProfileComplete && !complete {
-				return apperr.BadRequest("Complete bank details before completing a business profile.", nil)
 			}
 
 			if err := Address(item.Province, item.AreaCode); err != nil {
@@ -234,8 +218,8 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 	)
 }
 
-// isMask tells an unchanged form field: the caller sent back the masked value
+// IsMask tells an unchanged form field: the caller sent back the masked value
 // they were given, so the stored number stays.
-func isMask(sent, masked string) bool {
+func IsMask(sent, masked string) bool {
 	return masked != "" && strings.TrimSpace(sent) == masked
 }

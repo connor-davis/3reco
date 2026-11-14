@@ -23,6 +23,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CollectorsRouteImport } from './routes/collectors'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CartRouteImport } from './routes/cart'
+import { Route as BusinessRouteImport } from './routes/business'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -110,6 +111,11 @@ const CollectionsRoute = CollectionsRouteImport.update({
 const CartRoute = CartRouteImport.update({
   id: '/cart',
   path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BusinessRoute = BusinessRouteImport.update({
+  id: '/business',
+  path: '/business',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AcceptInviteRoute = AcceptInviteRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accept-invite': typeof AcceptInviteRoute
+  '/business': typeof BusinessRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accept-invite': typeof AcceptInviteRoute
+  '/business': typeof BusinessRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accept-invite': typeof AcceptInviteRoute
+  '/business': typeof BusinessRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/collectors': typeof CollectorsRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accept-invite'
+    | '/business'
     | '/cart'
     | '/collections'
     | '/collectors'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accept-invite'
+    | '/business'
     | '/cart'
     | '/collections'
     | '/collectors'
@@ -381,6 +392,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accept-invite'
+    | '/business'
     | '/cart'
     | '/collections'
     | '/collectors'
@@ -416,6 +428,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AcceptInviteRoute: typeof AcceptInviteRoute
+  BusinessRoute: typeof BusinessRoute
   CartRoute: typeof CartRoute
   CollectionsRoute: typeof CollectionsRoute
   CollectorsRoute: typeof CollectorsRoute
@@ -545,6 +558,13 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/cart'
       preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/business': {
+      id: '/business'
+      path: '/business'
+      fullPath: '/business'
+      preLoaderRoute: typeof BusinessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/accept-invite': {
@@ -680,6 +700,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AcceptInviteRoute: AcceptInviteRoute,
+  BusinessRoute: BusinessRoute,
   CartRoute: CartRoute,
   CollectionsRoute: CollectionsRoute,
   CollectorsRoute: CollectorsRoute,

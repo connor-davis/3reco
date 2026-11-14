@@ -6,6 +6,7 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUploadAvatar, useDeleteAvatar } from '@/lib/api/avatar';
+import { useBusiness, useDeleteLogo, useUploadLogo } from '@/lib/api/business';
 import { useProfile } from '@/lib/api/profile';
 import { initials } from '@/lib/format';
 
@@ -13,16 +14,27 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   name: string;
+  // The store logo of the active business, instead of the person's picture.
+  business?: boolean;
 };
 
-export function AvatarDialog({ open, onOpenChange, name }: Props) {
-  return open ? <AvatarBody onOpenChange={onOpenChange} name={name} /> : null;
+export function AvatarDialog({ open, onOpenChange, name, business }: Props) {
+  return open ? (
+    <AvatarBody onOpenChange={onOpenChange} name={name} business={business} />
+  ) : null;
 }
 
-function AvatarBody({ onOpenChange, name }: Omit<Props, 'open'>) {
-  const profile = useProfile();
-  const upload = useUploadAvatar();
-  const remove = useDeleteAvatar();
+function AvatarBody({ onOpenChange, name, business }: Omit<Props, 'open'>) {
+  const person = useProfile();
+  const company = useBusiness(!!business);
+  const profile = business ? company : person;
+  const uploadPicture = useUploadAvatar();
+  const uploadLogo = useUploadLogo();
+  const removePicture = useDeleteAvatar();
+  const removeLogo = useDeleteLogo();
+  const upload = business ? uploadLogo : uploadPicture;
+  const remove = business ? removeLogo : removePicture;
+  const label = business ? 'logo' : 'picture';
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState('');
   const [error, setError] = useState('');
@@ -38,7 +50,7 @@ function AvatarBody({ onOpenChange, name }: Omit<Props, 'open'>) {
     <ResponsiveOverlay
       open
       onOpenChange={(next) => !pending && onOpenChange(next)}
-      title="Change picture"
+      title={business ? 'Store logo' : 'Change picture'}
       description="Upload a PNG, JPEG or WebP image up to 2 MiB."
       footer={
         <>
@@ -49,13 +61,15 @@ function AvatarBody({ onOpenChange, name }: Omit<Props, 'open'>) {
             onClick={() =>
               remove.mutate(undefined, {
                 onSuccess: () => {
-                  toast.success('Picture removed.');
+                  toast.success(
+                    business ? 'Logo removed.' : 'Picture removed.'
+                  );
                   onOpenChange(false);
                 },
               })
             }
           >
-            Remove picture
+            Remove {label}
           </Button>
           <Button
             className="min-h-11"
@@ -64,13 +78,15 @@ function AvatarBody({ onOpenChange, name }: Omit<Props, 'open'>) {
               file &&
               upload.mutate(file, {
                 onSuccess: () => {
-                  toast.success('Picture uploaded.');
+                  toast.success(
+                    business ? 'Logo uploaded.' : 'Picture uploaded.'
+                  );
                   onOpenChange(false);
                 },
               })
             }
           >
-            {upload.isPending ? 'Uploading…' : 'Upload picture'}
+            {upload.isPending ? 'Uploading…' : `Upload ${label}`}
           </Button>
         </>
       }

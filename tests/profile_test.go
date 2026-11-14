@@ -17,7 +17,7 @@ func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
 	legacy := "https://identity.example.test/picture.png"
 	tradeExec(t, app, `UPDATE users SET image=$2 WHERE id=$1`, owner.id, legacy)
 	tradeExec(t, app, `UPDATE businesses SET image=$2 WHERE id=$1`, owner.id, legacy)
-	before := owner.c.Do("GET", "/api/profile", nil)
+	before := owner.c.Do("GET", "/api/business", nil)
 	if before.Body["avatar_url"] != legacy {
 		t.Fatal("legacy image fallback missing")
 	}
@@ -25,14 +25,14 @@ func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
 	path := "/api/stores/" + owner.id + "/logo"
 	tradeWant(t, "foreign avatar write", uploadImage(t, app, stranger.c, path, receiptImage(1)), 404)
 	tradeWant(t, "foreign avatar delete", stranger.c.Do("DELETE", path, nil), 404)
-	tradeWant(t, "anonymous upload", uploadImage(t, app, app.NewClient(t), "/api/profile/avatar", receiptImage(1)), 401)
+	tradeWant(t, "anonymous upload", uploadImage(t, app, app.NewClient(t), "/api/business/logo", receiptImage(1)), 401)
 	for _, data := range [][]byte{nil, []byte("GIF89a"),
 		append(receiptImage(1), make([]byte, 2<<20)...)} {
-		tradeWant(t, "bad avatar", uploadImage(t, app, owner.c, "/api/profile/avatar", data), 400)
+		tradeWant(t, "bad avatar", uploadImage(t, app, owner.c, "/api/business/logo", data), 400)
 	}
 
 	image := receiptImage(7)
-	got := uploadImage(t, app, owner.c, "/api/profile/avatar", image)
+	got := uploadImage(t, app, owner.c, "/api/business/logo", image)
 	tradeWant(t, "avatar uploaded", got, 200)
 	if got.Body["avatar_url"] != path || strings.Contains(string(got.Raw), "avatars/") {
 		t.Fatalf("avatar projection: %s", got.Raw)
@@ -46,14 +46,14 @@ func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
 			t.Fatalf("avatar URL missing in %s: %s", route, got.Raw)
 		}
 	}
-	if got := stranger.c.Do("GET", "/api/profile", nil); got.Body["avatar_url"] != "" {
-		t.Fatal("upload changed someone else's avatar")
+	if got := stranger.c.Do("GET", "/api/business", nil); got.Body["avatar_url"] != "" {
+		t.Fatal("upload changed someone else's logo")
 	}
 
 	old := tradeText(t, app, `SELECT avatar_key FROM businesses WHERE id=$1`, owner.id)
 	// The multipart name and declared MIME are ignored; detection permits WEBP.
 	webp := []byte("RIFF1234WEBPVP8 " + strings.Repeat("x", 32))
-	tradeWant(t, "replace WEBP", uploadImage(t, app, owner.c, "/api/profile/avatar", webp), 200)
+	tradeWant(t, "replace WEBP", uploadImage(t, app, owner.c, "/api/business/logo", webp), 200)
 	if reader, err := app.Storage.Get(context.Background(), old); err == nil {
 		_ = reader.Close()
 		t.Fatal("replaced avatar object remains")
@@ -62,12 +62,12 @@ func TestProfileAvatarOwnershipAndCleanup(t *testing.T) {
 		t.Fatalf("avatar objects %d, want 1", count)
 	}
 
-	tradeWant(t, "clear avatar", owner.c.Do("DELETE", "/api/profile/avatar", nil), 200)
+	tradeWant(t, "clear avatar", owner.c.Do("DELETE", "/api/business/logo", nil), 200)
 	if count := objectCount(t, app, "avatars/"); count != 0 {
 		t.Fatal("deleted avatar object remains")
 	}
 	tradeWant(t, "cleared public avatar", stranger.c.Do("GET", path, nil), 404)
-	if got := owner.c.Do("GET", "/api/profile", nil); got.Body["avatar_url"] != legacy {
+	if got := owner.c.Do("GET", "/api/business", nil); got.Body["avatar_url"] != legacy {
 		t.Fatal("clearing uploaded avatar lost the legacy fallback")
 	}
 }
@@ -173,34 +173,23 @@ func TestUserDirectoryDoesNotLeakPrivateFields(t *testing.T) {
 	status(t, anonymous.Do("GET", "/api/stores/"+ownerID, nil), 404)
 }
 
-func TestBusinessProfileRequiresBankDetails(t *testing.T) {
+func TestBusinessBankDetailsAreAllOrNothing(t *testing.T) {
 	app := testutil.Server(t)
 	owner, _ := domainUser(t, app, "business")
-	status(
-		t,
-		owner.Do(
-			"PATCH",
-			"/api/profile",
-			map[string]any{
-				"bank_account_holder_name": "", "bank_name": "", "bank_account_number": "",
-				"bank_branch_code": "", "bank_account_type": "",
-			},
-		),
-		200,
-	)
-	status(t, owner.Do("PATCH", "/api/profile", map[string]any{"profile_complete": true}), 400)
-	status(
-		t,
-		owner.Do(
-			"PATCH",
-			"/api/profile",
-			map[string]any{
-				"bank_account_holder_name": "Holder", "bank_name": "Bank", "bank_account_number": "123",
-				"bank_branch_code": "123456", "bank_account_type": "Savings", "profile_complete": true,
-			},
-		),
-		200,
-	)
+	full := map[string]any{
+		"bank_account_holder_name": "Holder", "bank_name": "Bank", "bank_account_number": "123",
+		"bank_branch_code": "123456", "bank_account_type": "Savings",
+	}
+	blank := map[string]any{
+		"bank_account_holder_name": "", "bank_name": "", "bank_account_number": "",
+		"bank_branch_code": "", "bank_account_type": "",
+	}
+
+	// A partial set is refused and nothing changes; all of it or none of it is fine.
+	status(t, owner.Do("PATCH", "/api/business", map[string]any{"bank_name": "Other"}), 200)
+	status(t, owner.Do("PATCH", "/api/business", blank), 200)
+	status(t, owner.Do("PATCH", "/api/business", map[string]any{"bank_name": "Bank"}), 400)
+	status(t, owner.Do("PATCH", "/api/business", full), 200)
 }
 
 func TestProfileReadOwnPayoutAndPatchKeepsIt(t *testing.T) {
@@ -209,37 +198,46 @@ func TestProfileReadOwnPayoutAndPatchKeepsIt(t *testing.T) {
 	idMask, bankMask := crypt.Mask("private-id"), crypt.Mask("private-account")
 
 	got := status(t, owner.Do("GET", "/api/profile", nil), 200)
-	if got.Body["id_number"] != idMask || got.Body["bank_account_number"] != bankMask ||
-		strings.Contains(string(got.Raw), "private-id") {
-		t.Fatalf("profile id not masked or own account not masked: %s", got.Raw)
+	if got.Body["id_number"] != idMask || strings.Contains(string(got.Raw), "private-id") {
+		t.Fatalf("profile id not masked: %s", got.Raw)
+	}
+	if got := status(t, owner.Do("GET", "/api/business", nil), 200); got.Body["bank_account_number"] != bankMask ||
+		strings.Contains(string(got.Raw), "private-account") {
+		t.Fatalf("own account not masked: %s", got.Raw)
 	}
 
+	// The person's id comes from their own export, the business's account from its.
 	export := func() map[string]any {
-		return status(t, owner.Do("GET", "/api/privacy/export", nil), 200).Body["profile"].(map[string]any)
+		p := status(t, owner.Do("GET", "/api/privacy/export", nil), 200).Body["profile"].(map[string]any)
+		p["bank_account_number"] = status(t, owner.Do("GET", "/api/business/export", nil), 200).
+			Body["business"].(map[string]any)["bank_account_number"]
+
+		return p
 	}
 
 	// The mask sent back keeps what is stored, and so does the whole number or a blank.
 	for _, sent := range []string{idMask} {
-		status(t, owner.Do("PATCH", "/api/profile", map[string]any{"id_number": sent, "bank_account_number": bankMask}), 200)
+		status(t, owner.Do("PATCH", "/api/profile", map[string]any{"id_number": sent}), 200)
+		status(t, owner.Do("PATCH", "/api/business", map[string]any{"bank_account_number": bankMask}), 200)
 		if p := export(); p["id_number"] != "private-id" || p["bank_account_number"] != "private-account" {
 			t.Fatalf("PATCH %q changed a stored value: %v", sent, p)
 		}
 	}
 
 	// Saving other fields, or the whole number as read, keeps the payout.
-	status(t, owner.Do("PATCH", "/api/profile", map[string]any{"city": "Paarl"}), 200)
-	status(t, owner.Do("PATCH", "/api/profile", map[string]any{"bank_account_number": "private-account"}), 200)
+	status(t, owner.Do("PATCH", "/api/business", map[string]any{"city": "Paarl"}), 200)
+	status(t, owner.Do("PATCH", "/api/business", map[string]any{"bank_account_number": "private-account"}), 200)
 
 	if p := export(); p["id_number"] != "private-id" || p["bank_account_number"] != "private-account" {
 		t.Fatalf("export lost full values: %v", p)
 	}
 
 	// A new value replaces the old one; the export still shows it in full.
-	status(t, owner.Do("PATCH", "/api/profile", map[string]any{"bank_account_number": "9876543210"}), 200)
+	status(t, owner.Do("PATCH", "/api/business", map[string]any{"bank_account_number": "9876543210"}), 200)
 	if p := export(); p["bank_account_number"] != "9876543210" || p["id_number"] != "private-id" {
 		t.Fatalf("export after change: %v", p)
 	}
-	if got := status(t, owner.Do("GET", "/api/profile", nil), 200); got.Body["bank_account_number"] != "•••• 3210" {
+	if got := status(t, owner.Do("GET", "/api/business", nil), 200); got.Body["bank_account_number"] != "•••• 3210" {
 		t.Fatalf("changed value not masked: %s", got.Raw)
 	}
 }

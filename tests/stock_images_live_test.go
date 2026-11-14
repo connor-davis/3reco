@@ -6,7 +6,7 @@ func TestLiveStoreLogoWakesListings(t *testing.T) {
 	w := newLiveWorld(t)
 	socks := joinLive(t, w.app, w.seller, w.buyer, w.admin, w.staff)
 
-	got := uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", receiptImage(1))
+	got := uploadImage(t, w.app, w.seller.c, "/api/business/logo", receiptImage(1))
 	tradeWant(t, "upload logo", got, 200)
 	socks[0].hear("user", w.seller.id)
 	socks[2].hear("user", w.seller.id)

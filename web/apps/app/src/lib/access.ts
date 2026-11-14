@@ -19,6 +19,17 @@ export function canSeeTeam(
   );
 }
 
+/** The Business page is for Owners and Managers of the selected business. */
+export function canViewBusiness(
+  user:
+    Pick<AuthUser, 'active_business_id' | 'business_role'> | null | undefined
+): boolean {
+  return (
+    !!user?.active_business_id &&
+    (user.business_role === 'owner' || user.business_role === 'manager')
+  );
+}
+
 export type PageId =
   | 'dashboard'
   | 'messages'

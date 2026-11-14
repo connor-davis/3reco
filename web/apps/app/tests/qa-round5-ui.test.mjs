@@ -54,8 +54,8 @@ test('collector dialog is neutral for staff and shows a conflict once', () => {
 test('staff and admin do not get the chat, profile or about extras', () => {
   assert.match(source('components/chat/inbox.tsx'), /!admin && !staff/);
   const profile = source('routes/profile/index.tsx');
-  assert.match(profile, /!staff && <TabsTrigger value="bank">/);
-  assert.match(profile, /role !== 'collector' && !staff/);
+  assert.match(profile, /collector && <TabsTrigger value="bank">/);
+  assert.doesNotMatch(profile, /value="business"/);
   assert.match(source('routes/about.tsx'), /!isStaffRole\(user\?\.role\)/);
 });
 

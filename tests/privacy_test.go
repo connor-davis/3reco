@@ -59,8 +59,9 @@ func walk(value any, key func(string), text func(string)) {
 func TestPrivacyFieldsAreCiphertextAtRest(t *testing.T) {
 	w := newTradeWorld(t)
 
-	status(t, w.seller.c.Do("PATCH", "/api/profile", map[string]any{
-		"id_number": "8001015009087", "bank_account_holder_name": "Holder", "bank_name": "Bank",
+	status(t, w.seller.c.Do("PATCH", "/api/profile", map[string]any{"id_number": "8001015009087"}), 200)
+	status(t, w.seller.c.Do("PATCH", "/api/business", map[string]any{
+		"bank_account_holder_name": "Holder", "bank_name": "Bank",
 		"bank_account_number": "62001234567", "bank_branch_code": "250655", "bank_account_type": "Savings",
 	}), 200)
 
@@ -102,8 +103,9 @@ func TestPrivacyFieldsAreCiphertextAtRest(t *testing.T) {
 
 	// The owner reads both numbers masked on the profile; the export has them in full.
 	own := status(t, w.seller.c.Do("GET", "/api/profile", nil), 200).Body
-	if own["id_number"] != "•••• 9087" || own["bank_account_number"] != "•••• 4567" {
-		t.Errorf("owner's own profile is not readable: %v", own)
+	bank := status(t, w.seller.c.Do("GET", "/api/business", nil), 200).Body
+	if own["id_number"] != "•••• 9087" || bank["bank_account_number"] != "•••• 4567" {
+		t.Errorf("owner's own details are not readable: %v %v", own, bank)
 	}
 }
 

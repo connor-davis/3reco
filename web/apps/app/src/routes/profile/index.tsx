@@ -16,12 +16,7 @@ import { useProfile } from '@/lib/api/profile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { initials } from '@/lib/format';
 import { PrivacyPanel } from './-components/privacy-panel';
-import {
-  BusinessForm,
-  LocationForm,
-  PayoutForm,
-  PersonalForm,
-} from './-components/forms';
+import { LocationForm, PayoutForm, PersonalForm } from './-components/forms';
 import { SessionsPanel } from './-components/sessions-panel';
 
 export const Route = createFileRoute('/profile/')({
@@ -35,8 +30,9 @@ export const Route = createFileRoute('/profile/')({
 function ProfilePage() {
   const { user } = useAuth();
   const role = user?.role;
-  // Admin and staff run 3REco; they have no business or bank details to keep.
-  const staff = isStaffRole(role);
+  // Only collectors keep bank and location here. A business keeps its own on
+  // the Business page; admin and staff have none.
+  const collector = role === 'collector';
   const [avatarOpen, setAvatarOpen] = useState(false);
 
   const query = useProfile();
@@ -67,11 +63,8 @@ function ProfilePage() {
         <Tabs defaultValue="personal" className="gap-6">
           <TabsList>
             <TabsTrigger value="personal">Personal</TabsTrigger>
-            {role !== 'collector' && !staff && (
-              <TabsTrigger value="business">Business</TabsTrigger>
-            )}
-            {!staff && <TabsTrigger value="bank">Bank & payout</TabsTrigger>}
-            <TabsTrigger value="location">Location</TabsTrigger>
+            {collector && <TabsTrigger value="bank">Bank & payout</TabsTrigger>}
+            {collector && <TabsTrigger value="location">Location</TabsTrigger>}
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="privacy">Your data</TabsTrigger>
           </TabsList>
@@ -97,34 +90,26 @@ function ProfilePage() {
                   variant="outline"
                   onClick={() => setAvatarOpen(true)}
                 >
-                  {role === 'business' ? 'Store logo' : 'Change picture'}
+                  Change picture
                 </Button>
               </div>
               {profile && <PersonalForm profile={profile} />}
             </Section>
           </TabsContent>
-          {!staff && (
+          {collector && (
             <>
-              <TabsContent value="business">
-                <Section
-                  title="Business details"
-                  description="Shown to people you trade with."
-                >
-                  {profile && <BusinessForm profile={profile} />}
-                </Section>
-              </TabsContent>
               <TabsContent value="bank">
                 <Section title="Bank & payout" description="Where payments go.">
                   {profile && <PayoutForm profile={profile} />}
                 </Section>
               </TabsContent>
+              <TabsContent value="location">
+                <Section title="Location" description="Your address and area.">
+                  {profile && <LocationForm profile={profile} />}
+                </Section>
+              </TabsContent>
             </>
           )}
-          <TabsContent value="location">
-            <Section title="Location" description="Your address and area.">
-              {profile && <LocationForm profile={profile} />}
-            </Section>
-          </TabsContent>
           <TabsContent value="privacy">
             <Section
               title="Privacy"

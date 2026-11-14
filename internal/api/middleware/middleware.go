@@ -222,10 +222,11 @@ func RateLimit(svc *auth.Service, name string, limit int) fiber.Handler {
 
 // guestPaths are the only /api paths a guest may use before setup is done:
 // sign-out and sessions, the live socket (it tells them when their role
-// changes), their own profile and setup, the privacy notice and their own
+// changes), their own profile, their business (a guest who picks business opens it
+// there; the service refuses everyone else) and setup, the privacy notice and their own
 // data rights.
 var guestPaths = []string{
-	"/api/health", "/api/auth/", "/api/profile", "/api/live",
+	"/api/health", "/api/auth/", "/api/profile", "/api/business", "/api/live",
 	"/api/privacy/notice", "/api/privacy/export", "/api/privacy/delete",
 }
 

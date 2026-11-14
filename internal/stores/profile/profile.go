@@ -3,7 +3,6 @@ package profile
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -16,31 +15,27 @@ import (
 
 // Profile is the caller's editable profile, without credentials.
 type Profile struct {
-	ID                         string `json:"id"`
-	BusinessID                 string `json:"-"`
-	BusinessChanged            bool   `json:"-"`
-	Email                      string `json:"email"`
-	Role                       string `json:"role"`
-	Name                       string `json:"name"`
-	Image                      string `json:"image"`
-	AvatarURL                  string `json:"avatar_url"`
-	Phone                      string `json:"phone"`
-	FirstName                  string `json:"first_name"`
-	LastName                   string `json:"last_name"`
-	IDNumber                   string `json:"id_number"`
-	BusinessName               string `json:"business_name"`
-	BusinessRegistrationNumber string `json:"business_registration_number"`
-	BankAccountHolderName      string `json:"bank_account_holder_name"`
-	BankName                   string `json:"bank_name"`
-	BankAccountNumber          string `json:"bank_account_number"`
-	BankBranchCode             string `json:"bank_branch_code"`
-	BankAccountType            string `json:"bank_account_type"`
-	StreetAddress              string `json:"street_address"`
-	City                       string `json:"city"`
-	Province                   string `json:"province"`
-	AreaCode                   *int   `json:"area_code"`
-	ProfileComplete            bool   `json:"profile_complete"`
-	AgreedToTerms              bool   `json:"agreed_to_terms"`
+	ID                    string `json:"id"`
+	Email                 string `json:"email"`
+	Role                  string `json:"role"`
+	Name                  string `json:"name"`
+	Image                 string `json:"image"`
+	AvatarURL             string `json:"avatar_url"`
+	Phone                 string `json:"phone"`
+	FirstName             string `json:"first_name"`
+	LastName              string `json:"last_name"`
+	IDNumber              string `json:"id_number"`
+	BankAccountHolderName string `json:"bank_account_holder_name"`
+	BankName              string `json:"bank_name"`
+	BankAccountNumber     string `json:"bank_account_number"`
+	BankBranchCode        string `json:"bank_branch_code"`
+	BankAccountType       string `json:"bank_account_type"`
+	StreetAddress         string `json:"street_address"`
+	City                  string `json:"city"`
+	Province              string `json:"province"`
+	AreaCode              *int   `json:"area_code"`
+	ProfileComplete       bool   `json:"profile_complete"`
+	AgreedToTerms         bool   `json:"agreed_to_terms"`
 
 	// The ID and account number are read masked ("•••• 1234") and never whole.
 	// The service sets these two only when the caller typed a new full number.
@@ -68,61 +63,49 @@ type Store struct {
 // New builds the store. The cipher seals the ID and account numbers at rest.
 func New(db *database.DB, cipher *crypt.Cipher) *Store { return &Store{db: db, cipher: cipher} }
 
-// Find reads the caller's active profile and optionally locks it for PATCH.
-// The ID and account numbers come back masked, built in SQL.
-func (records *Store) Find(ctx context.Context, id string, lock bool, business ...string) (Profile, error) {
-	return records.find(ctx, id, lock, false, business)
+// Find reads the caller's own profile and optionally locks it for PATCH. A
+// business's name, bank and location are not part of it: they live on the
+// Business page. The ID and account numbers come back masked, built in SQL.
+func (records *Store) Find(ctx context.Context, id string, lock bool) (Profile, error) {
+	return records.find(ctx, id, lock, false)
 }
 
 // FindWhole is Find for the person's own data export, where they have the
 // right to every value whole: the sealed numbers are selected and opened.
-func (records *Store) FindWhole(ctx context.Context, id string, business ...string) (Profile, error) {
-	return records.find(ctx, id, false, true, business)
+func (records *Store) FindWhole(ctx context.Context, id string) (Profile, error) {
+	return records.find(ctx, id, false, true)
 }
 
-func (records *Store) find(ctx context.Context, id string, lock, whole bool, business []string) (Profile, error) {
-	active := id
-	if len(business) > 0 {
-		active = business[0]
-	}
-
+func (records *Store) find(ctx context.Context, id string, lock, whole bool) (Profile, error) {
 	query := `SELECT u.id,
 		COALESCE(u.email,''),
 		u.role,
 		u.name,
 		COALESCE(u.image,''),
-		CASE WHEN b.avatar_key IS NOT NULL THEN '/api/stores/'||b.id||'/logo' WHEN b.id IS NOT NULL THEN COALESCE(b.image,'') WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar' ELSE COALESCE(u.image,'') END,
+		CASE WHEN u.avatar_key IS NOT NULL THEN '/api/users/'||u.id||'/avatar' ELSE COALESCE(u.image,'') END,
 		COALESCE(u.phone,''),
 		COALESCE(u.first_name,''),
 		COALESCE(u.last_name,''),
-		CASE WHEN $3 THEN COALESCE(u.id_number,'') ELSE mask_sealed(u.id_number,u.id_number_last4) END,
-		COALESCE(b.business_name,''),
-		COALESCE(b.business_registration_number,''),
-		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_holder_name ELSE u.bank_account_holder_name END,''),
-		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_name ELSE u.bank_name END,''),
-		CASE WHEN $3 AND (b.id IS NULL OR EXISTS(SELECT 1 FROM business_members m
-			WHERE m.business_id=b.id AND m.user_id=u.id AND m.role<>'member'))
-			THEN COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_number ELSE u.bank_account_number END,'')
-			WHEN b.id IS NOT NULL THEN mask_sealed(b.bank_account_number,b.bank_account_last4)
+		CASE WHEN $2 THEN COALESCE(u.id_number,'') ELSE mask_sealed(u.id_number,u.id_number_last4) END,
+		COALESCE(u.bank_account_holder_name,''),
+		COALESCE(u.bank_name,''),
+		CASE WHEN $2 THEN COALESCE(u.bank_account_number,'')
 			ELSE mask_sealed(u.bank_account_number,u.bank_account_last4) END,
-		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_branch_code ELSE u.bank_branch_code END,''),
-		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.bank_account_type ELSE u.bank_account_type END,''),
-		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.street_address ELSE u.street_address END,''),
-		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.city ELSE u.city END,''),
-		COALESCE(CASE WHEN b.id IS NOT NULL THEN b.province ELSE u.province END,''),
-		CASE WHEN b.id IS NOT NULL THEN b.area_code ELSE u.area_code END,
+		COALESCE(u.bank_branch_code,''),
+		COALESCE(u.bank_account_type,''),
+		COALESCE(u.street_address,''),
+		COALESCE(u.city,''),
+		COALESCE(u.province,''),
+		u.area_code,
 		u.profile_complete,
-		u.agreed_to_terms,
-		COALESCE(b.id,'')
-		FROM users u LEFT JOIN businesses b ON b.id=$2
-		AND EXISTS(SELECT 1 FROM business_members m WHERE m.business_id=b.id AND m.user_id=u.id)
-		WHERE u.id=$1 AND NOT u.is_removed`
+		u.agreed_to_terms
+		FROM users u WHERE u.id=$1 AND NOT u.is_removed`
 	if lock {
 		query += ` FOR UPDATE OF u`
 	}
 
 	var item Profile
-	err := records.db.Q(ctx).QueryRow(ctx, query, id, active, whole).Scan(
+	err := records.db.Q(ctx).QueryRow(ctx, query, id, whole).Scan(
 		&item.ID,
 		&item.Email,
 		&item.Role,
@@ -133,8 +116,6 @@ func (records *Store) find(ctx context.Context, id string, lock, whole bool, bus
 		&item.FirstName,
 		&item.LastName,
 		&item.IDNumber,
-		&item.BusinessName,
-		&item.BusinessRegistrationNumber,
 		&item.BankAccountHolderName,
 		&item.BankName,
 		&item.BankAccountNumber,
@@ -146,7 +127,6 @@ func (records *Store) find(ctx context.Context, id string, lock, whole bool, bus
 		&item.AreaCode,
 		&item.ProfileComplete,
 		&item.AgreedToTerms,
-		&item.BusinessID,
 	)
 	if err != nil || !whole {
 		return item, err
@@ -156,14 +136,7 @@ func (records *Store) find(ctx context.Context, id string, lock, whole bool, bus
 		return item, err
 	}
 
-	// A business member is not allowed the business account, so SQL sent the
-	// mask, which is not sealed: leave it as it is.
-	account, err := records.cipher.Decrypt(item.BankAccountNumber)
-	if err == nil {
-		item.BankAccountNumber = account
-	} else if errors.Is(err, crypt.ErrNotEncrypted) {
-		err = nil
-	}
+	item.BankAccountNumber, err = records.cipher.Decrypt(item.BankAccountNumber)
 
 	return item, err
 }
@@ -199,18 +172,6 @@ func (records *Store) Save(ctx context.Context, item Profile) error {
 		return err
 	}
 
-	if item.BusinessID != "" {
-		if item.BusinessChanged {
-			return records.saveBusiness(ctx, item, account, accountLast4)
-		}
-
-		return nil
-	}
-
-	if item.BusinessName != "" || item.BusinessRegistrationNumber != "" {
-		return records.saveBusiness(ctx, item, account, accountLast4)
-	}
-
 	_, err = records.db.Q(ctx).Exec(ctx, `UPDATE users SET
 		bank_account_holder_name=NULLIF($2,''),
 		bank_name=NULLIF($3,''),
@@ -224,40 +185,6 @@ func (records *Store) Save(ctx context.Context, item Profile) error {
 		area_code=$10, updated_at=now() WHERE id=$1`,
 		item.ID, item.BankAccountHolderName, item.BankName, account, item.BankBranchCode, item.BankAccountType, item.StreetAddress, item.City, item.Province, item.AreaCode,
 		item.ReplaceBankAccount, accountLast4)
-
-	return err
-}
-
-func (records *Store) saveBusiness(ctx context.Context, item Profile, account, accountLast4 string) error {
-	id := item.BusinessID
-	if id == "" {
-		id = item.ID
-	}
-
-	_, err := records.db.Q(ctx).Exec(ctx, `INSERT INTO businesses
-		(id,business_name,business_registration_number,bank_account_holder_name,bank_name,bank_account_number,bank_branch_code,bank_account_type,street_address,city,province,area_code,image,bank_account_last4)
-		VALUES ($1,NULLIF($2,''),NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),NULLIF($8,''),NULLIF($9,''),NULLIF($10,''),NULLIF($11,''),$12,(SELECT image FROM users WHERE id=$1),NULLIF($14,''))
-		ON CONFLICT(id) DO UPDATE SET
-		business_name=EXCLUDED.business_name,
-		business_registration_number=EXCLUDED.business_registration_number,
-		bank_account_holder_name=EXCLUDED.bank_account_holder_name,
-		bank_name=EXCLUDED.bank_name,
-		bank_account_number=CASE WHEN $13 THEN EXCLUDED.bank_account_number ELSE businesses.bank_account_number END,
-		bank_account_last4=CASE WHEN $13 THEN EXCLUDED.bank_account_last4 ELSE businesses.bank_account_last4 END,
-		bank_branch_code=EXCLUDED.bank_branch_code,
-		bank_account_type=EXCLUDED.bank_account_type,
-		street_address=EXCLUDED.street_address,
-		city=EXCLUDED.city,
-		province=EXCLUDED.province,
-		area_code=EXCLUDED.area_code, updated_at=now()`,
-		id, item.BusinessName, item.BusinessRegistrationNumber,
-		item.BankAccountHolderName, item.BankName, account, item.BankBranchCode, item.BankAccountType, item.StreetAddress, item.City, item.Province, item.AreaCode, item.ReplaceBankAccount, accountLast4)
-	if err != nil || item.BusinessID != "" {
-		return err
-	}
-
-	_, err = records.db.Q(ctx).Exec(ctx, `INSERT INTO business_members VALUES($1,$2,'owner')
-		ON CONFLICT DO NOTHING`, id, item.ID)
 
 	return err
 }

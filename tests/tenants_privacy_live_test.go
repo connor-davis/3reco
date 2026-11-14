@@ -29,9 +29,9 @@ func TestTenantCollectorsProfileAndInvoicePermissions(t *testing.T) {
 		"bank_account_holder_name": "Business Holder", "bank_name": "Business Bank",
 		"bank_account_number": "123456789", "bank_branch_code": "250655", "bank_account_type": "Savings",
 	}
-	status(t, member.c.Do("PATCH", "/api/profile", bank), 403)
-	status(t, manager.c.Do("PATCH", "/api/profile", bank), 403)
-	status(t, owner.c.Do("PATCH", "/api/profile", bank), 200)
+	status(t, member.c.Do("PATCH", "/api/business", bank), 403)
+	status(t, manager.c.Do("PATCH", "/api/business", bank), 403)
+	status(t, owner.c.Do("PATCH", "/api/business", bank), 200)
 	sealed := tradeText(t, w.app, `SELECT bank_account_number FROM businesses WHERE id=$1`, w.seller.id)
 	status(t, member.c.Do("PATCH", "/api/profile", map[string]any{"first_name": "Personal"}), 200)
 	if got := tradeText(t, w.app, `SELECT bank_account_number FROM businesses WHERE id=$1`, w.seller.id); got != sealed {
@@ -72,7 +72,7 @@ func TestTenantEraseKeepsBusinessWithAnotherOwner(t *testing.T) {
 	name := tradeText(t, w.app, `SELECT business_name FROM businesses WHERE id=$1`, w.seller.id)
 	request := tradeRequest(t, w.buyer, w.seller, w.stock)
 	trade := tradeSale(t, w.seller, w.buyer, w.material, "1", "8")
-	status(t, uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", receiptImage(2)), 200)
+	status(t, uploadImage(t, w.app, w.seller.c, "/api/business/logo", receiptImage(2)), 200)
 	logo := tradeText(t, w.app, `SELECT avatar_key FROM businesses WHERE id=$1`, w.seller.id)
 
 	status(t, w.seller.c.Do("POST", "/api/privacy/delete", map[string]any{"password": goodPassword}), 200)

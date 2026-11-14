@@ -1,5 +1,6 @@
 import {
   Boxes,
+  Building2,
   ClipboardList,
   History,
   Home,
@@ -57,6 +58,13 @@ const staffWorkspace: NavLink[] = [
   { label: 'Materials', to: '/materials', icon: Boxes },
 ];
 
+const businessLink: NavLink = {
+  label: 'Business',
+  to: '/business',
+  icon: Building2,
+};
+const teamLink: NavLink = { label: 'Team', to: '/team', icon: Users };
+
 /** The sidebar for each role (map section 2.1). */
 export function navFor(
   role: Role | null,
@@ -64,15 +72,17 @@ export function navFor(
   activeBusinessId?: string
 ): NavGroup[] {
   const groups = roleNav(role);
-  if (
-    role &&
-    activeBusinessId &&
-    (businessRole === 'owner' || businessRole === 'manager')
-  ) {
+  const extra: NavLink[] = [];
+  if (role && activeBusinessId && businessRole) {
+    // Owners and Managers read the Business page; Members do not see it.
+    if (businessRole !== 'member') extra.push(businessLink);
+    // Owners and Managers open the team (managers read it, owners manage it).
+    if (businessRole !== 'member') extra.push(teamLink);
+  }
+  if (extra.length) {
     const workspace = groups.find((group) => group.label === 'Workspace');
-    const team: NavLink = { label: 'Team', to: '/team', icon: Users };
-    if (workspace) workspace.links = [...workspace.links, team];
-    else groups.push({ label: 'Workspace', links: [team] });
+    if (workspace) workspace.links = [...workspace.links, ...extra];
+    else groups.push({ label: 'Workspace', links: extra });
   }
   return groups;
 }
@@ -262,6 +272,7 @@ const pageTitles: Record<string, string> = {
   'reset-password': 'Reset password',
   setup: 'Finish setup',
   team: 'Team',
+  business: 'Business',
   'accept-invite': 'Join a team',
 };
 

@@ -19,6 +19,7 @@ import (
 	"go.uber.org/fx"
 
 	authapi "github.com/connor-davis/3reco/internal/api/auth"
+	businessapi "github.com/connor-davis/3reco/internal/api/business"
 	collectorsapi "github.com/connor-davis/3reco/internal/api/collectors"
 	marketapi "github.com/connor-davis/3reco/internal/api/market"
 	materialsapi "github.com/connor-davis/3reco/internal/api/materials"
@@ -37,6 +38,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	businesssvc "github.com/connor-davis/3reco/internal/services/business"
 	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
@@ -72,6 +74,8 @@ var Module = fx.Module("api",
 		realtime.New,
 		authapi.New,
 		businesses.New,
+		businesssvc.New,
+		businessapi.New,
 		teamsvc.New,
 		teamapi.New,
 		collectorsstore.New,
@@ -162,6 +166,7 @@ type routes struct {
 	Stock      *stockapi.Handler
 	Stores     *storesapi.Handler
 	Team       *teamapi.Handler
+	Business   *businessapi.Handler
 	Trade      tradeRoutes
 }
 
@@ -230,6 +235,7 @@ func New(r routes) *fiber.App {
 	r.Stock.Register(api)
 	r.Stores.Register(api)
 	r.Team.Register(api)
+	r.Business.Register(api)
 
 	// Unknown /api paths get a JSON 404.
 	api.Use(func(c fiber.Ctx) error { return apperr.NotFound("No such API endpoint.") })
