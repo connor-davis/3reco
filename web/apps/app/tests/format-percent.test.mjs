@@ -41,6 +41,10 @@ test('formatPercent shows up, down, no change and new', () => {
     { label: '25%', dir: 'down' }
   );
   assert.deepEqual(
+    { ...format.formatPercent('62.46', '1000172.75') },
+    { label: '99%', dir: 'down' }
+  );
+  assert.deepEqual(
     { ...format.formatPercent(5, 5) },
     { label: 'No change', dir: 'flat' }
   );

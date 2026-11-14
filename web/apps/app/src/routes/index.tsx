@@ -121,31 +121,34 @@ function Dashboard() {
 
   return (
     <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
-      <PageHeader
-        compactActionsBelow
-        title={
-          staff
-            ? 'A clear view of the trade.'
-            : (first ? 'Welcome, ' : 'Welcome back, ') +
-              (user?.firstName || user?.name || 'there') +
-              '.'
-        }
-        description={
-          staff
-            ? 'Everyone on 3REco, last 30 days.'
-            : collector
-              ? 'Your collections, last 30 days.'
-              : 'Your settled trades, last 30 days.'
-        }
-        actions={
-          <LinkButton
-            className="min-h-11"
-            to={collector ? '/profile' : '/transactions'}
-          >
-            {collector ? 'Your profile' : 'View transactions'}
-          </LinkButton>
-        }
-      />
+      {/* Business on a phone gets the mint band as its greeting instead. */}
+      <div className={!collector && !staff ? 'max-md:hidden' : undefined}>
+        <PageHeader
+          compactActionsBelow
+          title={
+            staff
+              ? 'A clear view of the trade.'
+              : (first ? 'Welcome, ' : 'Welcome back, ') +
+                (user?.firstName || user?.name || 'there') +
+                '.'
+          }
+          description={
+            staff
+              ? 'Everyone on 3REco, last 30 days.'
+              : collector
+                ? 'Your collections, last 30 days.'
+                : 'Your settled trades, last 30 days.'
+          }
+          actions={
+            <LinkButton
+              className="min-h-11"
+              to={collector ? '/profile' : '/transactions'}
+            >
+              {collector ? 'Your profile' : 'View transactions'}
+            </LinkButton>
+          }
+        />
+      </div>
       {collector &&
         dashboard?.collector_linked === false &&
         !query.isError &&

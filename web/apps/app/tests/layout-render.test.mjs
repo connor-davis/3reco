@@ -116,7 +116,7 @@ with sync_playwright() as p:
                 try:
                     page.goto(base + route)
                     page.wait_for_load_state('networkidle')
-                    page.locator('h1').first.wait_for()
+                    page.locator('h1').first.wait_for(state='attached')
                     assert page.locator('html').evaluate('(el) => el.scrollWidth <= window.innerWidth'), f'page overflow {route} {width} {mode}'
                     for toolbar in page.locator('[data-slot="toolbar"]').all():
                         assert toolbar.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'toolbar overflow {route} {width}'
@@ -211,13 +211,9 @@ with sync_playwright() as p:
                             recent = page.get_by_role('heading', name='Your recent collections').locator('xpath=ancestor::section[1]').locator('ul > li')
                             expect(recent).to_have_count(5)
                     if route == '/' and width < 768:
-                        header = page.locator('h1').locator('xpath=ancestor::header[1]')
-                        title_box = header.locator('h1').bounding_box()
-                        action_box = header.get_by_role('button', name='View transactions').bounding_box()
-                        description = header.locator('p')
-                        assert action_box['y'] >= description.bounding_box()['y'] + description.bounding_box()['height']
-                        assert action_box['width'] >= header.bounding_box()['width'] - 1
-                        assert description.evaluate('(el) => el.scrollWidth <= el.clientWidth')
+                        # Business on a phone: the mint band greets, the header is hidden.
+                        expect(page.locator('h1').first).to_be_hidden()
+                        expect(page.get_by_text('Hello,', exact=True)).to_be_visible()
                         quick = page.get_by_role('heading', name='Your workspace').locator('xpath=ancestor::section[1]').get_by_role('button')
                         expect(quick).to_have_count(3)
                         boxes = [tile.bounding_box() for tile in quick.all()]

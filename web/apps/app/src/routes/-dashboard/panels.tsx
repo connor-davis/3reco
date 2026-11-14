@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Users, MessageCircle, Receipt } from 'lucide-react';
 import { useInbox } from '@/lib/api/messages';
@@ -26,13 +27,30 @@ export function MaterialsPanel({
   series: Dashboard['series'];
   className?: string;
 }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [narrow, setNarrow] = useState(false);
+
+  // Under this width the weekly date labels would touch, so only the ends show.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const watch = new ResizeObserver(([entry]) =>
+      setNarrow(entry.contentRect.width < 480)
+    );
+    watch.observe(el);
+
+    return () => watch.disconnect();
+  }, []);
+
   return (
     <div className={className}>
       <Panel
         title="Materials on the move"
         description="Daily weight traded, in kg"
       >
-        <ImpactChart series={series} />
+        <div ref={box}>
+          <ImpactChart series={series} narrow={narrow} />
+        </div>
       </Panel>
     </div>
   );

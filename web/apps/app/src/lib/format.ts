@@ -167,7 +167,9 @@ export function formatPercent(
   if (now === before) return { label: 'No change', dir: 'flat' };
   if (before === 0) return { label: 'New', dir: 'new' };
 
-  const pct = Math.round(((now - before) / before) * 100);
+  // A fall that is not all the way to zero never reads as 100%.
+  const raw = Math.round(((now - before) / before) * 100);
+  const pct = now > 0 ? Math.max(raw, -99) : raw;
 
   return pct >= 0
     ? { label: `${pct}%`, dir: 'up' }

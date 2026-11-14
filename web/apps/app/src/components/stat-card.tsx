@@ -53,7 +53,7 @@ export function StatCard({
           )}
           {label}
         </CardDescription>
-        <CardTitle className="text-[clamp(0.75rem,6cqi,1.875rem)] font-semibold tracking-tight tabular-nums sm:whitespace-nowrap">
+        <CardTitle className="text-[clamp(1.25rem,9cqi,1.875rem)] font-semibold tracking-tight tabular-nums sm:whitespace-nowrap">
           {isLoading ? (
             <Skeleton className="h-8 w-24" />
           ) : unavailable ? (
