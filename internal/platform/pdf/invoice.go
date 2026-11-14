@@ -2,12 +2,32 @@
 package pdf
 
 import (
-	"bytes"
-	"fmt"
+	_ "embed"
 	"math/big"
 	"strings"
 
-	"github.com/go-pdf/fpdf"
+	"github.com/gpdf-dev/gpdf/document"
+	pdflib "github.com/gpdf-dev/gpdf/pdf"
+	"github.com/gpdf-dev/gpdf/template"
+)
+
+// Montserrat (SIL OFL 1.1, see assets/OFL.txt) is the app's font, and the logo is
+// the app's own. Both are embedded because go:embed cannot reach outside this folder.
+var (
+	//go:embed assets/Montserrat-Regular.ttf
+	fontRegular []byte
+	//go:embed assets/Montserrat-Bold.ttf
+	fontBold []byte
+	//go:embed assets/logo-full.png
+	logo []byte
+)
+
+// Colours, as sRGB. The green is the app's --primary, oklch(0.498419 0.070909 174.46).
+var (
+	green      = pdflib.RGBHex(0x307060)
+	ink        = pdflib.RGBHex(0x1E1E1E)
+	mutedGrey  = pdflib.RGBHex(0x6B6B6B)
+	whiteColor = pdflib.RGBHex(0xFFFFFF)
 )
 
 // Line holds already formatted exact decimal strings.
@@ -81,117 +101,104 @@ func Grouped(value string) string {
 
 // Render makes an A4 invoice with a repeating header, wrapped lines and page breaks.
 func Render(invoice Invoice) ([]byte, error) {
-	doc := fpdf.New("P", "mm", "A4", "")
-	doc.SetMargins(16, 35, 16)
-	doc.SetAutoPageBreak(true, 22)
-	doc.SetTitle("3REco Invoice "+invoice.Number, true)
-	doc.SetAuthor("3REco", false)
-	// Keep text inspectable for document QA and simple downstream PDF readers.
-	doc.SetCompression(false)
-	text := doc.UnicodeTranslatorFromDescriptor("")
+	doc := template.New(
+		template.WithPageSize(document.A4),
+		template.WithMargins(document.Edges{
+			Top: document.Mm(14), Right: document.Mm(16), Bottom: document.Mm(14), Left: document.Mm(16),
+		}),
+		template.WithFont("Montserrat", fontRegular),
+		template.WithFont("Montserrat-Bold", fontBold),
+		template.WithDefaultFont("Montserrat", 10),
+		template.WithMetadata(document.DocumentMetadata{
+			Title: "3REco Invoice " + invoice.Number, Author: "3REco",
+		}),
+	)
 
-	doc.SetHeaderFunc(func() {
-		// sRGB conversion of oklch(0.648 0.2 131.684), clipped to gamut and rounded.
-		doc.SetFillColor(94, 165, 0)
-		doc.Rect(0, 0, 210, 27, "F")
-		doc.SetTextColor(20, 40, 10)
-		doc.SetFont("Helvetica", "B", 22)
-		doc.SetXY(16, 8)
-		doc.Cell(90, 10, "3REco")
-		doc.SetFont("Helvetica", "B", 17)
-		doc.CellFormat(88, 10, "INVOICE", "", 0, "R", false, 0, "")
-		doc.SetTextColor(30, 30, 30)
-		doc.SetXY(16, 35)
+	// The header and footer repeat on every page.
+	doc.Header(func(page *template.PageBuilder) {
+		page.AutoRow(func(row *template.RowBuilder) {
+			row.Col(6, func(col *template.ColBuilder) {
+				col.Image(logo, template.FitHeight(document.Mm(13)))
+			})
+			row.Col(6, func(col *template.ColBuilder) {
+				col.Text("INVOICE", template.Bold(), template.FontSize(17), template.AlignRight())
+				col.Text(invoice.Number+" | "+invoice.Date, template.FontSize(10),
+					template.AlignRight(), template.TextColor(mutedGrey))
+			})
+		})
+		page.AutoRow(func(row *template.RowBuilder) {
+			row.Col(12, func(col *template.ColBuilder) {
+				col.Spacer(document.Mm(2))
+				col.Line(template.LineColor(green), template.LineThickness(document.Pt(1.5)))
+				col.Spacer(document.Mm(3))
+			})
+		})
 	})
-	doc.SetFooterFunc(func() {
-		doc.SetY(-16)
-		doc.SetFont("Helvetica", "", 8)
-		doc.CellFormat(178, 5, "This invoice was generated automatically by 3REco.",
-			"", 1, "C", false, 0, "")
-		doc.CellFormat(178, 4, fmt.Sprintf("Page %d", doc.PageNo()), "", 0, "C", false, 0, "")
+	doc.Footer(func(page *template.PageBuilder) {
+		page.AutoRow(func(row *template.RowBuilder) {
+			row.Col(12, func(col *template.ColBuilder) {
+				col.Text("This invoice was generated automatically by 3REco.",
+					template.FontSize(8), template.AlignCenter(), template.TextColor(mutedGrey))
+				col.Text("Page "+document.PageNumberPlaceholder, template.FontSize(8), template.AlignCenter(), template.TextColor(mutedGrey))
+			})
+		})
 	})
 
-	doc.AddPage()
-	doc.SetFont("Helvetica", "B", 12)
-	doc.MultiCell(178, 7, text("Invoice "+invoice.Number+" | "+invoice.Date), "", "L", false)
-	doc.SetFont("Helvetica", "", 10)
-	doc.MultiCell(178, 6, invoice.Type, "", "L", false)
-	doc.Ln(5)
+	page := doc.AddPage()
+	page.AutoRow(func(row *template.RowBuilder) {
+		row.Col(12, func(col *template.ColBuilder) {
+			col.Text("Invoice "+invoice.Number+" | "+invoice.Date, template.Bold(), template.FontSize(12))
+			col.Text(invoice.Type, template.TextColor(mutedGrey))
+			col.Spacer(document.Mm(5))
+		})
+	})
 
-	for _, party := range []struct{ label, details string }{
-		{"FROM", invoice.Seller}, {"TO", invoice.Buyer},
-	} {
-		doc.SetFont("Helvetica", "B", 10)
-		doc.MultiCell(178, 6, party.label, "", "L", false)
-		doc.SetFont("Helvetica", "", 10)
-		doc.MultiCell(178, 5, text(party.details), "", "L", false)
-		doc.Ln(4)
-	}
-
-	tableHeader := func() {
-		doc.SetFont("Helvetica", "B", 9)
-		doc.SetFillColor(239, 245, 234)
-		for i, label := range []string{"Material", "Weight (kg)", "Price / kg (R)", "Total (R)"} {
-			align := "R"
-			if i == 0 {
-				align = "L"
-			}
-
-			doc.CellFormat([]float64{76, 34, 34, 34}[i], 8, label, "B", 0, align, true, 0, "")
+	page.AutoRow(func(row *template.RowBuilder) {
+		for _, party := range []struct{ label, details string }{
+			{"FROM", invoice.Seller}, {"TO", invoice.Buyer},
+		} {
+			row.Col(6, func(col *template.ColBuilder) {
+				block(col, party.label, party.details)
+			})
 		}
-		doc.Ln(8)
-		doc.SetFont("Helvetica", "", 9)
-	}
-	tableHeader()
+	})
 
+	page.AutoRow(func(row *template.RowBuilder) {
+		row.Col(12, func(col *template.ColBuilder) {
+			block(col, "PAYMENT DETAILS", invoice.Payment)
+		})
+	})
+
+	rows := make([][]string, 0, len(invoice.Lines))
 	for _, line := range invoice.Lines {
-		cells := []string{text(line.Material), Grouped(Weight(line.Weight)), Grouped(line.Price), Grouped(line.Total)}
-		widths := []float64{76, 34, 34, 34}
-		// Split every cell, including unusually large exact amounts, to avoid overlaps.
-		wrapped := make([][][]byte, len(cells))
-		count := 1
-		for i, cell := range cells {
-			wrapped[i] = doc.SplitLines([]byte(cell), widths[i]-2)
-			count = max(count, len(wrapped[i]))
-		}
-
-		for row := 0; row < count; row++ {
-			if doc.GetY()+6 > 275 {
-				doc.AddPage()
-				tableHeader()
-			}
-
-			for column, lines := range wrapped {
-				cell := ""
-				if row < len(lines) {
-					cell = string(lines[row])
-				}
-
-				align := "R"
-				if column == 0 {
-					align = "L"
-				}
-
-				doc.CellFormat(widths[column], 6, cell, "", 0, align, false, 0, "")
-			}
-			doc.Ln(6)
-		}
-		doc.Ln(2)
+		rows = append(rows, []string{line.Material, Grouped(Weight(line.Weight)), Grouped(line.Price), Grouped(line.Total)})
 	}
+	page.AutoRow(func(row *template.RowBuilder) {
+		row.Col(12, func(col *template.ColBuilder) {
+			col.Table([]string{"Material", "Weight (kg)", "Price / kg (R)", "Total (R)"}, rows,
+				template.ColumnWidths(34, 22, 22, 22),
+				template.ColumnAlign(document.AlignLeft, document.AlignRight, document.AlignRight, document.AlignRight),
+				template.TableHeaderStyle(template.TextColor(whiteColor), template.BgColor(green)),
+			)
+		})
+	})
 
-	doc.Ln(4)
-	doc.SetFont("Helvetica", "B", 12)
-	doc.MultiCell(178, 8, "Grand total: R "+Grouped(invoice.Total), "T", "R", false)
-	doc.Ln(5)
-	doc.SetFont("Helvetica", "B", 10)
-	doc.MultiCell(178, 6, "Payment details", "", "L", false)
-	doc.SetFont("Helvetica", "", 10)
-	doc.MultiCell(178, 5, text(invoice.Payment), "", "L", false)
+	page.AutoRow(func(row *template.RowBuilder) {
+		row.Col(12, func(col *template.ColBuilder) {
+			col.Spacer(document.Mm(5))
+			col.Text("Grand total: R "+Grouped(invoice.Total),
+				template.Bold(), template.FontSize(13), template.AlignRight(), template.TextColor(green))
+		})
+	})
 
-	var out bytes.Buffer
-	if err := doc.Output(&out); err != nil {
-		return nil, err
+	return doc.Generate()
+}
+
+// block prints a muted label over the lines of a party or payment text.
+func block(col *template.ColBuilder, label, details string) {
+	col.Text(label, template.Bold(), template.FontSize(8), template.TextColor(mutedGrey))
+	for _, line := range strings.Split(details, "\n") {
+		col.Text(line, template.TextColor(ink))
 	}
-
-	return out.Bytes(), nil
+	col.Spacer(document.Mm(5))
 }
