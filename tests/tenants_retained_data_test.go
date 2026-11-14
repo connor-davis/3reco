@@ -13,12 +13,12 @@ func TestTenantLogoReplacementKeepsPersonalPicture(t *testing.T) {
 	w := newTradeWorld(t)
 	oldPicture := receiptImage(1)
 	status(t, uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", oldPicture), 200)
-	key := tradeText(t, w.app, `SELECT avatar_key FROM businesses WHERE id=$1`, w.seller.id)
+	key := tradeText(t, w.app, `SELECT avatar_key FROM users WHERE id=$1`, w.seller.id)
 	// The migration leaves both references pointing at this one existing object.
-	tradeExec(t, w.app, `UPDATE users SET avatar_key=$2 WHERE id=$1`, w.seller.id, key)
+	tradeExec(t, w.app, `UPDATE businesses SET avatar_key=$2 WHERE id=$1`, w.seller.id, key)
 
 	newLogo := receiptImage(2)
-	status(t, uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", newLogo), 200)
+	status(t, uploadImage(t, w.app, w.seller.c, "/api/business/logo", newLogo), 200)
 	personal := status(t, w.seller.c.Do("GET", "/api/users/"+w.seller.id+"/avatar", nil), 200)
 	logo := status(t, w.seller.c.Do("GET", "/api/stores/"+w.seller.id+"/logo", nil), 200)
 	if !bytes.Equal(personal.Raw, oldPicture) || !bytes.Equal(logo.Raw, newLogo) {
@@ -27,7 +27,7 @@ func TestTenantLogoReplacementKeepsPersonalPicture(t *testing.T) {
 
 	legacy := "https://brand.example.test/legacy-logo.png"
 	tradeExec(t, w.app, `UPDATE businesses SET image=$2 WHERE id=$1`, w.seller.id, legacy)
-	status(t, w.seller.c.Do("DELETE", "/api/profile/avatar", nil), 200)
+	status(t, w.seller.c.Do("DELETE", "/api/business/logo", nil), 200)
 	member := tenantMember(t, w.app, w.seller.id, "member")
 	status(t, member.c.Do("PATCH", "/api/profile", map[string]any{"image": "https://person.example.test/picture.png"}), 200)
 	store := status(t, member.c.Do("GET", "/api/stores/"+w.seller.id, nil), 200)

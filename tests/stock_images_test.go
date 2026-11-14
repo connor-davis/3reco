@@ -63,7 +63,7 @@ func TestStockImageAccessValidationAndProjection(t *testing.T) {
 		t.Fatalf("photo headers: %v", response.Header)
 	}
 
-	avatar := uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", receiptImage(9))
+	avatar := uploadImage(t, w.app, w.seller.c, "/api/business/logo", receiptImage(9))
 	tradeWant(t, "store logo", avatar, 200)
 	store := anonymous.Do("GET", "/api/stores/"+w.seller.id, nil)
 	if store.Body["avatar_url"] != "/api/stores/"+w.seller.id+"/logo" {
