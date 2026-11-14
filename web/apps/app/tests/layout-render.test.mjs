@@ -66,8 +66,8 @@ party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
 trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
 large_trade = dict(trade, id='large', type='c2b', invoice_number='GLH09G54', seller=party('collector', 'Zanele Both'), buyer=party('buyer', 'Kasi Collect Co'), total_price='2000000.00', items=[{'material_id': 'steel', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'weight': '1000000', 'price': '2.00'}])
 request = {'id': 'request', 'seller': large_trade['seller'], 'buyer': large_trade['buyer'], 'status': 'offered', 'offer_by': 'seller', 'offer_version': 1, 'buyer_confirmed_version': None, 'seller_confirmed_version': 1, 'created_at': trade['created_at'], 'updated_at': trade['created_at'], 'items': [{'material_id': 'glass', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'stock_id': 'stock', 'offer_price': '2.00', 'offer_weight': '1000000', 'requested_price': '8.00', 'requested_weight': '12.5', 'available_weight': '1000'}]}
-totals = {'count': 7, 'weight': '87.5', 'value': '700.00', 'carbon_savings': '100'}
-dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'series': [dict(totals, day=str(date(2026,10,10)+timedelta(days=i))) for i in range(30)], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
+totals = {'count': 7, 'weight': '87.5', 'value': '700.00', 'carbon_savings': '100', 'active_collectors': 3}
+dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'previous': dict(totals, count=5, weight='70', active_collectors=3), 'stock_mix': [{'material_id': 'm' + str(i), 'name': 'Material ' + str(i), 'weight': str(30 - i * 4)} for i in range(6)], 'week': {'this_kg': '120.5', 'last_kg': '100', 'materials': [{'material_id': 'm' + str(i), 'name': 'Material ' + str(i), 'weight': str(40 - i * 5)} for i in range(4)]}, 'series': [dict(totals, day=str(date(2026,10,10)+timedelta(days=i))) for i in range(30)], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
 admin_users = [{'id': 'buyer', 'name': 'Layout Buyer', 'email': 'admin@example.test', 'role': 'admin', 'profile_complete': True, 'business_verified': False, 'created_at': trade['created_at']}, {'id': 'business', 'name': 'Naledi Jacobs', 'email': 'naledi@kasicollect.co.za', 'role': 'business', 'profile_complete': True, 'business_verified': True, 'created_at': trade['created_at']}, {'id': 'unverified-business', 'name': 'Thandi Mokoena', 'email': 'thandi@metroscraptraders.co.za', 'role': 'business', 'profile_complete': False, 'business_verified': False, 'created_at': trade['created_at']}]
 measurements = []
 with sync_playwright() as p:
@@ -197,9 +197,14 @@ with sync_playwright() as p:
                         details = card.locator('[data-slot="card-content"]')
                         assert details.bounding_box()['y'] >= photo.bounding_box()['y'] + photo.bounding_box()['height'] - 1
                     if route in ['/', '/?role=collector', '/?role=admin']:
-                        expect(page.locator('[data-slot="card"]')).to_have_count(3)
-                        stats = page.locator('[data-slot="card"]').all()
-                        assert max(card.bounding_box()['y'] for card in stats) - min(card.bounding_box()['y'] for card in stats) < 1
+                        expect(page.locator('[data-slot="card"]')).to_have_count(3 if route == '/?role=collector' else 5)
+                        stats = page.locator('[data-slot="card"]').all()[:3 if route == '/?role=collector' else 4]
+                        # Stat tiles are hidden below 768px (the phone home replaces them).
+                        if width < 768:
+                            assert not any(card.is_visible() for card in stats)
+                        elif route == '/?role=collector' or width >= 1280:
+                            ys = [card.bounding_box()['y'] for card in stats]
+                            assert max(ys) - min(ys) < 1
                         partners = page.get_by_role('heading', name='Trading partners').locator('xpath=ancestor::section[1]').locator('ul > li')
                         expect(partners).to_have_count(5)
                         if role == 'collector':

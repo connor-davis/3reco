@@ -24,19 +24,24 @@ type Totals struct {
 	Value  string `json:"value"`
 	Weight string `json:"weight"`
 	Carbon string `json:"carbon_savings"`
+	// ActiveCollectors is set for business and admin only.
+	ActiveCollectors *int `json:"active_collectors,omitempty"`
 }
 
 // Dashboard is what every dashboard returns; the admin one also has the user
 // counts.
 type Dashboard struct {
-	From           string               `json:"from"`
-	To             string               `json:"to"`
-	Totals         Totals               `json:"totals"`
-	Series         []store.Day          `json:"series"`
-	Counterparties []store.Counterparty `json:"counterparties"`
-	Users          []store.RoleCount    `json:"users,omitempty"`
-	ByType         []store.TypeTotal    `json:"by_type,omitempty"`
-	CollectorLink  *bool                `json:"collector_linked,omitempty"`
+	From           string                 `json:"from"`
+	To             string                 `json:"to"`
+	Totals         Totals                 `json:"totals"`
+	Previous       Totals                 `json:"previous"`
+	Series         []store.Day            `json:"series"`
+	Counterparties []store.Counterparty   `json:"counterparties"`
+	Users          []store.RoleCount      `json:"users,omitempty"`
+	ByType         []store.TypeTotal      `json:"by_type,omitempty"`
+	CollectorLink  *bool                  `json:"collector_linked,omitempty"`
+	StockMix       []store.MaterialWeight `json:"stock_mix,omitempty"`
+	Week           *store.Week            `json:"week,omitempty"`
 }
 
 // parseBound reads a YYYY-MM-DD day (the start of that South African day) or a
@@ -108,6 +113,14 @@ func (s *Service) Admin(
 		return d, err
 	}
 
+	if err := s.addCollectors(ctx, &d, store.ScopeEverything, "", from, to); err != nil {
+		return d, err
+	}
+
+	if d.StockMix, err = s.store.StockMix(ctx, ""); err != nil {
+		return d, err
+	}
+
 	d.Users, err = s.store.RoleCounts(ctx)
 	if err != nil {
 		return d, err
@@ -134,7 +147,68 @@ func (s *Service) Business(
 		return Dashboard{}, apperr.Forbidden("Only a business can see this.")
 	}
 
-	return s.build(ctx, store.ScopeBusiness, auth.PartyID(user), from, to)
+	owner := auth.PartyID(user)
+
+	d, err := s.build(ctx, store.ScopeBusiness, owner, from, to)
+	if err != nil {
+		return d, err
+	}
+
+	if err := s.addCollectors(ctx, &d, store.ScopeBusiness, owner, from, to); err != nil {
+		return d, err
+	}
+
+	if d.StockMix, err = s.store.StockMix(ctx, owner); err != nil {
+		return d, err
+	}
+
+	week, err := s.week(ctx, owner, time.Now())
+	d.Week = &week
+
+	return d, err
+}
+
+// mondayOf is the Monday 00:00 South African time on or before t.
+func mondayOf(t time.Time) time.Time {
+	y, m, d := t.In(sast).Date()
+	day := time.Date(y, m, d, 0, 0, 0, 0, sast)
+
+	return day.AddDate(0, 0, -((int(day.Weekday()) + 6) % 7))
+}
+
+// week is this week (Monday until now) against the full week before it.
+func (s *Service) week(ctx context.Context, owner string, now time.Time) (store.Week, error) {
+	this := mondayOf(now)
+
+	return s.store.CollectedWeek(ctx, owner, this.AddDate(0, 0, -7), this, now)
+}
+
+// addCollectors sets the active collector count on the totals and on the
+// previous period.
+func (s *Service) addCollectors(
+	ctx context.Context,
+	d *Dashboard,
+	scope store.Scope,
+	owner, rawFrom, rawTo string,
+) error {
+	start, end, err := window(rawFrom, rawTo, time.Now())
+	if err != nil {
+		return err
+	}
+
+	now, err := s.store.ActiveCollectors(ctx, scope, owner, start, end)
+	if err != nil {
+		return err
+	}
+
+	before, err := s.store.ActiveCollectors(ctx, scope, owner, start.Add(start.Sub(end)), start)
+	if err != nil {
+		return err
+	}
+
+	d.Totals.ActiveCollectors, d.Previous.ActiveCollectors = &now, &before
+
+	return nil
 }
 
 // Collector is a collector's own dashboard. A collector with no linked
@@ -182,10 +256,21 @@ func (s *Service) build(
 
 	series, totals := fill(days, start, end)
 
+	// The period right before, as long as this one, for the trend arrows.
+	prevStart := start.Add(start.Sub(end))
+
+	prevDays, err := s.store.Days(ctx, scope, owner, prevStart, start)
+	if err != nil {
+		return Dashboard{}, err
+	}
+
+	_, previous := fill(prevDays, prevStart, start)
+
 	return Dashboard{
 		From:           start.In(sast).Format(time.RFC3339),
 		To:             end.In(sast).Format(time.RFC3339),
 		Totals:         totals,
+		Previous:       previous,
 		Series:         series,
 		Counterparties: cps,
 	}, nil

@@ -96,7 +96,17 @@ const dashboard = {
     value: '12345.67',
     weight: '2345.5',
     carbon_savings: '3400',
+    active_collectors: 2,
   },
+  previous: {
+    count: 0,
+    value: '0.00',
+    weight: '0',
+    carbon_savings: '0',
+    active_collectors: 2,
+  },
+  stock_mix: [{ material_id: 'glass', name: 'Glass', weight: '12.5' }],
+  week: { this_kg: '0', last_kg: '0', materials: [] },
   series: [{ day: '2026-11-05', weight: '2345.5' }],
   counterparties: [
     { id: 'party-1', name: 'Same name', count: 1, value: '1.00' },
