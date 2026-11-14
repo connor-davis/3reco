@@ -35,7 +35,7 @@ func (handler *Handler) Register(router fiber.Router) {
 
 func (handler *Handler) find(c fiber.Ctx) error {
 	user, _ := middleware.CurrentUser(c)
-	item, err := handler.svc.Find(c.Context(), user.ID, user.ActiveBusinessID, user.BusinessRole)
+	item, err := handler.svc.Find(c.Context(), user.ID)
 	if err != nil {
 		return err
 	}

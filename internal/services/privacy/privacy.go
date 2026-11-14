@@ -120,25 +120,13 @@ func (s *Service) Export(ctx context.Context, user auth.User) (map[string]any, e
 		out[name] = json.RawMessage(rows)
 	}
 
-	profile, err := s.profiles.FindWhole(ctx, user.ID, user.ActiveBusinessID)
+	profile, err := s.profiles.FindWhole(ctx, user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	if auth.BusinessAtLeast(user, "member") && !auth.BusinessAtLeast(user, "manager") {
-		profile.BankAccountHolderName, profile.BankName, profile.BankAccountNumber = "", "", ""
-		profile.BankBranchCode, profile.BankAccountType = "", ""
-	}
 	out["profile"] = profile
 	out["person"] = profile
-	if user.ActiveBusinessID != "" {
-		person, err := s.profiles.FindWhole(ctx, user.ID, "")
-		if err != nil {
-			return nil, err
-		}
-
-		out["person"] = person
-	}
 
 	created, err := s.collectors.Created(ctx, user.ID)
 	if err != nil {
