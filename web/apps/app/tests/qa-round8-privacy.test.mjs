@@ -4,24 +4,21 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { source } from './qa-round2-loader.mjs';
 
-const { outputText } = ts.transpileModule(
-  source('routes/admin/users.tsx') + '\nexports.eventLabel = eventLabel;',
-  {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      jsx: ts.JsxEmit.ReactJSX,
-    },
-  }
-);
+const { outputText } = ts.transpileModule(source('lib/privacy-labels.ts'), {
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    jsx: ts.JsxEmit.ReactJSX,
+  },
+});
 const exports = {};
 vm.runInNewContext(outputText, {
   exports,
   require(name) {
     if (name === '@tanstack/react-router')
       return { createFileRoute: () => () => ({}) };
-    if (name === '@/lib/access')
+    if (name === './access')
       return { roleLabel: (role) => (role === 'business' ? 'Business' : role) };
-    if (name === '@/lib/format') return { formatDateTime: (value) => value };
+    if (name === './format') return { formatDateTime: (value) => value };
     return {};
   },
 });

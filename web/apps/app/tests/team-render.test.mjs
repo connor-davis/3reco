@@ -113,6 +113,15 @@ with sync_playwright() as p:
                 page.get_by_role('button', name='Invite someone', exact=True).click()
                 overlay = page.get_by_role('dialog', name='Invite someone', exact=True)
                 expect(overlay).to_be_visible()
+                expect(overlay.get_by_text('Role', exact=True)).to_be_visible()
+                role_select = overlay.get_by_role('combobox', name='Team role', exact=True)
+                email_input = overlay.get_by_label('Email address', exact=True)
+                page.wait_for_function("""() => {
+                    const dialog = document.querySelector('[role="dialog"]');
+                    const select = dialog.querySelector('[role="combobox"]');
+                    const input = dialog.querySelector('input[type="email"]');
+                    return Math.abs(select.getBoundingClientRect().width - input.getBoundingClientRect().width) < 2;
+                }""")
                 overlay.get_by_label('Email address', exact=True).fill('new@example.test')
                 overlay.get_by_role('button', name='Send invitation', exact=True).click()
                 expect(overlay).not_to_be_visible()
@@ -128,9 +137,32 @@ with sync_playwright() as p:
                     shots = Path(os.environ['THREERECO_TEAM_SHOTS']); shots.mkdir(parents=True, exist_ok=True)
                     page.screenshot(path=str(shots / f'team-{mode}-{width}.png'), full_page=True)
                 user['business_role'] = 'manager'
+                user['id'] = 'manager'
+                members.append({'id': 'manager', 'name': 'Sipho Dlamini', 'email': 'sipho@example.test', 'role': 'manager'})
+                members.append({'id': 'peer-manager', 'name': 'Lerato Ndlovu', 'email': 'lerato@example.test', 'role': 'manager'})
                 page.reload(); page.wait_for_load_state('networkidle')
-                expect(page.get_by_role('button', name='Invite someone', exact=True)).to_have_count(0)
-                expect(page.get_by_text('Ask an Owner if you need help with access.', exact=True)).to_be_visible()
+                expect(page.get_by_role('button', name='Invite someone', exact=True)).to_be_visible()
+                expect(page.get_by_role('button', name='Actions for Naledi Jacobs', exact=True)).to_have_count(0)
+                expect(page.get_by_role('button', name='Actions for Sipho Dlamini', exact=True)).to_have_count(0)
+                expect(page.get_by_role('button', name='Actions for Lerato Ndlovu', exact=True)).to_have_count(0)
+                page.get_by_role('button', name='Actions for Thandi Mokoena', exact=True).click()
+                page.get_by_role('menuitem', name='Change role', exact=True).click()
+                overlay = page.get_by_role('dialog', name='Change role for Thandi Mokoena', exact=True)
+                role_select = overlay.get_by_role('combobox')
+                assert role_select.bounding_box()['width'] > overlay.bounding_box()['width'] - 60, 'Change role does not fill width'
+                role_select.click()
+                expect(page.get_by_role('option', name='Owner', exact=True)).to_have_count(0)
+                expect(page.get_by_role('option', name='Manager', exact=True)).to_be_visible()
+                page.keyboard.press('Escape'); page.keyboard.press('Escape')
+                page.get_by_role('tab', name='Invitations', exact=True).click()
+                expect(page.get_by_text('live@example.test', exact=True)).to_be_visible()
+                expect(page.get_by_role('button', name='Actions for live@example.test', exact=True)).to_have_count(0)
+                page.get_by_role('button', name='Invite someone', exact=True).click()
+                overlay = page.get_by_role('dialog', name='Invite someone', exact=True)
+                overlay.get_by_role('combobox', name='Team role', exact=True).click()
+                expect(page.get_by_role('option', name='Owner', exact=True)).to_have_count(0)
+                expect(page.get_by_role('option', name='Manager', exact=True)).to_be_visible()
+                page.keyboard.press('Escape'); page.keyboard.press('Escape')
                 # Signed-in invite acceptance also works for a personal platform role.
                 page.goto(base + '/accept-invite?token=existing')
                 page.wait_for_load_state('networkidle')

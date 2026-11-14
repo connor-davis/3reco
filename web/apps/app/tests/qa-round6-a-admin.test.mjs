@@ -14,6 +14,6 @@ test('admin and staff rows never show a profile status', () => {
 });
 
 test('a full identifier view names the invoice', () => {
-  const users = source('routes/admin/users.tsx');
-  assert.match(users, /`\$\{label\} · invoice \$\{invoice\}`/);
+  const labels = source('lib/privacy-labels.ts');
+  assert.match(labels, /`\$\{label\} · invoice \$\{invoice\}`/);
 });

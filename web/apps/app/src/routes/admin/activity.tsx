@@ -15,8 +15,11 @@ import { Pager } from '@/components/transactions/list-tools';
 import { usePager } from '@/components/transactions/pager-state';
 import { useActivity } from '@/lib/api/admin';
 import type { ActivityLine } from '@/lib/api/types';
+import { eventLabel } from '@/lib/privacy-labels';
+import type { PrivacyEvent } from '@/lib/api/types';
 import { formatDateTime } from '@/lib/format';
 import { useDebounced } from '@/lib/use-debounced';
+import { roleLabel } from '@/lib/access';
 
 export const Route = createFileRoute('/admin/activity')({
   component: () => (
@@ -59,8 +62,19 @@ const verbs: Record<string, string> = {
 
 const tableLabel = (table: string) => tableNames[table] ?? table;
 const whatText = (line: ActivityLine) =>
-  `${tableLabel(line.table)} · ${verbs[line.action] ?? line.action.replaceAll('_', ' ')}`;
-const whoText = (line: ActivityLine) => line.actor_name ?? 'System';
+  line.source === 'privacy'
+    ? eventLabel({
+        kind: line.action,
+        details: (line.new_values ?? {}) as PrivacyEvent['details'],
+      })
+    : `${tableLabel(line.table)} · ${verbs[line.action] ?? line.action.replaceAll('_', ' ')}`;
+function partyText(name: string | null, role: string | null) {
+  return `${name ?? 'Unknown'}${role ? ` · ${roleLabel(role)}` : ''}`;
+}
+const whoText = (line: ActivityLine) =>
+  line.source === 'privacy'
+    ? partyText(line.actor_name, line.actor_role)
+    : (line.actor_name ?? 'System');
 const show = (value: unknown) =>
   value === null || value === undefined
     ? 'empty'
@@ -82,6 +96,13 @@ function changes(line: ActivityLine): string[] {
 }
 
 function recordText(line: ActivityLine) {
+  if (line.source === 'privacy') {
+    if (line.row_key?.subject_id) return partyText(line.subject_name, null);
+    return line.action === 'export'
+      ? 'Many people (data download)'
+      : 'No individual subject';
+  }
+
   const key = Object.values(line.row_key ?? {})
     .map(String)
     .join(' · ');

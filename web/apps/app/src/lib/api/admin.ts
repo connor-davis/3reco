@@ -9,13 +9,6 @@ export function useAdminUsers(params: Paging = {}) {
     true
   );
 }
-export function usePrivacyEvents(params: Paging = {}) {
-  return useResource<Page<T.PrivacyEvent>>(
-    ['admin', 'privacy-events', params],
-    `/admin/privacy-events${queryString(params)}`,
-    true
-  );
-}
 export function useActivity(
   params: Paging & { table?: string; action?: string } = {}
 ) {

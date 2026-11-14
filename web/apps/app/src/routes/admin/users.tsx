@@ -17,19 +17,17 @@ import { Button } from '@/components/ui/button';
 import { ListRow } from '@/components/list-row';
 import { RowActions, type RowAction } from '@/components/row-actions';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useAdminUsers,
   useSetUserRole,
   useSetBusinessVerified,
   useDeleteUser,
-  usePrivacyEvents,
 } from '@/lib/api/admin';
 import { useExport } from '@/lib/api/exports';
 import { roleLabel } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
-import type { Role, AdminUser, PrivacyEvent } from '@/lib/api/types';
-import { formatDate, formatDateTime, plural } from '@/lib/format';
+import type { Role, AdminUser } from '@/lib/api/types';
+import { formatDate, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/admin/users')({
   component: () => (
@@ -49,20 +47,9 @@ function AdminPage() {
     <>
       <PageHeader
         title="People on 3REco"
-        description="Manage accounts and review privacy activity."
+        description="Manage accounts and access."
       />
-      <Tabs defaultValue="users">
-        <TabsList>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy events</TabsTrigger>
-        </TabsList>
-        <TabsContent value="users">
-          <UsersPage />
-        </TabsContent>
-        <TabsContent value="privacy">
-          <PrivacyEvents />
-        </TabsContent>
-      </Tabs>
+      <UsersPage />
     </>
   );
 }
@@ -431,182 +418,5 @@ function profileBadge(user: {
     <Badge variant="secondary">
       {user.profile_complete ? 'Complete' : 'Incomplete'}
     </Badge>
-  );
-}
-
-const privacyKinds: Record<string, string> = {
-  export: 'Data download',
-  delete: 'Account deletion',
-  admin_full_view: 'Full identifier viewed',
-  business_verify: 'Business verification changed',
-};
-
-function eventLabel(event: PrivacyEvent) {
-  const label = privacyKinds[event.kind] ?? 'Privacy activity';
-  const invoice = event.details?.invoice_number;
-  if (invoice) return `${label} · invoice ${invoice}`;
-
-  const kind = event.details?.export_kind;
-  if (!kind) return label;
-
-  const exportLabels: Record<string, string> = {
-    transactions: 'Transactions',
-    collections: 'Collections',
-    purchases: 'Purchases',
-    sales: 'Sales',
-    users: 'Users',
-  };
-  const filters = event.details.filters ?? {};
-  const descriptions: string[] = [];
-  if (kind !== 'users') {
-    descriptions.push(
-      filters.itemised === 'true' ? 'one row per material' : 'one row per trade'
-    );
-  }
-  // A Collections export is c2b already; saying it twice reads oddly.
-  if (filters.type === 'c2b' && kind !== 'collections')
-    descriptions.push('Collections');
-  if (filters.type === 'b2b') descriptions.push('Business trades');
-  if (filters.q) descriptions.push(`Search: ${filters.q}`);
-  if (
-    filters.role &&
-    roleOptions.some((option) => option.value === filters.role)
-  ) {
-    descriptions.push(`Role: ${roleLabel(filters.role)}`);
-  }
-  if (filters.from) descriptions.push(`From ${formatDateTime(filters.from)}`);
-  if (filters.to) descriptions.push(`To ${formatDateTime(filters.to)}`);
-
-  return `${label} · ${exportLabels[kind] ?? 'Account records'}${descriptions.length ? ` (${descriptions.join(', ')})` : ''}`;
-}
-
-/** Privacy event rows identify people by name and role. */
-function PartyCell({
-  name,
-  role,
-}: {
-  name: string | null;
-  role: string | null;
-}) {
-  return (
-    <span className="block">
-      <span className="block font-medium">
-        {name ?? 'Unknown'}
-        {role && (
-          <span className="font-normal text-muted-foreground">
-            {' '}
-            · {roleLabel(role)}
-          </span>
-        )}
-      </span>
-    </span>
-  );
-}
-
-function PrivacyEvents() {
-  const [cursor, setCursor] = useState<string | undefined>();
-  const query = usePrivacyEvents({ cursor, limit: 50 });
-  const columns: ColumnDef<PrivacyEvent>[] = [
-    {
-      accessorKey: 'kind',
-      header: 'Event',
-      cell: ({ row }) => eventLabel(row.original),
-    },
-    {
-      id: 'actor',
-      header: 'Done by',
-      cell: ({ row }) => (
-        <PartyCell
-          name={row.original.actor_name}
-          role={row.original.actor_role}
-        />
-      ),
-    },
-    {
-      id: 'subject',
-      header: 'About',
-      cell: ({ row }) =>
-        row.original.subject_id ? (
-          <PartyCell
-            name={row.original.subject_name}
-            role={row.original.subject_role}
-          />
-        ) : row.original.kind === 'export' ? (
-          'Many people (data download)'
-        ) : (
-          'No individual subject'
-        ),
-    },
-    {
-      accessorKey: 'created_at',
-      header: 'Date',
-      cell: ({ row }) => formatDateTime(row.original.created_at),
-    },
-  ];
-  return (
-    <div className="space-y-4 pt-4">
-      <p className="text-sm text-muted-foreground">
-        Data exports, account deletions and administrator access to full
-        identifiers. Records are kept for two years.
-      </p>
-      <DataState
-        query={query}
-        isEmpty={query.data?.items.length === 0}
-        icon={ShieldCheck}
-        emptyTitle="No privacy events"
-        emptyText="Privacy activity will appear here."
-      >
-        <DataTable
-          columns={columns}
-          data={query.data?.items ?? []}
-          renderCard={(event) => (
-            <ListRow
-              title={eventLabel(event)}
-              subtitle={
-                <PartyCell name={event.actor_name} role={event.actor_role} />
-              }
-              meta={
-                <>
-                  <span className="block truncate">
-                    {event.subject_id ? (
-                      <PartyCell
-                        name={event.subject_name}
-                        role={event.subject_role}
-                      />
-                    ) : event.kind === 'export' ? (
-                      'Many people (data download)'
-                    ) : (
-                      'No individual subject'
-                    )}
-                  </span>
-                  <span className="block truncate">
-                    {formatDateTime(event.created_at)}
-                  </span>
-                </>
-              }
-            />
-          )}
-        />
-      </DataState>
-      <div className="flex gap-3">
-        {cursor && (
-          <Button
-            className="min-h-11"
-            variant="outline"
-            onClick={() => setCursor(undefined)}
-          >
-            First page
-          </Button>
-        )}
-        <Button
-          className="min-h-11"
-          variant="outline"
-          disabled={!query.data?.has_more || query.isFetching || query.isError}
-          onClick={() => setCursor(query.data?.next_cursor ?? undefined)}
-        >
-          Next page
-        </Button>
-      </div>
-    </div>
   );
 }

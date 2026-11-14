@@ -20,7 +20,7 @@ import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { canManageTeam, roleLabel } from '@/lib/access';
+import { canManageTeam, canSeeTeam, roleLabel } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
 import type { BusinessRole } from '@/lib/api/types';
 import {
@@ -41,12 +41,12 @@ export const Route = createFileRoute('/team')({ component: TeamRoute });
 function TeamRoute() {
   const { user, isLoading } = useAuth();
   if (isLoading) return <RowsSkeleton />;
-  if (!canManageTeam(user))
+  if (!canSeeTeam(user))
     return (
       <div className="space-y-3">
         <PageHeader
           title="Team"
-          description="Only an Owner of the active business can manage its team."
+          description="Owners and Managers of the active business can manage its team."
         />
         <p className="text-muted-foreground">
           Ask an Owner if you need help with access.
@@ -73,6 +73,10 @@ type Confirmation =
 
 function TeamPage({ businessId }: { businessId: string }) {
   const { user } = useAuth();
+  const owner = canManageTeam(user);
+  const roleOptions = owner
+    ? roles
+    : roles.filter(({ value }) => value !== 'owner');
   const query = useTeam(businessId);
   const change = useChangeTeamRole();
   const remove = useRemoveTeamMember();
@@ -99,6 +103,8 @@ function TeamPage({ businessId }: { businessId: string }) {
     query.data?.members.filter((member) => member.role === 'owner').length ?? 0;
 
   function memberActions(member: TeamMember): RowAction[] {
+    if (!owner && (member.role !== 'member' || member.id === user?.id))
+      return [];
     return [
       {
         label: 'Change role',
@@ -118,6 +124,7 @@ function TeamPage({ businessId }: { businessId: string }) {
   }
 
   function inviteActions(invite: TeamInvite): RowAction[] {
+    if (!owner && invite.role === 'owner') return [];
     return [
       {
         label: 'Resend invitation',
@@ -222,8 +229,9 @@ function TeamPage({ businessId }: { businessId: string }) {
       />
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Owners manage the business and team. Managers handle trades. Members
-          work with stock and chat. Keep at least one Owner.
+          Owners manage the business and team. Managers handle trades and help
+          manage the team. Members work with stock and chat. Keep at least one
+          Owner.
         </p>
         <Toolbar
           label="Search team by name or email"
@@ -309,7 +317,9 @@ function TeamPage({ businessId }: { businessId: string }) {
         title="Invite someone"
         description="They can join with a new or existing account using this email address."
       >
-        {inviting && <InviteForm onDone={() => setInviting(false)} />}
+        {inviting && (
+          <InviteForm owner={owner} onDone={() => setInviting(false)} />
+        )}
       </ResponsiveOverlay>
       <ResponsiveOverlay
         open={!!editing}
@@ -320,8 +330,9 @@ function TeamPage({ businessId }: { businessId: string }) {
         {editing && (
           <ChoiceSelect
             label={`Role for ${editing.name}`}
+            className="w-full"
             value={editing.role}
-            options={roles}
+            options={roleOptions}
             onChange={(role) => {
               if (role === editing.role) return;
               setConfirmation({
@@ -369,7 +380,7 @@ const inviteSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
 });
 
-function InviteForm({ onDone }: { onDone: () => void }) {
+function InviteForm({ owner, onDone }: { owner: boolean; onDone: () => void }) {
   const invite = useInviteMember();
   const [role, setRole] = useState<BusinessRole>('member');
   const [failure, setFailure] = useState<string | null>(null);
@@ -401,16 +412,25 @@ function InviteForm({ onDone }: { onDone: () => void }) {
         type="email"
         autoComplete="email"
       />
-      <ChoiceSelect
-        label="Team role"
-        value={role}
-        options={roles}
-        onChange={(value) => setRole(value as BusinessRole)}
-        disabled={invite.isPending}
-      />
+      <div className="space-y-1.5">
+        <span aria-hidden="true" className="block text-sm font-medium">
+          Role
+        </span>
+        <ChoiceSelect
+          label="Team role"
+          className="w-full"
+          value={role}
+          options={
+            owner ? roles : roles.filter(({ value }) => value !== 'owner')
+          }
+          onChange={(value) => setRole(value as BusinessRole)}
+          disabled={invite.isPending}
+        />
+      </div>
       <p className="text-sm text-muted-foreground">
-        Owners can manage people and business details. Only invite an Owner you
-        trust.
+        {owner
+          ? 'Owners can manage people and business details. Only invite an Owner you trust.'
+          : 'Managers can handle trades and help manage the team. Members work with stock and chat.'}
       </p>
       {failure && (
         <p role="alert" className="text-sm text-destructive">

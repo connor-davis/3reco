@@ -181,7 +181,7 @@ test('transaction export passes current search and disables empty or stale-filte
 });
 
 test('admin cannot remove their own account; export audit shows kind and filters', () => {
-  const { UsersPage, eventLabel } = compile(
+  const { UsersPage } = compile(
     'routes/admin/users.tsx',
     {
       react: { useState: (value) => [value, () => {}] },
@@ -197,8 +197,12 @@ test('admin cannot remove their own account; export audit shows kind and filters
       '@/lib/access': { roleLabel: (role) => role },
       '@/lib/format': { plural: () => '' },
     },
-    '\nexports.UsersPage = UsersPage; exports.eventLabel = eventLabel;'
+    '\nexports.UsersPage = UsersPage;'
   );
+  const { eventLabel } = compile('lib/privacy-labels.ts', {
+    './access': { roleLabel: (role) => role },
+    './format': { formatDateTime: (value) => value },
+  });
   const tree = UsersPage();
   const table = nodes(tree).find((node) => node.props?.columns);
   const action = table.props.columns.find((column) => column.id === 'actions');

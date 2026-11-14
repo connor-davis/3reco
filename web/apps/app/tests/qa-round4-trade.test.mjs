@@ -30,9 +30,9 @@ test('formatDateTime prints the date and the South African time', () => {
 });
 
 test('privacy events show a time, not just a day', () => {
-  const users = source('routes/admin/users.tsx');
-  assert.match(users, /formatDateTime\(row\.original\.created_at\)/);
-  assert.match(users, /formatDateTime\(event\.created_at\)/);
+  const activity = source('routes/admin/activity.tsx');
+  assert.match(activity, /formatDateTime\(row\.original\.at\)/);
+  assert.match(activity, /formatDateTime\(line\.at\)/);
 });
 
 test('counter offer checks the price as you type and blocks Send', () => {
