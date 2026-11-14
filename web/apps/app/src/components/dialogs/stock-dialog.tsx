@@ -1,5 +1,5 @@
 import { stockLimit } from '@/lib/limits';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -11,15 +11,13 @@ import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { StockPhotos } from './stock-photos';
 import { Switch } from '@/components/ui/switch';
 import { useMaterials } from '@/lib/api/materials';
 import {
   useCreateStock,
   useUpdateStock,
-  useUploadStockImage,
-  useUploadNewStockImage,
-  useDeleteStockImage,
+  useAddStockPhoto,
 } from '@/lib/api/stock';
 import type { StockItem } from '@/lib/api/types';
 import { ApiError } from '@/lib/api/client';
@@ -100,19 +98,9 @@ function StockForm({ open, onOpenChange, stock }: Props) {
   const create = useCreateStock();
   const update = useUpdateStock(stock?.id ?? '');
   const [serverError, setServerError] = useState('');
-  const uploadPhoto = useUploadStockImage(stock?.id ?? '');
-  const addPhoto = useUploadNewStockImage();
-  const deletePhoto = useDeleteStockImage(stock?.id ?? '');
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [removePhoto, setRemovePhoto] = useState(false);
-  const [preview, setPreview] = useState('');
+  const addPhoto = useAddStockPhoto();
+  const [staged, setStaged] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState('');
-
-  useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
   const { control, handleSubmit, watch, setValue, setError, formState } =
     useForm<Values>({
       resolver: zodResolver(schema(stock)),
@@ -153,8 +141,6 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           price: sameAmount(price, stock.price) ? undefined : price,
           is_listed: values.is_listed,
         });
-        if (photo) await uploadPhoto.mutateAsync(photo);
-        else if (removePhoto) await deletePhoto.mutateAsync(undefined);
         // Say what changed about the market when the switch moved.
         toast.success(
           values.is_listed === stock.is_listed
@@ -165,17 +151,17 @@ function StockForm({ open, onOpenChange, stock }: Props) {
         );
       } else {
         const created = await create.mutateAsync({ ...values, weight, price });
-        if (photo) {
-          try {
-            await addPhoto.mutateAsync({ id: created.id, file: photo });
-          } catch {
-            // The stock exists now; creating it again would double it.
-            toast.warning(
-              'Stock added, but the photo did not upload. Edit the stock to try again.'
-            );
-            onOpenChange(false);
-            return;
+        try {
+          for (const file of staged) {
+            await addPhoto.mutateAsync({ id: created.id, file });
           }
+        } catch {
+          // The stock exists now; creating it again would double it.
+          toast.warning(
+            'Stock added, but the photo did not upload. Edit the stock to try again.'
+          );
+          onOpenChange(false);
+          return;
         }
         toast.success('Stock added.');
       }
@@ -193,12 +179,7 @@ function StockForm({ open, onOpenChange, stock }: Props) {
     }
   }
 
-  const busy =
-    create.isPending ||
-    update.isPending ||
-    uploadPhoto.isPending ||
-    addPhoto.isPending ||
-    deletePhoto.isPending;
+  const busy = create.isPending || update.isPending || addPhoto.isPending;
   // Once someone interacts, only the fields explain what needs fixing.
   const pristine =
     !stock &&
@@ -286,65 +267,15 @@ function StockForm({ open, onOpenChange, stock }: Props) {
             <span>{warning}</span>
           </p>
         )}
-        <Field>
-          <FieldLabel htmlFor="stock-photo">Photo</FieldLabel>
-          <p className="text-sm text-muted-foreground">
-            Upload a PNG, JPEG or WebP image up to 2 MiB.
-          </p>
-          <Input
-            id="stock-photo"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            disabled={busy}
-            onChange={(event) => {
-              const next = event.target.files?.[0];
-              setPhoto(null);
-              setPreview('');
-              setPhotoError('');
-              if (!next) return;
-              if (
-                !['image/png', 'image/jpeg', 'image/webp'].includes(
-                  next.type
-                ) ||
-                next.size === 0 ||
-                next.size > 2 * 1024 * 1024
-              ) {
-                setPhotoError('Choose a PNG, JPEG or WebP image up to 2 MiB.');
-                return;
-              }
-              setPhoto(next);
-              setRemovePhoto(false);
-              setPreview(URL.createObjectURL(next));
-            }}
-          />
-          {(preview || (!removePhoto && stock?.image_url)) && (
-            <>
-              <img
-                src={preview || stock?.image_url}
-                alt={stock?.material_name ?? chosen?.name ?? 'Stock photo'}
-                className="h-32 w-full rounded-lg object-cover"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy}
-                onClick={() => {
-                  setPhoto(null);
-                  setPreview('');
-                  setPhotoError('');
-                  setRemovePhoto(true);
-                }}
-              >
-                Remove picture
-              </Button>
-            </>
-          )}
-          {photoError && (
-            <p role="alert" className="text-sm text-destructive">
-              {photoError}
-            </p>
-          )}
-        </Field>
+        <StockPhotos
+          stock={stock}
+          staged={staged}
+          onStaged={setStaged}
+          error={photoError}
+          onError={setPhotoError}
+          disabled={busy}
+          name={stock?.material_name ?? chosen?.name ?? 'Stock'}
+        />
         <Field orientation="horizontal">
           <Switch
             id="stock-listed"

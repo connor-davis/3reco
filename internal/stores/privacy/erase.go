@@ -138,7 +138,8 @@ func (s *Store) Erase(ctx context.Context, id, removedBy string) ([]string, erro
 	// Read keys before deleting the stock rows that hold them.
 	rows, err := q.Query(
 		ctx,
-		`SELECT COALESCE(image_key,'') FROM stock WHERE owner_id=$1 AND NOT EXISTS (SELECT 1 FROM businesses WHERE id=$1) FOR UPDATE`,
+		`SELECT p.object_key FROM stock_photos p JOIN stock s ON s.id=p.stock_id
+		WHERE s.owner_id=$1 AND NOT EXISTS (SELECT 1 FROM businesses WHERE id=$1) FOR UPDATE OF s`,
 		id,
 	)
 	if err != nil {

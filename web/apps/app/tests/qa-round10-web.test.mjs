@@ -65,9 +65,7 @@ test('add/edit stock footer never repeats field errors after interaction', () =>
           '@/lib/api/stock': {
             useCreateStock: () => ({}),
             useUpdateStock: () => ({}),
-            useUploadStockImage: () => ({}),
-            useUploadNewStockImage: () => ({}),
-            useDeleteStockImage: () => ({}),
+            useAddStockPhoto: () => ({}),
           },
         },
         '\nexports.StockForm = StockForm;'

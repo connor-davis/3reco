@@ -42,39 +42,34 @@ export function useDeleteStock() {
   );
 }
 
-export function useUploadStockImage(id: string) {
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: (file: File) =>
-      api<T.StockItem>(`/stock/${idPath(id)}/image`, upload(file)),
-    onSuccess: async () => {
-      await Promise.all(
-        ['stock', 'listings', 'stores'].map((key) =>
-          client.invalidateQueries({ queryKey: [key] })
-        )
-      );
-    },
-  });
-}
-/** Uploads a photo for a stock line made a moment ago, so the id comes with the call. */
-export function useUploadNewStockImage() {
+const photoKeys = [['stock'], ['listings'], ['stores']] as const;
+
+/** Adds one photo to a stock line; the id comes with the call so it also works right after create. */
+export function useAddStockPhoto() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
-      api<T.StockItem>(`/stock/${idPath(id)}/image`, upload(file)),
+      api<T.StockItem>(`/stock/${idPath(id)}/photos`, upload(file)),
     onSuccess: async () => {
       await Promise.all(
-        ['stock', 'listings', 'stores'].map((key) =>
-          client.invalidateQueries({ queryKey: [key] })
-        )
+        photoKeys.map((queryKey) => client.invalidateQueries({ queryKey }))
       );
     },
   });
 }
-export function useDeleteStockImage(id: string) {
-  return useWrite<void, T.StockItem>(`/stock/${idPath(id)}/image`, 'DELETE', [
-    ['stock'],
-    ['listings'],
-    ['stores'],
-  ]);
+export function useDeleteStockPhoto(id: string) {
+  return useWrite<string, T.StockItem>(
+    (photoId) => `/stock/${idPath(id)}/photos/${idPath(photoId)}`,
+    'DELETE',
+    photoKeys
+  );
+}
+/** Saves the photo order; the first id is the cover. */
+export function useReorderStockPhotos(id: string) {
+  return useWrite<string[], T.StockItem>(
+    `/stock/${idPath(id)}/photos/order`,
+    'PUT',
+    photoKeys,
+    (ids) => ({ ids })
+  );
 }

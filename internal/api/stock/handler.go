@@ -18,9 +18,12 @@ func New(service *svc.Service) *Handler { return &Handler{svc: service} }
 
 // Register adds stock routes under /api.
 func (handler *Handler) Register(router fiber.Router) {
-	router.Get("/stock/:id/image", handler.image)
-	router.Post("/stock/:id/image", middleware.RequireRole(auth.RoleBusiness), handler.uploadImage)
-	router.Delete("/stock/:id/image", middleware.RequireRole(auth.RoleBusiness), handler.deleteImage)
+	// The old single-photo URL stays as an alias for the cover.
+	router.Get("/stock/:id/image", handler.photo)
+	router.Get("/stock/:id/photos/:photo_id", handler.photo)
+	router.Post("/stock/:id/photos", middleware.RequireRole(auth.RoleBusiness), handler.addPhoto)
+	router.Put("/stock/:id/photos/order", middleware.RequireRole(auth.RoleBusiness), handler.orderPhotos)
+	router.Delete("/stock/:id/photos/:photo_id", middleware.RequireRole(auth.RoleBusiness), handler.deletePhoto)
 	router.Get("/stock/:id", handler.find)
 	router.Get("/stock", middleware.RequireUser, handler.list)
 	router.Post("/stock", middleware.RequireRole(auth.RoleBusiness), handler.create)

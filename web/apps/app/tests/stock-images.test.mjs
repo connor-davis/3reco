@@ -31,51 +31,94 @@ function nodes(tree) {
   return [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 }
 
-test('broken listing and gallery images fall back to the box and recover on a new URL', () => {
-  for (const [path, component, props, imageKey] of [
-    [
-      'components/listing-card.tsx',
-      'ListingCard',
-      { listing: { image_url: '/broken', weight: '1', price: '2' } },
-      'listing',
-    ],
-    [
-      'routes/market/listing/-components/gallery.tsx',
-      'Gallery',
-      { image: '/broken', name: 'Glass' },
-      'image',
-    ],
-  ]) {
-    let failed;
-    const loaded = compile(path, {
-      react: {
-        useState: () => [
-          failed,
+/** A tiny stand-in for React state: one slot per useState call, reset per render. */
+function stateful() {
+  const slots = [];
+  let cursor = 0;
+  return {
+    reset: () => {
+      cursor = 0;
+    },
+    react: {
+      useState: (initial) => {
+        const index = cursor++;
+        if (!(index in slots)) slots[index] = initial;
+        return [
+          slots[index],
           (value) => {
-            failed = value;
+            slots[index] = value;
           },
-        ],
+        ];
       },
-      '@/lib/format': load('lib/format.ts'),
-    });
-    const render = () => nodes(loaded[component](props));
-    render()
-      .find((node) => node.type === 'img')
-      .props.onError();
-    assert.equal(
-      render().some((node) => node.type === 'img'),
-      false
-    );
-    assert.ok(
-      render().some((node) => node.type === require('lucide-react').Package)
-    );
-    if (imageKey === 'listing') props.listing.image_url = '/replacement';
-    else props.image = '/replacement';
-    assert.equal(
-      render().find((node) => node.type === 'img').props.src,
-      '/replacement'
-    );
-  }
+      useMemo: (make) => make(),
+      useEffect: () => {},
+    },
+  };
+}
+// Arrays made inside the vm have another prototype; compare their JSON.
+const plain = (value) => JSON.parse(JSON.stringify(value));
+const cn = (...values) => values.filter(Boolean).join(' ');
+const galleryPath = 'routes/market/listing/-components/gallery.tsx';
+
+test('a broken listing card image falls back to the box and recovers on a new URL', () => {
+  let failed;
+  const { ListingCard } = compile('components/listing-card.tsx', {
+    react: {
+      useState: () => [
+        failed,
+        (value) => {
+          failed = value;
+        },
+      ],
+    },
+    '@/lib/format': load('lib/format.ts'),
+  });
+  const props = { listing: { image_url: '/broken', weight: '1', price: '2' } };
+  const render = () => nodes(ListingCard(props));
+  render()
+    .find((node) => node.type === 'img')
+    .props.onError();
+  assert.equal(
+    render().some((node) => node.type === 'img'),
+    false
+  );
+  assert.ok(
+    render().some((node) => node.type === require('lucide-react').Package)
+  );
+  props.listing.image_url = '/replacement';
+  assert.equal(
+    render().find((node) => node.type === 'img').props.src,
+    '/replacement'
+  );
+});
+
+test('a broken gallery photo falls back to the placeholder and recovers on a new URL', () => {
+  const state = stateful();
+  const { Slide } = compile(
+    galleryPath,
+    { react: state.react, '@/lib/utils': { cn } },
+    '\nexports.Slide = Slide;'
+  );
+  const props = { src: '/broken', name: 'Glass' };
+  const render = () => {
+    state.reset();
+    return nodes(Slide(props));
+  };
+  render()
+    .find((node) => node.type === 'img')
+    .props.onError();
+  assert.equal(
+    render().some((node) => node.type === 'img'),
+    false
+  );
+  assert.ok(
+    render().some((node) => node.type === require('lucide-react').Package)
+  );
+  props.src = '/replacement';
+  assert.equal(
+    render().find((node) => node.type === 'img').props.src,
+    '/replacement'
+  );
 });
 
 test('listing cards show stock photos and seller logos with a placeholder fallback', () => {
@@ -114,22 +157,77 @@ test('listing cards show stock photos and seller logos with a placeholder fallba
   );
 });
 
-test('gallery shows the stock photo in the smaller responsive frame', () => {
-  const { Gallery } = compile('routes/market/listing/-components/gallery.tsx', {
-    react: { useState: () => [undefined, () => {}] },
+test('gallery without photos shows the placeholder in the smaller responsive frame', () => {
+  const state = stateful();
+  const { Gallery } = compile(galleryPath, {
+    react: state.react,
+    '@/lib/utils': { cn },
   });
-  const tree = Gallery({ image: '/photo?v=1', name: 'Glass' });
+  const tree = Gallery({ name: 'Glass' });
   assert.match(tree.props.className, /aspect-\[4\/3\]/);
   assert.match(tree.props.className, /max-h-64/);
   assert.match(tree.props.className, /lg:max-w-md/);
-  const image = nodes(tree).find((node) => node.type === 'img');
-  assert.equal(image.props.alt, 'Glass');
-  assert.match(image.props.className, /object-cover object-center/);
   assert.ok(
-    nodes(Gallery({ name: 'Glass' })).some(
+    nodes(tree).some(
       (node) => node.props['aria-label'] === 'Material placeholder'
     )
   );
+  assert.ok(
+    nodes(Gallery({ images: [], name: 'Glass' })).some(
+      (node) => node.props['aria-label'] === 'Material placeholder'
+    )
+  );
+});
+
+test('gallery lists every photo with thumbnails that jump to it', () => {
+  const state = stateful();
+  const { Gallery } = compile(galleryPath, {
+    react: state.react,
+    '@/lib/utils': { cn },
+  });
+  const images = ['/a?v=1', '/b?v=1', '/c?v=1'];
+  const render = () => {
+    state.reset();
+    return nodes(Gallery({ images, name: 'Glass' }));
+  };
+  let tree = render();
+  const slides = tree.filter((node) => node.type?.name === 'Slide');
+  assert.deepEqual(
+    slides.map((node) => node.props.src),
+    images
+  );
+  assert.ok(tree.some((node) => node.type === 'CarouselPrevious'));
+  assert.ok(tree.some((node) => node.type === 'CarouselNext'));
+
+  const scrolled = [];
+  tree
+    .find((node) => node.props.setApi)
+    .props.setApi({
+      scrollTo: (index) => scrolled.push(index),
+      selectedScrollSnap: () => 0,
+      on: () => {},
+      off: () => {},
+    });
+  tree = render();
+  const thumbs = tree.filter(
+    (node) => node.type === 'button' && node.props.onClick
+  );
+  assert.equal(thumbs.length, 3);
+  assert.equal(thumbs[2].props['aria-label'], 'Show photo 3 of 3');
+  thumbs[2].props.onClick();
+  assert.deepEqual(scrolled, [2]);
+});
+
+test('gallery with one photo has no arrows or thumbnails', () => {
+  const state = stateful();
+  const { Gallery } = compile(galleryPath, {
+    react: state.react,
+    '@/lib/utils': { cn },
+  });
+  const tree = nodes(Gallery({ images: ['/a?v=1'], name: 'Glass' }));
+  assert.equal(tree.filter((node) => node.type?.name === 'Slide').length, 1);
+  assert.ok(!tree.some((node) => node.type === 'CarouselNext'));
+  assert.ok(!tree.some((node) => node.type === 'button'));
 });
 
 test('PersonAvatar renders its image and keeps initials as the fallback', () => {
@@ -217,15 +315,14 @@ function stockForm(stock, options = {}) {
           warning: (message) => calls.push(['warning', message]),
         },
       },
+      './stock-photos': { StockPhotos: 'StockPhotos' },
       '@/lib/api/materials': {
         useMaterials: () => ({ data: { items: options.items ?? [] } }),
       },
       '@/lib/api/stock': {
         useCreateStock: () => mutation('create'),
         useUpdateStock: () => mutation('update'),
-        useUploadStockImage: () => mutation('upload'),
-        useUploadNewStockImage: () => mutation('addPhoto'),
-        useDeleteStockImage: () => mutation('remove'),
+        useAddStockPhoto: () => mutation('addPhoto'),
       },
       '@/lib/format': load('lib/format.ts'),
       '@/lib/quantity': {
@@ -262,7 +359,9 @@ function stockForm(stock, options = {}) {
     nodes(tree)
       .find((node) => node.props.onPick)
       .props.onPick(id);
-  return { render, input, save, calls, effects, pick, values };
+  const photos = (tree) =>
+    nodes(tree).find((node) => node.type === 'StockPhotos');
+  return { render, input, save, calls, effects, pick, values, photos };
 }
 
 const item = {
@@ -275,94 +374,54 @@ const item = {
   base_price: '2',
   is_listed: true,
   image_url: '/old?v=1',
+  photos: [{ id: 'p1', url: '/old?v=1' }],
 };
 
-test('stock photo field validates files, previews and uploads on Save', async () => {
+test('photos of an existing line save on their own; Save only saves the text fields', async () => {
   const form = stockForm(item);
-  let tree = form.render();
-  const choose = (file) =>
-    form.input(tree).props.onChange({ target: { files: [file] } });
-  for (const file of [
-    { type: 'image/gif', size: 10 },
-    { type: 'image/png', size: 0 },
-    { type: 'image/png', size: 2 * 1024 * 1024 + 1 },
-  ]) {
-    choose(file);
-    tree = form.render();
-    assert.ok(
-      nodes(tree).some(
-        (node) =>
-          node.props.role === 'alert' &&
-          node.props.children ===
-            'Choose a PNG, JPEG or WebP image up to 2 MiB.'
-      )
-    );
-    assert.equal(
-      nodes(tree.props.footer).find((node) => node.type === 'Button').props
-        .disabled,
-      true
-    );
-  }
-  const file = { type: 'image/webp', size: 100 };
-  choose(file);
-  tree = form.render();
+  const tree = form.render();
+  assert.equal(form.input(tree), undefined);
+  assert.equal(form.photos(tree).props.stock, item);
+  await form.save(tree);
+  assert.deepEqual(
+    form.calls.map(([kind]) => kind),
+    ['update', 'close']
+  );
+});
+
+test('a photo problem blocks Save until it is cleared', () => {
+  const form = stockForm(item);
+  form.photos(form.render()).props.onError('Too big.');
+  const tree = form.render();
+  assert.equal(form.photos(tree).props.error, 'Too big.');
   assert.equal(
-    nodes(tree).find((node) => node.type === 'img').props.src,
-    'blob:preview'
-  );
-  const cleanup = form.effects.at(-1)();
-  await form.save(tree);
-  assert.deepEqual(
-    form.calls.map(([kind]) => kind),
-    ['update', 'upload', 'close']
-  );
-  assert.equal(form.calls[1][1], file);
-  cleanup();
-  assert.deepEqual(form.calls.at(-1), ['revoke', 'blob:preview']);
-});
-
-test('stock photo Remove waits until Save', async () => {
-  const form = stockForm(item);
-  let tree = form.render();
-  nodes(tree)
-    .find(
-      (node) =>
-        node.type === 'Button' && node.props.children === 'Remove picture'
-    )
-    .props.onClick();
-  assert.equal(form.calls.length, 0);
-  tree = form.render();
-  assert.ok(!nodes(tree).some((node) => node.type === 'img'));
-  await form.save(tree);
-  assert.deepEqual(
-    form.calls.map(([kind]) => kind),
-    ['update', 'remove', 'close']
+    nodes(tree.props.footer).find((node) => node.type === 'Button').props
+      .disabled,
+    true
   );
 });
 
-test('Add stock shows the photo picker and uploads with the created id', async () => {
+test('Add stock uploads every picked photo, in order, with the created id', async () => {
   const form = stockForm(undefined);
   let tree = form.render();
-  assert.ok(form.input(tree));
-  form
-    .input(tree)
-    .props.onChange({ target: { files: [{ type: 'image/png', size: 9 }] } });
+  const first = { type: 'image/png', size: 9 };
+  const second = { type: 'image/webp', size: 9 };
+  form.photos(tree).props.onStaged([first, second]);
   tree = form.render();
   await form.save(tree);
   assert.deepEqual(
-    form.calls.filter(([kind]) => kind !== 'revoke').map(([kind]) => kind),
-    ['create', 'addPhoto', 'close']
+    form.calls.map(([kind]) => kind),
+    ['create', 'addPhoto', 'addPhoto', 'close']
   );
   assert.equal(form.calls[1][1].id, 'new1');
-  assert.equal(form.calls[1][1].file.type, 'image/png');
+  assert.equal(form.calls[1][1].file, first);
+  assert.equal(form.calls[2][1].file, second);
 });
 
 test('a photo that fails after create warns and does not create again', async () => {
   const form = stockForm(undefined, { uploadFails: true });
   let tree = form.render();
-  form
-    .input(tree)
-    .props.onChange({ target: { files: [{ type: 'image/png', size: 9 }] } });
+  form.photos(tree).props.onStaged([{ type: 'image/png', size: 9 }]);
   tree = form.render();
   await form.save(tree);
   assert.equal(form.calls.filter(([kind]) => kind === 'create').length, 1);
@@ -374,6 +433,134 @@ test('a photo that fails after create warns and does not create again', async ()
         message ===
           'Stock added, but the photo did not upload. Edit the stock to try again.'
     )
+  );
+});
+
+function photoField(options = {}) {
+  const state = stateful();
+  const calls = [];
+  const saved = [
+    { id: 'p1', url: '/a' },
+    { id: 'p2', url: '/b' },
+    { id: 'p3', url: '/c' },
+  ];
+  const props = {
+    stock: options.stock === false ? undefined : { id: 's1', photos: saved },
+    staged: options.staged ?? [],
+    onStaged: (files) => {
+      calls.push(['staged', files]);
+      props.staged = files;
+    },
+    error: '',
+    onError: (message) => calls.push(['error', message]),
+    disabled: false,
+    name: 'Glass',
+  };
+  const mutation = (kind) => ({
+    isPending: false,
+    mutateAsync: async (value) => {
+      calls.push([kind, value]);
+      return { photos: saved };
+    },
+  });
+  const { StockPhotos } = compile(
+    'components/dialogs/stock-photos.tsx',
+    {
+      react: state.react,
+      '@/lib/api/stock': {
+        useAddStockPhoto: () => mutation('add'),
+        useDeleteStockPhoto: () => mutation('remove'),
+        useReorderStockPhotos: () => mutation('reorder'),
+      },
+      '@/components/transactions/pager-state': {
+        errorText: (error) => error.message,
+      },
+    },
+    '',
+    {
+      URL: {
+        createObjectURL: (file) => `blob:${file.name}`,
+        revokeObjectURL: () => {},
+      },
+    }
+  );
+  const render = () => {
+    state.reset();
+    return nodes(StockPhotos(props));
+  };
+  const button = (tree, label) =>
+    tree.find((node) => node.props['aria-label'] === label);
+  const choose = (files) =>
+    render()
+      .find((node) => node.props.id === 'stock-photo')
+      .props.onChange({ target: { files, value: '' } });
+  return { render, calls, button, choose };
+}
+
+test('photo field refuses bad files and more than 8 photos, and sends nothing', async () => {
+  const field = photoField();
+  for (const file of [
+    { type: 'image/gif', size: 10 },
+    { type: 'image/png', size: 0 },
+    { type: 'image/png', size: 2 * 1024 * 1024 + 1 },
+  ]) {
+    field.calls.length = 0;
+    await field.choose([file]);
+    assert.deepEqual(field.calls.at(-1), [
+      'error',
+      'Choose a PNG, JPEG or WebP image up to 2 MiB.',
+    ]);
+    assert.ok(!field.calls.some(([kind]) => kind === 'add'));
+  }
+  field.calls.length = 0;
+  const png = { type: 'image/png', size: 5 };
+  await field.choose([png, png, png, png, png, png]);
+  assert.deepEqual(field.calls.at(-1), [
+    'error',
+    'A stock item can have up to 8 photos.',
+  ]);
+  assert.ok(!field.calls.some(([kind]) => kind === 'add'));
+});
+
+test('photo field on an existing line adds, moves and removes right away', async () => {
+  const field = photoField();
+  const file = { type: 'image/webp', size: 100 };
+  await field.choose([file]);
+  assert.deepEqual(plain(field.calls.find(([kind]) => kind === 'add')), [
+    'add',
+    { id: 's1', file },
+  ]);
+
+  for (const [label, expected] of [
+    ['Move photo 1 down', ['reorder', ['p2', 'p1', 'p3']]],
+    ['Move photo 3 up', ['reorder', ['p1', 'p3', 'p2']]],
+    ['Remove photo 2', ['remove', 'p2']],
+  ]) {
+    field.calls.length = 0;
+    field.button(field.render(), label).props.onClick();
+    await Promise.resolve();
+    assert.deepEqual(
+      plain(field.calls.find(([kind]) => kind !== 'error')),
+      expected
+    );
+  }
+
+  const tree = field.render();
+  assert.equal(field.button(tree, 'Move photo 1 up').props.disabled, true);
+  assert.equal(field.button(tree, 'Move photo 3 down').props.disabled, true);
+  assert.ok(tree.some((node) => node.props.children === 'Cover'));
+});
+
+test('photo field on a new line stages, reorders and removes locally', () => {
+  const one = { type: 'image/png', size: 1, name: 'one' };
+  const two = { type: 'image/png', size: 1, name: 'two' };
+  const field = photoField({ stock: false, staged: [one, two] });
+  field.button(field.render(), 'Move photo 2 up').props.onClick();
+  assert.deepEqual(plain(field.calls.at(-1)), ['staged', [two, one]]);
+  field.button(field.render(), 'Remove photo 1').props.onClick();
+  assert.deepEqual(plain(field.calls.at(-1)), ['staged', [one]]);
+  assert.ok(
+    !field.calls.some(([kind]) => ['add', 'reorder', 'remove'].includes(kind))
   );
 });
 
