@@ -241,12 +241,18 @@ func (service *Service) Delete(ctx context.Context, id, owner string) error {
 				return apperr.Conflict("Some of this stock is held for open offers or carts.")
 			}
 
+			// Read the keys first: deleting the row removes its photo rows too.
+			keys, err := service.store.PhotoKeys(ctx, id)
+			if err != nil {
+				return err
+			}
+
 			if err := service.store.Delete(ctx, id, owner); err != nil {
 				return err
 			}
 
-			if item.ImageKey != "" {
-				service.objects.RemoveAfterCommit(ctx, item.ImageKey)
+			for _, key := range keys {
+				service.objects.RemoveAfterCommit(ctx, key)
 			}
 
 			return nil

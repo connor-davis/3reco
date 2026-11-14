@@ -31,7 +31,8 @@ var exportQueries = []struct{ name, sql string }{
 		FROM sessions WHERE user_id = $1 ORDER BY created_at`},
 	{"notice_acceptances", `SELECT version, accepted_at FROM privacy_notice_acceptances
 		WHERE user_id = $1 ORDER BY accepted_at`},
-	{"stock", `SELECT id, material_id, weight, price, is_listed, (image_key IS NOT NULL) AS has_image, created_at, updated_at
+	{"stock", `SELECT id, material_id, weight, price, is_listed, EXISTS(SELECT 1 FROM stock_photos p WHERE p.stock_id=stock.id) AS has_image,
+		(SELECT count(*) FROM stock_photos p WHERE p.stock_id=stock.id) AS photo_count, created_at, updated_at
 		FROM stock WHERE owner_id IN (SELECT business_id FROM business_members WHERE user_id=$1) ORDER BY created_at`},
 	{"requests", `SELECT r.id, r.status, r.seller_id, r.buyer_id, r.created_at, r.updated_at,
 		(SELECT COALESCE(jsonb_agg(jsonb_build_object('material_id', i.material_id,
