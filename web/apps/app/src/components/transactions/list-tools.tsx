@@ -26,7 +26,7 @@ export function Pager({ pager, page, total, disabled = false }: PagerProps) {
       <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
         {(rows > 0 || pager.hasPrevious) && (
           <div className="flex items-center gap-2">
-            <span>Rows per page</span>
+            <span className="max-sm:hidden">Rows per page</span>
             <ChoiceSelect
               label="Rows per page"
               value={String(pager.params.limit)}
