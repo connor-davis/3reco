@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { History } from 'lucide-react';
@@ -10,7 +12,7 @@ import { ListRow } from '@/components/list-row';
 import { PageHeader } from '@/components/page-header';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Toolbar } from '@/components/toolbar';
-import { Input } from '@/components/ui/input';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Pager } from '@/components/transactions/list-tools';
 import { usePager } from '@/components/transactions/pager-state';
 import { useActivity } from '@/lib/api/admin';
@@ -131,8 +133,9 @@ function ActivityPage() {
   const [search, setSearch] = useState('');
   const [table, setTable] = useState('all');
   const [action, setAction] = useState('all');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [range, setRange] = useState<DateRange | undefined>();
+  const from = range?.from ? format(range.from, 'yyyy-MM-dd') : '';
+  const to = range?.to ? format(range.to, 'yyyy-MM-dd') : '';
   const [open, setOpen] = useState<ActivityLine | null>(null);
   const q = useDebounced(search.trim(), 150);
   const pager = usePager({
@@ -215,8 +218,7 @@ function ActivityPage() {
           onClear={() => {
             setTable('all');
             setAction('all');
-            setFrom('');
-            setTo('');
+            setRange(undefined);
           }}
           filters={
             <>
@@ -232,21 +234,11 @@ function ActivityPage() {
                 options={actionOptions}
                 onChange={setAction}
               />
-              <Input
-                type="date"
-                aria-label="From date"
-                value={from}
-                max={to || undefined}
-                onChange={(e) => setFrom(e.target.value)}
-                className="min-h-11 w-40"
-              />
-              <Input
-                type="date"
-                aria-label="To date"
-                value={to}
-                min={from || undefined}
-                onChange={(e) => setTo(e.target.value)}
-                className="min-h-11 w-40"
+              <DateRangePicker
+                value={range}
+                onChange={setRange}
+                placeholder="From – to date"
+                align="start"
               />
             </>
           }
