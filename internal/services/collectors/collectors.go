@@ -82,9 +82,25 @@ func verifiedBusiness(user auth.User) bool {
 	return auth.HasRole(user, "business") && user.BusinessVerified
 }
 
-// manages is who may see the contact details and change the record.
-func manages(user auth.User, item store.Collector, own bool) bool {
-	return auth.HasRole(user, "admin", "staff") || creator(user, item) || own
+// canEdit is who may change a collector's name, phone, address and every other
+// field that is not a payout field: staff, admins, and any Owner or Manager of
+// any business. A Member reads only.
+func canEdit(user auth.User) bool {
+	return auth.HasRole(user, "admin", "staff") ||
+		(auth.HasRole(user, "business") && auth.BusinessAtLeast(user, "manager"))
+}
+
+// canEditPayout is who may change the bank account or e-wallet: staff, admins,
+// and an Owner or Manager of the business that created the record. A verified
+// business that did not create it may not. The collector's own login never
+// reaches this route, which is for staff and businesses.
+func canEditPayout(user auth.User, item store.Collector) bool {
+	if auth.HasRole(user, "admin", "staff") {
+		return true
+	}
+
+	return auth.HasRole(user, "business") && auth.BusinessAtLeast(user, "manager") &&
+		item.CreatedByBusinessID != nil && *item.CreatedByBusinessID == auth.PartyID(user)
 }
 
 // full is who may read the whole account number and e-wallet id. Staff may
@@ -119,7 +135,8 @@ func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewe
 // redact sets the two flags the screen needs. What the caller may see is
 // already decided in SQL (see store.columnList), so nothing is blanked here.
 func redact(user auth.User, item store.Collector, own bool) store.Collector {
-	item.CanEdit = manages(user, item, false) && (!auth.HasRole(user, "business") || auth.BusinessAtLeast(user, "manager"))
+	item.CanEdit = canEdit(user)
+	item.CanEditPayout = canEditPayout(user, item)
 	item.CanViewPayout = full(user, item, own)
 
 	return item
@@ -300,17 +317,31 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 					return err
 				}
 
-				// Only staff, admins and the creating business may change a
-				// collector, never the collector's own login.
-				if errors.Is(err, pgx.ErrNoRows) || !manages(user, item, false) {
+				if errors.Is(err, pgx.ErrNoRows) {
 					return apperr.NotFound("No such collector.")
 				}
 
-				// Staff can update contact details without replacing private payout identifiers.
-				if !full(user, item, false) {
+				// Anyone who may edit may change the ordinary fields; the payout
+				// fields are refused, not dropped, unless they may change those.
+				if !canEditPayout(user, item) {
 					if in.PayoutMethod != nil && strings.TrimSpace(*in.PayoutMethod) != "" &&
 						strings.TrimSpace(*in.PayoutMethod) != item.PayoutMethod {
 						return apperr.Forbidden("You cannot change private payout identifiers.")
+					}
+
+					// The plain payout fields: a different value is a change.
+					for _, field := range []struct {
+						sent    *string
+						current string
+					}{
+						{in.BankAccountHolderName, item.BankAccountHolderName},
+						{in.BankName, item.BankName},
+						{in.BankAccountType, item.BankAccountType},
+						{in.EwalletPlatformName, item.EwalletPlatformName},
+					} {
+						if field.sent != nil && strings.TrimSpace(*field.sent) != field.current {
+							return apperr.Forbidden("You cannot change payout details.")
+						}
 					}
 
 					for _, field := range []struct {
@@ -321,7 +352,8 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 						{in.BankBranchCode, item.BankBranchCode},
 						{in.EwalletPaymentID, item.EwalletPaymentID},
 					} {
-						if field.sent != nil && !isMask(*field.sent, field.current) {
+						if field.sent != nil && !isMask(*field.sent, field.current) &&
+							strings.TrimSpace(*field.sent) != field.current {
 							return apperr.Forbidden("You cannot change private payout identifiers.")
 						}
 					}

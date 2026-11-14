@@ -20,7 +20,8 @@ func TestTenantCollectorsProfileAndInvoicePermissions(t *testing.T) {
 	if view.Body["can_edit"] == true || view.Body["can_view_payout"] == true || shown(view.Body, "email") {
 		t.Fatalf("another business's collector details escaped: %s", view.Raw)
 	}
-	status(t, manager.c.Do("PATCH", "/api/collectors/"+foreign, map[string]any{"name": "foreign"}), 404)
+	status(t, manager.c.Do("PATCH", "/api/collectors/"+foreign, map[string]any{"name": "foreign"}), 200)
+	status(t, manager.c.Do("PATCH", "/api/collectors/"+foreign, map[string]any{"bank_name": "foreign"}), 403)
 	status(t, member.c.Do("PATCH", "/api/collectors/"+own, map[string]any{"name": "member"}), 403)
 	status(t, member.c.Do("POST", "/api/collectors", collectorBody(domainPhone())), 403)
 	status(t, manager.c.Do("PATCH", "/api/collectors/"+own, map[string]any{"name": "team collector"}), 200)
