@@ -106,8 +106,13 @@ test('DataTable owns one Panel, a wide table, transparent divided compact rows a
   }
   assert.doesNotMatch(
     source('components/data-table.tsx'),
-    /even:|nth-child|rounded-lg border|--row-background/
+    /even:|nth-child|--row-background/
   );
+  assert.match(
+    source('components/data-table.tsx'),
+    /overflow-hidden rounded-2xl border bg-card/
+  );
+  assert.doesNotMatch(source('components/data-table.tsx'), /bg-muted\/50/);
   assert.doesNotMatch(source('components/list-row.tsx'), /--row-background/);
 });
 

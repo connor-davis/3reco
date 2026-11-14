@@ -259,11 +259,11 @@ export function NeedsAttention({ collector }: { collector: boolean }) {
           emptyTitle="You're up to date"
           emptyText="New messages and offers will appear here."
         >
-          <ul className="divide-y">
+          <ul className="space-y-2">
             {waiting.slice(0, 3).map((thread) => (
               <li key={thread.request_id}>
                 <LinkButton
-                  className="min-h-14 w-full justify-start whitespace-normal text-left"
+                  className="min-h-14 w-full justify-start rounded-lg border bg-inner whitespace-normal text-left"
                   to={'/messages/' + thread.request_id}
                   variant="ghost"
                 >

@@ -115,7 +115,11 @@ export function Section({
 }: SectionProps) {
   return (
     <section
-      className={cn(panel ? 'rounded-2xl bg-muted/50 p-4 lg:p-6' : 'mt-6')}
+      className={cn(
+        panel
+          ? 'rounded-2xl border bg-card p-4 shadow-[var(--shadow)] lg:p-6 dark:shadow-none'
+          : 'mt-6'
+      )}
     >
       {(title || action) && (
         <div className="mb-4 flex items-center justify-between gap-2">

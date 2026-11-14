@@ -101,9 +101,7 @@ function WaitingTag({ requestId }: { requestId: string }) {
 
   if (!request.data) return null;
 
-  return (
-    <Badge variant="secondary">{waitingFor(request.data, user?.id)}</Badge>
-  );
+  return <StatusBadge status={waitingFor(request.data, user?.id)} />;
 }
 
 /** The shared record list: filters, optional stats, rows and trade page links. */
@@ -325,6 +323,7 @@ export function RecordList({
         <div className="mb-8">
           <StatGrid threeUp>
             <StatCard
+              tint="mint"
               label="Collection value"
               value={formatRand(toCents(totals.data?.value ?? '0'))}
               hint={caption}
@@ -333,6 +332,7 @@ export function RecordList({
               unavailable={totals.isError}
             />
             <StatCard
+              tint="peach"
               label="Material weight"
               value={formatKg(totals.data?.weight ?? '0')}
               hint={caption}
@@ -341,6 +341,7 @@ export function RecordList({
               unavailable={totals.isError}
             />
             <StatCard
+              tint="lilac"
               label="Collections"
               value={String(totals.data?.count ?? 0)}
               hint={caption}
