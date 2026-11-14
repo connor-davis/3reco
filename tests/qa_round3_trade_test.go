@@ -54,7 +54,7 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 			if test.full {
 				want = "62000111222"
 			}
-			if !bytes.Contains(pdf.Raw, inPDF(want)) || (!test.full && bytes.Contains(pdf.Raw, []byte("62000111222"))) {
+			if !pdfHas(t, pdf.Raw, want) || (!test.full && pdfHas(t, pdf.Raw, "62000111222")) {
 				t.Fatalf("wrong payout projection in PDF: want %s", want)
 			}
 			view := status(t, test.user.c.Do("GET", "/api/collectors/"+collector, nil), 200)
@@ -98,7 +98,7 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 			t.Fatal("invoice attachment missing")
 		}
 		attachment := round3MailPDF(t, test.buyer.email, number)
-		if bytes.Contains(attachment, []byte("62000111222")) != test.full {
+		if pdfHas(t, attachment, "62000111222") != test.full {
 			t.Fatal("email attachment has wrong recipient payout")
 		}
 		// Generate exercises the same recipient projection used by the attachment.
@@ -116,7 +116,7 @@ func TestRound3CollectorPayoutAccess(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if bytes.Contains(data.Bytes(), []byte("62000111222")) != test.full {
+		if pdfHas(t, data.Bytes(), "62000111222") != test.full {
 			t.Fatal("stored/email invoice has wrong recipient payout")
 		}
 	}
@@ -248,7 +248,7 @@ func TestRound3WalletPayoutAccess(t *testing.T) {
 			if full {
 				want = "0821112222"
 			}
-			if !bytes.Contains(pdf.Raw, inPDF(want)) || (!full && bytes.Contains(pdf.Raw, []byte("0821112222"))) {
+			if !pdfHas(t, pdf.Raw, want) || (!full && pdfHas(t, pdf.Raw, "0821112222")) {
 				t.Fatal("wallet PDF projection is wrong")
 			}
 			if user.id != login.id {
@@ -263,7 +263,7 @@ func TestRound3WalletPayoutAccess(t *testing.T) {
 		number := strings.ToUpper(id[len(id)-8:])
 		testutil.WaitMail(t, buyer.email, number)
 		attachment := round3MailPDF(t, buyer.email, number)
-		if !bytes.Contains(attachment, []byte("0821112222")) {
+		if !pdfHas(t, attachment, "0821112222") {
 			t.Fatal("wallet email projection is wrong")
 		}
 	}
@@ -393,11 +393,11 @@ func TestRound3BuyerManagerReadsFrozenPayoutOnInvoice(t *testing.T) {
 	path := "/api/transactions/" + got.Body["transaction_id"].(string) + "/invoice"
 
 	status(t, manager.c.Do("GET", path, nil), 200)
-	if pdf := manager.c.Do("GET", path, nil); !bytes.Contains(pdf.Raw, []byte("62000111222")) {
+	if pdf := manager.c.Do("GET", path, nil); !pdfHas(t, pdf.Raw, "62000111222") {
 		t.Error("buyer manager must read the payout whole on the invoice")
 	}
 
-	if pdf := member.c.Do("GET", path, nil); pdf.Status == 200 && bytes.Contains(pdf.Raw, []byte("62000111222")) {
+	if pdf := member.c.Do("GET", path, nil); pdf.Status == 200 && pdfHas(t, pdf.Raw, "62000111222") {
 		t.Error("buyer member must not read the whole payout")
 	}
 

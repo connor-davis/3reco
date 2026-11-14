@@ -4,9 +4,9 @@ go 1.27.1
 
 require (
 	github.com/fasthttp/websocket v1.5.12
-	github.com/go-pdf/fpdf v0.9.0
 	github.com/gofiber/contrib/v3/websocket v1.2.12
 	github.com/gofiber/fiber/v3 v3.6.1
+	github.com/gpdf-dev/gpdf v1.0.17
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/lmittmann/tint v1.2.1
 	github.com/minio/minio-go/v7 v7.4.1

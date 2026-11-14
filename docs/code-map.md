@@ -14,7 +14,7 @@ line when you add an owner.
 | Send email (Resend, or SMTP to Mailpit) and the action email template | `mail/mail.go` |
 | Bounded PNG/JPEG/WEBP byte sniffing and image size limits | `storage/image.go` (`Image`) |
 | Files in MinIO or S3: put, get, remove, presign | `storage/storage.go` |
-| A4 invoice layout, wrapping, pagination and exact decimal formatting (MIT-licensed go-pdf/fpdf) | `pdf/invoice.go` |
+| A4 invoice layout, wrapping, pagination and exact decimal formatting (MIT-licensed gpdf-dev/gpdf; Montserrat font and logo embedded from `pdf/assets`, OFL-1.1) | `pdf/invoice.go` |
 
 ## Database tables (`internal/platform/database/migrations`)
 

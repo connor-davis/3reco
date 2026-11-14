@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"bytes"
 	"net/url"
 	"testing"
 
@@ -43,10 +42,10 @@ func TestMoneyRoundsOnceAndAgreesEverywhere(t *testing.T) {
 	}
 
 	// The invoice PDF shows the same cents on the line and the total.
-	pdfText := w.buyer.c.Do("GET", "/api/transactions/"+id+"/invoice", nil)
-	tradeWant(t, "invoice", pdfText, 200)
+	invoicePDF := w.buyer.c.Do("GET", "/api/transactions/"+id+"/invoice", nil)
+	tradeWant(t, "invoice", invoicePDF, 200)
 
-	if !bytes.Contains(pdfText.Raw, []byte("0.13")) || bytes.Contains(pdfText.Raw, []byte("0.12")) {
+	if !pdfHas(t, invoicePDF.Raw, "0.13") || pdfHas(t, invoicePDF.Raw, "0.12") {
 		t.Errorf("invoice does not show 0.13 alone")
 	}
 
