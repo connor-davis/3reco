@@ -72,6 +72,7 @@ with sync_playwright() as p:
                 body = {'items': [], 'has_more': False, 'count': 0}
                 if path == '/auth/me': body = {'user': user}
                 elif path == '/auth/sessions': body = {'sessions': []}
+                elif path == '/businesses/mine': body = []
                 elif path == '/transactions/totals': body = {'count': 2, 'weight': '4', 'value': '32', 'carbon_savings': '1'}
                 elif path.startswith('/transactions/') and path.split('/')[-1] in ['Bought-invoice', 'Sold-invoice']: body = bought if path.endswith('Bought-invoice') else sold
                 elif path.startswith('/transactions'):
