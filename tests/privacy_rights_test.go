@@ -28,8 +28,9 @@ func TestPrivacyExportIsOwnDataOnly(t *testing.T) {
 	w := newTradeWorld(t)
 	stranger := tradeNewUser(t, w.app, "business")
 
-	status(t, w.seller.c.Do("PATCH", "/api/profile", map[string]any{
-		"id_number": "8001015009087", "bank_account_holder_name": "Holder", "bank_name": "Bank",
+	status(t, w.seller.c.Do("PATCH", "/api/profile", map[string]any{"id_number": "8001015009087"}), 200)
+	status(t, w.seller.c.Do("PATCH", "/api/business", map[string]any{
+		"bank_account_holder_name": "Holder", "bank_name": "Bank",
 		"bank_account_number": "62001234567", "bank_branch_code": "250655", "bank_account_type": "Savings",
 	}), 200)
 
@@ -105,7 +106,7 @@ func TestPrivacyDeleteAnonymisesAndCancels(t *testing.T) {
 	tradeNote(t, w, w.seller, "n1")
 	owned := privacyCollector(t, w.seller.c)
 
-	status(t, uploadImage(t, w.app, w.seller.c, "/api/profile/avatar", receiptImage(1)), 200)
+	status(t, uploadImage(t, w.app, w.seller.c, "/api/business/logo", receiptImage(1)), 200)
 	avatar := tradeText(t, w.app, `SELECT avatar_key FROM businesses WHERE id=$1`, w.seller.id)
 
 	if avatar == "" {

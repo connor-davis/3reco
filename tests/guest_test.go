@@ -84,18 +84,27 @@ func TestGuestIsBlockedUntilSetup(t *testing.T) {
 func fillProfile(t *testing.T, c *testutil.Client, business bool) {
 	t.Helper()
 
-	body := map[string]any{
+	person := map[string]any{
 		"name": "Zanele Dlamini", "first_name": "Zanele", "last_name": "Dlamini", "phone": "0821234567",
+	}
+	details := map[string]any{
 		"street_address": "1 Main Road", "city": "Pretoria", "province": "Gauteng", "area_code": 1234,
 		"bank_account_holder_name": "Z Dlamini", "bank_name": "FNB", "bank_account_number": "62123456789",
 		"bank_branch_code": "250655", "bank_account_type": "Savings",
 	}
-	if business {
-		body["business_name"] = "Zanele Recycling"
-		body["business_registration_number"] = "2020/123456/07"
+
+	// A business keeps its name, bank and place on the Business API; a collector
+	// keeps them on the profile.
+	if !business {
+		status(t, c.Do("PATCH", "/api/profile", merge(person, details)), 200)
+
+		return
 	}
 
-	status(t, c.Do("PATCH", "/api/profile", body), 200)
+	status(t, c.Do("PATCH", "/api/profile", person), 200)
+	details["business_name"] = "Zanele Recycling"
+	details["business_registration_number"] = "2020/123456/07"
+	status(t, c.Do("PATCH", "/api/business", details), 200)
 }
 
 func TestSetupChoosesRoleOnce(t *testing.T) {
