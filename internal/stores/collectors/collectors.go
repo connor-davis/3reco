@@ -20,6 +20,7 @@ type Collector struct {
 	ID                    string    `json:"id"`
 	CanEdit               bool      `json:"can_edit"`
 	CanViewPayout         bool      `json:"can_view_payout"`
+	CanEditPayout         bool      `json:"can_edit_payout"`
 	Name                  string    `json:"name"`
 	Email                 string    `json:"email,omitempty"`
 	Phone                 string    `json:"phone,omitempty"`
@@ -83,8 +84,8 @@ var columns = columnList("true", "true")
 
 // Viewer is who is reading, so Postgres can decide what may leave the
 // database. It repeats the service's rules: an admin or staff member, a
-// verified business, the creating business, or the collector's own login
-// (OwnPhone). Only an admin, a manager of a verified or the creating
+// verified business, any Owner or Manager of a business, the creating
+// business, or the collector's own login (OwnPhone). Only an admin, a manager of a verified or the creating
 // business, or the collector themself reads payout numbers whole.
 type Viewer struct {
 	ID           string
@@ -107,7 +108,7 @@ func (viewer Viewer) rights(first int) (manage, full string, args []any) {
 
 	own := `(` + phone + `<>'' AND normalized_phone=` + phone + `)`
 	full = `(` + admin + ` OR (` + manager + ` AND (` + verified + ` OR created_by_business_id=` + id + `)) OR ` + own + `)`
-	manage = `(` + admin + ` OR ` + staff + ` OR ` + verified + ` OR (` + business +
+	manage = `(` + admin + ` OR ` + staff + ` OR ` + manager + ` OR ` + verified + ` OR (` + business +
 		` AND created_by_business_id=` + id + `) OR ` + own + `)`
 
 	return manage, full, []any{viewer.ID, viewer.OwnPhone}

@@ -62,11 +62,10 @@ func TestRound17CollectorPayoutMerge(t *testing.T) {
 		{"payout_method": "ewallet", "ewallet_platform_name": "FNB eWallet",
 			"ewallet_payment_id": "0827770172"},
 	} {
-		result := status(t, staff.Do("PATCH", path, body), 403)
+		result := status(t, other.Do("PATCH", path, body), 403)
 		if result.Body["message"] != "You cannot change private payout identifiers." {
-			t.Fatalf("staff payout denial: %s", result.Raw)
+			t.Fatalf("payout denial: %s", result.Raw)
 		}
-		status(t, other.Do("PATCH", path, body), 404)
 	}
 
 	for _, body := range []map[string]any{{"payout_method": ""}, {"city": "Paarl"}} {

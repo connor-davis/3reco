@@ -14,7 +14,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ApiError } from '@/lib/api/client';
 import { useCreateCollector, useUpdateCollector } from '@/lib/api/collectors';
 import type { Collector, CollectorInput } from '@/lib/api/types';
-import { useAuth } from '@/lib/auth/use-auth';
 import { formatPhone } from '@/lib/format';
 
 const provinces = [
@@ -213,8 +212,8 @@ export function CollectorDialog(props: Props) {
 }
 
 function CollectorForm({ open, onOpenChange, collector }: Props) {
-  const { user } = useAuth();
-  const payoutReadOnly = !!collector && user?.role === 'staff';
+  // The server says who may change payout: the creator's team, staff and admin.
+  const payoutReadOnly = !!collector && !collector.can_edit_payout;
   const create = useCreateCollector();
   const update = useUpdateCollector(collector?.id ?? '');
   const [serverError, setServerError] = useState('');
@@ -326,7 +325,8 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
         >
           {payoutReadOnly && (
             <p className="text-sm text-muted-foreground sm:col-span-2">
-              Payout details are read-only for staff.
+              Payout details can only be changed by the business that added this
+              collector.
             </p>
           )}
           {payoutReadOnly && !collector?.payout_method ? (

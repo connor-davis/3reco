@@ -169,6 +169,7 @@ export interface Collector {
   id: string;
   can_edit: boolean;
   can_view_payout: boolean;
+  can_edit_payout: boolean;
   name: string;
   email?: string;
   phone?: string;
@@ -188,7 +189,10 @@ export interface Collector {
   created_at: string;
 }
 export type CollectorInput = Partial<
-  Omit<Collector, 'id' | 'created_at' | 'can_edit' | 'can_view_payout'>
+  Omit<
+    Collector,
+    'id' | 'created_at' | 'can_edit' | 'can_view_payout' | 'can_edit_payout'
+  >
 >;
 export interface CollectorStats {
   collector: Collector;

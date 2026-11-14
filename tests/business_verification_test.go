@@ -49,20 +49,18 @@ func (w verifyWorld) setVerified(t *testing.T, id string, verified bool) {
 	tradeWant(t, "verify", w.admin.c.Do("PUT", w.verifyURL(id), map[string]any{"verified": verified}), 200)
 }
 
-func TestUnverifiedBusinessSeesNothingOfOthers(t *testing.T) {
+func TestUnverifiedBusinessNeverGetsWholePayoutOfOthers(t *testing.T) {
 	w := newVerifyWorld(t)
 
 	for name, id := range map[string]string{"business": w.byBusiness, "staff": w.byStaff} {
 		got := status(t, w.bizB.c.Do("GET", "/api/collectors/"+id, nil), 200).Body
-		if shown(got, "email") || shown(got, "phone") || shown(got, "bank_name") {
-			t.Errorf("%s collector leaked contact: %v", name, got)
+		// Any business Owner sees contact and edits ordinary fields, never a whole payout.
+		if got["bank_account_number"] == "123456789" || got["can_edit"] != true ||
+			got["can_edit_payout"] == true || got["can_view_payout"] == true {
+			t.Errorf("%s collector: wrong rights for another business: %v", name, got)
 		}
 
-		if got["bank_account_number"] == "123456789" || got["can_edit"] == true || got["can_view_payout"] == true {
-			t.Errorf("%s collector leaked payout or edit rights: %v", name, got)
-		}
-
-		tradeWant(t, name+" edit", w.bizB.c.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Taken"}), 404)
+		tradeWant(t, name+" payout edit", w.bizB.c.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_name": "Taken"}), 403)
 	}
 }
 
@@ -88,8 +86,8 @@ func TestVerifiedBusinessSeesAndEditsEveryCollector(t *testing.T) {
 
 	// A different business that is still unverified gains nothing.
 	got := status(t, w.bizA.c.Do("GET", "/api/collectors/"+w.byStaff, nil), 200).Body
-	if shown(got, "email") || got["can_edit"] == true {
-		t.Errorf("unverified business A sees staff collector: %v", got)
+	if got["bank_account_number"] == "123456789" || got["can_view_payout"] == true {
+		t.Errorf("unverified business A sees a whole payout: %v", got)
 	}
 
 	// Verified stats and payout reads follow the same rule.
@@ -126,11 +124,12 @@ func TestUnverifyTakesAccessAwayAtOnce(t *testing.T) {
 	w.setVerified(t, w.bizB.id, false)
 
 	got := status(t, w.bizB.c.Do("GET", "/api/collectors/"+w.byStaff, nil), 200).Body
-	if shown(got, "email") || got["can_edit"] == true {
-		t.Errorf("access stayed after unverify: %v", got)
+	// Verification only ever widened payout rights; contact editing is for every business.
+	if got["bank_account_number"] == "123456789" || got["can_view_payout"] == true || got["can_edit_payout"] == true {
+		t.Errorf("payout access stayed after unverify: %v", got)
 	}
 
-	tradeWant(t, "edit", w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"name": "Again"}), 404)
+	tradeWant(t, "payout edit", w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"bank_name": "Again"}), 403)
 
 	// The admin list shows the state.
 	for _, row := range pageItems(t, status(t, w.admin.c.Do("GET", "/api/admin/users?role=business&limit=50", nil), 200)) {

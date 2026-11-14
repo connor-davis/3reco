@@ -22,8 +22,8 @@ func TestRound2CollectorPhoneSearch(t *testing.T) {
 	}
 
 	rows := pageItems(t, status(t, other.Do("GET", "/api/collectors?q=0820001010", nil), 200))
-	if len(rows) != 1 || rows[0]["phone"] != nil || rows[0]["email"] != nil {
-		t.Fatalf("another business saw contact details: %v", rows)
+	if len(rows) != 1 || rows[0]["phone"] == nil || rows[0]["bank_account_number"] == "123456789" {
+		t.Fatalf("another business's view: %v", rows)
 	}
 
 	status(t, collector.Do("GET", "/api/collectors?q=0820001010", nil), 403)

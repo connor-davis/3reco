@@ -193,10 +193,11 @@ func TestRound12CollectorPhonePartialSearch(t *testing.T) {
 		t.Fatalf("no-match search: %s", res.Raw)
 	}
 
-	// Another business finds the row but never its phone; a collector login is refused.
+	// Another business's Owner finds the row and its contact, never a whole payout;
+	// a collector login is refused.
 	rows := pageItems(t, status(t, other.Do("GET", "/api/collectors?q=082%20777", nil), 200))
-	if len(rows) != 1 || rows[0]["phone"] != nil || rows[0]["email"] != nil {
-		t.Fatalf("another business saw contact details: %v", rows)
+	if len(rows) != 1 || rows[0]["phone"] == nil || rows[0]["bank_account_number"] == "123456789" {
+		t.Fatalf("another business's view: %v", rows)
 	}
 
 	status(t, stranger.Do("GET", "/api/collectors?q=082%20777", nil), 403)
