@@ -62,6 +62,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
         ['dashboards'],
         ['stores'],
         ['auth'],
+        ['business'],
         ['collectors'],
       ];
     case 'material':

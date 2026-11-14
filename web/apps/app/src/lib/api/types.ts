@@ -46,8 +46,6 @@ export interface Profile {
   first_name: string;
   last_name: string;
   id_number: string;
-  business_name: string;
-  business_registration_number: string;
   bank_account_holder_name: string;
   bank_name: string;
   bank_account_number: string;
@@ -60,6 +58,26 @@ export interface Profile {
   profile_complete: boolean;
   agreed_to_terms: boolean;
 }
+/** Business name, bank and location. Returned by `/business`. */
+export interface BusinessProfile {
+  id: string;
+  business_name: string;
+  business_registration_number: string;
+  bank_account_holder_name: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_branch_code: string;
+  bank_account_type: string;
+  street_address: string;
+  city: string;
+  province: string;
+  area_code: number | null;
+  avatar_url: string;
+  can_edit: boolean;
+}
+export type BusinessInput = Partial<
+  Omit<BusinessProfile, 'id' | 'avatar_url' | 'can_edit'>
+>;
 export type ProfileInput = Partial<
   Omit<Profile, 'id' | 'email' | 'role' | 'avatar_url'>
 >;

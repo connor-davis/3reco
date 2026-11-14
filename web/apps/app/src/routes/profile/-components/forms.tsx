@@ -11,8 +11,9 @@ import { SelectField, TextField } from '@/components/form-fields';
 import { Button } from '@/components/ui/button';
 import { ButtonRow } from '@/components/button-row';
 import { ApiError } from '@/lib/api/client';
+import { useUpdateBusiness } from '@/lib/api/business';
 import { useUpdateProfile } from '@/lib/api/profile';
-import type { Profile } from '@/lib/api/types';
+import type { BusinessProfile, Profile } from '@/lib/api/types';
 import { formatPhone } from '@/lib/format';
 import { tidyName } from '@/lib/names';
 import {
@@ -34,15 +35,32 @@ type Props = {
   wizard?: boolean;
 };
 
+// The bank and location forms serve a collector's own profile and a
+// business's page; the business ones save to the Business API.
+type DetailsProps = Omit<Props, 'profile'> & {
+  profile: Profile | BusinessProfile;
+  business?: boolean;
+  // A Manager reads the business but cannot change it.
+  readOnly?: boolean;
+};
+
+function useSaveDetails(business?: boolean) {
+  const person = useUpdateProfile();
+  const company = useUpdateBusiness();
+  return business ? company : person;
+}
+
 function FormShell<T extends FieldValues>({
   form,
   onSave,
   wizard,
+  readOnly,
   children,
 }: {
   form: UseFormReturn<T>;
   onSave: (values: T) => Promise<unknown>;
   wizard?: boolean;
+  readOnly?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -80,7 +98,7 @@ function FormShell<T extends FieldValues>({
       })}
     >
       <fieldset
-        disabled={form.formState.isSubmitting}
+        disabled={form.formState.isSubmitting || readOnly}
         className="grid gap-4 sm:grid-cols-2"
       >
         {children}
@@ -90,30 +108,32 @@ function FormShell<T extends FieldValues>({
           {form.formState.errors.root.message}
         </p>
       )}
-      <ButtonRow>
-        {!wizard && (
+      {!readOnly && (
+        <ButtonRow>
+          {!wizard && (
+            <Button
+              className="min-h-11"
+              type="button"
+              variant="outline"
+              disabled={form.formState.isSubmitting}
+              onClick={() => form.reset()}
+            >
+              Cancel changes
+            </Button>
+          )}
           <Button
-            className="min-h-11"
-            type="button"
-            variant="outline"
+            className={wizard ? 'min-h-11 w-full' : 'min-h-11'}
+            type="submit"
             disabled={form.formState.isSubmitting}
-            onClick={() => form.reset()}
           >
-            Cancel changes
+            {form.formState.isSubmitting
+              ? 'Saving…'
+              : wizard
+                ? 'Continue'
+                : 'Save changes'}
           </Button>
-        )}
-        <Button
-          className={wizard ? 'min-h-11 w-full' : 'min-h-11'}
-          type="submit"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting
-            ? 'Saving…'
-            : wizard
-              ? 'Continue'
-              : 'Save changes'}
-        </Button>
-      </ButtonRow>
+        </ButtonRow>
+      )}
     </form>
   );
 }
@@ -186,8 +206,13 @@ export function PersonalForm({ profile, onSaved, wizard }: Props) {
   );
 }
 
-export function BusinessForm({ profile, onSaved, wizard }: Props) {
-  const save = useUpdateProfile();
+export function BusinessForm({
+  profile,
+  onSaved,
+  wizard,
+  readOnly,
+}: Omit<DetailsProps, 'business'> & { profile: BusinessProfile }) {
+  const save = useUpdateBusiness();
   const form = useForm<BusinessValues>({
     resolver: zodResolver(businessSchema),
     defaultValues: {
@@ -199,6 +224,7 @@ export function BusinessForm({ profile, onSaved, wizard }: Props) {
     <FormShell
       form={form}
       wizard={wizard}
+      readOnly={readOnly}
       onSave={async (values) => {
         await save.mutateAsync(values);
         await onSaved?.();
@@ -218,8 +244,14 @@ export function BusinessForm({ profile, onSaved, wizard }: Props) {
   );
 }
 
-export function PayoutForm({ profile, onSaved, wizard }: Props) {
-  const save = useUpdateProfile();
+export function PayoutForm({
+  profile,
+  onSaved,
+  wizard,
+  business,
+  readOnly,
+}: DetailsProps) {
+  const save = useSaveDetails(business);
   const form = useForm<BankValues>({
     resolver: zodResolver(bankSchema),
     defaultValues: {
@@ -235,6 +267,7 @@ export function PayoutForm({ profile, onSaved, wizard }: Props) {
     <FormShell
       form={form}
       wizard={wizard}
+      readOnly={readOnly}
       onSave={async ({ bank_account_number, ...values }) => {
         if (!bank_account_number && !profile.bank_account_number)
           throw new Error('Enter an account number.');
@@ -281,8 +314,14 @@ export function PayoutForm({ profile, onSaved, wizard }: Props) {
   );
 }
 
-export function LocationForm({ profile, onSaved, wizard }: Props) {
-  const save = useUpdateProfile();
+export function LocationForm({
+  profile,
+  onSaved,
+  wizard,
+  business,
+  readOnly,
+}: DetailsProps) {
+  const save = useSaveDetails(business);
   const form = useForm<LocationValues>({
     resolver: zodResolver(locationSchema),
     defaultValues: {
@@ -299,6 +338,7 @@ export function LocationForm({ profile, onSaved, wizard }: Props) {
     <FormShell
       form={form}
       wizard={wizard}
+      readOnly={readOnly}
       onSave={async ({ area_code, ...values }) => {
         await save.mutateAsync({ ...values, area_code: Number(area_code) });
         await onSaved?.();

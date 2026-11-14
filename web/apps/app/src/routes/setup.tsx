@@ -7,6 +7,7 @@ import { DataState } from '@/components/data-state';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useSignOut } from '@/lib/api/auth';
+import { useBusiness } from '@/lib/api/business';
 import { useFinishSetup, useProfile } from '@/lib/api/profile';
 import { isStaffRole } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -102,6 +103,7 @@ function Wizard({ fixed }: { fixed: Choice | null }) {
   const finish = useFinishSetup();
   const signOut = useSignOut();
   const profile = query.data;
+  const company = useBusiness(chosen === 'business').data;
 
   const steps: Step[] = [
     ...(fixed ? [] : (['type'] as Step[])),
@@ -199,14 +201,40 @@ function Wizard({ fixed }: { fixed: Choice | null }) {
               {step === 'personal' && (
                 <PersonalForm profile={profile} onSaved={next} wizard />
               )}
-              {step === 'business' && (
-                <BusinessForm profile={profile} onSaved={next} wizard />
-              )}
-              {step === 'bank' && (
-                <PayoutForm profile={profile} onSaved={next} wizard />
-              )}
-              {step === 'location' && (
-                <LocationForm profile={profile} onSaved={next} wizard />
+              {chosen === 'business' && step !== 'personal' ? (
+                // A business keeps its details on the Business API.
+                company && (
+                  <>
+                    {step === 'business' && (
+                      <BusinessForm profile={company} onSaved={next} wizard />
+                    )}
+                    {step === 'bank' && (
+                      <PayoutForm
+                        profile={company}
+                        business
+                        onSaved={next}
+                        wizard
+                      />
+                    )}
+                    {step === 'location' && (
+                      <LocationForm
+                        profile={company}
+                        business
+                        onSaved={next}
+                        wizard
+                      />
+                    )}
+                  </>
+                )
+              ) : (
+                <>
+                  {step === 'bank' && (
+                    <PayoutForm profile={profile} onSaved={next} wizard />
+                  )}
+                  {step === 'location' && (
+                    <LocationForm profile={profile} onSaved={next} wizard />
+                  )}
+                </>
               )}
             </div>
           )}

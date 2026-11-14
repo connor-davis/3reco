@@ -161,6 +161,12 @@ test('profile patches omit saved masked identifiers and preserve exact replaceme
   };
   const forms = load('../src/routes/profile/-components/forms.tsx', {
     'react-hook-form': { useForm: () => ({ control: {} }) },
+    '@/lib/api/business': {
+      useUpdateBusiness: () => ({}),
+      useBusiness: () => ({ data: { avatar_url: '' } }),
+      useUploadLogo: () => ({}),
+      useDeleteLogo: () => ({}),
+    },
     '@/lib/api/profile': {
       useUpdateProfile: () => ({
         mutateAsync: async (body) => writes.push(body),
@@ -218,6 +224,12 @@ test('a rejected profile save keeps the form dirty and never reports success', a
       }),
     },
     sonner: { toast: { success: (message) => successes.push(message) } },
+    '@/lib/api/business': {
+      useUpdateBusiness: () => ({}),
+      useBusiness: () => ({ data: { avatar_url: '' } }),
+      useUploadLogo: () => ({}),
+      useDeleteLogo: () => ({}),
+    },
     '@/lib/api/profile': {
       useUpdateProfile: () => ({
         mutateAsync: async () => {
@@ -303,6 +315,12 @@ test('avatar rejects oversized files and only reports success after the upload h
       useEffect: (effect) => cleanup.push(effect()),
     },
     sonner: { toast: { success: (message) => successes.push(message) } },
+    '@/lib/api/business': {
+      useUpdateBusiness: () => ({}),
+      useBusiness: () => ({ data: { avatar_url: '' } }),
+      useUploadLogo: () => ({}),
+      useDeleteLogo: () => ({}),
+    },
     '@/lib/api/profile': { useProfile: () => ready({ avatar_url: '' }) },
     '@/lib/api/avatar': {
       useUploadAvatar: () => mutation,
