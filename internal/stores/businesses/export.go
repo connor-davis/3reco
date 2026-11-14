@@ -20,7 +20,7 @@ var exportQueries = []struct{ name, sql string }{
 			'offer_weight', i.offer_weight, 'offer_price', i.offer_price) ORDER BY i.position), '[]'::jsonb)
 			FROM transaction_request_items i WHERE i.request_id = r.id) AS items
 		FROM transaction_requests r WHERE r.buyer_id=$1 OR r.seller_id=$1 ORDER BY r.created_at`},
-	{"transactions", `SELECT t.id, t.type, t.status, t.seller_id, t.buyer_id, t.total_price,
+	{"transactions", `SELECT t.id, t.type, t.status, t.duplicate_of, t.seller_id, t.buyer_id, t.total_price,
 		t.collection_date, t.created_at,
 		(SELECT COALESCE(jsonb_agg(jsonb_build_object('material_id', i.material_id,
 			'weight', i.weight, 'price', i.price) ORDER BY i.position), '[]'::jsonb)

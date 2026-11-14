@@ -23,6 +23,11 @@ func New(s *svc.Service) *Handler { return &Handler{svc: s} }
 func (h *Handler) Register(api fiber.Router) {
 	admin := middleware.RequireRole(auth.RoleAdmin)
 
+	api.Get("/admin/duplicates", admin, h.duplicates)
+	api.Post("/admin/duplicates/dismiss", admin, h.dismissDuplicates)
+	api.Post("/admin/duplicates/:id/mark", admin, h.markDuplicate)
+	api.Post("/admin/duplicates/:id/undo", admin, h.undoDuplicate)
+
 	api.Get("/admin/users", admin, h.users)
 	api.Delete("/admin/users/:id", admin, h.remove)
 	api.Patch("/admin/users/:id/role", admin, h.setRole)
