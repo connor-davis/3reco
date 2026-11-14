@@ -207,6 +207,7 @@ func (s *Service) settle(
 // CollectionInput is what a collector sale needs. CollectionDate is when the
 // material was collected; CollectionDay is the same as a plain calendar day.
 type CollectionInput struct {
+	IdempotencyKey string     `json:"-"`
 	CollectorID    string     `json:"collector_id"`
 	BusinessID     string     `json:"business_id"`
 	Items          []SaleItem `json:"items"`
@@ -253,7 +254,21 @@ func (s *Service) CollectorSale(
 	var id string
 
 	err = s.db.InTx(ctx, func(ctx context.Context) error {
+		if in.IdempotencyKey != "" {
+			if len(in.IdempotencyKey) > 200 {
+				return apperr.BadRequest("The collection key is too long.", nil)
+			}
+
+			id, err = s.store.CollectionKey(ctx, user.ID, in.IdempotencyKey)
+			if err != nil || id != "" {
+				return err
+			}
+		}
+
 		id, err = s.collect(ctx, buyerID, in)
+		if err == nil && in.IdempotencyKey != "" {
+			err = s.store.SaveCollectionKey(ctx, user.ID, in.IdempotencyKey, id)
+		}
 
 		return err
 	})

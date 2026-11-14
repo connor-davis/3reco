@@ -30,8 +30,8 @@ func (f ListFilter) parse() (store.Filter, error) {
 
 	out.Recorded = f.Order == "recorded"
 
-	if f.Status != "" && f.Status != "complete" && f.Status != "pending" {
-		return out, apperr.BadRequest("Use complete or pending for status.", nil)
+	if f.Status != "" && f.Status != "complete" && f.Status != "pending" && f.Status != "duplicate" {
+		return out, apperr.BadRequest("Use complete, pending or duplicate for status.", nil)
 	}
 
 	if f.Type != "" && f.Type != "b2b" && f.Type != "c2b" {

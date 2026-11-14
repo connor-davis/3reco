@@ -310,7 +310,8 @@ export interface TransactionTotals {
 }
 export interface Transaction {
   can_remove_receipts: boolean;
-  status: 'pending' | 'complete' | 'cancelled';
+  status: 'pending' | 'complete' | 'cancelled' | 'duplicate';
+  duplicate_of: string | null;
   request_id: string | null;
   id: string;
   type: 'c2b' | 'b2b';

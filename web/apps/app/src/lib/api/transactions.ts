@@ -1,8 +1,8 @@
 import { useResource, useWrite, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
-import { useMutation } from '@tanstack/react-query';
-import { api, download } from './client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api, download, json } from './client';
 
 export function useTransactions(
   kind: 'mine' | 'purchases' | 'sales' = 'mine',
@@ -36,11 +36,27 @@ export function useTransaction(id: string) {
   );
 }
 export function useCreateCollection() {
-  return useWrite<T.CollectionInput, T.TransactionCreated>(
-    '/transactions/collections',
-    'POST',
-    [['transactions'], ['stock'], ['dashboards'], ['stats'], ['collectors']]
-  );
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      idempotencyKey,
+      ...body
+    }: T.CollectionInput & { idempotencyKey: string }) =>
+      api<T.TransactionCreated>('/transactions/collections', {
+        ...json('POST', body),
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+      }),
+    onSuccess: async () => {
+      await Promise.all(
+        ['transactions', 'stock', 'dashboards', 'stats', 'collectors'].map(
+          (key) => client.invalidateQueries({ queryKey: [key] })
+        )
+      );
+    },
+  });
 }
 export function useCreateSale() {
   return useWrite<T.SaleInput, T.TransactionCreated>(

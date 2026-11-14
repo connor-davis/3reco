@@ -1,6 +1,6 @@
 import { format as dateKey } from 'date-fns';
 import { stockLimit } from '@/lib/limits';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   CalendarIcon,
@@ -163,6 +163,11 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const [businessQuery, setBusinessQuery] = useState('');
   // Searching swaps the list, so remember every business seen to keep the pick.
   const seen = useRef(new Map<string, string>());
+  const collectionKey = useRef('');
+  const saving = useRef(false);
+  useEffect(() => {
+    if (open) collectionKey.current = crypto.randomUUID();
+  }, [open]);
   const businesses = useStores(
     { limit: 50, q: businessQuery.trim() || undefined },
     // ponytail: one request per keystroke; add a debounce if it gets chatty.
@@ -250,6 +255,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   }
 
   async function onSubmit(values: Values) {
+    if (saving.current) return;
     setServerError('');
 
     if (businessMissing(values, chooseBusiness)) {
@@ -258,13 +264,16 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     }
 
     let id: string;
+    saving.current = true;
 
     try {
-      const created = await create.mutateAsync(
-        collectionBody(values, chooseBusiness)
-      );
+      const created = await create.mutateAsync({
+        ...collectionBody(values, chooseBusiness),
+        idempotencyKey: collectionKey.current,
+      });
       id = created.transaction_id;
     } catch (error) {
+      saving.current = false;
       setServerError(errorText(error));
       return;
     }
@@ -282,6 +291,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
     }
 
     setUploading(false);
+    saving.current = false;
 
     if (failed.length > 0) {
       toast.warning(

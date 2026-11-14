@@ -4,6 +4,7 @@ package invoices
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/fx"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
@@ -186,6 +188,9 @@ func (s *Service) Generate(ctx context.Context, id string, notify bool) error {
 
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
 		old, err := s.store.LockInvoice(ctx, id)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -278,6 +283,13 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 	trade, err := s.trades.Detail(ctx, user, id)
 	if err != nil {
 		return nil, "", err
+	}
+
+	if trade.Status == "duplicate" {
+		return nil, "", &apperr.Error{
+			Status: 410, Code: "invoice_void",
+			Message: "This trade was marked as a duplicate, so its invoice is void.",
+		}
 	}
 
 	if trade.Status != "complete" {

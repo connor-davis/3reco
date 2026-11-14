@@ -52,6 +52,19 @@ await fetch(`/api/admin/users/${userId}`, { method: 'DELETE', credentials: 'incl
   An admin cannot change their own role or remove their own account. The server refuses both with `403 forbidden`.
 </Callout>
 
+## Duplicate trades
+
+Open **Duplicates** in the admin Workspace to compare matching trades. The page
+suggests the oldest record as the original. Check dates, materials, amounts and
+receipts before choosing **Mark as duplicate**. Only exact collector trade copies
+can be marked. A real repeat delivery can be dismissed with **Not a duplicate**.
+
+Marking keeps the trade and receipts, voids its invoice, removes its weight from
+the buyer's available stock, and excludes it from ordinary lists and totals. If
+the stock has already been used, marking is refused. **Undo** restores the trade
+and stock. These changes are recorded in the Activity log. Only admins can use
+this page; staff cannot.
+
 ## Material Management
 
 Materials are the platform's reference data — without materials, no stock can be listed. Admin/staff manage this catalogue:

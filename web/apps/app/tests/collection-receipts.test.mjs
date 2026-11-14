@@ -59,6 +59,7 @@ function mount({ failing = [] } = {}) {
           return [slots[slot], (next) => (slots[slot] = next)];
         },
         useRef: (value) => ({ current: value }),
+        useEffect: () => {},
       },
       sonner: {
         toast: {

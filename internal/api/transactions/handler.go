@@ -118,6 +118,7 @@ func (h *Handler) collection(c fiber.Ctx) error {
 		return err
 	}
 
+	in.IdempotencyKey = c.Get("Idempotency-Key")
 	id, err := h.svc.CollectorSale(c.Context(), caller(c), in)
 	if err != nil {
 		return err

@@ -97,6 +97,11 @@ function roleNav(role: Role | null): NavGroup[] {
             ...staffWorkspace,
             { label: 'User management', to: '/admin/users', icon: Users },
             { label: 'Activity log', to: '/admin/activity', icon: History },
+            {
+              label: 'Duplicates',
+              to: '/admin/duplicates',
+              icon: ClipboardList,
+            },
           ],
         },
       ];
@@ -281,6 +286,7 @@ const guardedPairs: Record<string, PageId> = {
   'transactions/sales': 'sales',
   'admin/users': 'users',
   'admin/activity': 'activity',
+  'admin/duplicates': 'duplicates',
 };
 const guardedSingles: Record<string, PageId> = {
   '': 'dashboard',
@@ -321,6 +327,7 @@ export function pageTitleFor(pathname: string, role?: Role | null): string {
     return 'Not available';
 
   if (first === 'admin' && second === 'activity') return 'Activity log';
+  if (first === 'admin' && second === 'duplicates') return 'Duplicates';
   if (first === 'market' && second === 'incoming') return 'Incoming requests';
   if (first === 'market' && second === 'outgoing') return 'Outgoing requests';
   if (isRequestPath(pathname)) return 'Messages';

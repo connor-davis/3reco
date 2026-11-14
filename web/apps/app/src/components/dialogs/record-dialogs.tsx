@@ -108,7 +108,9 @@ export function TradeDetail({ record }: Props) {
                       ? 'Complete'
                       : shown.status === 'pending'
                         ? 'Pending'
-                        : 'Cancelled'
+                        : shown.status === 'duplicate'
+                          ? 'Duplicate'
+                          : 'Cancelled'
                   }
                 />
                 <Badge variant="outline">
