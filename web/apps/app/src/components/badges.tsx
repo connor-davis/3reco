@@ -10,32 +10,8 @@ import {
 import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
 import type { Party, RequestStatus } from '@/lib/api/types';
-import { requestStatuses } from '@/lib/request-status';
+import { requestStatuses, statusTint } from '@/lib/request-status';
 import { tradeTypeLabel, type TradeType } from '@/lib/trade-type';
-
-type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
-
-const statusVariant: Record<string, BadgeVariant> = {
-  Paid: 'default',
-  Completed: 'default',
-  Accepted: 'default',
-  Invoiced: 'default',
-  Pending: 'secondary',
-  Requested: 'secondary',
-  'Offer sent': 'secondary',
-  Counter: 'secondary',
-  Rejected: 'destructive',
-  Cancelled: 'destructive',
-  Incomplete: 'outline',
-  Complete: 'default',
-};
-
-const dotColour: Record<BadgeVariant, string> = {
-  default: 'bg-primary',
-  secondary: 'bg-muted-foreground',
-  outline: 'bg-muted-foreground',
-  destructive: 'bg-destructive',
-};
 
 /** One dot and word for every deal, payment and profile status (design 05). */
 export function StatusBadge({
@@ -48,7 +24,14 @@ export function StatusBadge({
   const requestStatus = Object.hasOwn(requestStatuses, status)
     ? requestStatuses[status as RequestStatus]
     : undefined;
-  const variant = requestStatus?.variant ?? statusVariant[status] ?? 'outline';
+  const variant = statusTint(status);
+  const dotColour = {
+    mint: 'bg-mint-ink',
+    butter: 'bg-butter-ink',
+    peach: 'bg-peach-ink',
+    sky: 'bg-sky-ink',
+    rose: 'bg-rose-ink',
+  }[variant];
 
   if (dotOnly)
     return (
@@ -56,20 +39,14 @@ export function StatusBadge({
         role="img"
         aria-label={requestStatus?.label ?? status}
         title={requestStatus?.label ?? status}
-        className={cn(
-          'inline-block size-1.5 shrink-0 rounded-full',
-          dotColour[variant]
-        )}
+        className={cn('inline-block size-1.5 shrink-0 rounded-full', dotColour)}
       />
     );
 
   return (
-    <Badge
-      variant={variant === 'destructive' ? 'destructive' : 'outline'}
-      className="gap-2 border-transparent bg-transparent px-0 dark:bg-transparent"
-    >
+    <Badge variant={variant} className="gap-1 px-1.5">
       <span
-        className={cn('size-2 rounded-full', dotColour[variant])}
+        className="size-1.5 shrink-0 rounded-full bg-current"
         aria-hidden="true"
       />
       {requestStatus?.label ?? status}

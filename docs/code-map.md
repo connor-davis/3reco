@@ -359,3 +359,5 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 
 `web/apps/app/src/routes/transactions/index.tsx` owns the unified business All/Bought/Sold list and matching export selection; `purchases.tsx` and `sales.tsx` retain legacy bookmarks and collector sales. `-components/record-list.tsx` renders direction labels and filters.
 `tests/transactions_filters_test.go` owns business direction scopes and export permissions, including members and other businesses. `web/apps/app/tests/transactions-page.test.mjs` and `transactions-render.test.mjs` cover navigation, filter validation, matching exports, redirects and light/dark phone/desktop rendering.
+
+`web/apps/app/src/index.css` owns the look D light/dark surfaces, pastel pairs and radii; `web/apps/app/tests/look-d-tokens.test.mjs` checks contrast. `web/apps/app/src/components/stat-card.tsx` owns tinted dashboard and transaction summary tiles. `web/apps/app/src/lib/request-status.ts` owns the status-to-tint map, rendered by `web/apps/app/src/components/badges.tsx` with pastel variants in `web/apps/app/src/components/ui/badge-variants.ts`.

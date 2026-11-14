@@ -30,7 +30,7 @@ export function Topbar({ onSearch }: TopbarProps) {
     <header
       className={cn(
         'sticky top-0 z-20 flex h-14 items-center gap-2 border-b px-4 sm:px-6',
-        'bg-background/80 backdrop-blur-xl'
+        'bg-card'
       )}
     >
       {/* Phones and tablets: the page has its own heading, so show the logo,
@@ -55,10 +55,11 @@ export function Topbar({ onSearch }: TopbarProps) {
         </Link>
       ) : null}
 
-      <div className="ml-auto flex shrink-0 items-center gap-1">
+      {/* Phones keep the icons plain so the business name has room. */}
+      <div className="ml-auto flex shrink-0 items-center gap-1 max-md:[&_:is(button,a)]:border-transparent max-md:[&_:is(button,a)]:bg-transparent">
         <Button
           variant="secondary"
-          className="hidden min-w-48 justify-between min-[1020px]:inline-flex"
+          className="hidden min-w-48 justify-between rounded-lg border bg-inner min-[1020px]:inline-flex"
           onClick={onSearch}
         >
           <span className="flex items-center gap-2 text-muted-foreground">
@@ -69,6 +70,7 @@ export function Topbar({ onSearch }: TopbarProps) {
         </Button>
         <IconButton
           label="Search"
+          variant="outline"
           className="min-[1020px]:hidden"
           onClick={onSearch}
         >

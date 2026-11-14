@@ -31,7 +31,7 @@ export function NotificationTray() {
       {unread > 0 && (
         <span
           aria-hidden="true"
-          className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary ring-2 ring-background"
+          className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary ring-2 ring-card"
         />
       )}
     </span>
@@ -42,7 +42,11 @@ export function NotificationTray() {
   if (isMobile) {
     return (
       <>
-        <IconButton label={label} onClick={() => setOpen(true)}>
+        <IconButton
+          variant="outline"
+          label={label}
+          onClick={() => setOpen(true)}
+        >
           {bell}
         </IconButton>
         <Sheet open={open} onOpenChange={setOpen}>
@@ -76,7 +80,7 @@ export function NotificationTray() {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<IconButton label={label} />}>
+      <PopoverTrigger render={<IconButton variant="outline" label={label} />}>
         {bell}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 gap-0 p-0">

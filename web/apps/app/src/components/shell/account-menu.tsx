@@ -57,7 +57,7 @@ export function AccountMenu() {
         render={
           <Button
             variant="ghost"
-            className="h-auto gap-2 px-2 py-1 max-lg:min-h-11"
+            className="h-auto gap-2 rounded-[14px] border px-2 py-1 max-lg:min-h-11"
             aria-label="Account menu"
           />
         }

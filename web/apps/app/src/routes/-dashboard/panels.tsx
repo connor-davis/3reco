@@ -112,10 +112,10 @@ export function QuickLinks({
     <div className="grid grid-cols-1 gap-2 has-[>:nth-child(2)]:grid-cols-2 has-[>:nth-child(3)]:grid-cols-3">
       {links.map(({ to, label, icon: Icon }) => (
         <LinkButton
-          className="h-auto min-h-16 min-w-0 flex-col gap-2 px-1 py-3 text-center text-xs whitespace-nowrap sm:text-sm"
+          className="h-auto min-h-16 rounded-xl bg-card hover:bg-inner min-w-0 flex-col gap-2 px-1 py-3 text-center text-xs whitespace-nowrap sm:text-sm"
           key={to}
           to={to}
-          variant="secondary"
+          variant="outline"
           size="lg"
         >
           <Icon data-icon="inline-start" />
@@ -259,11 +259,11 @@ export function NeedsAttention({ collector }: { collector: boolean }) {
           emptyTitle="You're up to date"
           emptyText="New messages and offers will appear here."
         >
-          <ul className="divide-y">
+          <ul className="space-y-2">
             {waiting.slice(0, 3).map((thread) => (
               <li key={thread.request_id}>
                 <LinkButton
-                  className="min-h-14 w-full justify-start whitespace-normal text-left"
+                  className="min-h-14 w-full justify-start rounded-lg border bg-inner whitespace-normal text-left"
                   to={'/messages/' + thread.request_id}
                   variant="ghost"
                 >

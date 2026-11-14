@@ -174,16 +174,19 @@ function Dashboard() {
           <>
             <StatGrid threeUp>
               <StatCard
+                tint="mint"
                 label={collector ? 'Collected' : 'Material traded'}
                 value={formatKg(dashboard.totals.weight)}
                 icon={Boxes}
               />
               <StatCard
+                tint="peach"
                 label={collector ? 'Earned' : 'Trade value'}
                 value={formatRand(toCents(dashboard.totals.value))}
                 icon={Receipt}
               />
               <StatCard
+                tint="lilac"
                 label={collector ? 'Collections' : 'Settled trades'}
                 value={String(dashboard.totals.count)}
                 icon={ClipboardList}

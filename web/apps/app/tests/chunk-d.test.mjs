@@ -147,7 +147,8 @@ test('renaming a collector preserves server totals and distinct partners with id
   });
   const html = renderToStaticMarkup(React.createElement(page.Route.component));
   assert.ok(html.includes('R 12 345.67'));
-  assert.ok(html.includes('2 345.5 kg'));
+  // The stat tile lets the unit wrap on phones, so it follows a plain space.
+  assert.match(html, /2 345\.5 kg/);
   assert.equal((html.match(/Same name/g) ?? []).length, 2);
 });
 

@@ -154,7 +154,7 @@ test('Panel delegates headings and right-side actions to Section', () => {
   assert.equal(panel.props.action, 'See all');
   assert.match(
     source('components/page-header.tsx'),
-    /rounded-2xl bg-muted\/50 p-4 lg:p-6/
+    /rounded-2xl border bg-card p-4 shadow-\[var\(--shadow\)\] lg:p-6 dark:shadow-none/
   );
 });
 

@@ -12,6 +12,7 @@ export function HeaderCart() {
 
   return (
     <IconButton
+      variant="outline"
       label={count > 0 ? `Cart, ${plural(count, 'item')}` : 'Cart'}
       className="relative"
       nativeButton={false}

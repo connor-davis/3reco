@@ -96,7 +96,7 @@ export function DataTable<T>({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl bg-muted/50">
+    <section className="overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow)] dark:shadow-none">
       <div className="min-w-0">
         <Table>
           <TableHeader>
@@ -115,7 +115,7 @@ export function DataTable<T>({
                         : undefined
                     }
                     className={cn(
-                      'h-11 bg-transparent text-xs font-medium text-muted-foreground',
+                      'h-11 border-y bg-inner text-[10px] font-medium tracking-[0.05em] text-muted-foreground uppercase',
                       edge(header.index, group.headers.length),
                       header.column.columnDef.meta?.main
                         ? 'w-full max-w-0'
@@ -228,7 +228,10 @@ function SortButton({ direction, onClick, children, align }: SortButtonProps) {
     <Button
       variant="ghost"
       size="sm"
-      className={align === 'right' ? '-mr-3' : '-ml-3'}
+      className={cn(
+        'text-[length:inherit]',
+        align === 'right' ? '-mr-3' : '-ml-3'
+      )}
       onClick={onClick}
     >
       {children}

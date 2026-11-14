@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   Card,
@@ -9,6 +10,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 type StatCardProps = {
+  tint?: 'mint' | 'peach' | 'lilac' | 'sky';
   label: string;
   value: string;
   hint?: string;
@@ -20,6 +22,7 @@ type StatCardProps = {
 
 /** One number tile. Shows a skeleton while loading and a dash if it failed. */
 export function StatCard({
+  tint = 'mint',
   label,
   value,
   hint,
@@ -28,19 +31,32 @@ export function StatCard({
   unavailable = false,
 }: StatCardProps) {
   return (
-    <Card className="@container gap-1 bg-muted py-5 ring-0 max-sm:[--card-spacing:--spacing(3)]">
+    <Card
+      style={
+        {
+          '--tint': `var(--${tint})`,
+          '--ink': `var(--${tint}-ink)`,
+        } as CSSProperties
+      }
+      className="@container relative isolate gap-1 py-5 after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:-z-10 after:w-3/5 after:bg-[radial-gradient(circle_at_100%_0,var(--tint)_0,transparent_70%)] max-sm:[--card-spacing:--spacing(3)]"
+    >
       <CardHeader>
-        <CardDescription className="flex items-center gap-2 text-xs lg:text-sm [&>svg]:max-lg:hidden">
-          {Icon && <Icon className="size-4" aria-hidden="true" />}
+        <CardDescription className="flex items-center gap-2 text-xs lg:text-sm">
+          {Icon && (
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[var(--tint)] text-[var(--ink)] max-lg:hidden">
+              <Icon className="size-4" aria-hidden="true" />
+            </span>
+          )}
           {label}
         </CardDescription>
-        <CardTitle className="text-[clamp(0.75rem,6cqi,1.875rem)] font-semibold tracking-tight whitespace-nowrap tabular-nums">
+        <CardTitle className="text-[clamp(0.75rem,6cqi,1.875rem)] font-semibold tracking-tight tabular-nums sm:whitespace-nowrap">
           {isLoading ? (
             <Skeleton className="h-8 w-24" />
           ) : unavailable ? (
             '—'
           ) : (
-            value
+            // On a narrow phone tile the unit may drop to its own line.
+            value.replace(/\u00a0(?=\D+$)/, ' ')
           )}
         </CardTitle>
       </CardHeader>
