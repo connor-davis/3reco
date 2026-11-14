@@ -228,7 +228,9 @@ export function RecordList({
               ? 'Complete'
               : row.original.status === 'pending'
                 ? 'Pending'
-                : 'Cancelled'
+                : row.original.status === 'duplicate'
+                  ? 'Duplicate'
+                  : 'Cancelled'
           }
         />
       ),
@@ -367,6 +369,7 @@ export function RecordList({
             options={[
               { value: 'complete', label: 'Complete' },
               { value: 'pending', label: 'Pending' },
+              { value: 'duplicate', label: 'Duplicates' },
             ]}
           />
         )}
@@ -492,7 +495,9 @@ export function RecordList({
                         ? 'Complete'
                         : row.status === 'pending'
                           ? 'Pending'
-                          : 'Cancelled'
+                          : row.status === 'duplicate'
+                            ? 'Duplicate'
+                            : 'Cancelled'
                     }
                   />
                   <Badge variant="outline" className="h-5 px-2 text-xs">

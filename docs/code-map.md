@@ -3,6 +3,20 @@
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
 
+## Duplicate trade review
+
+| Job | Owner |
+| --- | --- |
+| Duplicate state, dismissal history, audit/live dismissal events and caller-scoped 24-hour collection keys | `internal/platform/database/migrations/0030_duplicate_trades.sql` |
+| Live numeric multiset matching, ordered trade locks, mark metadata and dismissal persistence | `internal/stores/admin/duplicates.go` |
+| Admin-only review, exact c2b confirmation, stock Take/Give with audit entries and atomic undo | `internal/services/admin/duplicates.go` |
+| Admin review, mark, undo and dismissal HTTP handlers | `internal/api/admin/duplicates.go`; registration in `handler.go` |
+| Collection key reservation, unique-key serialization and saved result | `internal/stores/transactions/idempotency.go`; service integration in `internal/services/transactions/sales.go` |
+| Side-by-side review, marked copies, loading/empty/error and decisions | `web/apps/app/src/routes/admin/duplicates.tsx`, `src/lib/api/duplicates.ts` |
+| Collection dialog opening key and retry preservation | `web/apps/app/src/components/dialogs/collection-dialog.tsx`, `src/lib/api/transactions.ts` |
+| Matching, dismissal, mark/undo, access, stock/audit, invoices, read surfaces and idempotency regression | `tests/duplicates_test.go` |
+| Admin guards, live invalidation, collection header and responsive review/dialog browser regression | `web/apps/app/tests/duplicates.test.mjs`, `duplicates-render.test.mjs` |
+
 ## Platform (`internal/platform`)
 
 | Job | Owner |

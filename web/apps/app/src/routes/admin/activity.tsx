@@ -35,6 +35,7 @@ const tableNames: Record<string, string> = {
   materials: 'Material',
   stock: 'Stock',
   transactions: 'Transaction',
+  duplicate_dismissals: 'Duplicate review',
   transaction_items: 'Transaction item',
   transaction_receipts: 'Receipt',
   transaction_requests: 'Request',
