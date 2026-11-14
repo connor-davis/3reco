@@ -100,7 +100,10 @@ test('only a loaded business account gets the header cart component', () => {
       const { Topbar } = compile('components/shell/topbar.tsx', {
         '@tanstack/react-router': { useRouterState: () => '/market' },
         '@/lib/auth/use-auth': {
-          useAuth: () => ({ user: role ? { role } : null, isLoading }),
+          useAuth: () => ({
+            user: role ? { role, active_business_id: 'business-a' } : null,
+            isLoading,
+          }),
         },
         '@/lib/nav': {
           pageTitleFor: () => 'Browse materials',
@@ -111,6 +114,10 @@ test('only a loaded business account gets the header cart component', () => {
       const tree = nodes(Topbar({ onSearch: () => {} }));
       assert.equal(
         tree.some((node) => node.type === 'HeaderCart'),
+        role === 'business' && !isLoading
+      );
+      assert.equal(
+        tree.some((node) => node.type === 'WorkspacePicker'),
         role === 'business' && !isLoading
       );
     }

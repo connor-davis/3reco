@@ -124,6 +124,7 @@ test('qa-round6-ui: seller reviews, staff collector actions and shell controls m
   );
   assert.doesNotMatch(source('components/shell/topbar.tsx'), /Breadcrumb/);
   assert.match(source('components/shell/topbar.tsx'), /!user \? \(/);
+  assert.match(source('components/shell/topbar.tsx'), /hasWorkspace &&/);
   assert.match(
     source('routes/profile/-components/sessions-panel.tsx'),
     /roleLabel\(session.role\)/

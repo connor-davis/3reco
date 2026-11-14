@@ -120,7 +120,7 @@ export function useSessions() {
   });
 }
 
-function useAuthMutation<Input, Output>(
+export function useAuthMutation<Input, Output>(
   path: string | ((input: Input) => string),
   method = 'POST',
   body: (input: Input) => unknown = (input) => input

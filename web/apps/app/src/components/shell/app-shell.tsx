@@ -109,7 +109,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 setSearchOpen(true);
               }}
             />
-            <div className={cn('w-full flex-1', chat ? chatPad : pagePad)}>
+            {/* Workspace changes also clear local forms and mounted query observers. */}
+            <div
+              key={`${user?.active_business_id ?? ''}:${user?.business_role ?? ''}`}
+              className={cn('w-full flex-1', chat ? chatPad : pagePad)}
+            >
               {children}
             </div>
           </SidebarInset>

@@ -1,14 +1,11 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 import { Info } from 'lucide-react';
-import { BrandLogo } from '@/components/brand-logo';
-import { PersonAvatar } from '@/components/visuals';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
   SidebarMenuButton,
@@ -17,7 +14,6 @@ import {
 import { isRequestPath, navFor, type NavLink } from '@/lib/nav';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useBadgeCounts } from './use-badge-counts';
-import { cn } from '@/lib/utils';
 
 /** Which link is "current" for a path. Browse and Messages cover several routes. */
 function isActive(to: string, pathname: string): boolean {
@@ -39,14 +35,6 @@ function isActive(to: string, pathname: string): boolean {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
-const subtitles = {
-  business: 'Business workspace',
-  collector: 'Collector account',
-  admin: 'Admin workspace',
-  staff: 'Staff workspace',
-  guest: 'New account',
-} as const;
-
 export function AppSidebar() {
   const { user } = useAuth();
   const role = user?.role ?? null;
@@ -64,29 +52,6 @@ export function AppSidebar() {
       collapsible="none"
       className="sticky top-0 h-svh w-60 shrink-0 border-r max-lg:hidden"
     >
-      <SidebarHeader className="gap-3">
-        <Link
-          to="/"
-          className={cn(
-            'flex items-center gap-2 rounded-md px-2 py-1 text-lg font-semibold',
-            'outline-none focus-visible:ring-2 focus-visible:ring-ring'
-          )}
-        >
-          <BrandLogo className="h-12" />
-        </Link>
-        {user && (
-          <div className="flex items-center gap-2 px-2">
-            <PersonAvatar name={user.name} />
-            <div className="min-w-0 text-sm">
-              <p className="truncate font-medium">{user.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {role ? subtitles[role] : 'Account'}
-              </p>
-            </div>
-          </div>
-        )}
-      </SidebarHeader>
-
       <SidebarContent>
         {navFor(role, user?.business_role, user?.active_business_id).map(
           (group, index) => (

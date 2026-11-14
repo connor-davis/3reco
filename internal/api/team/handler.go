@@ -25,6 +25,9 @@ func New(s *svc.Service, a *auth.Service, cfg config.Config) *Handler {
 
 // Register installs manager routes and guest-accessible, rate-limited auth routes.
 func (h *Handler) Register(api fiber.Router) {
+	api.Get("/businesses/mine", middleware.RequireUser, h.myBusinesses)
+	api.Post("/businesses/:id/select", middleware.RequireUser, h.selectBusiness)
+
 	team := api.Group("/team", middleware.RequireBusiness("manager"))
 	team.Get("/", h.list)
 	team.Post("/invites", h.invite)

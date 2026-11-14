@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { AccountMenu } from './account-menu';
 import { NotificationTray } from './notification-tray';
 import { HeaderCart } from './header-cart';
+import { WorkspacePicker } from './workspace-picker';
 import { isRequestPath, pageTitleFor } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,9 @@ export function Topbar({ onSearch }: TopbarProps) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  const hasWorkspace = role === 'business' && !!user?.active_business_id;
+  const phoneTitle =
+    pathname.startsWith('/messages/') || isRequestPath(pathname);
 
   return (
     <header
@@ -31,15 +35,25 @@ export function Topbar({ onSearch }: TopbarProps) {
     >
       {/* Phones and tablets: the page has its own heading, so show the logo,
           except in a chat or request, which have no heading of their own. */}
-      {pathname.startsWith('/messages/') || isRequestPath(pathname) ? (
+      {hasWorkspace && (
+        <div
+          className={cn(
+            'min-w-0 flex-1 lg:w-64 lg:flex-initial',
+            phoneTitle && 'hidden lg:block'
+          )}
+        >
+          <WorkspacePicker />
+        </div>
+      )}
+      {phoneTitle ? (
         <p className="text-sm font-medium lg:hidden">
           {pageTitleFor(pathname, role)}
         </p>
-      ) : (
+      ) : !hasWorkspace ? (
         <Link to="/" aria-label="Home" className="lg:hidden">
           <BrandLogo className="h-8" />
         </Link>
-      )}
+      ) : null}
 
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <Button

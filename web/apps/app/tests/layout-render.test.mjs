@@ -85,7 +85,7 @@ with sync_playwright() as p:
                 elif path == '/admin/users': body['items'] = admin_users
                 elif path == '/auth/sessions': body = {'sessions': []}
                 elif path == '/profile': body = dict.fromkeys(['image', 'avatar_url', 'phone', 'id_number', 'business_name', 'business_registration_number', 'bank_account_holder_name', 'bank_name', 'bank_account_number', 'bank_branch_code', 'bank_account_type', 'street_address', 'city', 'province'], '') | {'id': 'buyer', 'name': 'Layout Buyer', 'first_name': 'Layout', 'last_name': 'Buyer', 'email': 'layout@example.test', 'role': role, 'profile_complete': True, 'agreed_to_terms': True, 'area_code': None}
-                elif path == '/collectors/selection' or (path == '/materials' and 'all=true' in route.request.url): body = []
+                elif path in ['/collectors/selection', '/businesses/mine'] or (path == '/materials' and 'all=true' in route.request.url): body = []
                 elif path == '/transactions/totals': body = totals
                 elif path == '/transactions/trade': body = trade
                 elif path in ['/transactions', '/transactions/', '/transactions/purchases', '/transactions/sales']: body['items'] = [trade, large_trade, dict(large_trade, id='unverified', business_verified=False)] + [dict(trade, id=str(i)) for i in range(4)]

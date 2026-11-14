@@ -270,6 +270,8 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Deferred notification list, paging and actions | `web/apps/app/src/components/shell/notification-tray-list.tsx` (bell in `notification-tray.tsx`) |
 | Header cart link and visible line count across stores | `web/apps/app/src/components/shell/header-cart.tsx`; regression tests in `web/apps/app/tests/cart-header.test.mjs` |
 | Signed-in user context and auth query cache | `web/apps/app/src/lib/auth/`, `src/lib/api/auth.ts` |
+| Top-bar workspace picker, membership list and current-session selection; cache reset, guarded Team fallback and membership invalidation | `web/apps/app/src/components/shell/workspace-picker.tsx`, `topbar.tsx`, `app-shell.tsx`; `src/lib/api/businesses.ts`, `auth.ts`, `src/lib/live/connection.ts`; tests in `web/apps/app/tests/workspace-picker.test.mjs`, `workspace-picker-render.test.mjs` |
+| Caller-only business list and membership-checked session selection (`GET /api/businesses/mine`, `POST /api/businesses/:id/select`), fresh auth and after-commit socket recheck | `internal/api/team/workspaces.go`, `internal/services/team/workspaces.go`, `internal/stores/businesses/workspaces.go`; access, session isolation and live tests in `tests/workspaces_test.go` |
 | API error to form field errors | `web/apps/app/src/lib/form-errors.ts` |
 | Auth page layout (sign-in, sign-up, verify, reset) | `web/apps/app/src/components/auth-shell.tsx`, routes `src/routes/{sign-in,sign-up,verify-email,forgot-password,reset-password}.tsx` |
 | Full-page setup (`/setup`): choose collector or business, then the forms in `routes/profile/-components/forms.tsx` | `web/apps/app/src/routes/setup.tsx` |
