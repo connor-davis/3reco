@@ -96,15 +96,18 @@ func TestInvoiceNumberStable(t *testing.T) {
 	for _, client := range []*testutil.Client{w.buyer.c, w.seller.c, admin.c} {
 		got := client.Do("GET", path, nil)
 		tradeWant(t, "invoice reader", got, 200)
-		for _, text := range []string{"%PDF", number, "Invoice Holder", "123456789", "9.99", "3REco"} {
-			if !bytes.Contains(got.Raw, []byte(text)) {
+		if !bytes.HasPrefix(got.Raw, []byte("%PDF")) {
+			t.Error("invoice is not a PDF")
+		}
+		for _, text := range []string{number, "Invoice Holder", "123456789", "9.99", "3REco"} {
+			if !pdfHas(t, got.Raw, text) {
 				t.Errorf("invoice lacks %q", text)
 			}
 		}
 	}
 	// Staff read a masked account: the full number is for the two parties and admins.
 	staffPDF := status(t, staff.c.Do("GET", path, nil), 200)
-	if bytes.Contains(staffPDF.Raw, []byte("123456789")) || !bytes.Contains(staffPDF.Raw, inPDF("•••• 6789")) {
+	if pdfHas(t, staffPDF.Raw, "123456789") || !pdfHas(t, staffPDF.Raw, "•••• 6789") {
 		t.Error("staff invoice must show the masked account")
 	}
 	tradeWant(t, "invoice stranger", stranger.c.Do("GET", path, nil), 404)
@@ -147,7 +150,7 @@ func TestInvoiceNumberStable(t *testing.T) {
 		time.Sleep(25 * time.Millisecond)
 	}
 	got := w.buyer.c.Do("GET", path, nil)
-	if !bytes.Contains(got.Raw, []byte("Removed account")) || !testutil.NoMail(t, newEmail) {
+	if !pdfHas(t, got.Raw, "Removed account") || !testutil.NoMail(t, newEmail) {
 		t.Fatal("removal did not anonymize silently")
 	}
 }
@@ -185,8 +188,8 @@ func TestInvoiceAndExportWithoutCollectorPhone(t *testing.T) {
 	}
 
 	invoice := status(t, w.buyer.c.Do("GET", "/api/transactions/"+id+"/invoice", nil), 200)
-	if !bytes.Contains(invoice.Raw, []byte("collector@example.test")) ||
-		bytes.Contains(invoice.Raw, []byte("null")) {
+	if !pdfHas(t, invoice.Raw, "collector@example.test") ||
+		pdfHas(t, invoice.Raw, "null") {
 		t.Fatal("email-only invoice has missing email or literal null")
 	}
 
@@ -212,7 +215,7 @@ func TestInvoiceSnapshotAndRollback(t *testing.T) {
 		t.Fatal(err)
 	}
 	got = w.buyer.c.Do("GET", "/api/transactions/"+id+"/invoice", nil)
-	if !bytes.Contains(got.Raw, []byte("snapshot-payment")) || bytes.Contains(got.Raw, []byte("changed-payment")) {
+	if !pdfHas(t, got.Raw, "snapshot-payment") || pdfHas(t, got.Raw, "changed-payment") {
 		t.Fatal("invoice did not preserve snapshot payout")
 	}
 
@@ -250,12 +253,15 @@ func TestInvoicePaginationAndExactDecimals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"%PDF", "3REco", "1234ABCD", "1 000 000 000 000 000 000.00", "1.005", "05 Nov 2026"} {
-		if !bytes.Contains(data, []byte(text)) {
+	if !bytes.HasPrefix(data, []byte("%PDF")) {
+		t.Error("invoice is not a PDF")
+	}
+	for _, text := range []string{"3REco", "1234ABCD", "1 000 000 000 000 000 000.00", "1.005", "05 Nov 2026"} {
+		if !pdfHas(t, data, text) {
 			t.Errorf("PDF lacks %s", text)
 		}
 	}
-	if bytes.Count(data, []byte("/Type /Page\n")) < 3 {
+	if pdfPages(t, data) < 3 {
 		t.Fatal("long invoice did not paginate")
 	}
 	if pdf.Product("1.005", "2.555") != "2.57" || pdf.Decimal("1.005") != "1.01" {
@@ -266,6 +272,27 @@ func TestInvoicePaginationAndExactDecimals(t *testing.T) {
 		if err := os.WriteFile(path, data, 0600); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// The extractor must find a full account number that is on the page, so the
+// "absent" checks across the suite can fail. Raw bytes never hold the number.
+func TestPDFTextExtractionNegativeControl(t *testing.T) {
+	data, err := pdf.Render(pdf.Invoice{Number: "NEG1", Payment: "Account number: 62000111222\nBank: Control Bank"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !pdfHas(t, data, "62000111222") || !pdfHas(t, data, "Control Bank") {
+		t.Fatal("extractor cannot read text that is on the page")
+	}
+
+	if bytes.Contains(data, []byte("62000111222")) {
+		t.Fatal("raw bytes hold the number, so the control no longer proves the extractor is needed")
+	}
+
+	if pdfHas(t, data, "00000000") {
+		t.Fatal("extractor found text that is not on the page")
 	}
 }
 
@@ -287,4 +314,31 @@ func TestInvoicePartyPhoneIsSpaced(t *testing.T) {
 	if invoices.Compose(tstore.Document{Seller: tstore.Contact{Name: "Seller"}}).Seller != "Seller" {
 		t.Error("a missing phone should add nothing")
 	}
+}
+
+// TestInvoiceShortSample writes a one-page invoice for the owner to look at. It only
+// runs when THREERECO_TEST_INVOICE_PDF_SHORT names a file.
+func TestInvoiceShortSample(t *testing.T) {
+	path := os.Getenv("THREERECO_TEST_INVOICE_PDF_SHORT")
+	if path == "" {
+		t.Skip("set THREERECO_TEST_INVOICE_PDF_SHORT to write the sample")
+	}
+
+	data, err := pdf.Render(pdf.Invoice{
+		Number: "1234ABCD", Date: "05 Nov 2026", Type: "Business to Business",
+		Seller:  "Green Loop Recyclers\nsales@greenloop.example\n+27 82 000 1009\n12 Depot Road, Durban, 4001",
+		Buyer:   "Cape Plastics (Pty) Ltd\nbuyer@capeplastics.example\n+27 21 555 0100\n7 Harbour Street, Cape Town, 8001",
+		Payment: "Bank: Example Bank\nAccount holder: Green Loop Recyclers\nAccount number: •••• 6789\nBranch code: 250655",
+		Total:   "1 243.80",
+		Lines: []pdf.Line{
+			{Material: "PET clear bottles, baled", Weight: "1250.5", Price: "0.80", Total: "1000.40"},
+			{Material: "Aluminium cans", Weight: "310", Price: "0.78", Total: "241.80"},
+			{Material: "Mixed paper and cardboard from several collection points across the region", Weight: "13.1", Price: "0.15", Total: "1.60"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	must(t, os.WriteFile(path, data, 0600))
 }

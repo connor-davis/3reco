@@ -66,9 +66,9 @@ func TestRound4BusinessInvoiceBankDetails(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			pdf := status(t, test.user.c.Do("GET", "/api/transactions/"+id+"/invoice", nil), 200)
-			full := bytes.Contains(pdf.Raw, []byte("62000111222"))
-			branch := bytes.Contains(pdf.Raw, []byte("250655"))
-			masked := bytes.Contains(pdf.Raw, inPDF("•••• 1222"))
+			full := pdfHas(t, pdf.Raw, "62000111222")
+			branch := pdfHas(t, pdf.Raw, "250655")
+			masked := pdfHas(t, pdf.Raw, "•••• 1222")
 			if full != test.full || branch != test.full || masked == test.full {
 				t.Fatalf("bank details: full=%v branch=%v masked=%v, want full=%v", full, branch, masked, test.full)
 			}
@@ -82,7 +82,7 @@ func TestRound4BusinessInvoiceBankDetails(t *testing.T) {
 
 	// The email goes to the buyer, who may see the full account.
 	attachment := round3MailPDF(t, w.buyer.email, strings.ToUpper(id[len(id)-8:]))
-	if !bytes.Contains(attachment, []byte("62000111222")) {
+	if !pdfHas(t, attachment, "62000111222") {
 		t.Fatal("buyer email attachment lost the account number")
 	}
 

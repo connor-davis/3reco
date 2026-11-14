@@ -59,7 +59,7 @@ func TestTenantCollectorsProfileAndInvoicePermissions(t *testing.T) {
 	trade := tradeSale(t, manager, w.buyer, w.material, "1", "8")
 	path := "/api/transactions/" + trade + "/invoice"
 	pdf := status(t, member.c.Do("GET", path, nil), 200)
-	if bytes.Contains(pdf.Raw, []byte("123456789")) || bytes.Contains(pdf.Raw, []byte("Business Bank")) {
+	if pdfHas(t, pdf.Raw, "123456789") || pdfHas(t, pdf.Raw, "Business Bank") {
 		t.Fatal("member invoice disclosed bank details")
 	}
 	status(t, manager.c.Do("GET", path, nil), 200)
