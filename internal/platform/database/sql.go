@@ -45,6 +45,14 @@ func EffectiveDate(alias string) string {
 		"AT TIME ZONE " + zone + ") END"
 }
 
+// SameLine is the SQL for "these two item rows (aliases a and b) are the same
+// line": the same material, weight and price, compared as numbers so 4 and
+// 4.00 match. The duplicate scan and the collection warning both use it.
+func SameLine(a, b string) string {
+	return a + ".material_id = " + b + ".material_id AND " + a + ".weight = " + b + ".weight AND " +
+		a + ".price = " + b + ".price"
+}
+
 // Party is a person as other people may see them: an id and a safe name.
 // Verified is true for a business 3REco has verified; it is computed, never stored.
 type Party struct {

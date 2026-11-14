@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { Guarded } from '@/components/access-guard';
+import { LinkButton } from '@/components/link-button';
 import { CollectionDialog } from '@/components/dialogs/collection-dialog';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -39,15 +40,22 @@ function CollectionsPage() {
         emptyTitle="No collections yet"
         stats
         actions={
-          canRecord && (
-            <Button
-              aria-label="Record collection"
-              onClick={() => setOpen(true)}
-            >
-              <Plus data-icon="inline-start" />
-              Record collection
-            </Button>
-          )
+          <>
+            {user?.role === 'admin' && (
+              <LinkButton variant="outline" to="/admin/duplicates">
+                Duplicates
+              </LinkButton>
+            )}
+            {canRecord && (
+              <Button
+                aria-label="Record collection"
+                onClick={() => setOpen(true)}
+              >
+                <Plus data-icon="inline-start" />
+                Record collection
+              </Button>
+            )}
+          </>
         }
       />
       {canRecord && <CollectionDialog open={open} onOpenChange={setOpen} />}

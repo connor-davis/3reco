@@ -285,13 +285,6 @@ func (s *Service) Download(ctx context.Context, user auth.User, id string) (io.R
 		return nil, "", err
 	}
 
-	if trade.Status == "duplicate" {
-		return nil, "", &apperr.Error{
-			Status: 410, Code: "invoice_void",
-			Message: "This trade was marked as a duplicate, so its invoice is void.",
-		}
-	}
-
 	if trade.Status != "complete" {
 		return nil, "", apperr.NotFound("Invoice not found.")
 	}

@@ -12,6 +12,25 @@ test('duplicates are admin-only in guards, navigation and titles', () => {
   assert.match(source('lib/nav.ts'), /return 'Duplicates'/);
 });
 
+test('Duplicates has no nav link; only admins get the button on Collections', () => {
+  const { navFor } = load('lib/nav.ts', {
+    '@/lib/access': load('lib/access.ts'),
+  });
+  for (const role of ['admin', 'staff', 'business', 'collector']) {
+    const links = navFor(role, 'owner', 'b1').flatMap((group) => group.links);
+    assert.equal(
+      links.some((link) => link.to === '/admin/duplicates'),
+      false,
+      role
+    );
+  }
+  const page = source('routes/collections.tsx');
+  assert.match(
+    page,
+    /user\?\.role === 'admin' && \(\s*<LinkButton variant="outline" to="\/admin\/duplicates">/
+  );
+});
+
 test('transaction and dismissal live events refresh duplicate review and activity', () => {
   const { keysFor } = load('lib/live/connection.ts');
   for (const kind of ['transaction', 'duplicate']) {

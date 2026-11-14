@@ -3,6 +3,7 @@ package transactions
 import (
 	"context"
 	"math/big"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -207,12 +208,14 @@ func (s *Service) settle(
 // CollectionInput is what a collector sale needs. CollectionDate is when the
 // material was collected; CollectionDay is the same as a plain calendar day.
 type CollectionInput struct {
-	IdempotencyKey string     `json:"-"`
-	CollectorID    string     `json:"collector_id"`
-	BusinessID     string     `json:"business_id"`
-	Items          []SaleItem `json:"items"`
-	CollectionDay  *string    `json:"collection_day"`
-	CollectionDate *time.Time `json:"collection_date"`
+	IdempotencyKey string `json:"-"`
+	// ConfirmDuplicate saves even when the lines look like a collection already recorded.
+	ConfirmDuplicate bool       `json:"confirm_duplicate"`
+	CollectorID      string     `json:"collector_id"`
+	BusinessID       string     `json:"business_id"`
+	Items            []SaleItem `json:"items"`
+	CollectionDay    *string    `json:"collection_day"`
+	CollectionDate   *time.Time `json:"collection_date"`
 }
 
 // CollectorSale records a business (or, for one, staff) buying from a
@@ -265,6 +268,13 @@ func (s *Service) CollectorSale(
 			}
 		}
 
+		// Checked before anything is saved; the 409 rolls the key back with it.
+		if !in.ConfirmDuplicate {
+			if err := s.likelyCopy(ctx, buyerID, in); err != nil {
+				return err
+			}
+		}
+
 		id, err = s.collect(ctx, buyerID, in)
 		if err == nil && in.IdempotencyKey != "" {
 			err = s.store.SaveCollectionKey(ctx, user.ID, in.IdempotencyKey, id)
@@ -274,6 +284,67 @@ func (s *Service) CollectorSale(
 	})
 
 	return id, err
+}
+
+// CollectionMatch is a recorded collection that shares a line with a new one.
+type CollectionMatch struct {
+	ID            string       `json:"id"`
+	InvoiceNumber string       `json:"invoice_number"`
+	EffectiveAt   time.Time    `json:"effective_at"`
+	TotalPrice    string       `json:"total_price"`
+	MatchingLines []store.Item `json:"matching_lines"`
+	// NewLinesMatched says, for each new line in order, whether this trade has it.
+	NewLinesMatched []bool `json:"new_lines_matched"`
+	ExactCopy       bool   `json:"exact_copy"`
+}
+
+// likelyCopy refuses a collection whose lines match the buyer's own recorded
+// collections from the same collector, with the matches, until it is confirmed.
+func (s *Service) likelyCopy(ctx context.Context, buyerID string, in CollectionInput) error {
+	items := make([]store.Item, len(in.Items))
+	for i, item := range in.Items {
+		items[i] = store.Item{MaterialID: item.MaterialID, Weight: item.Weight, Price: item.Price}
+	}
+
+	ids, err := s.store.CollectionMatches(ctx, buyerID, in.CollectorID, items)
+	if err != nil || len(ids) == 0 {
+		return err
+	}
+
+	mine := store.LineKeys(items)
+	matches := make([]CollectionMatch, 0, len(ids))
+
+	for _, id := range ids {
+		trade, err := s.store.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		theirs := store.LineKeys(trade.Items)
+		match := CollectionMatch{
+			ID: id, InvoiceNumber: trade.InvoiceNumber, EffectiveAt: trade.EffectiveAt,
+			TotalPrice: trade.TotalPrice, MatchingLines: []store.Item{},
+			NewLinesMatched: make([]bool, len(items)),
+			ExactCopy:       slices.Equal(mine, theirs),
+		}
+
+		for _, item := range trade.Items {
+			if slices.Contains(mine, store.LineKey(item)) {
+				match.MatchingLines = append(match.MatchingLines, item)
+			}
+		}
+
+		for i, item := range items {
+			match.NewLinesMatched[i] = slices.Contains(theirs, store.LineKey(item))
+		}
+
+		matches = append(matches, match)
+	}
+
+	return &apperr.Error{
+		Status: http.StatusConflict, Code: "possible_duplicate", Details: matches,
+		Message: "This looks like a collection you already recorded.",
+	}
 }
 
 // collectionBuyer decides which business buys: a business buys for itself;
