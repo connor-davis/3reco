@@ -28,10 +28,10 @@ const CommandSearch = lazy(() =>
 );
 
 const chatPad = 'pb-[3.25rem] lg:pb-0';
-// Page padding sits inside the shared width cap, beside the sidebar.
+// Phone padding clears the tabs, raised action and device safe area.
 const pagePad = cn(
-  'px-5 pt-3.5 pb-28 sm:px-6 sm:pt-8 lg:px-8',
-  'lg:pt-10 lg:pb-24'
+  'px-5 pt-3.5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-8 lg:px-8',
+  'lg:pt-10 lg:pb-8'
 );
 
 /**
@@ -112,7 +112,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {/* Workspace changes also clear local forms and mounted query observers. */}
             <div
               key={`${user?.active_business_id ?? ''}:${user?.business_role ?? ''}`}
-              className={cn('w-full flex-1', chat ? chatPad : pagePad)}
+              className={cn('w-full', chat ? cn('flex-1', chatPad) : pagePad)}
             >
               {children}
             </div>

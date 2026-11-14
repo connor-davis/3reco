@@ -107,6 +107,9 @@ function adminPage(list) {
       react: hooks,
       '@tanstack/react-router': router,
       '@/lib/use-debounced': { useDebounced: (value) => value },
+      '@/components/transactions/pager-state': {
+        usePager: () => ({ params: { limit: 10 }, hasPrevious: false }),
+      },
       '@/lib/access': { roleLabel: (value) => value },
       '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 'admin' } }) },
       '@/lib/api/admin': {
@@ -124,13 +127,13 @@ function adminPage(list) {
   );
 }
 
-test('users Next page is disabled for empty, missing, fetching or failed results', () => {
+test('users shared pager is disabled while fetching or after a failed result', () => {
   const row = { id: 'person' };
   for (const [data, flags, disabled] of [
-    [{ items: [], has_more: false }, {}, true],
-    [{ items: [], has_more: true, next_cursor: 'stale' }, {}, true],
-    [undefined, {}, true],
-    [{ items: [row], has_more: true }, {}, true],
+    [{ items: [], has_more: false }, {}, false],
+    [{ items: [], has_more: true, next_cursor: 'stale' }, {}, false],
+    [undefined, {}, false],
+    [{ items: [row], has_more: true }, {}, false],
     [{ items: [row], has_more: true, next_cursor: 'next' }, {}, false],
     [
       { items: [row], has_more: true, next_cursor: 'next' },
@@ -149,11 +152,9 @@ test('users Next page is disabled for empty, missing, fetching or failed results
       data,
       ...flags,
     }).UsersPage();
-    const next = elements(page).find(
-      (node) => node.props?.children === 'Next page'
-    );
-    assert.equal(next.props.disabled, disabled);
-    assert.equal(next.props.variant, 'outline');
+    const pager = elements(page).find((node) => node.type === 'Pager');
+    assert.equal(pager.props.disabled, disabled);
+    assert.equal(pager.props.page, data);
   }
   // Both themes share these disabled styles through the Button component.
   assert.match(source('components/ui/button.tsx'), /buttonVariants/);

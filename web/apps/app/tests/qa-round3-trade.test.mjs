@@ -212,6 +212,7 @@ test('completed unreviewed trade enables review launch; reviewed trades disable 
 test('pagination reports the visible range and total on both pages', () => {
   const { Pager } = compile('components/transactions/list-tools.tsx', {
     '@/lib/api/paging': { nextPage: (page) => page.next_cursor },
+    '@/lib/format': { plural: (count, noun) => `${count} ${noun}s` },
     './pager-state': {},
   });
   const pager = { pageNumber: 1, params: { limit: 50 }, hasPrevious: false };

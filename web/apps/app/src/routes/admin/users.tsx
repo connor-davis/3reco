@@ -10,6 +10,8 @@ import { DataState } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
 import { ChoiceSelect } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
+import { Pager } from '@/components/transactions/list-tools';
+import { usePager } from '@/components/transactions/pager-state';
 import { PageHeader } from '@/components/page-header';
 import { PersonAvatar } from '@/components/visuals';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +29,7 @@ import { useExport } from '@/lib/api/exports';
 import { roleLabel } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
 import type { Role, AdminUser } from '@/lib/api/types';
-import { formatDate, plural } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 
 export const Route = createFileRoute('/admin/users')({
   component: () => (
@@ -108,22 +110,14 @@ function RoleSelect({
 
 function UsersPage() {
   const { user: currentUser } = useAuth();
-  const [cursor, setCursor] = useState<string | undefined>();
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('all');
   const q = useDebounced(search.trim());
-  // A cursor was handed out for one search, so a new search starts at page one.
-  const [seen, setSeen] = useState({ q, role });
-  if (seen.q !== q || seen.role !== role) {
-    setSeen({ q, role });
-    setCursor(undefined);
-  }
-  const list = useAdminUsers({
-    cursor: seen.q === q && seen.role === role ? cursor : undefined,
-    limit: 50,
+  const pager = usePager({
     q,
     role: role === 'all' ? undefined : role,
   });
+  const list = useAdminUsers(pager.params);
   const remove = useDeleteUser();
   const verify = useSetBusinessVerified();
   const download = useExport('users');
@@ -302,34 +296,11 @@ function UsersPage() {
           )}
         />
       </DataState>
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm text-muted-foreground">
-          {plural(shown.length, 'user')} shown
-        </span>
-        {cursor && (
-          <Button
-            className="min-h-11"
-            variant="outline"
-            onClick={() => setCursor(undefined)}
-          >
-            First page
-          </Button>
-        )}
-        <Button
-          className="min-h-11"
-          variant="outline"
-          disabled={
-            shown.length === 0 ||
-            !list.data?.has_more ||
-            !list.data.next_cursor ||
-            list.isFetching ||
-            list.isError
-          }
-          onClick={() => setCursor(list.data?.next_cursor ?? undefined)}
-        >
-          Next page
-        </Button>
-      </div>
+      <Pager
+        pager={pager}
+        page={list.data}
+        disabled={list.isFetching || list.isError}
+      />
       <ResponsiveOverlay
         open={roleUser !== null}
         onOpenChange={(open) => !open && setRoleUser(null)}

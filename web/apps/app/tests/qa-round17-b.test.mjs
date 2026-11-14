@@ -16,12 +16,16 @@ test('C7: chart ticks are spaced evenly', () => {
   assert.match(chart, /minTickGap=\{32\}/);
 });
 
-test('C8: the record list has a footer count from the totals', () => {
+test('C8: the record list passes its total to the shared pager count', () => {
   const list = source('routes/transactions/-components/record-list.tsx');
-  assert.match(list, /plural\(totals\.data\.count, 'record'\)/);
   assert.match(
     list,
-    /flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground/
+    /<Pager pager=\{pager\} page=\{list.data\} total=\{totals.data\?\.count\}/
+  );
+  assert.doesNotMatch(list, /plural\(totals\.data\.count/);
+  assert.match(
+    source('components/transactions/list-tools.tsx'),
+    /plural\(total, 'record'\)/
   );
 });
 

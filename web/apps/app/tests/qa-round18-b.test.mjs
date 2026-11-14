@@ -109,6 +109,9 @@ test('A2: phone role menu opens the picker; cancel writes nothing and confirm wr
       },
       '@tanstack/react-router': { createFileRoute: () => (route) => route },
       '@/lib/use-debounced': { useDebounced: (value) => value },
+      '@/components/transactions/pager-state': {
+        usePager: () => ({ params: { limit: 10 } }),
+      },
       '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 'self' } }) },
       '@/lib/access': access,
       '@/lib/api/admin': {
