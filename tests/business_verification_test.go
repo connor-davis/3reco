@@ -124,11 +124,12 @@ func TestUnverifyTakesAccessAwayAtOnce(t *testing.T) {
 	w.setVerified(t, w.bizB.id, false)
 
 	got := status(t, w.bizB.c.Do("GET", "/api/collectors/"+w.byStaff, nil), 200).Body
-	if shown(got, "email") || got["can_edit"] == true {
-		t.Errorf("access stayed after unverify: %v", got)
+	// Verification only ever widened payout rights; contact editing is for every business.
+	if got["bank_account_number"] == "123456789" || got["can_view_payout"] == true || got["can_edit_payout"] == true {
+		t.Errorf("payout access stayed after unverify: %v", got)
 	}
 
-	tradeWant(t, "edit", w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"name": "Again"}), 404)
+	tradeWant(t, "payout edit", w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"bank_name": "Again"}), 403)
 
 	// The admin list shows the state.
 	for _, row := range pageItems(t, status(t, w.admin.c.Do("GET", "/api/admin/users?role=business&limit=50", nil), 200)) {
