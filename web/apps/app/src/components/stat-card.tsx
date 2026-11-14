@@ -49,13 +49,14 @@ export function StatCard({
           )}
           {label}
         </CardDescription>
-        <CardTitle className="text-[clamp(0.75rem,6cqi,1.875rem)] font-semibold tracking-tight whitespace-nowrap tabular-nums">
+        <CardTitle className="text-[clamp(0.75rem,6cqi,1.875rem)] font-semibold tracking-tight tabular-nums sm:whitespace-nowrap">
           {isLoading ? (
             <Skeleton className="h-8 w-24" />
           ) : unavailable ? (
             '—'
           ) : (
-            value
+            // On a narrow phone tile the unit may drop to its own line.
+            value.replace(/\u00a0(?=\D+$)/, ' ')
           )}
         </CardTitle>
       </CardHeader>

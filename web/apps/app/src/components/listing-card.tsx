@@ -18,7 +18,7 @@ export function ListingCard({
   const [failedImage, setFailedImage] = useState<string>();
 
   return (
-    <Card className="group/card relative gap-0 bg-transparent py-0 shadow-none ring-0">
+    <Card className="group/card relative gap-0 bg-transparent py-0 border-0 shadow-none ring-0">
       <div className="relative flex overflow-hidden aspect-[4/3] items-center justify-center rounded-lg bg-muted text-muted-foreground">
         {listing.image_url && failedImage !== listing.image_url ? (
           <img

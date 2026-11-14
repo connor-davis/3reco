@@ -55,7 +55,8 @@ export function Topbar({ onSearch }: TopbarProps) {
         </Link>
       ) : null}
 
-      <div className="ml-auto flex shrink-0 items-center gap-1">
+      {/* Phones keep the icons plain so the business name has room. */}
+      <div className="ml-auto flex shrink-0 items-center gap-1 max-md:[&_:is(button,a)]:border-transparent max-md:[&_:is(button,a)]:bg-transparent">
         <Button
           variant="secondary"
           className="hidden min-w-48 justify-between rounded-lg border bg-inner min-[1020px]:inline-flex"
