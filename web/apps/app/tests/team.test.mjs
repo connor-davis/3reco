@@ -62,7 +62,7 @@ test('Team events refresh the directory and membership events refresh identity',
   );
   assert.equal(
     JSON.stringify(live.keysFor('membership')),
-    JSON.stringify([['auth'], ['team']])
+    JSON.stringify([['auth'], ['team'], ['businesses', 'mine']])
   );
 });
 

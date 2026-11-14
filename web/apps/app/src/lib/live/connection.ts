@@ -18,7 +18,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
     case 'team':
       return [['team']];
     case 'membership':
-      return [['auth'], ['team']];
+      return [['auth'], ['team'], ['businesses', 'mine']];
     case 'notification':
       return [['notifications']];
     case 'stock':

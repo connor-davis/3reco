@@ -78,6 +78,10 @@ test('H1: every refused page is "Not available"; open pages keep their name', ()
     assert.match(src, /isLoading \? undefined : \(user\?\.role \?\? null\)/);
     assert.doesNotMatch(src, /pageTitleFor\(pathname, user\?/);
   }
+  assert.match(
+    source('components/shell/topbar.tsx'),
+    /role === 'business' && !!user\?\.active_business_id/
+  );
 });
 
 test('H2: a removed account’s message reads as one', () => {
