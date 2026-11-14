@@ -80,7 +80,7 @@ with sync_playwright() as p:
             def handle(route):
                 path = urlparse(route.request.url).path.removeprefix('/api')
                 body = {'items': [], 'has_more': False, 'next_cursor': None, 'count': 0}
-                if path == '/auth/me': body = {'user': {'id': 'buyer', 'name': 'Layout Buyer', 'email': 'layout@example.test', 'role': role, 'emailVerified': True, 'profileComplete': True, 'agreedToTerms': True, 'business_verified': True}}
+                if path == '/auth/me': body = {'user': {'id': 'buyer', 'name': 'Layout Buyer', 'email': 'layout@example.test', 'role': role, 'emailVerified': True, 'profileComplete': True, 'agreedToTerms': True, 'business_verified': True, 'active_business_id': 'buyer', 'business_role': 'owner'}}
                 elif path == '/collectors': body['items'] = [{'id': 'collector', 'name': 'Zanele Both', 'email': 'zanele@example.test', 'phone': '0821234567', 'image': '', 'city': 'Cape Town', 'province': 'Western Cape', 'payout_method': 'bank', 'bank_name': 'FNB', 'bank_account_number': '1234567890', 'can_edit': True, 'can_view_payout': True, 'created_at': trade['created_at']}]
                 elif path == '/admin/users': body['items'] = admin_users
                 elif path == '/auth/sessions': body = {'sessions': []}
@@ -274,7 +274,7 @@ with sync_playwright() as p:
                             page.get_by_role('button', name='Invoice and receipts: Clear glass · 12.5 kg').first.click()
                         expect(page.get_by_role('heading', name='Invoice INV-2048')).to_be_visible()
                         page.get_by_role('link', name='Back to transactions').click()
-                        expect(page.get_by_role('heading', name='Purchases', exact=True)).to_be_visible()
+                        expect(page.get_by_role('heading', name='Transactions', exact=True)).to_be_visible()
                     if route in ['/transactions', '/market/incoming', '/market/outgoing']:
                         expect(page.get_by_role('link', name='Open messages')).to_have_count(0)
                     assert not errors, errors

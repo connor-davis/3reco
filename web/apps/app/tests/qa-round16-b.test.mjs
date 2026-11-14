@@ -364,20 +364,24 @@ test('S3/S4: local dashboard spacing and readable trade pill override inherited 
   );
 });
 
-test('S5: business transaction guard offers real Sales and Purchases routes', () => {
+test('S5: business access guard offers the unified Transactions page', () => {
   const { Guarded } = compile('components/access-guard.tsx', {
     '@/lib/access': load('lib/access.ts'),
     '@/lib/auth/use-auth': {
       useAuth: () => ({ user: { role: 'business' }, isLoading: false }),
     },
   });
-  const tree = Guarded({ page: 'transactions', children: 'private' });
+  assert.equal(
+    Guarded({ page: 'transactions', children: 'private' }).props.children,
+    'private'
+  );
+  const tree = Guarded({ page: 'materials', children: 'private' });
   const links = nodes(tree).filter((node) => node.type === 'LinkButton');
   assert.deepEqual(
     links.map((node) => node.props.to),
-    ['/transactions/sales', '/transactions/purchases']
+    ['/transactions']
   );
-  assert.deepEqual(links.map(words), ['Go to Sales', 'Go to Purchases']);
+  assert.deepEqual(links.map(words), ['Go to Transactions']);
   assert.equal(
     nodes(tree).some((node) => node.type === 'Navigate'),
     false

@@ -592,20 +592,20 @@ with sync_playwright() as p:
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.goto(base + '/transactions/purchases')
             try:
-                expect(page.get_by_role('heading', name='Purchases', exact=True)).to_be_visible(timeout=15000)
+                expect(page.get_by_role('heading', name='Transactions', exact=True)).to_be_visible(timeout=15000)
             except Exception:
                 print('INITIAL BODY:', page.locator('body').inner_text(), 'ERRORS:', errors, flush=True)
                 raise
-            expect(page.get_by_text('No purchases yet', exact=True)).to_be_visible()
+            expect(page.get_by_text('No transactions yet', exact=True)).to_be_visible()
         def switch(target):
             b.get_by_role('button', name='Account menu').click()
             b.get_by_role('menuitem', name='Accounts in this browser').hover()
             b.get_by_role('menuitem', name=re.compile('Test ' + target)).click()
         switch('Staff')
-        expect(a.get_by_text('This page is in another workspace.', exact=True)).to_be_visible()
+        expect(a.get_by_role('heading', name='All transactions', exact=True)).to_be_visible()
         expect(a.get_by_role('link', name='All transactions', exact=True)).to_be_visible()
         expect(a.get_by_role('link', name='Stock', exact=True)).to_have_count(0)
-        expect(b.get_by_text('This page is in another workspace.', exact=True)).to_be_visible()
+        expect(b.get_by_role('heading', name='All transactions', exact=True)).to_be_visible()
         # Staff can edit contact details, but no custom payout control can open.
         for method in ['bank', 'ewallet']:
             payout = method
@@ -627,12 +627,12 @@ with sync_playwright() as p:
         expect(b).to_have_title('Not available · 3REco')
         b.goto(base + '/transactions/purchases')
         switch('Buyer')
-        expect(a.get_by_role('heading', name='Purchases', exact=True)).to_be_visible()
-        expect(a.get_by_text('No purchases yet', exact=True)).to_be_visible()
+        expect(a.get_by_role('heading', name='Transactions', exact=True)).to_be_visible()
+        expect(a.get_by_text('No transactions yet', exact=True)).to_be_visible()
         expect(a.get_by_role('link', name='Stock', exact=True)).to_be_visible()
         expect(a.get_by_role('link', name='All transactions', exact=True)).to_have_count(0)
         expect(a.get_by_text('You are not allowed to see these transactions.', exact=True)).to_have_count(0)
-        assert a.url.endswith('/transactions/purchases')
+        assert urlparse(a.url).path == '/transactions' and 'filter=bought' in a.url
         assert len([item for item in requests if item == ('buyer', '/transactions/purchases')]) >= 3
         # Reproduce the narrow half-width dashboard chart at desktop size.
         a.goto(base + '/')
@@ -659,7 +659,7 @@ with sync_playwright() as p:
         b.get_by_role('button', name='Sign in', exact=True).click()
         expect(a.get_by_role('button', name='Account menu')).to_be_visible()
         a.goto(base + '/transactions/purchases')
-        expect(a.get_by_text('No purchases yet', exact=True)).to_be_visible()
+        expect(a.get_by_text('No transactions yet', exact=True)).to_be_visible()
         b.get_by_role('button', name='Account menu').click()
         b.get_by_role('menuitem', name='Sign out', exact=True).click()
         expect(a).to_have_url(re.compile('/sign-in$'))
