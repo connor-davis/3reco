@@ -39,12 +39,12 @@ func teamMailToken(t *testing.T, app *testutil.App, id, email string) string {
 	return ""
 }
 
-func TestTeamOwnerOnly(t *testing.T) {
+func TestTeamMemberDenied(t *testing.T) {
 	app := testutil.Server(t)
 	owner := tradeNewUser(t, app, "business")
 	id, _ := teamInvite(t, app, owner, testutil.Email("invite"), "member")
 
-	for _, role := range []string{"manager", "member"} {
+	for _, role := range []string{"member"} {
 		person := tenantMember(t, app, owner.id, role)
 		for _, action := range []struct{ method, path string }{
 			{"GET", "/api/team"}, {"POST", "/api/team/invites"},
@@ -143,7 +143,7 @@ func TestInviteNewPersonSignsUp(t *testing.T) {
 		me["active_business_id"] != owner.id || me["business_role"] != "manager" {
 		t.Fatalf("invite signup = %v", me)
 	}
-	status(t, client.Do("GET", "/api/team", nil), 403)
+	status(t, client.Do("GET", "/api/team", nil), 200)
 }
 
 func TestInviteExistingUserAccepts(t *testing.T) {

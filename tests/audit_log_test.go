@@ -242,6 +242,20 @@ func TestActivityFeedAccessAndContent(t *testing.T) {
 		t.Fatalf("the feed holds both sources: change=%v privacy=%v", sawChange, sawPrivacy)
 	}
 
+	privacyPath := "/api/admin/activity?table=privacy_events"
+	for _, person := range []tradeUser{staff, w.seller, w.buyer} {
+		status(t, person.c.Do("GET", privacyPath, nil), 403)
+	}
+	privacy := pageItems(t, status(t, admin.c.Do("GET", privacyPath, nil), 200))
+	if len(privacy) == 0 {
+		t.Fatal("privacy filter hid privacy events")
+	}
+	for _, line := range privacy {
+		if line["source"] != "privacy" || line["table"] != "privacy_events" {
+			t.Fatalf("privacy filter leaked another source: %v", line)
+		}
+	}
+
 	onlyStock := pageItems(t, status(t, admin.c.Do("GET",
 		"/api/admin/activity?table=stock&action=update&actor="+w.seller.id, nil), 200))
 	if len(onlyStock) == 0 {
