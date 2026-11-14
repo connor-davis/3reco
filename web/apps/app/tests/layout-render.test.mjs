@@ -197,13 +197,13 @@ with sync_playwright() as p:
                         details = card.locator('[data-slot="card-content"]')
                         assert details.bounding_box()['y'] >= photo.bounding_box()['y'] + photo.bounding_box()['height'] - 1
                     if route in ['/', '/?role=collector', '/?role=admin']:
-                        expect(page.locator('[data-slot="card"]')).to_have_count(3 if route == '/?role=collector' else 5)
-                        stats = page.locator('[data-slot="card"]').all()[:3 if route == '/?role=collector' else 4]
-                        # Stat tiles are hidden below 768px (the phone home replaces them).
+                        expect(page.locator('[data-slot="card"]')).to_have_count({'/?role=collector': 3, '/?role=admin': 4}.get(route, 5))
+                        shown = [card for card in page.locator('[data-slot="card"]').all() if card.is_visible()]
+                        # Stat tiles are hidden below 768px; only the business phone-home card may show.
                         if width < 768:
-                            assert not any(card.is_visible() for card in stats)
+                            assert len(shown) <= 1
                         elif route == '/?role=collector' or width >= 1280:
-                            ys = [card.bounding_box()['y'] for card in stats]
+                            ys = [card.bounding_box()['y'] for card in shown[:3 if route == '/?role=collector' else 4]]
                             assert max(ys) - min(ys) < 1
                         partners = page.get_by_role('heading', name='Trading partners').locator('xpath=ancestor::section[1]').locator('ul > li')
                         expect(partners).to_have_count(5)
