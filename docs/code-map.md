@@ -242,7 +242,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public statistics service | `internal/services/stats/stats.go` |
 | Public `/api/stats` handler | `internal/api/stats/handler.go` |
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
-| Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; page reset on filter change `src/components/transactions/pager-state.ts` |
+| Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; cursor reset on filter or page-size change `src/components/transactions/pager-state.ts`; shared record count, rows-per-page select and navigation `src/components/transactions/list-tools.tsx` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
 | Owner and Manager Team directory, invitations and confirmed role/removal actions | `web/apps/app/src/routes/team.tsx`, `src/lib/api/team.ts` |
 | Public invite preview, new account and signed-in acceptance | `web/apps/app/src/routes/accept-invite.tsx`; full-width auth layout option in `components/auth-shell.tsx` |

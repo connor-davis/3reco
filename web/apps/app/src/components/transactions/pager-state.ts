@@ -13,9 +13,10 @@ type Filters = Record<string, string | undefined>;
 /**
  * Cursor paging with Previous and Next, for the list hooks in lib/api. Pass the
  * active search and filters: they ride along in `params`, and the pager goes
- * back to page one whenever they change.
+ * back to page one whenever they or the selected page size change.
  */
-export function usePager(limit = 50, filters: Filters = {}) {
+export function usePager(filters: Filters = {}) {
+  const [limit, setLimit] = useState(10);
   const key = JSON.stringify(filters);
   const [state, setState] = useState<{ key: string; cursors: string[] }>({
     key,
@@ -28,6 +29,10 @@ export function usePager(limit = 50, filters: Filters = {}) {
     params: { ...filters, limit, cursor: cursors.at(-1) },
     hasPrevious: cursors.length > 0,
     pageNumber: cursors.length + 1,
+    setLimit: (value: number) => {
+      setLimit(value);
+      setState({ key, cursors: [] });
+    },
     next: (cursor: string) => setState({ key, cursors: [...cursors, cursor] }),
     previous: () => setState({ key, cursors: cursors.slice(0, -1) }),
     reset: () => setState({ key, cursors: [] }),

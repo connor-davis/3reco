@@ -188,6 +188,9 @@ test('admin cannot remove their own account; export audit shows kind and filters
       '@tanstack/react-router': { createFileRoute: () => () => ({}) },
       '@/lib/auth/use-auth': { useAuth: () => ({ user: { id: 'self' } }) },
       '@/lib/use-debounced': { useDebounced: (value) => value },
+      '@/components/transactions/pager-state': {
+        usePager: () => ({ params: { limit: 10 } }),
+      },
       '@/lib/api/admin': {
         useAdminUsers: () => ({ data: { items: [] } }),
         useDeleteUser: () => ({}),

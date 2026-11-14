@@ -33,7 +33,7 @@ export const Route = createFileRoute('/materials')({
 function MaterialsPage() {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
-  const pager = usePager(100, { q: useDebounced(query.trim()) });
+  const pager = usePager({ q: useDebounced(query.trim()) });
   const list = useMaterials(pager.params);
   const remove = useDeleteMaterial();
   const [editing, setEditing] = useState<Material | undefined>();

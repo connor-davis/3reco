@@ -26,7 +26,7 @@ import {
 import type { Collector } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
 import { isStaffRole } from '@/lib/access';
-import { formatPhone, plural } from '@/lib/format';
+import { formatPhone } from '@/lib/format';
 
 export const Route = createFileRoute('/collectors')({
   component: () => (
@@ -91,7 +91,7 @@ function CollectorsPage() {
   const verified = isBusiness && user?.business_verified === true;
   const [query, setQuery] = useState('');
   const [desc, setDesc] = useState(false);
-  const pager = usePager(50, {
+  const pager = usePager({
     q: useDebounced(query.trim(), 150),
     order: desc ? 'desc' : undefined,
   });
@@ -293,12 +293,7 @@ function CollectorsPage() {
               ]}
             />
           )}
-          footer={
-            <span>
-              {total !== undefined && `${plural(total, 'collector')} · `}
-              {desc ? 'Sorted Z to A' : 'Sorted A to Z'}
-            </span>
-          }
+          footer={<span>{desc ? 'Sorted Z to A' : 'Sorted A to Z'}</span>}
         />
       </DataState>
       <Pager pager={pager} page={list.data} total={total} />

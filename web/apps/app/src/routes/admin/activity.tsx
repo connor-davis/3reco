@@ -133,7 +133,7 @@ function ActivityPage() {
   const [to, setTo] = useState('');
   const [open, setOpen] = useState<ActivityLine | null>(null);
   const q = useDebounced(search.trim(), 150);
-  const pager = usePager(50, {
+  const pager = usePager({
     q,
     table: table === 'all' ? undefined : table,
     action: action === 'all' ? undefined : action,

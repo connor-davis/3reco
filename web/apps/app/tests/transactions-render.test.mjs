@@ -46,19 +46,22 @@ test(
 );
 
 const regression = String.raw`
-import sys, json, re
+import sys, json, re, os
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import sync_playwright, expect
 
 base = sys.argv[1]
+measurements = []
 with sync_playwright() as p:
     browser = p.chromium.launch()
     for mode in ['light', 'dark']:
-        for width in [390, 1440]:
+        for width in [390, 1280, 1920]:
             context = browser.new_context(viewport={'width': width, 'height': 1000}, color_scheme=mode)
             context.add_init_script("localStorage.setItem('vite-ui-theme', '" + mode + "')")
             user = {'id': 'person', 'name': 'Nomsa', 'email': 'nomsa@example.test', 'role': 'business', 'active_business_id': 'business-a', 'business_role': 'manager', 'profileComplete': True, 'emailVerified': True, 'agreedToTerms': True}
-            def party(id): return {'id': id, 'name': id, 'business_name': id, 'role': 'business', 'business_verified': True}
+            def party(id):
+                name = 'Thandazile Mthethwa' if id == 'business-b' else 'Faith and Hope Recycling'
+                return {'id': id, 'name': name, 'business_name': name, 'role': 'business', 'business_verified': True}
             def trade(id, seller, buyer):
                 return {'id': id, 'type': 'b2b', 'status': 'complete', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'invoice_number': id, 'seller': party(seller), 'buyer': party(buyer), 'total_price': '16', 'business_verified': True, 'items': [{'material_id': 'glass', 'material_name': id + ' glass', 'weight': '2', 'price': '8'}], 'receipts': []}
             bought = trade('Bought-invoice', 'business-b', 'business-a')
@@ -100,6 +103,39 @@ with sync_playwright() as p:
                 expect(page.get_by_role('button', name='Export', exact=True)).to_be_disabled()
                 expect(page.get_by_text('Pick Bought or Sold to export', exact=True)).to_be_visible()
                 assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
+                size = page.get_by_role('combobox', name='Rows per page', exact=True)
+                expect(size).to_contain_text('10')
+                footer = size.locator('xpath=../../..')
+                expect(footer.get_by_text('2 records', exact=True)).to_have_count(1)
+                expect(footer.get_by_text('1–2 of 2', exact=True)).to_be_visible()
+                if width >= 1024:
+                    count_box = footer.get_by_text('2 records', exact=True).bounding_box()
+                    size_box = size.bounding_box()
+                    assert count_box['y'] < size_box['y'] + size_box['height'] and count_box['y'] + count_box['height'] > size_box['y']
+                    headers = page.get_by_role('columnheader')
+                    measurements.append({'mode': mode, 'width': width, 'parties': headers.filter(has_text='From → To').bounding_box()['width'], 'materials': headers.filter(has_text='Materials').bounding_box()['width']})
+                    assert measurements[-1]['parties'] >= 256, measurements[-1]
+                    party_cell = page.get_by_role('row').nth(1).get_by_role('cell').nth(2)
+                    assert party_cell.evaluate('(el) => getComputedStyle(el).whiteSpace') == 'normal'
+                    assert party_cell.locator('.line-clamp-2').count() == 0
+                    names = party_cell.locator('[data-slot="trade-parties"]')
+                    expect(names).to_contain_text('Thandazile Mthethwa')
+                    expect(names).to_contain_text('Faith and Hope Recycling')
+                    assert names.evaluate('(el) => el.getBoundingClientRect().height <= 2 * parseFloat(getComputedStyle(el).lineHeight) + 1')
+                    material_cell = page.get_by_role('row').nth(1).get_by_role('cell').nth(1)
+                    assert material_cell.evaluate('(el) => getComputedStyle(el).whiteSpace') == 'normal'
+                size.click()
+                expect(page.get_by_role('option')).to_have_text(['10', '20', '30', '40', '50'])
+                page.get_by_role('option', name='20', exact=True).click()
+                expect(size).to_contain_text('20')
+                page.wait_for_load_state('networkidle')
+                assert any(path.startswith('/transactions') and query.get('limit') == ['10'] for path, query in requests)
+                assert any(path.startswith('/transactions') and query.get('limit') == ['20'] for path, query in requests)
+                assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
+                content = page.locator('#main-content > div').last
+                expected_padding = '88px' if width < 1024 else '32px'
+                assert content.evaluate('(el) => getComputedStyle(el).paddingBottom') == expected_padding
+                assert content.evaluate('(el) => getComputedStyle(el).flexGrow') == '0'
                 page.get_by_role('tab', name='Bought', exact=True).click()
                 expect(page.get_by_text('Sold-invoice glass', exact=False)).to_have_count(0)
                 expect(page.get_by_text('Bought-invoice glass', exact=False)).to_be_visible()
@@ -135,5 +171,8 @@ with sync_playwright() as p:
             finally:
                 context.close()
     browser.close()
+if os.environ.get('THREERECO_TABLE_MEASUREMENTS'):
+    with open(os.environ['THREERECO_TABLE_MEASUREMENTS'], 'w') as output:
+        json.dump(measurements, output, indent=2)
 print('Transactions passed in light/dark on phone/desktop')
 `;

@@ -124,7 +124,7 @@ test('unified rows label direction on both desktop and phone and reset cursor sc
   assert.match(page, /direction\(row.original\)/);
   assert.match(page, /direction\(row\)/);
   assert.match(page, /label="Bought or sold"/);
-  assert.match(page, /usePager\(50, \{ \.\.\.filters, kind \}\)/);
+  assert.match(page, /usePager\(\{ \.\.\.filters, kind \}\)/);
   assert.match(page, /!!exportHint/);
 });
 

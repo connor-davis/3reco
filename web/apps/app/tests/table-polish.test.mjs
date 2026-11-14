@@ -36,9 +36,12 @@ test('the collectors page shows the masked account number the server sends', () 
   assert.match(page, /useCollector\(/);
 });
 
-test('page content fills the screen, with no width cap in the app shell', () => {
+test('page content has no width cap and only chat stretches to fill the shell', () => {
   const shell = source('components/shell/app-shell.tsx');
-  assert.match(shell, /'w-full flex-1'/);
+  assert.match(
+    shell,
+    /cn\('w-full', chat \? cn\('flex-1', chatPad\) : pagePad\)/
+  );
   assert.doesNotMatch(shell, /max-w-/);
 });
 

@@ -73,8 +73,7 @@ test('F9: counts use plural()', () => {
     'routes/-dashboard/panels.tsx',
     'routes/materials.tsx',
     'routes/stock.tsx',
-    'routes/collectors.tsx',
-    'routes/admin/users.tsx',
+    'components/transactions/list-tools.tsx',
   ]) {
     assert.match(text(`../src/${file}`), /plural\(/, file);
   }

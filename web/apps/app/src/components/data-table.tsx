@@ -28,7 +28,7 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     align?: 'left' | 'right';
-    // The one column that takes the spare width and truncates.
+    // Flexible columns share spare width; className can allow wrapping.
     main?: boolean;
     className?: string;
   }

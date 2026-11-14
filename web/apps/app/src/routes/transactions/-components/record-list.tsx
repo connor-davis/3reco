@@ -35,7 +35,6 @@ import {
   formatKg,
   formatKgNumber,
   formatRand,
-  plural,
   toCents,
   toGrams,
 } from '@/lib/format';
@@ -182,10 +181,13 @@ export function RecordList({
     {
       id: 'materials',
       header: 'Materials',
-      meta: { main: true, className: 'max-xl:px-2' },
+      meta: {
+        main: true,
+        className: 'w-1/3 min-w-28 whitespace-normal max-xl:px-2 xl:min-w-32',
+      },
       cell: ({ row }) => (
         <span
-          className="block truncate"
+          className="block break-words"
           title={row.original.items
             .map((item) => item.material_name)
             .join(', ')}
@@ -197,12 +199,13 @@ export function RecordList({
     {
       id: 'parties',
       header: 'From → To',
-      meta: { className: 'max-xl:px-2' },
+      meta: {
+        main: true,
+        className: 'w-2/3 min-w-48 whitespace-normal max-xl:px-2 xl:min-w-64',
+      },
       cell: ({ row }) => (
-        <div className="max-w-md min-w-32 space-y-1 whitespace-normal">
-          <div className="line-clamp-2">
-            <Parties row={row.original} />
-          </div>
+        <div className="space-y-1 whitespace-normal">
+          <Parties row={row.original} />
           {businessFilter && (
             <Badge variant="secondary">{direction(row.original)}</Badge>
           )}
@@ -280,7 +283,7 @@ export function RecordList({
     to: range?.to && day(range.to),
   };
   // Each direction has its own cursor scope even when other filters match.
-  const pager = usePager(50, { ...filters, kind });
+  const pager = usePager({ ...filters, kind });
   const list = useTransactions(kind, pager.params);
   const totals = useTransactionTotals(kind, filters);
   const download = useExport(exportKind ?? 'transactions');
@@ -523,11 +526,6 @@ export function RecordList({
           )}
         />
       </DataState>
-      {totals.data !== undefined && (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-          <span>{plural(totals.data.count, 'record')}</span>
-        </div>
-      )}
       <Pager pager={pager} page={list.data} total={totals.data?.count} />
     </>
   );

@@ -107,7 +107,7 @@ function Weights({ item }: { item: StockItem }) {
 function StockPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
-  const pager = usePager(50, {
+  const pager = usePager({
     q: useDebounced(query.trim()),
     status: status === 'all' ? undefined : status,
   });
