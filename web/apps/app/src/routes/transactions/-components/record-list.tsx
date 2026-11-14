@@ -183,7 +183,7 @@ export function RecordList({
       header: 'Materials',
       meta: {
         main: true,
-        className: 'w-1/3 min-w-28 whitespace-normal max-xl:px-2 xl:min-w-32',
+        className: 'w-1/2 min-w-28 whitespace-normal max-xl:px-2 xl:min-w-32',
       },
       cell: ({ row }) => (
         <span
@@ -201,7 +201,7 @@ export function RecordList({
       header: 'From → To',
       meta: {
         main: true,
-        className: 'w-2/3 min-w-48 whitespace-normal max-xl:px-2 xl:min-w-64',
+        className: 'w-1/2 min-w-48 whitespace-normal max-xl:px-2 xl:min-w-64',
       },
       cell: ({ row }) => (
         <div className="space-y-1 whitespace-normal">
