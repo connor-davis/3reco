@@ -437,7 +437,11 @@ function InviteForm({ owner, onDone }: { owner: boolean; onDone: () => void }) {
           {failure}
         </p>
       )}
-      <Button type="submit" disabled={invite.isPending}>
+      <Button
+        className="w-full md:w-auto"
+        type="submit"
+        disabled={invite.isPending}
+      >
         {invite.isPending ? 'Sending…' : 'Send invitation'}
       </Button>
     </form>

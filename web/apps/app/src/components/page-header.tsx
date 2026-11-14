@@ -29,7 +29,7 @@ export function PageHeader({
   description,
   badge,
   actions,
-  compactActionsBelow = false,
+  compactActionsBelow = true,
 }: PageHeaderProps) {
   const items = Children.toArray(actions).flatMap((child) =>
     isValidElement<{ children?: ReactNode }>(child) && child.type === Fragment
@@ -41,7 +41,7 @@ export function PageHeader({
     <header
       className={cn(
         'mb-6 flex items-start justify-between gap-4',
-        compactActionsBelow && 'max-lg:flex-col'
+        compactActionsBelow && 'max-md:flex-col'
       )}
     >
       <div className="min-w-0 space-y-1">
@@ -60,8 +60,9 @@ export function PageHeader({
       {items.length > 0 && (
         <div
           className={cn(
-            compactActionsBelow && 'max-lg:w-full max-lg:[&>*]:w-full',
-            'flex shrink-0 items-center gap-2 [&>*]:min-h-11 [&>button:has(svg)]:max-lg:w-11 [&>button:has(svg)]:max-lg:gap-0 [&>button:has(svg)]:max-lg:overflow-hidden [&>button:has(svg)]:max-lg:px-3 [&>button:has(svg)]:max-lg:text-[0px]'
+            compactActionsBelow &&
+              'max-md:w-full max-md:[&>:first-child:not([aria-label])]:min-w-0 max-md:[&>:first-child:not([aria-label])]:flex-1',
+            'flex shrink-0 items-center gap-2 [&>*]:min-h-11 [&>button[aria-label]]:max-md:w-11 [&>button[aria-label]]:max-md:shrink-0'
           )}
         >
           {items[0]}

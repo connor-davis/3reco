@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataState } from '@/components/data-state';
+import { ButtonRow } from '@/components/button-row';
 import { TextField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
@@ -58,7 +59,7 @@ export function PrivacyPanel() {
           </p>
           {!notice.data?.accepted && (
             <Button
-              className="min-h-11"
+              className="min-h-11 w-full md:w-auto"
               disabled={accept.isPending}
               onClick={() =>
                 accept.mutate(undefined, {
@@ -82,7 +83,7 @@ export function PrivacyPanel() {
           JSON file.
         </p>
         <Button
-          className="min-h-11"
+          className="min-h-11 w-full md:w-auto"
           variant="outline"
           disabled={download.isPending}
           onClick={() => download.mutate()}
@@ -103,7 +104,7 @@ export function PrivacyPanel() {
           by law, with your personal details removed. This cannot be undone.
         </p>
         <Button
-          className="min-h-11"
+          className="min-h-11 w-full md:w-auto"
           variant="destructive"
           onClick={() => setOpen(true)}
         >
@@ -161,7 +162,7 @@ export function PrivacyPanel() {
               {form.formState.errors.root.message}
             </p>
           )}
-          <div className="flex gap-2">
+          <ButtonRow>
             <Button
               className="min-h-11"
               type="button"
@@ -183,7 +184,7 @@ export function PrivacyPanel() {
             >
               {erase.isPending ? 'Deleting…' : 'Delete my account'}
             </Button>
-          </div>
+          </ButtonRow>
         </form>
       </ResponsiveOverlay>
     </div>

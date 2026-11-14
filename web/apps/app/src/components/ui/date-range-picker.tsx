@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { ButtonRow } from '@/components/button-row';
 import { Button } from './button';
 import { Calendar } from './calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
@@ -37,7 +38,7 @@ export function DateRangePicker({
 
   return (
     <div className={cn('flex items-center gap-1', fullWidth && 'w-full')}>
-      <div className={cn(fullWidth && 'min-w-0 flex-1')}>
+      <div className="min-w-0 flex-1">
         <Popover
           open={open}
           onOpenChange={(next) => {
@@ -49,10 +50,7 @@ export function DateRangePicker({
             render={(props) => (
               <Button
                 variant="outline"
-                className={cn(
-                  'h-11 gap-2 text-sm font-normal',
-                  fullWidth && 'w-full justify-start'
-                )}
+                className="h-11 w-full justify-start gap-2 text-sm font-normal"
                 {...props}
               >
                 <CalendarIcon className="size-4 shrink-0" />
@@ -69,7 +67,7 @@ export function DateRangePicker({
           />
           <PopoverContent align={align} className="w-auto p-0">
             <Calendar mode="range" selected={draft} onSelect={handleSelect} />
-            <div className="flex justify-end gap-2 border-t p-3">
+            <ButtonRow className="border-t p-3">
               <Button variant="ghost" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
@@ -83,7 +81,7 @@ export function DateRangePicker({
               >
                 Apply dates
               </Button>
-            </div>
+            </ButtonRow>
           </PopoverContent>
         </Popover>
       </div>

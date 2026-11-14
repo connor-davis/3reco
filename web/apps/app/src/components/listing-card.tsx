@@ -18,8 +18,8 @@ export function ListingCard({
   const [failedImage, setFailedImage] = useState<string>();
 
   return (
-    <Card className="group/card relative gap-0 bg-transparent py-0 border-0 shadow-none ring-0">
-      <div className="relative flex overflow-hidden aspect-[4/3] items-center justify-center rounded-lg bg-muted text-muted-foreground">
+    <Card className="group/card relative flex flex-col gap-0 overflow-hidden rounded-2xl border bg-card py-0 shadow-[var(--shadow)] ring-0 dark:shadow-none">
+      <div className="relative flex overflow-hidden aspect-[4/3] items-center justify-center rounded-none bg-muted text-muted-foreground">
         {listing.image_url && failedImage !== listing.image_url ? (
           <img
             src={listing.image_url}
@@ -35,7 +35,7 @@ export function ListingCard({
           />
         )}
       </div>
-      <CardContent className="mt-3.5 space-y-1.5 px-0">
+      <CardContent className="space-y-1.5 p-4">
         <h3 className="line-clamp-2 font-semibold tracking-tight">
           <Link
             className="rounded outline-none after:absolute after:inset-0 hover:underline focus-visible:after:rounded-lg focus-visible:after:ring-3 focus-visible:after:ring-ring focus-visible:after:ring-inset"

@@ -32,15 +32,57 @@ test('PageHeader keeps one action visible and moves secondary actions into More'
   );
 });
 
-test('ButtonRow gives two compact actions equal widths and stacks three or more', () => {
+test('ButtonRow stacks every phone action and uses natural widths from md up', () => {
   const { ButtonRow } = load('components/button-row.tsx', {
     '@/lib/utils': utils,
   });
   const row = ButtonRow({ children: ['Cancel', 'Save'] });
-  assert.match(row.props.className, /\[&>\*\]:flex-1/);
-  assert.match(row.props.className, /has-\[>:nth-child\(3\)\]:flex-col/);
-  assert.match(row.props.className, /lg:justify-end/);
+  assert.match(row.props.className, /flex-col/);
+  assert.match(row.props.className, /\[&>\*\]:w-full/);
+  assert.match(row.props.className, /md:flex-row/);
+  assert.match(row.props.className, /md:\[&>\*\]:w-auto/);
+  assert.match(row.props.className, /md:justify-end/);
+  assert.doesNotMatch(row.props.className, /nth-child|flex-1|lg:/);
   assert.match(row.props.className, /\[&>\*\]:min-h-11/);
+});
+
+test('date range triggers fill their parent without forcing the inline outer width', () => {
+  const { DateRangePicker } = load('components/ui/date-range-picker.tsx', {
+    react: { useState: (value) => [value, () => {}] },
+    '@/lib/utils': utils,
+    '@/components/button-row': { ButtonRow: 'ButtonRow' },
+    './button': { Button: 'Button' },
+    './calendar': { Calendar: 'Calendar' },
+    './popover': {
+      Popover: 'Popover',
+      PopoverContent: 'PopoverContent',
+      PopoverTrigger: 'PopoverTrigger',
+    },
+  });
+  for (const fullWidth of [false, true]) {
+    const picker = DateRangePicker({ onChange() {}, fullWidth });
+    assert.equal(picker.props.className.includes('w-full'), fullWidth);
+    const inner = picker.props.children[0];
+    assert.match(inner.props.className, /min-w-0 flex-1/);
+    const trigger = inner.props.children.props.children[0];
+    const button = trigger.props.render({});
+    assert.match(button.props.className, /w-full justify-start/);
+  }
+});
+
+test('alert footers share ButtonRow and preserve cancel before confirm', () => {
+  const { AlertDialogFooter } = load('components/ui/alert-dialog.tsx', {
+    '@/lib/utils': utils,
+    '@/components/button-row': { ButtonRow: 'ButtonRow' },
+    '@/components/ui/button': { Button: 'Button' },
+  });
+  const footer = AlertDialogFooter({ children: ['Cancel', 'Confirm'] });
+  assert.equal(footer.type, 'ButtonRow');
+  assert.deepEqual(footer.props.children, ['Cancel', 'Confirm']);
+  assert.doesNotMatch(
+    source('components/ui/alert-dialog.tsx'),
+    /flex-col-reverse|grid-cols-2/
+  );
 });
 
 test('line Tabs never wrap, scroll without a scrollbar and keep 46px triggers', () => {

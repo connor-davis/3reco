@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { LogIn } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { ButtonRow } from '@/components/button-row';
 import { DataState } from '@/components/data-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,7 @@ export function SessionsPanel() {
           {error.message} Try again.
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
+      <ButtonRow>
         <Button
           className="min-h-11"
           variant="outline"
@@ -115,7 +116,7 @@ export function SessionsPanel() {
         >
           Sign all out
         </Button>
-      </div>
+      </ButtonRow>
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
