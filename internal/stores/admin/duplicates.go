@@ -14,17 +14,19 @@ type DuplicateGroup struct {
 
 // Item signatures keep numeric JSON values, so 4 and 4.00 compare equally.
 // Sorting retains repeated lines while ignoring the order they were entered.
-const duplicateSignatures = `WITH signatures AS (
+// The day is the one the app shows, from the shared EffectiveDate rule.
+var duplicateSignatures = `WITH signatures AS (
 	SELECT t.id, t.buyer_id, t.seller_id, t.type, t.total_price, t.created_at,
-		COALESCE(t.collection_day,
-			(t.created_at AT TIME ZONE 'Africa/Johannesburg')::date) AS day,
+		(` + database.EffectiveDate("t") + ` AT TIME ZONE 'Africa/Johannesburg')::date AS day,
+		COALESCE((SELECT jsonb_agg(DISTINCT i.material_id ORDER BY i.material_id)
+			FROM transaction_items i WHERE i.transaction_id=t.id), '[]'::jsonb) AS materials,
 		COALESCE((SELECT jsonb_agg(jsonb_build_array(i.material_id, i.weight, i.price)
 			ORDER BY i.material_id, i.weight, i.price)
 			FROM transaction_items i WHERE i.transaction_id=t.id), '[]'::jsonb) AS items
 	FROM transactions t WHERE t.status='complete'
 ) `
 
-// DuplicateGroups finds exact sets and same-total sets whose items differ.
+// DuplicateGroups finds exact sets, and sets with the same materials whose weights or prices differ.
 func (s *Store) DuplicateGroups(ctx context.Context) ([]DuplicateGroup, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, duplicateSignatures+`, candidates AS (
 		SELECT 'exact' AS kind, array_agg(id ORDER BY created_at,id) AS ids,
@@ -32,7 +34,7 @@ func (s *Store) DuplicateGroups(ctx context.Context) ([]DuplicateGroup, error) {
 		FROM signatures GROUP BY buyer_id,seller_id,type,day,items HAVING count(*) > 1
 		UNION ALL
 		SELECT 'possible', array_agg(id ORDER BY created_at,id), array_agg(id ORDER BY id)
-		FROM signatures GROUP BY buyer_id,seller_id,day,total_price
+		FROM signatures GROUP BY buyer_id,seller_id,type,day,materials
 		HAVING count(DISTINCT items) > 1
 	)
 	SELECT kind,ids FROM candidates c WHERE NOT EXISTS (

@@ -54,7 +54,9 @@ await fetch(`/api/admin/users/${userId}`, { method: 'DELETE', credentials: 'incl
 
 ## Duplicate trades
 
-Open **Duplicates** in the admin Workspace to compare matching trades. The page
+Open **Duplicates** in the admin Workspace to compare matching trades. Trades match
+only with the same parties, collection day and materials. Exact means the weights
+and prices match too; possible means they differ. The page
 suggests the oldest record as the original. Check dates, materials, amounts and
 receipts before choosing **Mark as duplicate**. Only exact collector trade copies
 can be marked. A real repeat delivery can be dismissed with **Not a duplicate**.

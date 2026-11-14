@@ -125,8 +125,8 @@ function DuplicatesPage() {
                   }
                   description={
                     group.kind === 'exact'
-                      ? 'The parties, collection day and material lines match.'
-                      : 'The parties, day and amount match, but the materials differ. Review these records before deciding.'
+                      ? 'Same parties, collection day, materials, weights and prices.'
+                      : 'Same parties, collection day and materials. Weights or prices differ.'
                   }
                 >
                   <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">

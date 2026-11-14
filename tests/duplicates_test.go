@@ -104,11 +104,12 @@ func TestDuplicateMatchingAndDismissal(t *testing.T) {
 		t.Fatalf("new copy must resurface the group: %+v", groups)
 	}
 
-	possible := duplicateCollection(t, w, collector, tradeLine(other, "22", "1"))
+	possible := duplicateCollection(t, w, collector,
+		tradeLine(w.material, "4", "5"), tradeLine(other, "3", "1"))
 	tradeExec(t, w.app, `UPDATE transactions SET collection_day='2026-11-01' WHERE id=$1`, possible)
 	groups := duplicateReview(t, admin).Groups
 	if len(groups) != 2 || groups[1].Kind != "possible" || len(groups[1].Trades) != 5 {
-		t.Fatalf("same total with different items must be possible: %+v", groups)
+		t.Fatalf("same materials with a different weight must be possible: %+v", groups)
 	}
 	duplicateMark(t, admin, possible, first, 409)
 
@@ -389,7 +390,55 @@ func TestDuplicateMatchingKeepsPartiesAndDaysSeparate(t *testing.T) {
 
 	tradeExec(t, w.app, `UPDATE transactions SET collection_date='2026-10-01T00:00:00Z'
 		WHERE id=$1`, second)
-	if len(duplicateReview(t, admin).Groups) != 1 {
-		t.Fatal("a missing collection day must fall back to created_at, not collection_date")
+	if len(duplicateReview(t, admin).Groups) != 0 {
+		t.Fatal("a collection date must decide the day over created_at")
+	}
+}
+
+func TestDuplicateMatchingUsesTheShownCollectionDate(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	collector := tradeCollector(t, w.app, w.buyer, "+27800000907")
+	first := duplicateCollection(t, w, collector, tradeLine(w.material, "4", "5"))
+	second := duplicateCollection(t, w, collector, tradeLine(w.material, "4", "5"))
+	ids := []string{first, second}
+
+	// Typed in on the same day, collected on different days: not duplicates.
+	tradeExec(t, w.app, `UPDATE transactions SET collection_day=NULL,
+		created_at='2026-11-20T08:00:00Z',
+		collection_date=CASE WHEN id=$1 THEN '2026-11-28T08:00:00Z'::timestamptz
+		ELSE '2026-11-27T08:00:00Z'::timestamptz END WHERE id=ANY($2)`, first, ids)
+	if len(duplicateReview(t, admin).Groups) != 0 {
+		t.Fatal("different collection dates must not match")
+	}
+
+	// Collected on the same day, typed in on different days: exact copies.
+	tradeExec(t, w.app, `UPDATE transactions SET collection_date='2026-11-28T08:00:00Z',
+		created_at=CASE WHEN id=$1 THEN '2026-11-28T09:00:00Z'::timestamptz
+		ELSE '2026-12-02T09:00:00Z'::timestamptz END WHERE id=ANY($2)`, first, ids)
+	groups := duplicateReview(t, admin).Groups
+	if len(groups) != 1 || groups[0].Kind != "exact" || len(groups[0].Trades) != 2 {
+		t.Fatalf("same collection date must match: %+v", groups)
+	}
+}
+
+func TestDuplicateMatchingNeedsTheSameMaterials(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	collector := tradeCollector(t, w.app, w.buyer, "+27800000908")
+	other := tradeMaterial(t, w.app, "Tin", "1")
+
+	// Same total (20), different materials: never a match.
+	duplicateCollection(t, w, collector, tradeLine(w.material, "4", "5"))
+	duplicateCollection(t, w, collector, tradeLine(other, "4", "5"))
+	if groups := duplicateReview(t, admin).Groups; len(groups) != 0 {
+		t.Fatalf("different materials must not match: %+v", groups)
+	}
+
+	// Same material, different weight: possible, never exact.
+	duplicateCollection(t, w, collector, tradeLine(w.material, "2", "10"))
+	groups := duplicateReview(t, admin).Groups
+	if len(groups) != 1 || groups[0].Kind != "possible" || len(groups[0].Trades) != 2 {
+		t.Fatalf("same materials with a different weight must be possible: %+v", groups)
 	}
 }
