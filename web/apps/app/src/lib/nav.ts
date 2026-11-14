@@ -17,7 +17,6 @@ import {
   UserPlus,
   Users,
   LogIn,
-  Tag,
   Inbox,
 } from 'lucide-react';
 import { canOpen, type PageId } from '@/lib/access';
@@ -129,8 +128,7 @@ function roleNav(role: Role | null): NavGroup[] {
             { label: 'Stock', to: '/stock', icon: PackageOpen },
             { label: 'Collections', to: '/collections', icon: ClipboardList },
             { label: 'Collectors', to: '/collectors', icon: Users },
-            { label: 'Purchases', to: '/transactions/purchases', icon: Tag },
-            { label: 'Sales', to: '/transactions/sales', icon: TrendingUp },
+            { label: 'Transactions', to: '/transactions', icon: Receipt },
           ],
         },
       ];

@@ -59,6 +59,9 @@ type Props = {
   // Collections show a stats row. Other pages skip it.
   stats?: boolean;
   readOnly?: boolean;
+  businessFilter?: 'all' | 'bought' | 'sold';
+  onBusinessFilterChange?: (filter: string) => void;
+  exportHint?: string;
 };
 
 const typeOptions = [
@@ -116,7 +119,13 @@ export function RecordList({
   actions,
   stats = false,
   readOnly = false,
+  businessFilter,
+  onBusinessFilterChange,
+  exportHint,
 }: Props) {
+  const { user } = useAuth();
+  const direction = (row: Transaction) =>
+    row.buyer.id === user?.active_business_id ? 'Bought' : 'Sold';
   const [status, setStatus] = useState('complete');
   const [query, setQuery] = useState('');
   const [range, setRange] = useState<DateRange | undefined>();
@@ -194,6 +203,9 @@ export function RecordList({
           <div className="line-clamp-2">
             <Parties row={row.original} />
           </div>
+          {businessFilter && (
+            <Badge variant="secondary">{direction(row.original)}</Badge>
+          )}
           {/* The plain compact label: a Badge inside the fixed-height Badge was clipped. */}
           <Badge variant="outline" className="h-5 px-2 text-xs">
             <TradeTypeLabel
@@ -267,7 +279,8 @@ export function RecordList({
     from: range?.from && day(range.from),
     to: range?.to && day(range.to),
   };
-  const pager = usePager(50, filters);
+  // Each direction has its own cursor scope even when other filters match.
+  const pager = usePager(50, { ...filters, kind });
   const list = useTransactions(kind, pager.params);
   const totals = useTransactionTotals(kind, filters);
   const download = useExport(exportKind ?? 'transactions');
@@ -334,6 +347,18 @@ export function RecordList({
         </div>
       )}
       <div className="mb-6 space-y-4">
+        {businessFilter && onBusinessFilterChange && (
+          <FilterTabs
+            label="Bought or sold"
+            value={businessFilter}
+            onChange={onBusinessFilterChange}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'bought', label: 'Bought' },
+              { value: 'sold', label: 'Sold' },
+            ]}
+          />
+        )}
         {!collectionsOnly && (
           <FilterTabs
             label="Transaction status"
@@ -387,13 +412,17 @@ export function RecordList({
             </>
           }
           action={
-            exportKind &&
+            (exportKind || exportHint) &&
             !readOnly && (
               <Button
                 variant="outline"
                 className="h-11 max-lg:w-11 max-lg:px-0 max-lg:has-data-[icon=inline-start]:pl-0"
                 aria-label="Export"
+                aria-describedby={
+                  exportHint ? 'transaction-export-hint' : undefined
+                }
                 disabled={
+                  !!exportHint ||
                   status !== 'complete' ||
                   download.isPending ||
                   totals.isFetching ||
@@ -408,6 +437,14 @@ export function RecordList({
             )
           }
         />
+        {exportHint && !readOnly && (
+          <p
+            id="transaction-export-hint"
+            className="text-sm text-muted-foreground"
+          >
+            {exportHint}
+          </p>
+        )}
       </div>
       <DataState
         query={list}
@@ -448,6 +485,9 @@ export function RecordList({
               value={formatRand(toCents(row.total_price))}
               status={
                 <>
+                  {businessFilter && (
+                    <Badge variant="secondary">{direction(row)}</Badge>
+                  )}
                   <StatusBadge
                     dotOnly
                     status={
