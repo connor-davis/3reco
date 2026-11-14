@@ -316,16 +316,16 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 
 | Job | Owner |
 | --- | --- |
-| Owner photo upload/removal and private cached photo stream | `internal/api/stock/image.go` |
+| Photo add, remove, reorder routes and private cached photo stream (`/image` is the cover alias) | `internal/api/stock/image.go`, routes in `handler.go` |
 | Separate personal pictures and store logos, including shared migrated object references | `internal/stores/profile/avatar.go`, `internal/services/profile/avatar.go`, `GET /api/stores/:id/logo` in `internal/api/profile/avatar.go` |
-| Stock photo ownership, replacement compensation and after-commit cleanup | `internal/services/stock/image.go`; stock deletion in `stock.go` |
-| Market-visible photo reads and owner image reference writes | `internal/stores/stock/image.go` |
+| Stock photo cap, add/remove/reorder, compensation and after-commit cleanup | `internal/services/stock/image.go`; stock deletion in `stock.go` |
+| Photo rows, order, verified-seller read rule, `stock_photos` table and live trigger | `internal/stores/stock/image.go`, `internal/platform/database/migrations/0029_stock_photos.sql` |
 | Versioned listing photo and seller logo projections | `internal/stores/market/listings.go`; stock photo projection in `internal/stores/stock/stock.go` |
 | Read stock photo keys before account erase and include them in own exports | `internal/stores/privacy/{erase,export}.go`; after-commit cleanup in `internal/services/privacy/erase.go` |
 | Shared picture avatar with initials fallback | `web/apps/app/src/components/visuals.tsx` (`PersonAvatar`) |
-| Stock photo selection (add and edit), preview and staged removal; photo after create | `web/apps/app/src/components/dialogs/stock-dialog.tsx`; hooks in `src/lib/api/stock.ts` |
-| Marketplace card photos and seller logos, smaller listing gallery | `web/apps/app/src/components/listing-card.tsx`, `src/routes/market/listing/-components/gallery.tsx` |
-| Stock photo access, visibility, replacement, rollback, privacy and live routing tests | `tests/stock_images_test.go`, `tests/stock_images_live_test.go` |
+| Photo list with add, drag/move, remove (saves at once on an existing line) | `web/apps/app/src/components/dialogs/stock-photos.tsx`; used by `stock-dialog.tsx`; hooks in `src/lib/api/stock.ts` |
+| Marketplace card photos and seller logos, swipe gallery with thumbnails | `web/apps/app/src/components/listing-card.tsx`, `src/routes/market/listing/-components/gallery.tsx` |
+| Stock photo access, visibility, replacement, rollback, privacy and live routing tests | `tests/stock_images_test.go`, `tests/stock_images_live_test.go`, `tests/stock_photos_test.go` |
 | Photo/placeholder, avatar, stock photo validation, staged-save and default-price prefill web tests | `web/apps/app/tests/stock-images.test.mjs` |
 | Audit log: actor for every write (`database.WithActor`, `app.actor_id` set in `InTx`), request transaction (`middleware.ActorTx`) | `internal/platform/database/database.go`, `internal/api/middleware/middleware.go`, registered in `internal/api/server.go` |
 | What the audit trigger masks and which tables it covers (one place to change) | `internal/platform/database/migrations/0024_audit_log.sql` (`audit_mask`) |

@@ -50,28 +50,32 @@ Listing or unlisting updates the market live without adding a notification to th
 
 You can only change or delete your own stock. Someone else's id gets `404 not_found`.
 
-## Photo
+## Photos
 
-One photo per stock item. `image_url` is empty when there is no photo; otherwise it is a versioned URL that changes on every replacement. The internal object key is never returned by stock or listing routes.
+Up to 8 photos per stock item; the first is the cover. A stock item returns `photos` (`[{ "id", "url" }]`, in order) and `image_url` (the cover, empty when none). Marketplace listings return `image_urls` and `image_url`. URLs are versioned. The internal object key is never returned.
 
-### `POST /api/stock/:id/image`
+### `POST /api/stock/:id/photos`
 
-Send multipart form data with a `file` field. PNG, JPEG and WEBP are accepted, detected from the bytes, up to 2 MiB. Empty, oversized or unsupported images return `400`.
+Multipart form data with a `file` field. PNG, JPEG and WEBP, detected from the bytes, up to 2 MiB. Empty, oversized or unsupported images return `400`. A ninth photo returns `400`.
 
-**Access:** the owning business. Anonymous callers get `401`; another business's id gets `404 not_found`.
+**Access:** any member of the owning business. Anonymous callers get `401`; another business's id gets `404 not_found`.
 
-**Returns:** the updated stock item, including `image_url`. Replacement removes the old file only after the database commit.
+**Returns:** the updated stock item.
 
-### `DELETE /api/stock/:id/image`
+### `PUT /api/stock/:id/photos/order`
 
-Same write access as upload. **Returns:** the updated stock item with an empty `image_url`. The file is removed after commit. Deleting stock or erasing its owner's account also removes the photo after commit.
+Body `{ "ids": ["...", "..."] }`: every photo id of the item, in the new order. A missing, extra or repeated id returns `400`. Same access. **Returns:** the updated stock item.
 
-### `GET /api/stock/:id/image`
+### `DELETE /api/stock/:id/photos/:photo_id`
 
-Streams the photo. The owner can read it even while unlisted or empty. Everyone else, including anonymous callers, can read it only while the stock is listed, weight is above zero, and the seller is a business that has not been removed. Otherwise `404 not_found`.
+Same access. **Returns:** the updated stock item. The file is removed after commit. Deleting stock or erasing its owner's account removes all its photos after commit.
+
+### `GET /api/stock/:id/photos/:photo_id`
+
+Streams one photo. `GET /api/stock/:id/image` still works and streams the cover. The business's own members and staff can read while unlisted or empty. Everyone else can read only while the stock is listed, weight is above zero, and the seller is a verified business that has not been removed. Otherwise `404 not_found`.
 
 **Cache-Control:** `private, max-age=60`.
 
 Marketplace listing responses also include `image_url` and `seller_avatar_url` (the business's existing profile picture).
 
-Live updates send a `stock` change to the owner when stock, its photo or its holds change. Listed photos also send a `listing` change to everyone signed in. Business logo changes send a `listing` change too.
+Live updates send a `stock` change to the owner when stock, its photo or its holds change. Listed photos also send a `listing` change to everyone signed in. Photo changes also send a `stock` change. Business logo changes send a `listing` change too.

@@ -169,7 +169,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
         listing={listing}
         initialWeight={problem ? '' : weight}
       />
-      <Gallery image={listing.image_url} name={listing.material_name} />
+      <Gallery images={listing.image_urls} name={listing.material_name} />
       <Panel title="Material details">
         <div className="space-y-4">
           <h1 className="text-3xl font-semibold tracking-tight">
