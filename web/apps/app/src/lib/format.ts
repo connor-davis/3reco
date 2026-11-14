@@ -149,3 +149,29 @@ export function today(): string {
     timeZone: 'Africa/Johannesburg',
   }).format(new Date());
 }
+
+/** A trend against the previous period: what to print and which way it went. */
+export type Trend = { label: string; dir: 'up' | 'down' | 'flat' | 'new' };
+
+/**
+ * The % change from `previous` to `current`, for display only (never summed).
+ * Equal values read "No change"; a previous value of 0 reads "New".
+ */
+export function formatPercent(
+  current: string | number,
+  previous: string | number
+): Trend {
+  const now = Number(current);
+  const before = Number(previous);
+
+  if (now === before) return { label: 'No change', dir: 'flat' };
+  if (before === 0) return { label: 'New', dir: 'new' };
+
+  // A fall that is not all the way to zero never reads as 100%.
+  const raw = Math.round(((now - before) / before) * 100);
+  const pct = now > 0 ? Math.max(raw, -99) : raw;
+
+  return pct >= 0
+    ? { label: `${pct}%`, dir: 'up' }
+    : { label: `${-pct}%`, dir: 'down' };
+}

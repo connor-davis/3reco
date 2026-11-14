@@ -18,7 +18,7 @@ import { StatCard, StatGrid } from '@/components/stat-card';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useDashboard } from '@/lib/api/dashboards';
 import { useStats } from '@/lib/api/stats';
-import { formatKg, formatRand, toCents } from '@/lib/format';
+import { formatKg, formatPercent, formatRand, toCents } from '@/lib/format';
 import { formatCo2 } from '@/lib/impact';
 import { roleLabel } from '@/lib/access';
 import {
@@ -28,6 +28,8 @@ import {
   MaterialsPanel,
   QuickLinks,
 } from './-dashboard/panels';
+import { PhoneHome } from './-dashboard/phone-home';
+import { StockMix } from './-dashboard/stock-mix';
 
 export const Route = createFileRoute('/')({
   component: () => (
@@ -119,31 +121,34 @@ function Dashboard() {
 
   return (
     <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
-      <PageHeader
-        compactActionsBelow
-        title={
-          staff
-            ? 'A clear view of the trade.'
-            : (first ? 'Welcome, ' : 'Welcome back, ') +
-              (user?.firstName || user?.name || 'there') +
-              '.'
-        }
-        description={
-          staff
-            ? 'Everyone on 3REco, last 30 days.'
-            : collector
-              ? 'Your collections, last 30 days.'
-              : 'Your settled trades, last 30 days.'
-        }
-        actions={
-          <LinkButton
-            className="min-h-11"
-            to={collector ? '/profile' : '/transactions'}
-          >
-            {collector ? 'Your profile' : 'View transactions'}
-          </LinkButton>
-        }
-      />
+      {/* Business on a phone gets the mint band as its greeting instead. */}
+      <div className={!collector && !staff ? 'max-md:hidden' : undefined}>
+        <PageHeader
+          compactActionsBelow
+          title={
+            staff
+              ? 'A clear view of the trade.'
+              : (first ? 'Welcome, ' : 'Welcome back, ') +
+                (user?.firstName || user?.name || 'there') +
+                '.'
+          }
+          description={
+            staff
+              ? 'Everyone on 3REco, last 30 days.'
+              : collector
+                ? 'Your collections, last 30 days.'
+                : 'Your settled trades, last 30 days.'
+          }
+          actions={
+            <LinkButton
+              className="min-h-11"
+              to={collector ? '/profile' : '/transactions'}
+            >
+              {collector ? 'Your profile' : 'View transactions'}
+            </LinkButton>
+          }
+        />
+      </div>
       {collector &&
         dashboard?.collector_linked === false &&
         !query.isError &&
@@ -172,26 +177,89 @@ function Dashboard() {
       >
         {dashboard && (
           <>
-            <StatGrid threeUp>
-              <StatCard
-                tint="mint"
-                label={collector ? 'Collected' : 'Material traded'}
-                value={formatKg(dashboard.totals.weight)}
-                icon={Boxes}
+            {!collector && !staff && (
+              <PhoneHome
+                name={user?.firstName || user?.name || 'there'}
+                week={dashboard.week}
               />
-              <StatCard
-                tint="peach"
-                label={collector ? 'Earned' : 'Trade value'}
-                value={formatRand(toCents(dashboard.totals.value))}
-                icon={Receipt}
-              />
-              <StatCard
-                tint="lilac"
-                label={collector ? 'Collections' : 'Settled trades'}
-                value={String(dashboard.totals.count)}
-                icon={ClipboardList}
-              />
-            </StatGrid>
+            )}
+            {collector ? (
+              <StatGrid threeUp>
+                <StatCard
+                  tint="mint"
+                  label="Collected"
+                  value={formatKg(dashboard.totals.weight)}
+                  trend={formatPercent(
+                    dashboard.totals.weight,
+                    dashboard.previous.weight
+                  )}
+                  icon={Boxes}
+                />
+                <StatCard
+                  tint="peach"
+                  label="Earned"
+                  value={formatRand(toCents(dashboard.totals.value))}
+                  trend={formatPercent(
+                    dashboard.totals.value,
+                    dashboard.previous.value
+                  )}
+                  icon={Receipt}
+                />
+                <StatCard
+                  tint="lilac"
+                  label="Collections"
+                  value={String(dashboard.totals.count)}
+                  trend={formatPercent(
+                    dashboard.totals.count,
+                    dashboard.previous.count
+                  )}
+                  icon={ClipboardList}
+                />
+              </StatGrid>
+            ) : (
+              <StatGrid>
+                <StatCard
+                  tint="mint"
+                  label="Material traded"
+                  value={formatKg(dashboard.totals.weight)}
+                  trend={formatPercent(
+                    dashboard.totals.weight,
+                    dashboard.previous.weight
+                  )}
+                  icon={Boxes}
+                />
+                <StatCard
+                  tint="peach"
+                  label="Trade value"
+                  value={formatRand(toCents(dashboard.totals.value))}
+                  trend={formatPercent(
+                    dashboard.totals.value,
+                    dashboard.previous.value
+                  )}
+                  icon={Receipt}
+                />
+                <StatCard
+                  tint="lilac"
+                  label="Settled trades"
+                  value={String(dashboard.totals.count)}
+                  trend={formatPercent(
+                    dashboard.totals.count,
+                    dashboard.previous.count
+                  )}
+                  icon={ClipboardList}
+                />
+                <StatCard
+                  tint="sky"
+                  label="Active collectors"
+                  value={String(dashboard.totals.active_collectors ?? 0)}
+                  trend={formatPercent(
+                    dashboard.totals.active_collectors ?? 0,
+                    dashboard.previous.active_collectors ?? 0
+                  )}
+                  icon={Users}
+                />
+              </StatGrid>
+            )}
             {workspace}
             {staff && dashboard.by_type && (
               <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
@@ -206,12 +274,22 @@ function Dashboard() {
               </ul>
             )}
 
-            <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+            <div
+              className={
+                'grid gap-4 lg:grid-cols-2 [&>*]:min-w-0' +
+                (collector ? '' : ' xl:grid-cols-3')
+              }
+            >
               <NeedsAttention collector={collector} />
               <MaterialsPanel
                 series={dashboard.series}
                 className="[&>section]:h-full"
               />
+              {!collector && (
+                <div className="lg:col-span-2 xl:col-span-1 [&>section]:h-full">
+                  <StockMix mix={dashboard.stock_mix} all={staff} />
+                </div>
+              )}
             </div>
             <RecentActivity collector={collector} />
             <CounterpartyRows

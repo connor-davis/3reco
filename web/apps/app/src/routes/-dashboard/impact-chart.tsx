@@ -33,7 +33,14 @@ export function axisTicks(days: string[], compact = false): string[] {
   );
 }
 
-export function ImpactChart({ series }: { series: Dashboard['series'] }) {
+/** `narrow` (set by the panel from its width) keeps only the end labels. */
+export function ImpactChart({
+  series,
+  narrow = false,
+}: {
+  series: Dashboard['series'];
+  narrow?: boolean;
+}) {
   const compact = useIsCompact();
 
   // Chart geometry uses numbers; amounts shown as money never do.
@@ -60,7 +67,7 @@ export function ImpactChart({ series }: { series: Dashboard['series'] }) {
           padding={{ left: 24, right: 24 }}
           ticks={axisTicks(
             points.map((p) => p.day),
-            compact
+            compact || narrow
           )}
           interval={0}
         />

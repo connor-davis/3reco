@@ -142,7 +142,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Export roles, inclusive timestamps, exact columns, SAST formatting and formula guard | `internal/services/admin/exports.go` |
 | Streaming allowlisted active account export SQL | `internal/stores/admin/exports.go` |
 | Store reviews, public review lists, admin remove | `internal/stores/reviews`, `internal/services/reviews`, `internal/api/reviews` |
-| Admin users, role change, removal, the three dashboards | `internal/stores/admin`, `internal/services/admin`, `internal/api/admin` |
+| Admin users, role change, removal, the three dashboards (previous-period totals, active collectors, stock mix, business week kg in `dashboard_extra.go`) | `internal/stores/admin`, `internal/services/admin`, `internal/api/admin` |
 | Wiring of the trade area into the server | `internal/api/trade.go` |
 
 ## Realtime
@@ -275,7 +275,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Compact divided list rows, three-line trade/request rows, primary taps and sibling More menus | `web/apps/app/src/components/list-row.tsx`; compact status dots, plain type labels and flowing `TradeParties` names in `components/badges.tsx` |
 | Responsive soft-panel tables, fitted columns with reserved numeric widths, compact rows and keyboard row activation | `web/apps/app/src/components/data-table.tsx`; trade and request columns in `routes/transactions/-components/record-list.tsx`, `routes/market/-components/request-list.tsx` |
 | Guarded trade detail page, allowlisted Back destination and legacy `?open=` redirect | `web/apps/app/src/routes/transactions/$transactionId.tsx`, `routes/transactions/-components/record-list.tsx`; panels, invoice and receipt actions in `components/dialogs/record-dialogs.tsx` (`TradeDetail`) |
-| Dashboard panels, three-tile summary, quick links and capped activity/partners | `web/apps/app/src/routes/index.tsx`, `routes/-dashboard/panels.tsx`; phase 2 layout checks in `tests/layout-phase2.test.mjs`, `tests/layout-render.test.mjs` |
+| Dashboard panels, stat tiles with trends (`formatPercent` in `lib/format.ts`), stock mix ring (`-dashboard/stock-mix.tsx`), business phone home below 768px (`-dashboard/phone-home.tsx`), quick links and capped activity/partners | `web/apps/app/src/routes/index.tsx`, `routes/-dashboard/panels.tsx`; phase 2 layout checks in `tests/layout-phase2.test.mjs`, `tests/layout-render.test.mjs` |
 | Soft section panels sharing the Section heading and action slot | `web/apps/app/src/components/panel.tsx`, `page-header.tsx` |
 | One-row search toolbar and responsive filter sheet with clear/results actions | `web/apps/app/src/components/toolbar.tsx` |
 | Full-width action groups stacked below md, natural-width rows from md up | `web/apps/app/src/components/button-row.tsx` |

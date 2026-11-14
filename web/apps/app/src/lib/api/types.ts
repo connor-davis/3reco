@@ -393,11 +393,24 @@ export interface DashboardTotals {
   value: Decimal;
   weight: Decimal;
   carbon_savings: Decimal;
+  /** Business and admin only. */
+  active_collectors?: number;
+}
+export interface MaterialWeight {
+  material_id: string;
+  name: string;
+  weight: Decimal;
 }
 export interface Dashboard {
   from: string;
   to: string;
   totals: DashboardTotals;
+  /** The period right before this one, as long as this one. */
+  previous: DashboardTotals;
+  /** Business: its own stock. Admin and staff: all marketplace stock. */
+  stock_mix?: MaterialWeight[];
+  /** Business only: collected kg this and last week (Monday start, SAST). */
+  week?: { this_kg: Decimal; last_kg: Decimal; materials: MaterialWeight[] };
   series: (DashboardTotals & { day: string })[];
   counterparties: {
     id: string;

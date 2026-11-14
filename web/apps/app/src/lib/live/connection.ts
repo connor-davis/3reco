@@ -22,7 +22,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
     case 'notification':
       return [['notifications']];
     case 'stock':
-      return [['stock']];
+      return [['stock'], ['dashboards']];
     case 'listing':
       return [
         ['listings'],

@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { Trend } from '@/lib/format';
 import {
   Card,
   CardContent,
@@ -14,6 +16,7 @@ type StatCardProps = {
   label: string;
   value: string;
   hint?: string;
+  trend?: Trend;
   icon?: LucideIcon;
   isLoading?: boolean;
   // True when the data failed to load, so no stale number is shown.
@@ -26,6 +29,7 @@ export function StatCard({
   label,
   value,
   hint,
+  trend,
   icon: Icon,
   isLoading = false,
   unavailable = false,
@@ -49,7 +53,7 @@ export function StatCard({
           )}
           {label}
         </CardDescription>
-        <CardTitle className="text-[clamp(0.75rem,6cqi,1.875rem)] font-semibold tracking-tight tabular-nums sm:whitespace-nowrap">
+        <CardTitle className="text-[clamp(1.25rem,9cqi,1.875rem)] font-semibold tracking-tight tabular-nums sm:whitespace-nowrap">
           {isLoading ? (
             <Skeleton className="h-8 w-24" />
           ) : unavailable ? (
@@ -60,6 +64,7 @@ export function StatCard({
           )}
         </CardTitle>
       </CardHeader>
+      {trend && !isLoading && !unavailable && <TrendLine trend={trend} />}
       {hint && (
         <CardContent className="text-xs text-muted-foreground">
           {hint}
@@ -70,8 +75,9 @@ export function StatCard({
 }
 
 /**
- * A responsive row of stat tiles: 1 column to 479px, then 2, then 4. With
- * `threeUp` (three tiles) it is 1 column, then 3 equal ones from 1024px.
+ * A responsive row of stat tiles: hidden below 768px (the phone home shows the key numbers
+ * instead), then 2, then 4 from 1280px. With `threeUp` (three tiles) it is 3
+ * equal ones.
  */
 export function StatGrid({
   children,
@@ -84,11 +90,33 @@ export function StatGrid({
     <div
       className={
         threeUp
-          ? 'grid grid-cols-3 gap-2 sm:gap-4'
-          : 'grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4'
+          ? 'grid grid-cols-3 gap-2 sm:gap-4 max-md:hidden'
+          : 'grid grid-cols-2 gap-2 sm:gap-4 max-md:hidden xl:grid-cols-4'
       }
     >
       {children}
     </div>
+  );
+}
+
+/** The small "up 12%" line under a tile value: mint up, rose down. */
+export function TrendLine({ trend }: { trend: Trend }) {
+  const Arrow = trend.dir === 'up' ? ArrowUp : ArrowDown;
+  const arrow = trend.dir === 'up' || trend.dir === 'down';
+
+  return (
+    <CardContent
+      className={
+        'flex items-center gap-1 text-xs font-medium ' +
+        (trend.dir === 'up'
+          ? 'text-mint-ink'
+          : trend.dir === 'down'
+            ? 'text-rose-ink'
+            : 'text-muted-foreground')
+      }
+    >
+      {arrow && <Arrow className="size-3" aria-hidden="true" />}
+      {trend.label}
+    </CardContent>
   );
 }

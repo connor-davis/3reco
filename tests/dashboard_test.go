@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
@@ -260,5 +261,109 @@ func TestAdminDashboardSplitsByType(t *testing.T) {
 	// A business dashboard carries no platform-wide split.
 	if _, has := tradeDash(t, w.buyer, "/api/dashboard/business")["by_type"]; has {
 		t.Error("business dashboard exposes by_type")
+	}
+}
+
+// A business sees only its own stock mix, week, collectors and previous totals.
+func TestBusinessDashboardMetricsAreTenantScoped(t *testing.T) {
+	w := newTradeWorld(t)
+	other := tradeNewUser(t, w.app, "business")
+	paper := tradeMaterial(t, w.app, "Paper", "2")
+
+	// Stock: the buyer holds 7 kg of two materials, the other business 99 kg.
+	tradeStock(t, w.app, w.buyer.id, paper, "7.5", "2")
+	tradeStock(t, w.app, other.id, paper, "99", "2")
+
+	// Collections today: the buyer collects 10 kg of one material and 4 of
+	// paper; the other business collects 50 kg.
+	mine := tradeCollector(t, w.app, w.buyer, "+27800000071")
+	theirs := tradeCollector(t, w.app, other, "+27800000072")
+
+	tradeWant(t, "mine", w.buyer.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(mine, "", tradeLine(w.material, "10", "6"), tradeLine(paper, "4", "2"))), 200)
+	tradeWant(t, "theirs", other.c.Do("POST", "/api/transactions/collections",
+		tradeCollection(theirs, "", tradeLine(w.material, "50", "6"))), 200)
+
+	body := tradeDash(t, w.buyer, "/api/dashboard/business")
+
+	mix, _ := body["stock_mix"].([]any)
+	for _, r := range mix {
+		row, _ := r.(map[string]any)
+		if row["material_id"] == paper && row["weight"] != "11.500" && row["weight"] != "11.5" {
+			t.Errorf("paper stock %v, want only the buyer's 7.5 plus its collected 4", row["weight"])
+		}
+	}
+
+	if len(mix) == 0 {
+		t.Fatal("business has no stock mix")
+	}
+
+	week, _ := body["week"].(map[string]any)
+	if week == nil {
+		t.Fatal("business dashboard has no week")
+	}
+
+	// The week may have just rolled over; this + last holds every kg once.
+	this, _ := new(big.Rat).SetString(week["this_kg"].(string))
+	last, _ := new(big.Rat).SetString(week["last_kg"].(string))
+
+	if sum := new(big.Rat).Add(this, last); sum.Cmp(big.NewRat(14, 1)) != 0 && this.Cmp(big.NewRat(14, 1)) != 0 {
+		t.Errorf("week kg %v + %v, want 14 and none of the other business's 50", this, last)
+	}
+
+	mats, _ := week["materials"].([]any)
+	for _, m := range mats {
+		row, _ := m.(map[string]any)
+		if w, _ := new(big.Rat).SetString(row["weight"].(string)); w.Cmp(big.NewRat(14, 1)) > 0 {
+			t.Errorf("week material %v leaks another business's kg", row)
+		}
+	}
+
+	totals, _ := body["totals"].(map[string]any)
+	if totals["active_collectors"] != float64(1) {
+		t.Errorf("active collectors %v, want 1", totals["active_collectors"])
+	}
+
+	if prev, _ := body["previous"].(map[string]any); prev["count"] != float64(0) ||
+		prev["active_collectors"] != float64(0) {
+		t.Errorf("previous %v, want zeros for the period before", prev)
+	}
+
+	// The other business sees its own 50 kg and one collector.
+	theirBody := tradeDash(t, other, "/api/dashboard/business")
+	if tt, _ := theirBody["totals"].(map[string]any); tt["active_collectors"] != float64(1) {
+		t.Errorf("other active collectors %v, want 1", tt["active_collectors"])
+	}
+
+	// Admin counts both collectors; a collector gets none of these fields.
+	admin := tradeNewUser(t, w.app, "admin")
+	if at, _ := tradeDash(t, admin, "/api/admin/dashboard")["totals"].(map[string]any); at["active_collectors"].(float64) < 2 {
+		t.Errorf("admin active collectors %v, want at least 2", at["active_collectors"])
+	}
+
+	adminBody := tradeDash(t, admin, "/api/admin/dashboard")
+	if _, has := adminBody["week"]; has {
+		t.Error("admin dashboard exposes week")
+	}
+
+	if _, has := adminBody["stock_mix"]; !has {
+		t.Error("admin dashboard has no marketplace stock mix")
+	}
+
+	col := tradeNewUser(t, w.app, "collector")
+
+	cb := tradeDash(t, col, "/api/dashboard/collector")
+	for _, k := range []string{"week", "stock_mix"} {
+		if _, has := cb[k]; has {
+			t.Errorf("collector dashboard exposes %s", k)
+		}
+	}
+
+	if ct, _ := cb["totals"].(map[string]any); ct["active_collectors"] != nil {
+		t.Errorf("collector totals carry active_collectors %v", ct["active_collectors"])
+	}
+
+	if _, has := cb["previous"]; !has {
+		t.Error("collector dashboard has no previous totals")
 	}
 }

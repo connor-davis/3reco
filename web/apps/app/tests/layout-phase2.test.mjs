@@ -207,7 +207,17 @@ test('profile Save and Cancel share ButtonRow, and the dashboard has exactly thr
     page.indexOf('</StatGrid>')
   );
   assert.equal((stats.match(/<StatCard/g) ?? []).length, 3);
-  assert.match(source('components/stat-card.tsx'), /grid grid-cols-3/);
+  // Business and admin get four tiles, the last one Active collectors.
+  const four = page.slice(
+    page.indexOf('<StatGrid>'),
+    page.indexOf('</StatGrid>', page.indexOf('<StatGrid>'))
+  );
+  assert.equal((four.match(/<StatCard/g) ?? []).length, 4);
+  assert.match(four, /Active collectors/);
+  assert.match(
+    source('components/stat-card.tsx'),
+    /grid grid-cols-3[^'`]*max-md:hidden/
+  );
   assert.match(source('routes/-dashboard/panels.tsx'), /rows.slice\(0, 5\)/);
   assert.match(
     source('routes/-dashboard/panels.tsx'),
