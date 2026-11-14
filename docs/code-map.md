@@ -182,8 +182,13 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public listing filters and seller listing handlers | `internal/api/market/listings.go` |
 | Catalog reads and administrator mutation handlers | `internal/api/materials/catalog.go` |
 | Material catalog route registration | `internal/api/materials/handler.go` |
-| Private profile edits and safe account directory handlers | `internal/api/profile/handler.go` |
-| Finish setup: a guest picks collector or business once, required fields checked | `internal/services/profile/setup.go`, `Finish` in `internal/stores/profile/profile.go`, `POST /api/profile/setup` |
+| Private person-only profile edits (a business field gets 400) and safe account directory handlers | `internal/api/profile/handler.go` |
+| Business page API: `GET`/`PATCH /api/business`, owner-only `POST`/`DELETE /api/business/logo` and `GET /api/business/export`; the business id always comes from the session | `internal/api/business/handler.go` |
+| Business rules: Owner and Manager read, Owner writes, a guest or business account with no business opens one on first save (409 if one exists), masked account number keeps the stored one, Owner export | `internal/services/business/business.go` |
+| Business profile SQL (masked read, save, open with Owner membership) and export queries | `internal/stores/businesses/profile.go`, `internal/stores/businesses/export.go` |
+| Business page and its Owner-only data download (`/business`); setup uses the same Business API for a business | `web/apps/app/src/routes/business.tsx`, `src/lib/api/business.ts`, `src/routes/setup.tsx` |
+| Business API tests (read and write roles, other business, mask, logo, export, setup, closed to collectors and staff) | `tests/business_test.go`, `tests/business.test.mjs` (web) |
+| Finish setup: a guest picks collector or business once; personal fields from `users`, business fields from the `businesses` row (Owner only) | `internal/services/profile/setup.go`, `Finish` in `internal/stores/profile/profile.go`, `POST /api/profile/setup` |
 | Caller avatar upload/delete and public image stream with cache headers | `internal/api/profile/avatar.go` |
 | Avatar byte validation, caller-only replacement and after-commit object removal | `internal/services/profile/avatar.go` |
 | Active avatar reference reads, row locks and updates | `internal/stores/profile/avatar.go` |
