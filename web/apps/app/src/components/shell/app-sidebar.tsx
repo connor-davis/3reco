@@ -1,11 +1,13 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 import { Info } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
   SidebarMenuButton,
@@ -52,6 +54,12 @@ export function AppSidebar() {
       collapsible="none"
       className="sticky top-0 h-svh w-60 shrink-0 border-r max-lg:hidden"
     >
+      {/* Same height as the top bar, so the two borders meet in one line. */}
+      <SidebarHeader className="h-14 justify-center border-b px-4">
+        <Link to="/" aria-label="Home" className="w-fit">
+          <BrandLogo className="h-8" />
+        </Link>
+      </SidebarHeader>
       <SidebarContent>
         {navFor(role, user?.business_role, user?.active_business_id).map(
           (group, index) => (
