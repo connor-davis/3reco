@@ -329,7 +329,7 @@ func TestInvoiceShortSample(t *testing.T) {
 		Seller:  "Green Loop Recyclers\nsales@greenloop.example\n+27 82 000 1009\n12 Depot Road, Durban, 4001",
 		Buyer:   "Cape Plastics (Pty) Ltd\nbuyer@capeplastics.example\n+27 21 555 0100\n7 Harbour Street, Cape Town, 8001",
 		Payment: "Bank: Example Bank\nAccount holder: Green Loop Recyclers\nAccount number: •••• 6789\nBranch code: 250655",
-		Total:   "1 243.80",
+		Total:   "1243.80",
 		Lines: []pdf.Line{
 			{Material: "PET clear bottles, baled", Weight: "1250.5", Price: "0.80", Total: "1000.40"},
 			{Material: "Aluminium cans", Weight: "310", Price: "0.78", Total: "241.80"},
