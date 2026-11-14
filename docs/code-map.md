@@ -338,3 +338,6 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 `web/apps/app/src/lib/privacy-labels.ts` owns rich privacy event labels shared with the admin Activity log.
 
 `tests/team_managers_test.go` owns manager team permissions, lower-role and other-business isolation, and live role changes.
+
+`web/apps/app/src/routes/transactions/index.tsx` owns the unified business All/Bought/Sold list and matching export selection; `purchases.tsx` and `sales.tsx` retain legacy bookmarks and collector sales. `-components/record-list.tsx` renders direction labels and filters.
+`tests/transactions_filters_test.go` owns business direction scopes and export permissions, including members and other businesses. `web/apps/app/tests/transactions-page.test.mjs` and `transactions-render.test.mjs` cover navigation, filter validation, matching exports, redirects and light/dark phone/desktop rendering.

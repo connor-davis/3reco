@@ -138,13 +138,7 @@ function Dashboard() {
         actions={
           <LinkButton
             className="min-h-11"
-            to={
-              collector
-                ? '/profile'
-                : staff
-                  ? '/transactions'
-                  : '/transactions/purchases'
-            }
+            to={collector ? '/profile' : '/transactions'}
           >
             {collector ? 'Your profile' : 'View transactions'}
           </LinkButton>

@@ -149,8 +149,17 @@ export function OfferCard({
 // Staff are on neither side of the deal, so they open the all-trades list.
 function transactionsPath(
   request: TradeRequest,
-  user: { id: string; role: string | null } | null | undefined
+  user:
+    | { id: string; role: string | null; active_business_id?: string }
+    | null
+    | undefined
 ): string {
+  if (user?.role === 'business') {
+    const party = user.active_business_id;
+    if (party === request.seller.id) return '/transactions?filter=sold';
+    if (party === request.buyer.id) return '/transactions?filter=bought';
+    return '/transactions';
+  }
   if (user?.id === request.seller.id) return '/transactions/sales';
   if (user?.id === request.buyer.id) return '/transactions/purchases';
 
@@ -168,6 +177,7 @@ export function InvoiceCard({
   const download = useDownloadInvoice();
   transactionId ??= (request as TradeRequest & { transaction_id?: string })
     .transaction_id;
+  const transactionsTo = transactionsPath(request, user);
   return (
     <Card size="sm" className="max-w-sm">
       <CardHeader>
@@ -202,7 +212,7 @@ export function InvoiceCard({
       </CardContent>
       <CardFooter className="flex-wrap gap-3">
         <LinkButton
-          to={`${transactionsPath(request, user)}?open=${encodeURIComponent(transactionId ?? '')}`}
+          to={`${transactionsTo}${transactionsTo.includes('?') ? '&' : '?'}open=${encodeURIComponent(transactionId ?? '')}`}
           variant="outline"
         >
           View transaction

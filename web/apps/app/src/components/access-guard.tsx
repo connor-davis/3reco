@@ -56,13 +56,8 @@ export function Guarded({ page, children }: GuardedProps) {
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        {role === 'business' && page === 'transactions' ? (
-          <div className="flex flex-wrap justify-center gap-3">
-            <LinkButton to="/transactions/sales">Go to Sales</LinkButton>
-            <LinkButton to="/transactions/purchases" variant="outline">
-              Go to Purchases
-            </LinkButton>
-          </div>
+        {role === 'business' ? (
+          <LinkButton to="/transactions">Go to Transactions</LinkButton>
         ) : role === 'guest' ? (
           <LinkButton to="/setup">Finish setup</LinkButton>
         ) : user ? (

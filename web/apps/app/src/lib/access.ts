@@ -56,7 +56,7 @@ const allowed: Record<PageId, Role[]> = {
   stock: ['business'],
   collectors: ['admin', 'staff', 'business'],
   collections: ['admin', 'staff', 'business'],
-  transactions: ['admin', 'staff'],
+  transactions: ['admin', 'staff', 'business'],
   purchases: ['business'],
   sales: ['business', 'collector'],
   incoming: ['business'],

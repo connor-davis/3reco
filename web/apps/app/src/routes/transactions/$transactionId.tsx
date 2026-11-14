@@ -34,11 +34,7 @@ function TransactionPage() {
   const { user } = useAuth();
   const query = useTransaction(transactionId);
   const fallback =
-    user?.role === 'collector'
-      ? '/transactions/sales'
-      : user?.role === 'business'
-        ? '/transactions/purchases'
-        : '/transactions';
+    user?.role === 'collector' ? '/transactions/sales' : '/transactions';
 
   return (
     <>
