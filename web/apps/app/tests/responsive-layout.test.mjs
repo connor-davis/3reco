@@ -47,8 +47,9 @@ test('phone shell includes tablets and stops at 1024px; table and aside rules st
   );
   assert.doesNotMatch(
     source('components/shell/app-sidebar.tsx'),
-    /SidebarHeader|PersonAvatar|subtitles/
+    /PersonAvatar|subtitles/
   );
+  assert.match(source('components/shell/app-sidebar.tsx'), /<BrandLogo/);
 });
 
 test('touch sizes and the chat back link follow the phone shell (below lg), not 780px', () => {
