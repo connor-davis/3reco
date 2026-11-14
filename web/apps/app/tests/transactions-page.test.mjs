@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import ts from 'typescript';
 import { load, source } from './qa-round2-loader.mjs';
 
 const access = load('lib/access.ts');
@@ -124,4 +126,39 @@ test('unified rows label direction on both desktop and phone and reset cursor sc
   assert.match(page, /label="Bought or sold"/);
   assert.match(page, /usePager\(50, \{ \.\.\.filters, kind \}\)/);
   assert.match(page, /!!exportHint/);
+});
+
+test('chat transaction links use the business party and retain staff and collector destinations', () => {
+  const exports = {};
+  vm.runInNewContext(
+    ts.transpileModule(
+      source('components/chat/cards.tsx') +
+        '\nexports.transactionsPath = transactionsPath;',
+      {
+        compilerOptions: {
+          module: ts.ModuleKind.CommonJS,
+          jsx: ts.JsxEmit.ReactJSX,
+        },
+      }
+    ).outputText,
+    { exports, require: () => ({}) }
+  );
+  const request = {
+    seller: { id: 'seller-business' },
+    buyer: { id: 'buyer-business' },
+  };
+  for (const [user, expected] of [
+    [
+      { id: 'person', role: 'business', active_business_id: 'seller-business' },
+      '/transactions?filter=sold',
+    ],
+    [
+      { id: 'person', role: 'business', active_business_id: 'buyer-business' },
+      '/transactions?filter=bought',
+    ],
+    [{ id: 'seller-business', role: 'collector' }, '/transactions/sales'],
+    [{ id: 'staff', role: 'staff' }, '/transactions'],
+    [{ id: 'admin', role: 'admin' }, '/transactions'],
+  ])
+    assert.equal(exports.transactionsPath(request, user), expected);
 });

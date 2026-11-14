@@ -46,7 +46,7 @@ test(
 );
 
 const regression = String.raw`
-import sys, json
+import sys, json, re
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import sync_playwright, expect
 
@@ -90,23 +90,24 @@ with sync_playwright() as p:
                 page.wait_for_load_state('networkidle')
                 expect(page.get_by_role('heading', name='Transactions', exact=True)).to_be_visible()
                 expect(page.get_by_text('Bought glass', exact=True)).to_have_count(0)
-                expect(page.get_by_text('Bought-invoice glass', exact=True)).to_be_visible()
-                expect(page.get_by_text('Sold-invoice glass', exact=True)).to_be_visible()
+                expect(page.get_by_text('Bought-invoice glass', exact=False)).to_be_visible()
+                expect(page.get_by_text('Sold-invoice glass', exact=False)).to_be_visible()
                 rows = page.get_by_role('row') if width >= 1024 else page.locator('[data-slot="record-row"]')
                 for invoice, label in [('Bought-invoice', 'Bought'), ('Sold-invoice', 'Sold')]:
-                    expect(rows.filter(has_text=invoice + ' glass').first.get_by_text(label, exact=True)).to_be_visible()
+                    row = rows.filter(has_text=invoice + ' glass').first
+                    expect(row.get_by_text(label, exact=True) if width >= 1024 else row.get_by_text(re.compile('^' + label + ' · '))).to_be_visible()
                 expect(page.get_by_role('button', name='Export', exact=True)).to_be_disabled()
                 expect(page.get_by_text('Pick Bought or Sold to export', exact=True)).to_be_visible()
                 assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
                 page.get_by_role('tab', name='Bought', exact=True).click()
-                expect(page.get_by_text('Sold-invoice glass', exact=True)).to_have_count(0)
-                expect(page.get_by_text('Bought-invoice glass', exact=True)).to_be_visible()
+                expect(page.get_by_text('Sold-invoice glass', exact=False)).to_have_count(0)
+                expect(page.get_by_text('Bought-invoice glass', exact=False)).to_be_visible()
                 expect(page.get_by_role('button', name='Export', exact=True)).to_be_enabled()
                 with page.expect_download(): page.get_by_role('button', name='Export', exact=True).click()
                 assert any(path == '/exports/purchases' for path, _ in requests)
                 page.get_by_role('tab', name='Sold', exact=True).click()
-                expect(page.get_by_text('Bought-invoice glass', exact=True)).to_have_count(0)
-                expect(page.get_by_text('Sold-invoice glass', exact=True)).to_be_visible()
+                expect(page.get_by_text('Bought-invoice glass', exact=False)).to_have_count(0)
+                expect(page.get_by_text('Sold-invoice glass', exact=False)).to_be_visible()
                 with page.expect_download(): page.get_by_role('button', name='Export', exact=True).click()
                 assert any(path == '/exports/sales' for path, _ in requests)
                 for old, filter in [('purchases', 'bought'), ('sales', 'sold')]:

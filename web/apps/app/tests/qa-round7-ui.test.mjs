@@ -94,7 +94,12 @@ test('qa-round7: staff open View transaction in the all-trades list', () => {
   assert.match(cards, /'\/transactions\/sales'/);
   assert.match(cards, /'\/transactions\/purchases'/);
   assert.match(cards, /return '\/transactions';/);
-  assert.match(cards, /\$\{transactionsPath\(request, user\)\}\?open=/);
+  assert.match(
+    cards,
+    /const transactionsTo = transactionsPath\(request, user\)/
+  );
+  assert.match(cards, /transactionsTo.includes\('\?'\) \? '&' : '\?'/);
+  assert.match(cards, /open=\$\{encodeURIComponent\(transactionId/);
 });
 
 test('qa-round7: cart hint and material dialog wording follow the role', () => {

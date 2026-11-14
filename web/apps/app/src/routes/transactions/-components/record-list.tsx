@@ -478,16 +478,13 @@ export function RecordList({
           renderCard={(row) => (
             <ListRow
               layout="record"
-              title={row.items.map((item) => item.material_name).join(', ')}
+              title={`${businessFilter ? `${direction(row)} · ` : ''}${row.items.map((item) => item.material_name).join(', ')}`}
               secondaryValue={formatKg(weightOf(row) / 1000)}
               subtitle={<Parties row={row} />}
               meta={`${formatDate(dayOf(row))} · ${row.invoice_number}`}
               value={formatRand(toCents(row.total_price))}
               status={
                 <>
-                  {businessFilter && (
-                    <Badge variant="secondary">{direction(row)}</Badge>
-                  )}
                   <StatusBadge
                     dotOnly
                     status={
