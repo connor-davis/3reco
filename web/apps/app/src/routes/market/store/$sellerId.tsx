@@ -54,7 +54,11 @@ function StorePage() {
       icon={StoreIcon}
       emptyTitle="This store is no longer on 3REco."
       emptyText="Browse materials to find other stores."
-      emptyAction={<LinkButton to="/market">Browse materials</LinkButton>}
+      emptyAction={
+        <LinkButton to="/market" className="w-full md:w-auto">
+          Browse materials
+        </LinkButton>
+      }
     >
       {store.data && (
         <>
@@ -138,7 +142,7 @@ function StorePage() {
                 emptyTitle="Nothing listed right now"
                 emptyText="This store has no materials listed."
               >
-                <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {listings.data?.items.map((item) => (
                     <ListingCard
                       key={item.id}
@@ -148,7 +152,7 @@ function StorePage() {
                   ))}
                 </div>
               </DataState>
-              <div className="my-4 flex gap-3">
+              <ButtonRow className="my-4">
                 {stockCursor && (
                   <Button
                     variant="outline"
@@ -167,7 +171,7 @@ function StorePage() {
                     Next page
                   </Button>
                 )}
-              </div>
+              </ButtonRow>
             </TabsContent>
             <TabsContent value="reviews" className="mt-6 space-y-4">
               <DataState
@@ -195,6 +199,7 @@ function StorePage() {
               {user?.role === 'business' && user.id !== sellerId && (
                 <>
                   <Button
+                    className="w-full md:w-auto"
                     variant="outline"
                     onClick={() => setReviewOpen(true)}
                     disabled={
@@ -265,7 +270,7 @@ function StorePage() {
                   {remove.error.message}
                 </p>
               )}
-              <div className="flex gap-3">
+              <ButtonRow>
                 {reviewCursor && (
                   <Button
                     variant="outline"
@@ -284,7 +289,7 @@ function StorePage() {
                     Next page
                   </Button>
                 )}
-              </div>
+              </ButtonRow>
             </TabsContent>
           </Tabs>
           <ConfirmDialog

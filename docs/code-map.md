@@ -278,7 +278,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Dashboard panels, three-tile summary, quick links and capped activity/partners | `web/apps/app/src/routes/index.tsx`, `routes/-dashboard/panels.tsx`; phase 2 layout checks in `tests/layout-phase2.test.mjs`, `tests/layout-render.test.mjs` |
 | Soft section panels sharing the Section heading and action slot | `web/apps/app/src/components/panel.tsx`, `page-header.tsx` |
 | One-row search toolbar and responsive filter sheet with clear/results actions | `web/apps/app/src/components/toolbar.tsx` |
-| Equal compact action buttons and stacked groups of three or more | `web/apps/app/src/components/button-row.tsx` |
+| Full-width action groups stacked below md, natural-width rows from md up | `web/apps/app/src/components/button-row.tsx` |
 | Main actions above compact bottom tabs, reserved page space and wide end alignment | `web/apps/app/src/components/action-bar.tsx` |
 | Search, choice filters and scrolling underline filter tabs | `web/apps/app/src/components/filters.tsx`, `ui/tabs.tsx`, `ui/tabs-variants.ts` |
 | Shared layout contracts and 15-route, five-width light/dark browser regression | `web/apps/app/tests/layout-blocks.test.mjs`, `layout-render.test.mjs` |

@@ -132,7 +132,7 @@ test('H3: a 404 shows the empty state with no retry; other errors keep Try again
   assert.match(store, /emptyText="Browse materials to find other stores\."/);
   assert.match(
     store,
-    /<LinkButton to="\/market">Browse materials<\/LinkButton>/
+    /<LinkButton to="\/market" className="w-full md:w-auto">\s*Browse materials\s*<\/LinkButton>/
   );
 });
 

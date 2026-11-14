@@ -112,7 +112,11 @@ function AcceptInvitePage() {
                 Signed in as {user.email}. This must match the email address the
                 invitation was sent to.
               </p>
-              <Button disabled={accept.isPending} onClick={() => join()}>
+              <Button
+                className="w-full md:w-auto"
+                disabled={accept.isPending}
+                onClick={() => join()}
+              >
                 {accept.isPending ? 'Joining…' : 'Accept invitation'}
               </Button>
               <p>
@@ -183,7 +187,11 @@ function AcceptInvitePage() {
                     </>
                   }
                 />
-                <Button type="submit" disabled={accept.isPending}>
+                <Button
+                  className="w-full md:w-auto"
+                  type="submit"
+                  disabled={accept.isPending}
+                >
                   {accept.isPending ? 'Joining…' : 'Create account and join'}
                 </Button>
               </form>

@@ -61,7 +61,7 @@ from playwright.sync_api import sync_playwright, expect
 base = sys.argv[1]
 sys.stdout.reconfigure(encoding='utf-8')
 listing = {'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '1000', 'held_weight': '0', 'price': '8.00', 'carbon_factor': '1', 'gw_code': 'GL', 'image_url': '', 'seller_avatar_url': '', 'average_rating': None, 'review_count': 0, 'created_at': '2026-11-08T08:00:00Z'}
-routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
+routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
 party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
 trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
 large_trade = dict(trade, id='large', type='c2b', invoice_number='GLH09G54', seller=party('collector', 'Zanele Both'), buyer=party('buyer', 'Kasi Collect Co'), total_price='2000000.00', items=[{'material_id': 'steel', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'weight': '1000000', 'price': '2.00'}])
@@ -73,7 +73,7 @@ measurements = []
 with sync_playwright() as p:
     browser = p.chromium.launch()
     for mode in ['light', 'dark']:
-        for width in [1100, 1280, 1440, 1920, 390, 412, 820]:
+        for width in [1100, 1280, 1440, 1920, 390, 412, 767, 768, 820]:
             context = browser.new_context(viewport={'width': width, 'height': 1000}, color_scheme=mode)
             role = 'admin'
             errors = []
@@ -94,6 +94,7 @@ with sync_playwright() as p:
                 elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']: body = dashboard
                 elif path == '/stats': body = {'total_kg': '87.5', 'co2_kg': '100', 'deals': 7, 'top_stores': []}
                 elif path == '/market/listings/stock': body = listing
+                elif path == '/market/listings': body['items'] = [dict(listing, id='related-' + str(i)) for i in range(3)]
                 elif path == '/stores/seller': body = {'id': 'seller', 'name': 'Greenloop', 'city': 'Cape Town', 'province': 'Western Cape', 'created_at': '2026-11-08T08:00:00Z', 'average_rating': None, 'review_count': 0}
                 elif path == '/stores/seller/listings': body['items'] = [listing]
                 elif path == '/cart/stores': body['items'] = [{'id': 'seller', 'name': 'Greenloop', 'item_count': 1}]
@@ -110,6 +111,7 @@ with sync_playwright() as p:
             page.on('console', lambda message: errors.append(message.text) if message.type == 'error' else None)
             for route in routes:
                 if width in [1100, 1440] and route not in ['/transactions', '/collectors', '/admin/users']: continue
+                if width in [767, 768] and route not in ['/transactions', '/profile', '/market', '/market/store/seller', '/market/listing/stock']: continue
                 role = 'collector' if route == '/?role=collector' else 'admin' if route in ['/?role=admin', '/transactions', '/materials', '/admin/users'] else 'business'
                 try:
                     page.goto(base + route)
@@ -126,8 +128,19 @@ with sync_playwright() as p:
                             buttons = dialog.locator('[data-slot="button-row"] button')
                             expect(buttons).to_have_count(2)
                             boxes = [button.bounding_box() for button in buttons.all()]
-                            assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
+                            if width < 768:
+                                row = buttons.first.locator('..').bounding_box()
+                                assert all(abs(box['width'] - row['width']) < 1 for box in boxes)
+                                assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height'] + 7
+                            else:
+                                assert abs(boxes[0]['y'] - boxes[1]['y']) < 1
                             assert boxes[0]['height'] >= 44 and boxes[1]['height'] >= 44
+                            date_button = dialog.get_by_role('button', name='From – to date', exact=True)
+                            if date_button.count():
+                                picker = date_button.locator('xpath=ancestor::div[2]')
+                                assert abs(date_button.bounding_box()['width'] - picker.bounding_box()['width']) < 1
+                                select = dialog.get_by_role('combobox').first
+                                assert abs(date_button.bounding_box()['width'] - select.bounding_box()['width']) < 1
                             dialog.get_by_role('button', name='Clear', exact=True).click()
                             dialog.get_by_role('button', name='Show results', exact=True).click()
                             expect(dialog).not_to_be_visible()
@@ -150,15 +163,39 @@ with sync_playwright() as p:
                     if route == '/market/store/seller':
                         buttons = page.locator('header [data-slot="button-row"] button, header [data-slot="button-row"] a')
                         expect(buttons).to_have_count(2)
-                        if width < 1024:
+                        if width < 768:
                             boxes = [button.bounding_box() for button in buttons.all()]
                             assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
+                            assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height'] + 7
+                        else:
+                            boxes = [button.bounding_box() for button in buttons.all()]
+                            assert abs(boxes[0]['y'] - boxes[1]['y']) < 1
                     if route == '/market/listing/stock':
                         buttons = page.locator('[data-slot="action-bar"] button')
                         expect(buttons).to_have_count(2)
-                        if width < 1024:
+                        if width < 768:
                             boxes = [button.bounding_box() for button in buttons.all()]
                             assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
+                            assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height'] + 7
+                            page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                            last_card = page.locator('section [data-slot="card"]').last.bounding_box()
+                            bar = page.locator('[data-slot="action-bar"]').bounding_box()
+                            assert last_card['y'] + last_card['height'] <= bar['y'] + 1, 'stacked actions cover last card'
+                    if route in ['/market', '/market/store/seller', '/market/listing/stock']:
+                        cards = page.locator('[data-slot="card"]').filter(has=page.locator('h3'))
+                        assert cards.count() > 0
+                        grid = cards.first.locator('..')
+                        columns = grid.evaluate('(el) => getComputedStyle(el).gridTemplateColumns.split(" ").length')
+                        expected = 1 if width < 768 else (2 if route == '/market/listing/stock' or width >= 1024 else 3)
+                        if width >= 1280: expected = 3 if width < 1536 else 4
+                        assert columns == expected, f'listing columns {route} {width}: {columns}'
+                        card = cards.first
+                        style = card.evaluate('(el) => ({radius: getComputedStyle(el).borderRadius, border: getComputedStyle(el).borderTopWidth, overflow: getComputedStyle(el).overflow})')
+                        assert style == {'radius': '16px', 'border': '1px', 'overflow': 'hidden'}, style
+                        photo = card.locator(':scope > div').first
+                        assert abs(photo.bounding_box()['width'] - (card.bounding_box()['width'] - 2)) < 1
+                        details = card.locator('[data-slot="card-content"]')
+                        assert details.bounding_box()['y'] >= photo.bounding_box()['y'] + photo.bounding_box()['height'] - 1
                     if route in ['/', '/?role=collector', '/?role=admin']:
                         expect(page.locator('[data-slot="card"]')).to_have_count(3)
                         stats = page.locator('[data-slot="card"]').all()
@@ -168,7 +205,7 @@ with sync_playwright() as p:
                         if role == 'collector':
                             recent = page.get_by_role('heading', name='Your recent collections').locator('xpath=ancestor::section[1]').locator('ul > li')
                             expect(recent).to_have_count(5)
-                    if route == '/' and width < 1024:
+                    if route == '/' and width < 768:
                         header = page.locator('h1').locator('xpath=ancestor::header[1]')
                         title_box = header.locator('h1').bounding_box()
                         action_box = header.get_by_role('button', name='View transactions').bounding_box()
@@ -246,11 +283,12 @@ with sync_playwright() as p:
                         expect(dialog).to_be_visible()
                         expect(dialog.get_by_role('heading', name='Remove verification for Naledi Jacobs?')).to_be_visible()
                         dialog.get_by_role('button', name='Keep it', exact=True).click()
-                    if route == '/profile' and width < 1024:
+                    if route == '/profile' and width < 768:
                         buttons = page.get_by_role('button', name='Cancel changes').first.locator('..').get_by_role('button')
                         expect(buttons).to_have_count(2)
                         boxes = [button.bounding_box() for button in buttons.all()]
                         assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
+                        assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height'] + 7
                     if route in ['/transactions', '/transactions/purchases', '/market/incoming', '/market/outgoing']:
                         expect(page.get_by_role('table')).to_have_count(1 if width >= 1024 else 0)
                     if route in ['/transactions', '/transactions/purchases']:
@@ -278,7 +316,7 @@ with sync_playwright() as p:
                     if route in ['/transactions', '/market/incoming', '/market/outgoing']:
                         expect(page.get_by_role('link', name='Open messages')).to_have_count(0)
                     assert not errors, errors
-                    if os.environ.get('THREERECO_LAYOUT_SHOTS') and width in [390, 1280] and route in ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions', '/profile', '/market/incoming', '/admin/users']:
+                    if os.environ.get('THREERECO_LAYOUT_SHOTS') and width in [390, 1280] and route in ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions', '/profile', '/market/incoming', '/admin/users', '/market', '/market/store/seller', '/market/listing/stock']:
                         shots = Path(os.environ['THREERECO_LAYOUT_SHOTS'])
                         shots.mkdir(parents=True, exist_ok=True)
                         page.screenshot(path=str(shots / (mode + '-' + str(width) + '-' + route.strip('/').replace('/', '-').replace('?', '-').replace('=', '-') + '.png')), full_page=True)

@@ -4,6 +4,7 @@ import { Leaf, SearchX } from 'lucide-react';
 import { CardsSkeleton, DataState } from '@/components/data-state';
 import { SearchBox } from '@/components/filters';
 import { ListingCard } from '@/components/listing-card';
+import { ButtonRow } from '@/components/button-row';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -63,13 +64,13 @@ function MarketPage() {
         emptyText="Try a different search."
         skeleton={<CardsSkeleton />}
       >
-        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {results.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
       </DataState>
-      <div className="my-6 flex gap-3">
+      <ButtonRow className="my-6">
         {cursor && (
           <Button variant="outline" onClick={() => setCursor(undefined)}>
             First page
@@ -83,7 +84,7 @@ function MarketPage() {
             Next page
           </Button>
         )}
-      </div>
+      </ButtonRow>
     </>
   );
 }

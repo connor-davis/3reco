@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
 import { cn } from '@/lib/utils';
+import { ButtonRow } from '@/components/button-row';
 
 import { Button } from '@/components/ui/button';
 
@@ -80,12 +81,9 @@ function AlertDialogFooter({
   ...props
 }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <ButtonRow
       data-slot="alert-dialog-footer"
-      className={cn(
-        'flex flex-col-reverse gap-2 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end',
-        className
-      )}
+      className={className}
       {...props}
     />
   );

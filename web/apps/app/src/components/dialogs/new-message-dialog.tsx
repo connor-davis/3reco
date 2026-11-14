@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PackageSearch } from 'lucide-react';
 import { DataState } from '@/components/data-state';
+import { ButtonRow } from '@/components/button-row';
 import { SearchBox } from '@/components/filters';
 import { SelectField, DecimalField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
@@ -175,6 +176,7 @@ function NewMessageForm({
             </p>
           )}
           <Button
+            className="w-full md:w-auto"
             type="submit"
             disabled={create.isPending || !selected || !!problem}
           >
@@ -183,7 +185,7 @@ function NewMessageForm({
         </form>
       </DataState>
       {!listing && (
-        <div className="flex gap-3">
+        <ButtonRow>
           {cursor && (
             <Button
               variant="outline"
@@ -206,7 +208,7 @@ function NewMessageForm({
               Next page
             </Button>
           )}
-        </div>
+        </ButtonRow>
       )}
     </div>
   );
