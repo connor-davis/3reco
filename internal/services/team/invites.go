@@ -26,6 +26,10 @@ func (s *Service) Invite(ctx context.Context, user auth.User, email, role string
 	}
 
 	return s.write(ctx, user, func(ctx context.Context) error {
+		if err := s.manage(ctx, user, "", role); err != nil {
+			return err
+		}
+
 		member, err := s.store.HasMemberEmail(ctx, user.ActiveBusinessID, email)
 		if err != nil {
 			return err
@@ -62,6 +66,10 @@ func (s *Service) Resend(ctx context.Context, user auth.User, id string) error {
 			return err
 		}
 
+		if err := s.manage(ctx, user, "", in.Role); err != nil {
+			return err
+		}
+
 		token, hash := auth.NewToken()
 		if err := s.store.RotateInvite(ctx, user.ActiveBusinessID, id, hash, time.Now().Add(InviteTTL)); err != nil {
 			return err
@@ -74,11 +82,15 @@ func (s *Service) Resend(ctx context.Context, user auth.User, id string) error {
 // Revoke keeps the history but makes the pending link unusable.
 func (s *Service) Revoke(ctx context.Context, user auth.User, id string) error {
 	return s.write(ctx, user, func(ctx context.Context) error {
-		_, err := s.store.InviteByID(ctx, user.ActiveBusinessID, id)
+		in, err := s.store.InviteByID(ctx, user.ActiveBusinessID, id)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return apperr.NotFound("Invitation not found.")
 		}
 		if err != nil {
+			return err
+		}
+
+		if err := s.manage(ctx, user, "", in.Role); err != nil {
 			return err
 		}
 

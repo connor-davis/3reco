@@ -8,6 +8,17 @@ export function canManageTeam(
   return !!user?.active_business_id && user.business_role === 'owner';
 }
 
+/** Owners and Managers can open the selected business's team. */
+export function canSeeTeam(
+  user:
+    Pick<AuthUser, 'active_business_id' | 'business_role'> | null | undefined
+): boolean {
+  return (
+    !!user?.active_business_id &&
+    (user.business_role === 'owner' || user.business_role === 'manager')
+  );
+}
+
 export type PageId =
   | 'dashboard'
   | 'messages'

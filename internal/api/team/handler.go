@@ -1,4 +1,4 @@
-// Package team exposes the owner-only Team routes and public invitation flow.
+// Package team exposes Team management routes and public invitation flow.
 package team
 
 import (
@@ -23,9 +23,9 @@ func New(s *svc.Service, a *auth.Service, cfg config.Config) *Handler {
 	return &Handler{svc: s, auth: a, cfg: cfg}
 }
 
-// Register installs owner routes and guest-accessible, rate-limited auth routes.
+// Register installs manager routes and guest-accessible, rate-limited auth routes.
 func (h *Handler) Register(api fiber.Router) {
-	team := api.Group("/team", middleware.RequireBusiness("owner"))
+	team := api.Group("/team", middleware.RequireBusiness("manager"))
 	team.Get("/", h.list)
 	team.Post("/invites", h.invite)
 	team.Post("/invites/:id/resend", h.resend)

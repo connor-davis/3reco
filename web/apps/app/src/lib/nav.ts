@@ -64,7 +64,11 @@ export function navFor(
   activeBusinessId?: string
 ): NavGroup[] {
   const groups = roleNav(role);
-  if (role && activeBusinessId && businessRole === 'owner') {
+  if (
+    role &&
+    activeBusinessId &&
+    (businessRole === 'owner' || businessRole === 'manager')
+  ) {
     const workspace = groups.find((group) => group.label === 'Workspace');
     const team: NavLink = { label: 'Team', to: '/team', icon: Users };
     if (workspace) workspace.links = [...workspace.links, team];

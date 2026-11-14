@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as jsx from 'react/jsx-runtime';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { source } from './qa-round2-loader.mjs';
 
 function compile(path, mocks = {}, suffix = '') {
@@ -114,7 +113,6 @@ function adminPage(list) {
         useAdminUsers: () => list,
         useDeleteUser: () => ({}),
         useSetBusinessVerified: () => ({}),
-        usePrivacyEvents: () => ({ data: { items: [], has_more: false } }),
       },
       '@/lib/api/exports': { useExport: () => ({}) },
       '@/lib/format': {
@@ -122,7 +120,7 @@ function adminPage(list) {
         formatDateTime: () => '8 November 2026',
       },
     },
-    '\nexports.UsersPage = UsersPage; exports.PrivacyEvents = PrivacyEvents;'
+    '\nexports.UsersPage = UsersPage;'
   );
 }
 
@@ -164,40 +162,52 @@ test('users Next page is disabled for empty, missing, fetching or failed results
   assert.match(styles, /disabled:opacity-50/);
 });
 
-test('desktop and mobile export events explain the many people subject', () => {
-  const page = adminPage({}).PrivacyEvents();
-  const table = elements(page).find((node) => node.type === 'DataTable');
-  const subject = table.props.columns.find((column) => column.id === 'subject');
-  for (const [kind, expected] of [
+test('desktop and mobile Activity privacy rows explain the subject without raw IDs', () => {
+  const { ActivityPage } = compile(
+    'routes/admin/activity.tsx',
+    {
+      react: hooks,
+      '@tanstack/react-router': router,
+      '@/lib/use-debounced': { useDebounced: (value) => value },
+      '@/components/transactions/pager-state': {
+        usePager: () => ({ params: {} }),
+      },
+      '@/lib/api/admin': { useActivity: () => ({ data: { items: [] } }) },
+      '@/lib/access': { roleLabel: (role) => role },
+      '@/lib/format': { formatDateTime: () => '8 November 2026, 10:30' },
+      '@/lib/privacy-labels': { eventLabel: () => 'Data download' },
+    },
+    '\nexports.ActivityPage = ActivityPage;'
+  );
+  const table = elements(ActivityPage()).find(
+    (node) => node.type === 'DataTable'
+  );
+  const record = table.props.columns.find((column) => column.id === 'record');
+  for (const [action, expected] of [
     ['export', 'Many people (data download)'],
     ['delete', 'No individual subject'],
   ]) {
-    const event = { kind, subject_id: null };
-    assert.equal(subject.cell({ row: { original: event } }), expected);
+    const event = { source: 'privacy', action, row_key: { subject_id: null } };
+    assert.equal(
+      record.cell({ row: { original: event } }).props.children,
+      expected
+    );
     const card = table.props.renderCard(event);
     assert.equal(card.type, 'ListRow');
     assert.equal(card.props.actions, undefined);
-    const mobile = elements(card.props.meta).find(
-      (node) => node.props?.children === expected
-    );
-    assert.ok(mobile);
-    assert.equal(
-      renderToStaticMarkup(mobile),
-      `<span class="block truncate">${expected}</span>`
-    );
+    assert.equal(card.props.meta, expected);
   }
+  const event = {
+    source: 'privacy',
+    action: 'export',
+    row_key: { subject_id: 'person' },
+    subject_name: 'Nomsa',
+  };
   assert.equal(
-    subject.cell({
-      row: {
-        original: {
-          kind: 'export',
-          subject_id: 'person',
-          subject_name: 'Nomsa',
-        },
-      },
-    }).props.name,
+    record.cell({ row: { original: event } }).props.children,
     'Nomsa'
   );
+  assert.equal(table.props.renderCard(event).props.meta, 'Nomsa');
 });
 
 function cartPage(selectedSeller, cart, stores = []) {

@@ -61,7 +61,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Business membership and default business selection for sessions | `internal/stores/businesses/businesses.go` |
 | Team directory, role updates, membership removal, invitee setup and selection SQL | `internal/stores/businesses/team.go` |
 | Business-scoped invitation persistence, token rotation and consumption SQL | `internal/stores/businesses/invites.go` |
-| Owner-only Team management and last-owner transaction guard | `internal/services/team/team.go` |
+| Owner and Manager Team rules and last-owner transaction guard | `internal/services/team/team.go` |
 | Invite creation, resend, revoke, masked preview and after-commit mail | `internal/services/team/invites.go` |
 | New-person and signed-in invitation acceptance with invited-business audit scope | `internal/services/team/accept.go` |
 | Team API and rate-limited invitation routes under `/api/auth` | `internal/api/team/handler.go` |
@@ -238,9 +238,9 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
 | Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; page reset on filter change `src/components/transactions/pager-state.ts` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
-| Owner Team directory, invitations and confirmed role/removal actions | `web/apps/app/src/routes/team.tsx`, `src/lib/api/team.ts` |
+| Owner and Manager Team directory, invitations and confirmed role/removal actions | `web/apps/app/src/routes/team.tsx`, `src/lib/api/team.ts` |
 | Public invite preview, new account and signed-in acceptance | `web/apps/app/src/routes/accept-invite.tsx`; full-width auth layout option in `components/auth-shell.tsx` |
-| Active-business Owner gate and Team navigation on desktop, phone and search | `web/apps/app/src/lib/access.ts` (`canManageTeam`), `src/lib/nav.ts` (`navFor`), `components/shell/{app-sidebar,bottom-tabs,command-search}.tsx` |
+| Active-business Owner/Manager gates and Team navigation on desktop, phone and search | `web/apps/app/src/lib/access.ts` (`canManageTeam`, `canSeeTeam`), `src/lib/nav.ts` (`navFor`), `components/shell/{app-sidebar,bottom-tabs,command-search}.tsx` |
 | Team invalidation, membership identity refresh and close 4403 without sign-out | `web/apps/app/src/lib/live/connection.ts`; tests in `web/apps/app/tests/team.test.mjs` |
 | Team/invite browser journeys, live directory refresh and light/dark responsive coverage | `web/apps/app/tests/team-render.test.mjs` |
 | One socket per tab and cache invalidation by `{kind, id}` | `web/apps/app/src/lib/live/use-live.ts`, `connection.ts` |
@@ -328,3 +328,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Collector payout last-4 columns, list queries without ciphertext, `FindFor`, `BackfillLast4` (run at start from `backfillPayoutLast4`) | `internal/stores/collectors/collectors.go`, `internal/services/collectors/collectors.go`, `internal/api/server.go` |
 | Audit log, actor, mask, guard, activity feed and collector last-4 tests | `tests/audit_log_test.go` |
 | Activity log page (`/admin/activity`, admin only) and its tests | `web/apps/app/src/routes/admin/activity.tsx`, `src/lib/api/admin.ts` (`useActivity`), `web/apps/app/tests/activity-log.test.mjs` |
+
+`web/apps/app/src/lib/privacy-labels.ts` owns rich privacy event labels shared with the admin Activity log.
+
+`tests/team_managers_test.go` owns manager team permissions, lower-role and other-business isolation, and live role changes.

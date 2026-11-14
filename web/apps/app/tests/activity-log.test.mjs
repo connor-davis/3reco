@@ -35,3 +35,36 @@ test('the activity page lists who, what and the changed fields', () => {
   assert.match(page, /<Pager /);
   assert.match(page, /'System'/);
 });
+
+test('privacy is filtered in Activity and rich event labels survive the Users tab removal', () => {
+  const activity = source('routes/admin/activity.tsx');
+  assert.match(activity, /privacy_events: 'Privacy event'/);
+  assert.match(activity, /line.source === 'privacy'/);
+  assert.match(activity, /eventLabel\(/);
+  assert.doesNotMatch(
+    source('routes/admin/users.tsx'),
+    /PrivacyEvents|Privacy events|usePrivacyEvents/
+  );
+  const { eventLabel } = load('lib/privacy-labels.ts', {
+    './access': load('lib/access.ts'),
+    './format': { formatDateTime: (value) => value },
+  });
+  assert.equal(
+    eventLabel({ kind: 'admin_full_view', details: {} }),
+    'Full identifier viewed'
+  );
+  assert.equal(
+    eventLabel({ kind: 'export', details: { invoice_number: 'INV-42' } }),
+    'Data download · invoice INV-42'
+  );
+  assert.equal(
+    eventLabel({
+      kind: 'export',
+      details: {
+        export_kind: 'sales',
+        filters: { itemised: 'true', type: 'b2b' },
+      },
+    }),
+    'Data download · Sales (one row per material, Business trades)'
+  );
+});

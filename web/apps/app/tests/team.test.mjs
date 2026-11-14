@@ -7,7 +7,7 @@ import { load, source } from './qa-round2-loader.mjs';
 const access = load('lib/access.ts');
 const nav = load('lib/nav.ts', { '@/lib/access': access });
 
-test('Team navigation and access require an Owner of the active business', () => {
+test('Team navigation allows Owners and Managers of the active business', () => {
   for (const role of [
     'business',
     'collector',
@@ -28,12 +28,17 @@ test('Team navigation and access require an Owner of the active business', () =>
         const expected =
           !!role && businessRole === 'owner' && !!activeBusinessId;
         assert.equal(access.canManageTeam(user), expected);
+        const visible =
+          !!role &&
+          ['owner', 'manager'].includes(businessRole) &&
+          !!activeBusinessId;
+        assert.equal(access.canSeeTeam(user), visible);
         const links = nav
           .navFor(role, businessRole, activeBusinessId)
           .flatMap((group) => group.links);
         assert.equal(
           links.some((link) => link.to === '/team'),
-          expected
+          visible
         );
       }
     }

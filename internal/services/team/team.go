@@ -21,7 +21,7 @@ import (
 // InviteTTL is the lifetime of each emailed invitation link.
 const InviteTTL = 7 * 24 * time.Hour
 
-// Service applies owner-only Team rules in the selected business.
+// Service applies Team rules in the selected business.
 type Service struct {
 	db     *database.DB
 	store  *businesses.Store
@@ -43,7 +43,7 @@ func New(
 	return &Service{db: db, store: store, people: people, hub: hub, mail: mail, cfg: cfg}
 }
 
-// Directory holds the owner-visible people and pending invitations.
+// Directory holds the manager-visible people and pending invitations.
 type Directory struct {
 	Members []businesses.Member `json:"members"`
 	Invites []businesses.Invite `json:"invites"`
@@ -51,7 +51,7 @@ type Directory struct {
 
 // List returns only the selected business's team.
 func (s *Service) List(ctx context.Context, user auth.User) (Directory, error) {
-	if err := s.owner(ctx, user); err != nil {
+	if err := s.manage(ctx, user, "", ""); err != nil {
 		return Directory{}, err
 	}
 
@@ -65,8 +65,8 @@ func (s *Service) List(ctx context.Context, user auth.User) (Directory, error) {
 	return Directory{Members: members, Invites: invites}, err
 }
 
-func (s *Service) owner(ctx context.Context, user auth.User) error {
-	if err := auth.RequireBusiness(user, "owner"); err != nil {
+func (s *Service) manage(ctx context.Context, user auth.User, targetRole, nextRole string) error {
+	if err := auth.RequireBusiness(user, "manager"); err != nil {
 		return err
 	}
 
@@ -74,15 +74,18 @@ func (s *Service) owner(ctx context.Context, user auth.User) error {
 	if err != nil {
 		return err
 	}
-	if role != "owner" {
-		return apperr.Forbidden("Only an Owner can manage the team.")
+	if role == "owner" {
+		return nil
+	}
+	if role != "manager" || targetRole == "owner" || targetRole == "manager" || nextRole == "owner" {
+		return apperr.Forbidden("You do not have access to make this team change.")
 	}
 
 	return nil
 }
 
 func (s *Service) write(ctx context.Context, user auth.User, change func(context.Context) error) error {
-	if err := auth.RequireBusiness(user, "owner"); err != nil {
+	if err := auth.RequireBusiness(user, "manager"); err != nil {
 		return err
 	}
 
@@ -94,7 +97,7 @@ func (s *Service) write(ctx context.Context, user auth.User, change func(context
 		if !found {
 			return apperr.NotFound("Business not found.")
 		}
-		if err := s.owner(ctx, user); err != nil {
+		if err := s.manage(ctx, user, "", ""); err != nil {
 			return err
 		}
 
@@ -156,6 +159,9 @@ func (s *Service) checkMemberChange(ctx context.Context, user auth.User, memberI
 	}
 	if role == "" {
 		return apperr.NotFound("Team member not found.")
+	}
+	if err := s.manage(ctx, user, role, next); err != nil {
+		return err
 	}
 
 	if role == "owner" && next != "owner" {
