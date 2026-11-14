@@ -21,10 +21,11 @@ func TestTenantStockMembersUseBusinessOwnership(t *testing.T) {
 	status(t, member.c.Do("PATCH", "/api/stock/"+foreign, map[string]any{"price": "9"}), 404)
 	status(t, member.c.Do("DELETE", "/api/stock/"+foreign, nil), 404)
 
-	image := "/api/stock/" + w.stock + "/image"
-	status(t, uploadImage(t, w.app, member.c, image, receiptImage(1)), 200)
-	status(t, member.c.Do("DELETE", image, nil), 200)
-	status(t, uploadImage(t, w.app, member.c, "/api/stock/"+foreign+"/image", receiptImage(2)), 404)
+	photos := "/api/stock/" + w.stock + "/photos"
+	added := status(t, uploadImage(t, w.app, member.c, photos, receiptImage(1)), 200)
+	photoID := added.Body["photos"].([]any)[0].(map[string]any)["id"].(string)
+	status(t, member.c.Do("DELETE", photos+"/"+photoID, nil), 200)
+	status(t, uploadImage(t, w.app, member.c, "/api/stock/"+foreign+"/photos", receiptImage(2)), 404)
 
 	material := tradeMaterial(t, w.app, "Paper", "1")
 	created := status(t, member.c.Do("POST", "/api/stock", map[string]any{
