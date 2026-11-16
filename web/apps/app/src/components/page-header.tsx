@@ -61,8 +61,8 @@ export function PageHeader({
         <div
           className={cn(
             compactActionsBelow &&
-              'max-md:w-full max-md:[&>:first-child:not([aria-label])]:min-w-0 max-md:[&>:first-child:not([aria-label])]:flex-1',
-            'flex shrink-0 items-center gap-2 [&>*]:min-h-11 [&>button[aria-label]]:max-md:w-11 [&>button[aria-label]]:max-md:shrink-0'
+              'max-md:w-full max-md:[&>:first-child:not([data-icon-only])]:min-w-0 max-md:[&>:first-child:not([data-icon-only])]:flex-1',
+            'flex shrink-0 items-center gap-2 [&>*]:min-h-11 [&>button[data-icon-only]]:max-md:w-11 [&>button[data-icon-only]]:max-md:shrink-0'
           )}
         >
           {items[0]}

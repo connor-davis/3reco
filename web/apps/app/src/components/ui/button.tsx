@@ -12,6 +12,7 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
+      data-icon-only={size?.startsWith('icon') || undefined}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
