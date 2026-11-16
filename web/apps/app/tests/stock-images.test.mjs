@@ -163,6 +163,29 @@ test('listing cards show stock photos and seller logos with a placeholder fallba
   );
 });
 
+test('a listing card asks for the small copy and falls back to the full photo', () => {
+  const { ListingCard } = compile('components/listing-card.tsx', {
+    react: { useState: () => [undefined, () => {}] },
+    '@/lib/format': load('lib/format.ts'),
+  });
+  const listing = {
+    id: 's1',
+    material_name: 'Glass',
+    weight: '10',
+    price: '8',
+    image_url: '/photo?v=1',
+    thumb_url: '/photo?size=thumb&v=1',
+  };
+  const source = (props) =>
+    nodes(ListingCard(props)).find((node) => node.type === 'img').props.src;
+
+  assert.equal(source({ listing }), listing.thumb_url);
+  assert.equal(
+    source({ listing: { ...listing, thumb_url: undefined } }),
+    listing.image_url
+  );
+});
+
 test('gallery without photos shows the placeholder in the smaller responsive frame', () => {
   const state = stateful();
   const { Gallery } = compile(galleryPath, {

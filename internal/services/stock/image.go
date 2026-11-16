@@ -16,6 +16,9 @@ import (
 	store "github.com/connor-davis/3reco/internal/stores/stock"
 )
 
+// thumbEdge is the long edge, in pixels, of a photo's small copy.
+const thumbEdge = 400
+
 // AddPhoto checks ownership before validating and storing one more stock photo.
 func (service *Service) AddPhoto(ctx context.Context, id, owner string, reader io.Reader) error {
 	item, err := service.store.Find(ctx, id, false)
@@ -31,8 +34,16 @@ func (service *Service) AddPhoto(ctx context.Context, id, owner string, reader i
 		return err
 	}
 
+	// Make the small copy before saving anything, so a picture we cannot shrink
+	// is refused and no photo is ever stored without one.
+	thumb, err := storage.Thumbnail(data, thumbEdge)
+	if err != nil {
+		return err
+	}
+
 	photoID := database.NewID()
 	key := "stock/" + id + "/" + photoID
+	thumbKey := key + "-thumb"
 	if err := service.objects.Put(
 		ctx,
 		key,
@@ -43,15 +54,28 @@ func (service *Service) AddPhoto(ctx context.Context, id, owner string, reader i
 		return err
 	}
 
+	if err := service.objects.Put(
+		ctx,
+		thumbKey,
+		bytes.NewReader(thumb),
+		int64(len(thumb)),
+		"image/jpeg",
+	); err != nil {
+		_ = service.objects.Remove(context.WithoutCancel(ctx), key)
+
+		return err
+	}
+
 	err = service.changePhotos(ctx, id, owner, func(ctx context.Context, ids []string) error {
 		if len(ids) >= store.MaxPhotos {
 			return apperr.Conflict("A stock item can have up to 8 photos. Remove one first.")
 		}
 
-		return service.store.AddPhoto(ctx, id, photoID, key)
+		return service.store.AddPhoto(ctx, id, photoID, key, thumbKey)
 	})
 	if err != nil {
 		_ = service.objects.Remove(context.WithoutCancel(ctx), key)
+		_ = service.objects.Remove(context.WithoutCancel(ctx), thumbKey)
 
 		return err
 	}
@@ -62,7 +86,7 @@ func (service *Service) AddPhoto(ctx context.Context, id, owner string, reader i
 // DeletePhoto removes one photo, deleting its file only after commit.
 func (service *Service) DeletePhoto(ctx context.Context, id, photoID, owner string) error {
 	return service.changePhotos(ctx, id, owner, func(ctx context.Context, _ []string) error {
-		key, err := service.store.DeletePhoto(ctx, id, photoID)
+		keys, err := service.store.DeletePhoto(ctx, id, photoID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return apperr.NotFound("No such photo.")
 		}
@@ -70,7 +94,9 @@ func (service *Service) DeletePhoto(ctx context.Context, id, photoID, owner stri
 			return err
 		}
 
-		service.objects.RemoveAfterCommit(ctx, key)
+		for _, key := range keys {
+			service.objects.RemoveAfterCommit(ctx, key)
+		}
 
 		return nil
 	})
@@ -114,18 +140,23 @@ func (service *Service) changePhotos(
 }
 
 // Photo rechecks current lot visibility before opening a photo; photoID ""
-// opens the cover. Staff may open any photo.
+// opens the cover. Staff may open any photo. With thumb set it opens the small
+// copy, or the full image for an old photo that has none.
 func (service *Service) Photo(
 	ctx context.Context,
 	id, photoID, caller string,
-	staff bool,
+	staff, thumb bool,
 ) (io.ReadCloser, string, error) {
-	key, err := service.store.PhotoKey(ctx, id, photoID, caller, staff)
+	key, thumbKey, err := service.store.PhotoKey(ctx, id, photoID, caller, staff)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, "", apperr.NotFound("Photo not found.")
 	}
 	if err != nil {
 		return nil, "", err
+	}
+
+	if thumb && thumbKey != "" {
+		key = thumbKey
 	}
 
 	reader, err := service.objects.Get(ctx, key)

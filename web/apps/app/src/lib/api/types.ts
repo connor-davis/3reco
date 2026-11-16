@@ -131,6 +131,7 @@ export interface StockInput {
 export type StockPatch = Partial<Omit<StockInput, 'material_id'>>;
 export interface Listing {
   image_url: string;
+  thumb_url?: string;
   image_urls: string[];
   seller_avatar_url: string;
   id: string;

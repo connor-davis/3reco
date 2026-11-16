@@ -30,6 +30,7 @@ line when you add an owner.
 | Send email (Resend, or SMTP to Mailpit) and the action email template | `mail/mail.go` |
 | Bounded PNG/JPEG/WEBP byte sniffing and image size limits | `storage/image.go` (`Image`) |
 | Files in MinIO or S3: put, get, remove, presign | `storage/storage.go` |
+| Small JPEG copy of an uploaded image (long edge cap, white behind see-through, pixel cap; `golang.org/x/image`) | `storage/thumb.go` (`Thumbnail`) |
 | A4 invoice layout, wrapping, pagination and exact decimal formatting (MIT-licensed gpdf-dev/gpdf; Montserrat font and logo embedded from `pdf/assets`, OFL-1.1) | `pdf/invoice.go` |
 
 ## Database tables (`internal/platform/database/migrations`)
@@ -339,6 +340,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Separate personal pictures and store logos, including shared migrated object references | `internal/stores/profile/avatar.go`, `internal/services/profile/avatar.go`, `GET /api/stores/:id/logo` in `internal/api/profile/avatar.go` |
 | Stock photo cap, add/remove/reorder, compensation and after-commit cleanup | `internal/services/stock/image.go`; stock deletion in `stock.go` |
 | Photo rows, order, verified-seller read rule, `stock_photos` table and live trigger | `internal/stores/stock/image.go`, `internal/platform/database/migrations/0029_stock_photos.sql` |
+| Photo small copy: made on upload, served with `?size=thumb` (full image for old photos), removed with the photo, key hidden in the audit log | `internal/services/stock/image.go`, `internal/stores/stock/image.go` (`thumb_key`, `CoverThumbURL`), `0033_stock_photo_thumbs.sql`, tests in `tests/stock_thumbs_test.go` |
 | Versioned listing photo and seller logo projections | `internal/stores/market/listings.go`; stock photo projection in `internal/stores/stock/stock.go` |
 | Read stock photo keys before account erase and include them in own exports | `internal/stores/privacy/{erase,export}.go`; after-commit cleanup in `internal/services/privacy/erase.go` |
 | Shared picture avatar with initials fallback | `web/apps/app/src/components/visuals.tsx` (`PersonAvatar`) |

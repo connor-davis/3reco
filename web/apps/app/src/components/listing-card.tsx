@@ -16,19 +16,22 @@ export function ListingCard({
   showSeller?: boolean;
 }) {
   const [failedImage, setFailedImage] = useState<string>();
+  // The small copy loads fast on a phone; old photos without one still answer
+  // this URL with the full image.
+  const cardImage = listing.thumb_url || listing.image_url;
 
   return (
     <Card className="group/card relative flex flex-col gap-0 overflow-hidden rounded-2xl border bg-card py-0 shadow-[var(--shadow)] ring-0 dark:shadow-none">
       <div className="relative flex overflow-hidden aspect-[4/3] items-center justify-center rounded-none bg-muted text-muted-foreground">
-        {listing.image_url && failedImage !== listing.image_url ? (
+        {cardImage && failedImage !== cardImage ? (
           <img
-            src={listing.image_url}
+            src={cardImage}
             alt={listing.material_name}
             loading="lazy"
             decoding="async"
             width={400}
             height={300}
-            onError={() => setFailedImage(listing.image_url)}
+            onError={() => setFailedImage(cardImage)}
             className="absolute inset-0 size-full object-cover"
           />
         ) : (

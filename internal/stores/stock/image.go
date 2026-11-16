@@ -22,6 +22,13 @@ func CoverURL(alias string) string {
 		FROM stock_photos p WHERE p.stock_id=` + alias + `.id AND p.position=1),'')`
 }
 
+// CoverThumbURL is CoverURL for the small copy. A photo with no small copy
+// still answers it, with the full image.
+func CoverThumbURL(alias string) string {
+	return `COALESCE((SELECT '/api/stock/'||p.stock_id||'/image?size=thumb&v='||md5(p.object_key)
+		FROM stock_photos p WHERE p.stock_id=` + alias + `.id AND p.position=1),'')`
+}
+
 // photoURL builds one photo's URL in SQL.
 const photoURL = `'/api/stock/'||p.stock_id||'/photos/'||p.id||'?v='||md5(p.object_key)`
 
@@ -37,18 +44,19 @@ func PhotoURLs(alias string) string {
 		WHERE p.stock_id=` + alias + `.id ORDER BY p.position)`
 }
 
-// PhotoKey reads the file key of one photo ("" means the cover). The owner and
-// staff always see it; everyone else only while the lot is in the market, which
-// also means its seller is verified.
+// PhotoKey reads the file keys of one photo ("" means the cover): the full image
+// and its small copy, which is "" for photos saved before small copies existed.
+// The owner and staff always see it; everyone else only while the lot is in the
+// market, which also means its seller is verified.
 func (records *Store) PhotoKey(
 	ctx context.Context,
 	stockID, photoID, caller string,
 	staff bool,
-) (string, error) {
-	var key string
-	err := records.db.Q(ctx).QueryRow(
+) (key, thumbKey string, err error) {
+	err = records.db.Q(ctx).QueryRow(
 		ctx,
-		`SELECT p.object_key FROM stock_photos p JOIN stock s ON s.id=p.stock_id
+		`SELECT p.object_key, COALESCE(p.thumb_key,'') FROM stock_photos p
+		JOIN stock s ON s.id=p.stock_id
 		JOIN business_profiles u ON u.id=s.owner_id
 		WHERE p.stock_id=$1 AND (($2='' AND p.position=1) OR p.id=$2) AND
 		($4 OR s.owner_id=$3 OR (s.is_listed AND s.weight>0 AND u.role='business'
@@ -57,9 +65,9 @@ func (records *Store) PhotoKey(
 		photoID,
 		caller,
 		staff,
-	).Scan(&key)
+	).Scan(&key, &thumbKey)
 
-	return key, err
+	return key, thumbKey, err
 }
 
 // PhotoIDs lists a stock item's photo ids in order.
@@ -87,11 +95,13 @@ func (records *Store) PhotoIDs(ctx context.Context, stockID string) ([]string, e
 	return ids, rows.Err()
 }
 
-// PhotoKeys lists the file keys of every photo of a stock item.
+// PhotoKeys lists the file keys of every photo of a stock item, small copies
+// included, so a delete removes both.
 func (records *Store) PhotoKeys(ctx context.Context, stockID string) ([]string, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT object_key FROM stock_photos WHERE stock_id=$1`,
+		`SELECT k FROM stock_photos p, unnest(ARRAY[p.object_key, p.thumb_key]) AS k
+		WHERE p.stock_id=$1 AND k IS NOT NULL`,
 		stockID,
 	)
 	if err != nil {
@@ -114,31 +124,34 @@ func (records *Store) PhotoKeys(ctx context.Context, stockID string) ([]string, 
 
 // AddPhoto puts a photo last. The caller holds the stock row lock and has
 // checked the count, so positions stay 1..n.
-func (records *Store) AddPhoto(ctx context.Context, stockID, id, key string) error {
+func (records *Store) AddPhoto(ctx context.Context, stockID, id, key, thumbKey string) error {
 	_, err := records.db.Q(ctx).Exec(
 		ctx,
-		`INSERT INTO stock_photos (id, stock_id, position, object_key)
-		SELECT $2, $1, COALESCE(max(position),0)+1, $3 FROM stock_photos WHERE stock_id=$1`,
+		`INSERT INTO stock_photos (id, stock_id, position, object_key, thumb_key)
+		SELECT $2, $1, COALESCE(max(position),0)+1, $3, $4 FROM stock_photos WHERE stock_id=$1`,
 		stockID,
 		id,
 		key,
+		thumbKey,
 	)
 
 	return err
 }
 
-// DeletePhoto removes one photo, closes the gap and returns its file key.
-// A missing photo is pgx.ErrNoRows.
-func (records *Store) DeletePhoto(ctx context.Context, stockID, id string) (string, error) {
-	var key string
+// DeletePhoto removes one photo, closes the gap and returns its file keys (the
+// full image, then its small copy when it has one). A missing photo is
+// pgx.ErrNoRows.
+func (records *Store) DeletePhoto(ctx context.Context, stockID, id string) ([]string, error) {
+	var key, thumbKey string
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`DELETE FROM stock_photos WHERE stock_id=$1 AND id=$2 RETURNING object_key`,
+		`DELETE FROM stock_photos WHERE stock_id=$1 AND id=$2
+		RETURNING object_key, COALESCE(thumb_key,'')`,
 		stockID,
 		id,
-	).Scan(&key)
+	).Scan(&key, &thumbKey)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	_, err = records.db.Q(ctx).Exec(
@@ -150,7 +163,12 @@ func (records *Store) DeletePhoto(ctx context.Context, stockID, id string) (stri
 		stockID,
 	)
 
-	return key, err
+	keys := []string{key}
+	if thumbKey != "" {
+		keys = append(keys, thumbKey)
+	}
+
+	return keys, err
 }
 
 // OrderPhotos sets positions to the order of ids. The caller has checked that

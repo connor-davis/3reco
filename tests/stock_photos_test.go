@@ -44,8 +44,8 @@ func TestStockPhotosLimitOrderAndDelete(t *testing.T) {
 	}
 
 	tradeWant(t, "ninth photo", uploadImage(t, w.app, w.seller.c, photos, receiptImage(9)), 409)
-	if count := objectCount(t, w.app, "stock/"+w.stock+"/"); count != 8 {
-		t.Fatalf("ninth photo left %d objects", count)
+	if count := objectCount(t, w.app, "stock/"+w.stock+"/"); count != 16 {
+		t.Fatalf("ninth photo left %d objects (8 photos and 8 small copies)", count)
 	}
 
 	first := anonymous.Do("GET", cover, nil)
@@ -104,7 +104,7 @@ func TestStockPhotosLimitOrderAndDelete(t *testing.T) {
 	if positions != "1,2,3,4,5,6,7" {
 		t.Fatalf("positions after delete: %s", positions)
 	}
-	if count := objectCount(t, w.app, "stock/"+w.stock+"/"); count != 7 {
+	if count := objectCount(t, w.app, "stock/"+w.stock+"/"); count != 14 {
 		t.Fatalf("delete left %d objects", count)
 	}
 	tradeWant(t, "deleted photo", anonymous.Do("GET", urls[7], nil), 404)
@@ -176,5 +176,8 @@ func TestStockPhotosAreAudited(t *testing.T) {
 	}
 	if _, leaked := lines[0].New["object_key"]; leaked {
 		t.Fatalf("audit log holds the object key: %v", lines[0].New)
+	}
+	if _, leaked := lines[0].New["thumb_key"]; leaked {
+		t.Fatalf("audit log holds the small copy's key: %v", lines[0].New)
 	}
 }

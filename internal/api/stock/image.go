@@ -70,6 +70,7 @@ func (handler *Handler) photo(c fiber.Ctx) error {
 		c.Params("photo_id"),
 		auth.PartyID(user),
 		staff,
+		c.Query("size") == "thumb",
 	)
 	if err != nil {
 		return err

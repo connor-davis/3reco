@@ -12,6 +12,7 @@ import (
 // Listing is an allowlisted market view, never a private user or stock record.
 type Listing struct {
 	ImageURL        string    `json:"image_url"`
+	ThumbURL        string    `json:"thumb_url"`
 	ImageURLs       []string  `json:"image_urls"`
 	SellerAvatarURL string    `json:"seller_avatar_url"`
 	ID              string    `json:"id"`
@@ -43,7 +44,7 @@ type Filter struct {
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
 	s.material_id,m.name,m.carbon_factor::text,m.gw_code,GREATEST(s.weight-COALESCE(h.held,0),0)::text,s.price::text,
 	s.created_at,COALESCE(h.held,0)::text,
-	` + stock.CoverURL("s") + `,` + stock.PhotoURLs("s") + `,
+	` + stock.CoverURL("s") + `,` + stock.CoverThumbURL("s") + `,` + stock.PhotoURLs("s") + `,
 	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/stores/'||u.id||'/logo?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END,
 	` + database.Verified("u")
 
@@ -100,6 +101,7 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 			&item.CreatedAt,
 			&item.HeldWeight,
 			&item.ImageURL,
+			&item.ThumbURL,
 			&item.ImageURLs,
 			&item.SellerAvatarURL,
 			&item.SellerVerified,
@@ -134,6 +136,7 @@ func (records *Store) Listing(ctx context.Context, id, viewer string) (Listing, 
 		&item.CreatedAt,
 		&item.HeldWeight,
 		&item.ImageURL,
+		&item.ThumbURL,
 		&item.ImageURLs,
 		&item.SellerAvatarURL,
 		&item.SellerVerified,
