@@ -165,6 +165,46 @@ func TestSetupFinishesAnOlderIncompleteProfile(t *testing.T) {
 	status(t, user.c.Do("POST", "/api/profile/setup", map[string]any{}), 200)
 }
 
+func TestProfileCannotSkipSetupGate(t *testing.T) {
+	app := testutil.Server(t)
+
+	for _, role := range []string{"collector", "business"} {
+		user := tradeNewUser(t, app, role)
+		other := tradeNewUser(t, app, "collector")
+		tradeExec(t, app, `UPDATE users SET profile_complete = false WHERE id IN ($1, $2)`, user.id, other.id)
+
+		for _, complete := range []bool{true, false} {
+			status(t, user.c.Do("PATCH", "/api/profile", map[string]any{"profile_complete": complete}), 400)
+		}
+
+		// Profile edits cannot select another person, including through the body.
+		status(t, user.c.Do("PATCH", "/api/profile", map[string]any{
+			"id": other.id, "profile_complete": true,
+		}), 400)
+		res := user.c.Do("PATCH", "/api/profile/"+other.id, map[string]any{"profile_complete": true})
+		if res.Status < 400 {
+			t.Fatalf("another person's profile was editable: %d", res.Status)
+		}
+
+		for _, id := range []string{user.id, other.id} {
+			if got := tradeText(t, app, `SELECT profile_complete::text FROM users WHERE id = $1`, id); got != "false" {
+				t.Fatalf("profile %s became complete: %s", id, got)
+			}
+		}
+
+		if got := user.c.Do("GET", "/api/auth/me", nil).Body["user"].(map[string]any)["profileComplete"]; got != false {
+			t.Fatalf("session reports a completed profile: %v", got)
+		}
+
+		// Even a setup body with someone else's id can only finish the caller.
+		fillProfile(t, user.c, role == "business")
+		status(t, user.c.Do("POST", "/api/profile/setup", map[string]any{"id": other.id}), 200)
+		if got := tradeText(t, app, `SELECT profile_complete::text FROM users WHERE id = $1`, other.id); got != "false" {
+			t.Fatalf("setup completed someone else's profile: %s", got)
+		}
+	}
+}
+
 func TestAdminCanSendSomeoneBackToSetup(t *testing.T) {
 	w := newTradeWorld(t)
 	admin := tradeNewUser(t, w.app, "admin")

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useImperativeHandle, type ReactNode, type Ref } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   useForm,
@@ -33,6 +33,15 @@ type Props = {
   onSaved?: () => void | Promise<void>;
   // In the setup pages: a Continue button, with no cancel and no toast.
   wizard?: boolean;
+  group?: {
+    ref: Ref<SetupForm>;
+    onSubmit: () => void;
+  };
+};
+
+export type SetupForm = {
+  validate: () => Promise<boolean>;
+  save: () => Promise<boolean>;
 };
 
 // The bank and location forms serve a collector's own profile and a
@@ -56,59 +65,82 @@ function FormShell<T extends FieldValues>({
   wizard,
   readOnly,
   children,
+  group,
 }: {
   form: UseFormReturn<T>;
   onSave: (values: T) => Promise<unknown>;
   wizard?: boolean;
   readOnly?: boolean;
   children: ReactNode;
+  group?: Props['group'];
 }) {
+  async function save() {
+    let saved = false;
+    await form.handleSubmit(async (values) => {
+      form.clearErrors('root');
+      try {
+        await onSave(values);
+        form.reset(
+          Object.fromEntries(
+            Object.entries(values).map(([name, value]) => [
+              name,
+              name === 'id_number' || name === 'bank_account_number'
+                ? ''
+                : value,
+            ])
+          ) as T
+        );
+        if (!wizard) toast.success('Changes saved.');
+        saved = true;
+      } catch (error) {
+        if (error instanceof ApiError) {
+          for (const [name, message] of Object.entries(error.fields ?? {})) {
+            form.setError(name as Path<T>, { message });
+          }
+        }
+        form.setError('root', {
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Changes could not be saved. Try again.',
+        });
+      }
+    })();
+    return saved;
+  }
+
+  useImperativeHandle(group?.ref, () => ({
+    validate: () => form.trigger(undefined, { shouldFocus: true }),
+    save,
+  }));
+
   return (
     <form
       noValidate
       className="space-y-4"
-      onSubmit={form.handleSubmit(async (values) => {
-        form.clearErrors('root');
-        try {
-          await onSave(values);
-          form.reset(
-            Object.fromEntries(
-              Object.entries(values).map(([name, value]) => [
-                name,
-                name === 'id_number' || name === 'bank_account_number'
-                  ? ''
-                  : value,
-              ])
-            ) as T
-          );
-          if (!wizard) toast.success('Changes saved.');
-        } catch (error) {
-          if (error instanceof ApiError) {
-            for (const [name, message] of Object.entries(error.fields ?? {})) {
-              form.setError(name as Path<T>, { message });
-            }
-          }
-          form.setError('root', {
-            message:
-              error instanceof Error
-                ? error.message
-                : 'Changes could not be saved. Try again.',
-          });
-        }
-      })}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (group) group.onSubmit();
+        else return save();
+      }}
     >
       <fieldset
         disabled={form.formState.isSubmitting || readOnly}
-        className="grid gap-4 sm:grid-cols-2"
+        className="grid min-w-0 gap-4 sm:grid-cols-2"
       >
         {children}
       </fieldset>
+      {group && (
+        <button type="submit" hidden>
+          Continue
+        </button>
+      )}
       {form.formState.errors.root && (
         <p role="alert" className="text-sm text-destructive">
           {form.formState.errors.root.message}
         </p>
       )}
-      {!readOnly && (
+      {!readOnly && !group && (
         <ButtonRow>
           {!wizard && (
             <Button
@@ -138,7 +170,7 @@ function FormShell<T extends FieldValues>({
   );
 }
 
-export function PersonalForm({ profile, onSaved, wizard }: Props) {
+export function PersonalForm({ profile, onSaved, wizard, group }: Props) {
   const save = useUpdateProfile();
   const form = useForm<PersonalValues>({
     resolver: zodResolver(personalSchema),
@@ -155,6 +187,7 @@ export function PersonalForm({ profile, onSaved, wizard }: Props) {
   return (
     <FormShell
       form={form}
+      group={group}
       wizard={wizard}
       onSave={async ({ id_number, ...values }) => {
         const first_name = tidyName(values.first_name);
@@ -211,6 +244,7 @@ export function BusinessForm({
   onSaved,
   wizard,
   readOnly,
+  group,
 }: Omit<DetailsProps, 'business'> & { profile: BusinessProfile }) {
   const save = useUpdateBusiness();
   const form = useForm<BusinessValues>({
@@ -223,6 +257,7 @@ export function BusinessForm({
   return (
     <FormShell
       form={form}
+      group={group}
       wizard={wizard}
       readOnly={readOnly}
       onSave={async (values) => {
@@ -250,6 +285,7 @@ export function PayoutForm({
   wizard,
   business,
   readOnly,
+  group,
 }: DetailsProps) {
   const save = useSaveDetails(business);
   const form = useForm<BankValues>({
@@ -266,6 +302,7 @@ export function PayoutForm({
   return (
     <FormShell
       form={form}
+      group={group}
       wizard={wizard}
       readOnly={readOnly}
       onSave={async ({ bank_account_number, ...values }) => {
@@ -320,6 +357,7 @@ export function LocationForm({
   wizard,
   business,
   readOnly,
+  group,
 }: DetailsProps) {
   const save = useSaveDetails(business);
   const form = useForm<LocationValues>({
@@ -337,6 +375,7 @@ export function LocationForm({
   return (
     <FormShell
       form={form}
+      group={group}
       wizard={wizard}
       readOnly={readOnly}
       onSave={async ({ area_code, ...values }) => {
