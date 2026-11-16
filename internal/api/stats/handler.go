@@ -4,6 +4,7 @@ package stats
 import (
 	"github.com/gofiber/fiber/v3"
 
+	"github.com/connor-davis/3reco/internal/api/middleware"
 	svc "github.com/connor-davis/3reco/internal/services/stats"
 )
 
@@ -13,9 +14,10 @@ type Handler struct{ svc *svc.Service }
 // New builds the stats handler.
 func New(service *svc.Service) *Handler { return &Handler{svc: service} }
 
-// Register adds the public stats route under /api.
+// Register adds public totals and the authenticated price-history route under /api.
 func (handler *Handler) Register(router fiber.Router) {
 	router.Get("/stats", handler.stats)
+	router.Get("/materials/:id/price-history", middleware.RequireUser, handler.prices)
 }
 
 func (handler *Handler) stats(c fiber.Ctx) error {

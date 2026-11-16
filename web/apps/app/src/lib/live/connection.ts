@@ -57,6 +57,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
         ['admin', 'duplicates'],
         ['admin', 'activity'],
         ['transactions'],
+        ['price-history'],
         ['dashboards'],
         ['stats'],
         ['collectors'],

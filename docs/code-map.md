@@ -3,6 +3,16 @@
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
 
+## Price history
+
+| Job | Owner |
+| --- | --- |
+| Twelve Monday-start UTC weeks of completed b2b trades, numeric weight-weighted per-kg prices; SQL hides weeks below 5 deals / 3 selling businesses, with no identities or counts | `internal/stores/stats/prices.go` |
+| Business members, admin and staff only; fixed weekly window and suppression thresholds; `GET /api/materials/:id/price-history` | `internal/services/stats/prices.go`, `internal/api/stats/prices.go`; registration in `internal/api/stats/handler.go` |
+| Price-trend notice and version requiring re-acceptance; matching version on account creation and invite acceptance | `internal/platform/config/privacy.go`, `tests/privacy_test.go`, `web/apps/app/src/routes/sign-up.tsx`, `src/routes/accept-invite.tsx`; invite regression in `web/apps/app/tests/team-render.test.mjs` |
+| Single-material market card, line chart with gaps and exact displayed strings, client key and stale time | `web/apps/app/src/routes/market/-components/price-history.tsx`, `src/lib/api/price-history.ts`; transaction invalidation in `src/lib/live/connection.ts` |
+| Thresholds, exclusions, exact average, anonymous projection, caller access and same aggregate for participants and outsiders; web states and responsive themes | `tests/price_history_test.go`, `web/apps/app/tests/price-history.test.mjs`, `web/apps/app/tests/price-history-render.test.mjs` |
+
 ## Quick replies
 
 | Job | Owner |

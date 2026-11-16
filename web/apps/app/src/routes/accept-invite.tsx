@@ -48,7 +48,7 @@ function AcceptInvitePage() {
           ? {
               name: details.name,
               password: details.password,
-              accepted_terms_version: '2026-11',
+              accepted_terms_version: '2026-12',
             }
           : {}),
       },

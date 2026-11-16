@@ -181,7 +181,7 @@ with sync_playwright() as p:
                     page.screenshot(path=str(shots / f'invite-{mode}-{width}.png'), full_page=True)
                 page.get_by_role('button', name='Create account and join', exact=True).click()
                 expect(page.get_by_role('heading', name='You have joined the team.', exact=True)).to_be_visible()
-                assert requests[-1][1] == {'token': 'new', 'name': 'New Teammate', 'password': 'SafePassword123!', 'accepted_terms_version': '2026-11'}
+                assert requests[-1][1] == {'token': 'new', 'name': 'New Teammate', 'password': 'SafePassword123!', 'accepted_terms_version': '2026-12'}
                 # 400 is an expected failed preview, so record only unexpected errors here.
                 assert not errors, errors
                 page.goto(base + '/accept-invite?token=expired')

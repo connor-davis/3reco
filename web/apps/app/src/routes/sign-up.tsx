@@ -16,7 +16,7 @@ export const Route = createFileRoute('/sign-up')({
 });
 
 // The terms version the API accepts (internal/platform/config/privacy.go).
-const TERMS_VERSION = '2026-11';
+const TERMS_VERSION = '2026-12';
 
 function SignUpPage() {
   const schema = z.object({

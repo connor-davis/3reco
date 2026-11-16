@@ -2,7 +2,7 @@ package config
 
 // NoticeVersion is the privacy notice people must accept at sign-up. Change it
 // when the notice changes; everyone is then asked again.
-const NoticeVersion = "2026-11"
+const NoticeVersion = "2026-12"
 
 // Retention periods, used by the hourly privacy job in services/privacy.
 const (
@@ -36,6 +36,8 @@ ID and bank numbers are stored encrypted. Other people see them only where a tra
 3REco admins can read chats between users to resolve disputes and keep the marketplace safe.
 
 We use your details to run your account, match you with trades, send notices about your activity and keep trade records the law requires.
+
+The app shows price trends built from many deals, never one store's deal.
 
 You can download everything we hold about you, or delete your account, from your profile. Trade records are kept for a limited time after deletion.
 

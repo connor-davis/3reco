@@ -15,6 +15,7 @@ import { formatCo2 } from '@/lib/impact';
 import { filterListings } from './-components/filter-listings';
 import { MarketFilters } from './-components/market-filters';
 import { SaveSearch } from './-components/save-search';
+import { PriceHistory } from './-components/price-history';
 import {
   changeFilter,
   parseMarketSearch,
@@ -75,6 +76,7 @@ function MarketPage() {
         />
       </div>
       <SaveSearch search={search} />
+      <PriceHistory materialId={search.material_id} />
       <DataState
         query={query}
         isEmpty={!results.length}
