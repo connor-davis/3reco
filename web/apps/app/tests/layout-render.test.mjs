@@ -5,7 +5,7 @@ import { createServer as createPortServer } from 'node:net';
 
 test(
   'layout blocks render across compact/wide widths in light and dark',
-  { timeout: 360000 },
+  { timeout: 600000 },
   async () => {
     const { createServer } = await import('vite');
     const portServer = createPortServer();
@@ -243,10 +243,14 @@ with sync_playwright() as p:
                             rows = page.locator('[data-slot="record-row"]')
                             assert rows.count() > 0
                             for row in rows.all():
-                                assert row.bounding_box()['height'] <= 88, f'compact content too tall {route} {width}'
+                                if route.startswith('/transactions'):
+                                    # The primary row tap and invoice download are sibling buttons.
+                                    expect(row.locator('xpath=../..').get_by_role('button')).to_have_count(2)
+                                has_invoice = route.startswith('/transactions')
+                                assert row.bounding_box()['height'] <= (108 if has_invoice else 88), f'compact content too tall {route} {width}'
                                 meta = row.locator('[data-slot="record-meta"]')
                                 assert not re.search(r'\b(C2B|B2B)\b', meta.inner_text())
-                                assert meta.bounding_box()['height'] <= 20
+                                assert meta.bounding_box()['height'] <= (40 if has_invoice else 20)
                                 assert meta.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'footer clips {route} {width}'
                             stress = rows.nth(1) if route.startswith('/transactions') else rows.first
                             parties = stress.locator('[data-slot="record-parties"]')

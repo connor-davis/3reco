@@ -66,12 +66,15 @@ with sync_playwright() as p:
                 return {'id': id, 'type': 'b2b', 'status': 'complete', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'invoice_number': id, 'seller': party(seller), 'buyer': party(buyer), 'total_price': '16', 'business_verified': True, 'items': [{'material_id': 'glass', 'material_name': id + ' glass', 'weight': '2', 'price': '8'}], 'receipts': []}
             bought = trade('Bought-invoice', 'business-b', 'business-a')
             sold = trade('Sold-invoice', 'business-a', 'business-b')
+            invoice_status = 'complete'
             requests, errors = [], []
             def handle(route):
                 parsed = urlparse(route.request.url)
                 path = parsed.path.removeprefix('/api')
                 query = parse_qs(parsed.query)
                 requests.append((path, query))
+                if path == '/transactions/Bought-invoice/invoice':
+                    route.fulfill(status=200, content_type='application/pdf', body='%PDF-1.4\ninvoice'); return
                 body = {'items': [], 'has_more': False, 'count': 0}
                 if path == '/auth/me': body = {'user': user}
                 elif path == '/auth/sessions': body = {'sessions': []}
@@ -80,6 +83,7 @@ with sync_playwright() as p:
                 elif path.startswith('/transactions/') and path.split('/')[-1] in ['Bought-invoice', 'Sold-invoice']: body = bought if path.endswith('Bought-invoice') else sold
                 elif path.startswith('/transactions'):
                     rows = [bought] if path.endswith('/purchases') else [sold] if path.endswith('/sales') else [bought, sold]
+                    rows = [dict(row, status=invoice_status) for row in rows]
                     body = {'items': rows, 'has_more': False, 'next_cursor': None}
                 elif '/exports/' in path:
                     route.fulfill(status=200, content_type='text/csv', body='id\nexample\n'); return
@@ -103,6 +107,34 @@ with sync_playwright() as p:
                 expect(page.get_by_role('button', name='Export', exact=True)).to_be_disabled()
                 expect(page.get_by_text('Pick Bought or Sold to export', exact=True)).to_be_visible()
                 assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
+                # The phone action is a sibling of the primary row tap; desktop keeps its menu.
+                if width < 1024:
+                    invoice_action = page.get_by_role('button', name='Download invoice Bought-invoice', exact=True)
+                    expect(invoice_action).to_be_visible()
+                    box = invoice_action.bounding_box()
+                    assert box['width'] >= 44 and box['height'] >= 44
+                else:
+                    page.get_by_role('button', name='Actions for Bought-invoice', exact=True).click()
+                    invoice_action = page.get_by_role('menuitem', name='Download invoice', exact=True)
+                    expect(invoice_action).to_be_visible()
+                before_download = len(requests)
+                with page.expect_download() as downloaded: invoice_action.click()
+                assert downloaded.value.suggested_filename == '3REco-Invoice-Bought-invoice.pdf'
+                assert [path for path, _ in requests[before_download:] if path.startswith('/transactions/')] == ['/transactions/Bought-invoice/invoice']
+                assert urlparse(page.url).path == '/transactions'
+                for invoice_status in ['pending', 'cancelled', 'duplicate']:
+                    page.reload()
+                    page.wait_for_load_state('networkidle')
+                    expect(page.get_by_text('Bought-invoice glass', exact=False)).to_be_visible()
+                    if width < 1024:
+                        expect(page.get_by_role('button', name=re.compile('^Download invoice '))).to_have_count(0)
+                    else:
+                        page.get_by_role('button', name='Actions for Bought-invoice', exact=True).click()
+                        expect(page.get_by_role('menuitem', name='Download invoice', exact=True)).to_have_count(0)
+                        page.keyboard.press('Escape')
+                invoice_status = 'complete'
+                page.reload()
+                page.wait_for_load_state('networkidle')
                 size = page.get_by_role('combobox', name='Rows per page', exact=True)
                 expect(size).to_contain_text('10')
                 footer = size.locator('xpath=../../..')
