@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { Receipt } from 'lucide-react';
 import { Guarded } from '@/components/access-guard';
+import { BackButton } from '@/components/back-button';
 import { DataState } from '@/components/data-state';
 import { TradeDetail } from '@/components/dialogs/record-dialogs';
 import { useTransaction } from '@/lib/api/transactions';
@@ -38,12 +39,7 @@ function TransactionPage() {
 
   return (
     <>
-      <Link
-        className="mb-4 inline-flex min-h-11 items-center text-sm text-primary underline-offset-4 hover:underline"
-        to={from ?? fallback}
-      >
-        Back to {from === '/collections' ? 'collections' : 'transactions'}
-      </Link>
+      <BackButton fallback={from ?? fallback} className="mb-4" />
       <DataState
         query={query}
         isEmpty={!query.data}

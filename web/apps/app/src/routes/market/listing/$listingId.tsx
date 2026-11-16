@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PackageSearch } from 'lucide-react';
 import { toast } from 'sonner';
+import { BackButton } from '@/components/back-button';
 import { BusinessName } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { ActionBar, ActionBarSpacer } from '@/components/action-bar';
@@ -46,9 +47,7 @@ function ListingPage() {
 
   return (
     <>
-      <LinkButton to="/market" variant="ghost" className="mb-6 px-0">
-        Back to browse
-      </LinkButton>
+      <BackButton fallback="/market" className="mb-4" />
       <DataState
         query={query}
         isEmpty={!query.data}

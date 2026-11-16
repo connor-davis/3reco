@@ -245,6 +245,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
   for (const name of [
     '@tanstack/react-router',
     'lucide-react',
+    '@/components/back-button',
     '@/components/badges',
     '@/components/confirm-dialog',
     '@/components/data-state',

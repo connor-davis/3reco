@@ -63,6 +63,6 @@ test('touch sizes and the chat back link follow the phone shell (below lg), not 
   assert.match(source('components/ui/button-variants.ts'), /max-lg:min-h-11/);
   assert.match(
     source('components/chat/conversation.tsx'),
-    /Back to messages[\s\S]*?lg:hidden/
+    /<BackButton fallback="\/messages"[^>]*lg:hidden/
   );
 });
