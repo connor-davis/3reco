@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WantedRouteImport } from './routes/wanted'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TeamRouteImport } from './routes/team'
@@ -45,6 +46,11 @@ import { Route as AdminActivityRouteImport } from './routes/admin/activity'
 import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store/$sellerId'
 import { Route as MarketListingListingIdRouteImport } from './routes/market/listing/$listingId'
 
+const WantedRoute = WantedRouteImport.update({
+  id: '/wanted',
+  path: '/wanted',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/users': typeof AdminUsersRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/users': typeof AdminUsersRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/users': typeof AdminUsersRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/terms'
     | '/verify-email'
+    | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
     | '/admin/users'
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/terms'
     | '/verify-email'
+    | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
     | '/admin/users'
@@ -430,6 +441,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/terms'
     | '/verify-email'
+    | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
     | '/admin/users'
@@ -468,6 +480,7 @@ export interface RootRouteChildren {
   TeamRoute: typeof TeamRoute
   TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  WantedRoute: typeof WantedRoute
   AdminActivityRoute: typeof AdminActivityRoute
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -488,6 +501,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wanted': {
+      id: '/wanted'
+      path: '/wanted'
+      fullPath: '/wanted'
+      preLoaderRoute: typeof WantedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify-email': {
       id: '/verify-email'
       path: '/verify-email'
@@ -756,6 +776,7 @@ const rootRouteChildren: RootRouteChildren = {
   TeamRoute: TeamRoute,
   TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  WantedRoute: WantedRoute,
   AdminActivityRoute: AdminActivityRoute,
   AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminUsersRoute: AdminUsersRoute,

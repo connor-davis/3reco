@@ -40,6 +40,7 @@ type Request struct {
 	OfferVersion           int            `json:"offer_version"`
 	BuyerConfirmedVersion  *int           `json:"buyer_confirmed_version"`
 	SellerConfirmedVersion *int           `json:"seller_confirmed_version"`
+	WantedPostID           *string        `json:"wanted_post_id"`
 	Items                  []Item         `json:"items"`
 	CreatedAt              time.Time      `json:"created_at"`
 	UpdatedAt              time.Time      `json:"updated_at"`
@@ -59,7 +60,8 @@ var selectRequest = `
 		r.buyer_id, ` + database.DisplayName("b") + `, ` + database.Verified("b") + `,
 		r.status, r.created_at, r.updated_at, r.offer_by, r.offer_version,
 		r.buyer_confirmed_version, r.seller_confirmed_version,
-        (SELECT t.id FROM transactions t WHERE t.request_id=r.id AND t.status='complete' LIMIT 1)
+        (SELECT t.id FROM transactions t WHERE t.request_id=r.id AND t.status='complete' LIMIT 1),
+		r.wanted_post_id
 	FROM transaction_requests r
 	JOIN business_profiles s ON s.id = r.seller_id
 	JOIN business_profiles b ON b.id = r.buyer_id`
@@ -83,6 +85,7 @@ func scan(row pgx.Row) (Request, error) {
 		&r.BuyerConfirmedVersion,
 		&r.SellerConfirmedVersion,
 		&r.TransactionID,
+		&r.WantedPostID,
 	)
 	r.Items = []Item{}
 

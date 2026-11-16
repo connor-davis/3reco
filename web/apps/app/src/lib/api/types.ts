@@ -274,6 +274,8 @@ export interface TradeRequest {
   buyer_confirmed_version: number | null;
   seller_confirmed_version: number | null;
   items: RequestItem[];
+  // Set when the request answers a wanted post.
+  wanted_post_id?: string | null;
   created_at: string;
   updated_at: string;
 }

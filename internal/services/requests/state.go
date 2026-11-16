@@ -39,43 +39,7 @@ func (s *Service) MakeOffer(
 			return apperr.Conflict("An offer can only be made on an open request.")
 		}
 
-		if err := s.requireVerified(ctx, r); err != nil {
-			return err
-		}
-
-		if err := transactions.CheckPricedItems(offer); err != nil {
-			return err
-		}
-
-		// Share settlement's material order; each material's stock is ordered by ID.
-		offer = slices.Clone(offer)
-		slices.SortFunc(offer, func(a, b transactions.SaleItem) int {
-			return strings.Compare(a.MaterialID, b.MaterialID)
-		})
-
-		if err := s.store.ReleaseHolds(ctx, id); err != nil {
-			return err
-		}
-
-		if err := s.checkOffer(ctx, r, offer); err != nil {
-			return err
-		}
-
-		if err := s.store.ResetConfirmation(ctx, id); err != nil {
-			return err
-		}
-
-		if err := s.store.ClearOffers(ctx, id); err != nil {
-			return err
-		}
-
-		for _, line := range offer {
-			if err := s.store.SetOffer(ctx, id, line.MaterialID, line.Weight, line.Price); err != nil {
-				return err
-			}
-		}
-
-		if err := s.store.StartOffer(ctx, id, auth.PartyID(user)); err != nil {
+		if err := s.applyOffer(ctx, user, r, offer); err != nil {
 			return err
 		}
 
@@ -85,18 +49,6 @@ func (s *Service) MakeOffer(
 		}
 
 		body := fmt.Sprintf("A new offer was made for %s. Review the terms and confirm or counter.", name)
-
-		actor := r.Seller.Name
-		if auth.PartyID(user) == r.Buyer.ID {
-			actor = r.Buyer.Name
-		}
-		action := " made an offer for "
-		if r.Status == StatusOffered {
-			action = " made a counter-offer for "
-		}
-		if err := s.store.InsertRequestEvent(ctx, id, user.ID, actor+action+name+"."); err != nil {
-			return err
-		}
 
 		other := r.Buyer.ID
 		if auth.PartyID(user) == other {
@@ -149,6 +101,10 @@ func (s *Service) Accept(
 	var transactionID string
 
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
+		if err := s.lockWantedPost(ctx, user, id); err != nil {
+			return err
+		}
+
 		r, err := s.load(ctx, user, id, true)
 		if err != nil {
 			return err
@@ -251,6 +207,12 @@ func (s *Service) Accept(
 		// The chat's last line (and so the inbox preview and time) says it is done.
 		if err := s.store.InsertRequestEvent(ctx, id, user.ID, "The trade is complete."); err != nil {
 			return err
+		}
+
+		if r.WantedPostID != nil {
+			if err := s.fillWantedPost(ctx, r); err != nil {
+				return err
+			}
 		}
 
 		trade, err := s.trades.Detail(ctx, user, transactionID)
@@ -432,4 +394,72 @@ func (s *Service) Move(ctx context.Context, user auth.User, id, action string) e
 // them on un-verify would need a hook in the admin verify action.
 func (s *Service) requireVerified(ctx context.Context, r store.Request) error {
 	return marketsvc.RequireVerified(ctx, marketstore.New(s.db), r.Seller.ID)
+}
+
+// applyOffer checks an offer and writes it on a locked request: holds, terms,
+// the new version and the chat line. It tells nobody; the caller does.
+func (s *Service) applyOffer(
+	ctx context.Context,
+	user auth.User,
+	r store.Request,
+	offer []transactions.SaleItem,
+) error {
+	if err := s.requireVerified(ctx, r); err != nil {
+		return err
+	}
+
+	if err := transactions.CheckPricedItems(offer); err != nil {
+		return err
+	}
+
+	// Share settlement's material order; each material's stock is ordered by ID.
+	offer = slices.Clone(offer)
+	slices.SortFunc(offer, func(a, b transactions.SaleItem) int {
+		return strings.Compare(a.MaterialID, b.MaterialID)
+	})
+
+	if err := s.store.ReleaseHolds(ctx, r.ID); err != nil {
+		return err
+	}
+
+	if err := s.checkOffer(ctx, r, offer); err != nil {
+		return err
+	}
+
+	if err := s.store.ResetConfirmation(ctx, r.ID); err != nil {
+		return err
+	}
+
+	if err := s.store.ClearOffers(ctx, r.ID); err != nil {
+		return err
+	}
+
+	for _, line := range offer {
+		if err := s.store.SetOffer(ctx, r.ID, line.MaterialID, line.Weight, line.Price); err != nil {
+			return err
+		}
+	}
+
+	if err := s.store.StartOffer(ctx, r.ID, auth.PartyID(user)); err != nil {
+		return err
+	}
+
+	name := firstName(r.Items)
+	if len(offer) > 1 {
+		name = fmt.Sprintf("%d materials", len(offer))
+	}
+
+	actor := r.Seller.Name
+	if auth.PartyID(user) == r.Buyer.ID {
+		actor = r.Buyer.Name
+	}
+	action := " made an offer for "
+	if r.Status == StatusOffered {
+		action = " made a counter-offer for "
+	}
+	if err := s.store.InsertRequestEvent(ctx, r.ID, user.ID, actor+action+name+"."); err != nil {
+		return err
+	}
+
+	return nil
 }

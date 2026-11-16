@@ -11,6 +11,7 @@ import {
   PackageOpen,
   Receipt,
   Search,
+  Megaphone,
   Send,
   Store,
   TrendingUp,
@@ -123,6 +124,7 @@ function roleNav(role: Role | null): NavGroup[] {
               badge: 'incoming',
             },
             { label: 'Outgoing requests', to: '/market/outgoing', icon: Send },
+            { label: 'Wanted', to: '/wanted', icon: Megaphone },
           ],
         },
         {
@@ -256,6 +258,7 @@ const pageTitles: Record<string, string> = {
   about: 'About',
   cart: 'Your cart',
   saved: 'Saved',
+  wanted: 'Wanted',
   collections: 'Collections',
   collectors: 'Collectors',
   materials: 'Materials',
@@ -296,6 +299,7 @@ const guardedSingles: Record<string, PageId> = {
   collections: 'collections',
   transactions: 'transactions',
   cart: 'cart',
+  wanted: 'wanted',
   profile: 'profile',
 };
 

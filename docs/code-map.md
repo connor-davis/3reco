@@ -33,6 +33,17 @@ line when you add an owner.
 | Keep copied market price filters as exact text before route validation | `web/apps/app/src/main.tsx` (`parseSearch`) |
 | Ownership, matching, first publication and live recipient regression | `tests/saved_searches_test.go`, `web/apps/app/tests/saved-searches.test.mjs`, `web/apps/app/tests/saved-searches-render.test.mjs` |
 
+## Wanted posts
+
+| Job | Owner |
+| --- | --- |
+| `wanted_posts` table, open-post index, `transaction_requests.wanted_post_id` with one reply per seller, and the live `wanted` trigger | `internal/platform/database/migrations/0040_wanted_posts.sql` |
+| Post SQL: create, locked get, discovery (never the buyer), buyer's list, replies, status | `internal/stores/wanted/wanted.go` |
+| Post rules: create checks, verified-only browse and reply, one reply per seller, owner-only replies and close | `internal/services/wanted/wanted.go`; routes `/api/wanted` in `internal/api/wanted/handler.go`; registration in `internal/api/server.go` |
+| A reply is an ordinary request: insert, the shared offer rules (`applyOffer`), and ending sibling replies when one is accepted or the post is closed | `internal/services/requests/wanted.go`, `internal/services/requests/state.go`; `internal/stores/requests/wanted.go` |
+| Wanted page: post form, own posts with Close, browse and Reply dialog, client hooks, live keys | `web/apps/app/src/routes/wanted.tsx`, `src/routes/-components/wanted-*.tsx`, `src/lib/api/wanted.ts`, `src/lib/live/connection.ts`, `src/lib/nav.ts`, `src/lib/access.ts` |
+| Access, privacy, one reply, holds, winner and close cascades, expiry, live event; web states | `tests/wanted_test.go`, `web/apps/app/tests/wanted.test.mjs` |
+
 ## Phone alerts (web push)
 
 | Job | Owner |

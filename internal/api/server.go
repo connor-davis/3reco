@@ -35,6 +35,7 @@ import (
 	stockapi "github.com/connor-davis/3reco/internal/api/stock"
 	storesapi "github.com/connor-davis/3reco/internal/api/stores"
 	teamapi "github.com/connor-davis/3reco/internal/api/team"
+	wantedapi "github.com/connor-davis/3reco/internal/api/wanted"
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/crypt"
@@ -59,6 +60,7 @@ import (
 	stocksvc "github.com/connor-davis/3reco/internal/services/stock"
 	storessvc "github.com/connor-davis/3reco/internal/services/stores"
 	teamsvc "github.com/connor-davis/3reco/internal/services/team"
+	wantedsvc "github.com/connor-davis/3reco/internal/services/wanted"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 	"github.com/connor-davis/3reco/internal/stores/businesses"
 	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
@@ -73,6 +75,7 @@ import (
 	statsstore "github.com/connor-davis/3reco/internal/stores/stats"
 	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
 	storesstore "github.com/connor-davis/3reco/internal/stores/stores"
+	wantedstore "github.com/connor-davis/3reco/internal/stores/wanted"
 )
 
 // Module wires everything the server needs. The caller supplies config.Config
@@ -128,6 +131,9 @@ var Module = fx.Module("api",
 		quickrepliesstore.New,
 		quickrepliessvc.New,
 		quickrepliesapi.New,
+		wantedstore.New,
+		wantedsvc.New,
+		wantedapi.New,
 		sockets.New,
 		New,
 		Listen,
@@ -207,6 +213,7 @@ type routes struct {
 	SavedSearches *savedsearchesapi.Handler
 	Push          *pushapi.Handler
 	QuickReplies  *quickrepliesapi.Handler
+	Wanted        *wantedapi.Handler
 	Team          *teamapi.Handler
 	Business      *businessapi.Handler
 	Trade         tradeRoutes
@@ -280,6 +287,7 @@ func New(r routes) *fiber.App {
 	r.SavedSearches.Register(api)
 	r.Push.Register(api)
 	r.QuickReplies.Register(api)
+	r.Wanted.Register(api)
 	r.Team.Register(api)
 	r.Business.Register(api)
 
