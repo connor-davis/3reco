@@ -13,6 +13,8 @@ import (
 
 // Item is a stock row with its material's safe catalog fields.
 type Item struct {
+	FulfillmentMode string    `json:"fulfillment_mode"`
+	PickupArea      string    `json:"pickup_area"`
 	ImageURL        string    `json:"image_url"`
 	Photos          []Photo   `json:"photos"`
 	ID              string    `json:"id"`
@@ -35,7 +37,7 @@ func New(db *database.DB) *Store { return &Store{db: db} }
 
 var columns = `s.id,s.owner_id,s.material_id,m.name,s.weight::text,s.price::text,
 	m.price::text,s.is_listed,s.created_at,stock_available(s.id,s.weight)::text,
-	` + CoverURL("s") + `,` + PhotoList("s")
+	` + CoverURL("s") + `,` + PhotoList("s") + `,COALESCE(s.fulfillment_mode,''),COALESCE(s.pickup_area,'')`
 
 func scan(row pgx.Row, item *Item) error {
 	return row.Scan(
@@ -51,6 +53,8 @@ func scan(row pgx.Row, item *Item) error {
 		&item.AvailableWeight,
 		&item.ImageURL,
 		&item.Photos,
+		&item.FulfillmentMode,
+		&item.PickupArea,
 	)
 }
 
@@ -140,14 +144,16 @@ func (records *Store) BasePrice(ctx context.Context, id string) (string, error) 
 func (records *Store) Create(ctx context.Context, item Item) error {
 	_, err := records.db.Q(ctx).Exec(
 		ctx,
-		`INSERT INTO stock(id,owner_id,material_id,weight,price,is_listed)
-		VALUES($1,$2,$3,$4::numeric,$5::numeric,$6)`,
+		`INSERT INTO stock(id,owner_id,material_id,weight,price,is_listed,fulfillment_mode,pickup_area)
+		VALUES($1,$2,$3,$4::numeric,$5::numeric,$6,NULLIF($7,''),NULLIF($8,''))`,
 		item.ID,
 		item.OwnerID,
 		item.MaterialID,
 		item.Weight,
 		item.Price,
 		item.IsListed,
+		item.FulfillmentMode,
+		item.PickupArea,
 	)
 
 	return err
@@ -158,12 +164,15 @@ func (records *Store) Update(ctx context.Context, item Item) error {
 	_, err := records.db.Q(ctx).Exec(
 		ctx,
 		`UPDATE stock SET weight=$3::numeric,price=$4::numeric,
-		is_listed=$5,updated_at=now() WHERE id=$1 AND owner_id=$2`,
+		is_listed=$5,fulfillment_mode=NULLIF($6,''),pickup_area=NULLIF($7,''),
+		updated_at=now() WHERE id=$1 AND owner_id=$2`,
 		item.ID,
 		item.OwnerID,
 		item.Weight,
 		item.Price,
 		item.IsListed,
+		item.FulfillmentMode,
+		item.PickupArea,
 	)
 
 	return err

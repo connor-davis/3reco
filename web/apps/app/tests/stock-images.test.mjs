@@ -285,6 +285,8 @@ function stockForm(stock, options = {}) {
   const effects = [];
   const calls = [];
   let cursor = 0;
+  let initialValues;
+  let validate;
   const mutation = (kind) => ({
     isPending: false,
     mutateAsync: async (value) => {
@@ -298,6 +300,8 @@ function stockForm(stock, options = {}) {
     weight: '10',
     price: '8',
     is_listed: true,
+    fulfillment_mode: 'pickup',
+    pickup_area: 'Bellville',
     ...options.values,
   };
   const hooks = {
@@ -318,25 +322,33 @@ function stockForm(stock, options = {}) {
     'components/dialogs/stock-dialog.tsx',
     {
       react: hooks,
-      '@hookform/resolvers/zod': { zodResolver: () => () => ({}) },
+      '@hookform/resolvers/zod': {
+        zodResolver: (schema) => {
+          validate = schema;
+          return () => ({});
+        },
+      },
       'react-hook-form': {
-        useForm: () => ({
-          control: {},
-          handleSubmit: (fn) => () => fn(values),
-          watch: (key) => values[key],
-          setValue: (name, value) => {
-            values[name] = value;
-            calls.push(['set', name, value]);
-          },
-          setError: () => {},
-          trigger: () => {},
-          formState: {
-            isValid: true,
-            isDirty: false,
-            touchedFields: {},
-            errors: {},
-          },
-        }),
+        useForm: (config) => {
+          initialValues = config.values;
+          return {
+            control: {},
+            handleSubmit: (fn) => () => fn(values),
+            watch: (key) => values[key],
+            setValue: (name, value) => {
+              values[name] = value;
+              calls.push(['set', name, value]);
+            },
+            setError: () => {},
+            trigger: () => {},
+            formState: {
+              isValid: true,
+              isDirty: false,
+              touchedFields: {},
+              errors: {},
+            },
+          };
+        },
       },
       sonner: {
         toast: {
@@ -345,6 +357,7 @@ function stockForm(stock, options = {}) {
         },
       },
       './stock-photos': { StockPhotos: 'StockPhotos' },
+      '@/lib/limits': load('lib/limits.ts'),
       '@/lib/api/materials': {
         useMaterials: () => ({ data: { items: options.items ?? [] } }),
       },
@@ -390,7 +403,18 @@ function stockForm(stock, options = {}) {
       .props.onPick(id);
   const photos = (tree) =>
     nodes(tree).find((node) => node.type === 'StockPhotos');
-  return { render, input, save, calls, effects, pick, values, photos };
+  return {
+    render,
+    input,
+    save,
+    calls,
+    effects,
+    pick,
+    values,
+    photos,
+    initialValues: () => initialValues,
+    validate: (value) => validate.safeParse(value),
+  };
 }
 
 const item = {
@@ -648,4 +672,96 @@ test('a price below the default warns but does not block Save', async () => {
 test('editing stock keeps its saved price', () => {
   const form = stockForm({ ...item, price: '2.00' }, { items: materials });
   assert.equal(form.calls.length, 0);
+});
+
+test('stock fulfillment controls prefill, validate and submit on create and update', async () => {
+  for (const stock of [
+    undefined,
+    { ...item, fulfillment_mode: 'both', pickup_area: 'Parow' },
+  ]) {
+    const form = stockForm(stock, {
+      values: { fulfillment_mode: 'both', pickup_area: 'Parow' },
+    });
+    const tree = form.render();
+    const fields = nodes(tree);
+    const mode = fields.find((node) => node.props.name === 'fulfillment_mode');
+    assert.deepEqual(plain(mode.props.options.map((option) => option.value)), [
+      'pickup',
+      'delivery',
+      'both',
+    ]);
+    assert.equal(
+      fields.find((node) => node.props.name === 'pickup_area').props.maxLength,
+      120
+    );
+    assert.match(
+      fields.find((node) => node.props.name === 'pickup_area').props
+        .description,
+      /never a street address/
+    );
+    assert.equal(
+      form.initialValues().fulfillment_mode,
+      stock ? 'both' : 'pickup'
+    );
+    assert.equal(form.initialValues().pickup_area, stock ? 'Parow' : '');
+    for (const choice of ['pickup', 'delivery', 'both']) {
+      assert.equal(
+        form.validate({ ...form.values, fulfillment_mode: choice }).success,
+        true
+      );
+    }
+    assert.equal(
+      form.validate({ ...form.values, fulfillment_mode: 'courier' }).success,
+      false
+    );
+    assert.equal(
+      form.validate({ ...form.values, pickup_area: 'x'.repeat(121) }).success,
+      false
+    );
+    assert.equal(
+      form.validate({ ...form.values, pickup_area: 'Town\nStreet' }).success,
+      false
+    );
+    await form.save(tree);
+    assert.equal(form.calls[0][0], stock ? 'update' : 'create');
+    assert.equal(form.calls[0][1].fulfillment_mode, 'both');
+    assert.equal(form.calls[0][1].pickup_area, 'Parow');
+  }
+});
+
+test('listing card shows each fulfillment choice and safe collection area; legacy has neither', () => {
+  const { ListingCard } = compile('components/listing-card.tsx', {
+    react: { useState: () => [undefined, () => {}] },
+    '@/lib/format': load('lib/format.ts'),
+  });
+  for (const [mode, label] of [
+    ['pickup', 'Pickup'],
+    ['delivery', 'Delivery'],
+    ['both', 'Pickup or delivery'],
+  ]) {
+    const tree = nodes(
+      ListingCard({
+        listing: {
+          weight: '1',
+          price: '2',
+          fulfillment_mode: mode,
+          pickup_area: 'Bellville',
+        },
+      })
+    );
+    assert.ok(tree.some((node) => node.props.children === label));
+    assert.ok(
+      tree.some(
+        (node) =>
+          Array.isArray(node.props.children) &&
+          node.props.children.join('') === 'Collection area: Bellville'
+      )
+    );
+  }
+  const legacy = nodes(ListingCard({ listing: { weight: '1', price: '2' } }));
+  assert.ok(
+    !legacy.some((node) =>
+      ['Pickup', 'Delivery', 'Pickup or delivery'].includes(node.props.children)
+    )
+  );
 });

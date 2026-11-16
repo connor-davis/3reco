@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 
@@ -44,10 +45,12 @@ func New(db *database.DB, rows *store.Store, objects *storage.Client) *Service {
 
 // Input uses pointers so zero and omitted prices remain different.
 type Input struct {
-	MaterialID string  `json:"material_id"`
-	Weight     *string `json:"weight"`
-	Price      *string `json:"price"`
-	IsListed   *bool   `json:"is_listed"`
+	FulfillmentMode *string `json:"fulfillment_mode"`
+	PickupArea      *string `json:"pickup_area"`
+	MaterialID      string  `json:"material_id"`
+	Weight          *string `json:"weight"`
+	Price           *string `json:"price"`
+	IsListed        *bool   `json:"is_listed"`
 }
 
 // List reads only the caller's stock. listed is "", "listed" or "unlisted".
@@ -116,6 +119,28 @@ func validate(item store.Item, newWeight, newPrice bool) error {
 	return nil
 }
 
+func applyFulfillment(item *store.Item, in Input) error {
+	if in.FulfillmentMode != nil {
+		switch *in.FulfillmentMode {
+		case "pickup", "delivery", "both":
+			item.FulfillmentMode = *in.FulfillmentMode
+		default:
+			return apperr.Field("fulfillment_mode", "Choose pickup, delivery or both.")
+		}
+	}
+
+	if in.PickupArea != nil {
+		area := strings.TrimSpace(*in.PickupArea)
+		if utf8.RuneCountInString(area) > 120 || strings.ContainsAny(area, "\r\n") {
+			return apperr.Field("pickup_area", "Enter a town or area of 120 characters or less.")
+		}
+
+		item.PickupArea = area
+	}
+
+	return nil
+}
+
 // Create starts stock unlisted unless is_listed is true, and validates the material price
 // inside the transaction.
 func (service *Service) Create(ctx context.Context, owner string, in Input) (string, error) {
@@ -125,6 +150,10 @@ func (service *Service) Create(ctx context.Context, owner string, in Input) (str
 
 	item := store.Item{ID: database.NewID(), OwnerID: owner, MaterialID: in.MaterialID,
 		Weight: *in.Weight, Price: *in.Price, IsListed: in.IsListed != nil && *in.IsListed}
+	if err := applyFulfillment(&item, in); err != nil {
+		return "", err
+	}
+
 	err := service.db.InTx(
 		ctx,
 		func(ctx context.Context) error {
@@ -160,6 +189,10 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 			}
 
 			if err != nil {
+				return err
+			}
+
+			if err := applyFulfillment(&item, in); err != nil {
 				return err
 			}
 

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { TriangleAlert } from 'lucide-react';
 import { z } from 'zod';
-import { DecimalField, SelectField } from '@/components/form-fields';
+import { DecimalField, SelectField, TextField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,15 @@ const schema = (stock?: StockItem) =>
       if (message) ctx.addIssue({ code: 'custom', message });
     }),
     is_listed: z.boolean(),
+    fulfillment_mode: z.enum(['pickup', 'delivery', 'both']),
+    pickup_area: z
+      .string()
+      .trim()
+      .max(120, 'Enter 120 characters or less.')
+      .refine(
+        (value) => !/[\r\n]/.test(value),
+        'Enter a town or area on one line.'
+      ),
   });
 
 type Values = z.infer<ReturnType<typeof schema>>;
@@ -110,6 +119,8 @@ function StockForm({ open, onOpenChange, stock }: Props) {
         weight: stock?.weight ?? '',
         price: stock?.price ?? '',
         is_listed: stock?.is_listed ?? true,
+        fulfillment_mode: stock?.fulfillment_mode || 'pickup',
+        pickup_area: stock?.pickup_area ?? '',
       },
     });
 
@@ -140,6 +151,8 @@ function StockForm({ open, onOpenChange, stock }: Props) {
           weight: sameAmount(weight, stock.weight) ? undefined : weight,
           price: sameAmount(price, stock.price) ? undefined : price,
           is_listed: values.is_listed,
+          fulfillment_mode: values.fulfillment_mode,
+          pickup_area: values.pickup_area,
         });
         // Say what changed about the market when the switch moved.
         toast.success(
@@ -267,6 +280,23 @@ function StockForm({ open, onOpenChange, stock }: Props) {
             <span>{warning}</span>
           </p>
         )}
+        <SelectField
+          control={control}
+          name="fulfillment_mode"
+          label="Pickup or delivery"
+          options={[
+            { value: 'pickup', label: 'Pickup' },
+            { value: 'delivery', label: 'Delivery' },
+            { value: 'both', label: 'Pickup or delivery' },
+          ]}
+        />
+        <TextField
+          control={control}
+          name="pickup_area"
+          label="Collection town or area"
+          maxLength={120}
+          description="Shown publicly. Enter only a town or area, never a street address."
+        />
         <StockPhotos
           stock={stock}
           staged={staged}

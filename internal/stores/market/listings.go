@@ -11,6 +11,8 @@ import (
 
 // Listing is an allowlisted market view, never a private user or stock record.
 type Listing struct {
+	FulfillmentMode string    `json:"fulfillment_mode"`
+	PickupArea      string    `json:"pickup_area"`
 	ImageURL        string    `json:"image_url"`
 	ThumbURL        string    `json:"thumb_url"`
 	ImageURLs       []string  `json:"image_urls"`
@@ -46,7 +48,7 @@ var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
 	s.created_at,COALESCE(h.held,0)::text,
 	` + stock.CoverURL("s") + `,` + stock.CoverThumbURL("s") + `,` + stock.PhotoURLs("s") + `,
 	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/stores/'||u.id||'/logo?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END,
-	` + database.Verified("u")
+	` + database.Verified("u") + `,COALESCE(s.fulfillment_mode,''),COALESCE(s.pickup_area,'')`
 
 // Held weight is summed once for all stock, not once per row through stock_available().
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
@@ -105,6 +107,8 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 			&item.ImageURLs,
 			&item.SellerAvatarURL,
 			&item.SellerVerified,
+			&item.FulfillmentMode,
+			&item.PickupArea,
 		); err != nil {
 			return nil, err
 		}
@@ -140,6 +144,8 @@ func (records *Store) Listing(ctx context.Context, id, viewer string) (Listing, 
 		&item.ImageURLs,
 		&item.SellerAvatarURL,
 		&item.SellerVerified,
+		&item.FulfillmentMode,
+		&item.PickupArea,
 	)
 
 	return item, err

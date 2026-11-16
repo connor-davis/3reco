@@ -60,7 +60,7 @@ from playwright.sync_api import sync_playwright, expect
 
 base = sys.argv[1]
 sys.stdout.reconfigure(encoding='utf-8')
-listing = {'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '1000', 'held_weight': '0', 'price': '8.00', 'carbon_factor': '1', 'gw_code': 'GL', 'image_url': '', 'seller_avatar_url': '', 'average_rating': None, 'review_count': 0, 'created_at': '2026-11-08T08:00:00Z'}
+listing = {'fulfillment_mode': 'both', 'pickup_area': 'Bellville and surrounding collection areas near Cape Town', 'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '1000', 'held_weight': '0', 'price': '8.00', 'carbon_factor': '1', 'gw_code': 'GL', 'image_url': '', 'seller_avatar_url': '', 'average_rating': None, 'review_count': 0, 'created_at': '2026-11-08T08:00:00Z'}
 routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
 party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
 trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
@@ -172,6 +172,8 @@ with sync_playwright() as p:
                         else:
                             assert all(abs(box['y'] - boxes[0]['y']) < 1 for box in boxes)
                     if route == '/market/listing/stock':
+                        expect(page.get_by_text('Pickup or delivery', exact=True).first).to_be_visible()
+                        expect(page.get_by_text('Collection area: ' + listing['pickup_area'], exact=True).first).to_be_visible()
                         buttons = page.locator('[data-slot="action-bar"] button')
                         expect(buttons).to_have_count(2)
                         if width < 768:
@@ -191,6 +193,9 @@ with sync_playwright() as p:
                         if width >= 1280: expected = 3 if width < 1536 else 4
                         assert columns == expected, f'listing columns {route} {width}: {columns}'
                         card = cards.first
+                        expect(card.get_by_text('Pickup or delivery', exact=True)).to_be_visible()
+                        expect(card.get_by_text('Collection area: ' + listing['pickup_area'], exact=True)).to_be_visible()
+                        assert card.evaluate('(el) => el.scrollWidth <= el.clientWidth'), f'fulfillment overflow {width} {mode}'
                         style = card.evaluate('(el) => ({radius: getComputedStyle(el).borderRadius, border: getComputedStyle(el).borderTopWidth, overflow: getComputedStyle(el).overflow})')
                         assert style == {'radius': '16px', 'border': '1px', 'overflow': 'hidden'}, style
                         photo = card.locator(':scope > div').first

@@ -109,6 +109,8 @@ export interface StockPhoto {
   url: string;
 }
 export interface StockItem {
+  fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
+  pickup_area?: string;
   image_url: string;
   photos: StockPhoto[];
   id: string;
@@ -123,6 +125,8 @@ export interface StockItem {
   created_at: string;
 }
 export interface StockInput {
+  fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
+  pickup_area?: string;
   material_id: string;
   weight: Decimal;
   price: Decimal;
@@ -130,6 +134,8 @@ export interface StockInput {
 }
 export type StockPatch = Partial<Omit<StockInput, 'material_id'>>;
 export interface Listing {
+  fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
+  pickup_area?: string;
   image_url: string;
   thumb_url?: string;
   image_urls: string[];

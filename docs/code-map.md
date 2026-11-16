@@ -55,6 +55,7 @@ line when you add an owner.
 | `0016_request_system_messages.sql` | Explicit system request events sharing message unread tracking |
 | `0017_export_audit_details.sql` | Download kind and filters on privacy export audit events |
 | `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
+| `0034_listing_fulfillment.sql` | Listing pickup/delivery choice and public collection town/area, saved through the existing stock owners |
 | `0020_stock_images.sql` | One photo per stock item and live business logo changes |
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
 | `0022_cart_holds.sql` | `stock_holds.cart_id` (request or cart owner, never both), active cart-hold indexes, realtime trigger for cart holds, notification type `cart_expired` |
@@ -179,6 +180,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Code rules: doc comments, file length | `tests/style_test.go` |
 | Offer holds, races, rollback, expiry, stock safeguards, availability and realtime | `tests/stock_holds_test.go` |
 | Round 19 stock visibility changes leave the actor's bell empty | `tests/qa_round19_a_test.go` |
+| Listing pickup/delivery persistence, validation, owner isolation and public address privacy | `tests/fulfillment_test.go` |
 | Request terms, dual confirmation, pending isolation, counter/cancellation, privacy and migration backfill | `tests/market_flow_test.go` |
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |

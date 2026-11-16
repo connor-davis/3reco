@@ -29,6 +29,8 @@ const values = {
   weight: '1',
   price: '8',
   is_listed: true,
+  fulfillment_mode: 'pickup',
+  pickup_area: '',
 };
 
 test('manual stock caps accept the boundaries and reject the next hundredth exactly', () => {

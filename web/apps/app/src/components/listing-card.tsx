@@ -60,6 +60,20 @@ export function ListingCard({
         <p className="font-semibold tabular-nums">
           {formatRate(listing.price)}
         </p>
+        {listing.fulfillment_mode && (
+          <p className="text-sm text-muted-foreground">
+            {listing.fulfillment_mode === 'both'
+              ? 'Pickup or delivery'
+              : listing.fulfillment_mode === 'pickup'
+                ? 'Pickup'
+                : 'Delivery'}
+          </p>
+        )}
+        {listing.pickup_area && (
+          <p className="break-words text-sm text-muted-foreground">
+            Collection area: {listing.pickup_area}
+          </p>
+        )}
         {showSeller && (
           <Link
             className="relative z-10 inline-flex min-h-11 max-w-full items-center gap-2 text-sm hover:underline"

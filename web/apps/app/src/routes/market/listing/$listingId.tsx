@@ -183,6 +183,20 @@ function ListingDetail({ listing }: { listing: Listing }) {
               ? 'Fully reserved'
               : `${formatKg(listing.weight)} available`}
           </p>
+          {listing.fulfillment_mode && (
+            <p className="text-sm text-muted-foreground">
+              {listing.fulfillment_mode === 'both'
+                ? 'Pickup or delivery'
+                : listing.fulfillment_mode === 'pickup'
+                  ? 'Pickup'
+                  : 'Delivery'}
+            </p>
+          )}
+          {listing.pickup_area && (
+            <p className="break-words text-sm text-muted-foreground">
+              Collection area: {listing.pickup_area}
+            </p>
+          )}
           {own && listing.gw_code && (
             <p className="text-sm text-muted-foreground">
               Material code: {listing.gw_code}
