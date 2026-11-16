@@ -36,12 +36,20 @@ func (service *Service) List(ctx context.Context, search, exclude string, query 
 		return paging.Page[store.Profile]{}, err
 	}
 
+	// One query for the whole page, not one per store.
+	sellerIDs := make([]string, len(items))
 	for i := range items {
-		summary, err := service.reviews.Summary(ctx, items[i].ID)
-		if err != nil {
-			return paging.Page[store.Profile]{}, err
-		}
+		sellerIDs[i] = items[i].ID
+	}
 
+	summaries, err := service.reviews.SummaryMany(ctx, sellerIDs)
+	if err != nil {
+		return paging.Page[store.Profile]{}, err
+	}
+
+	// A store missing from the map has no reviews: zero count, no average.
+	for i := range items {
+		summary := summaries[items[i].ID]
 		items[i].AverageRating, items[i].ReviewCount = summary.Average, summary.Count
 	}
 

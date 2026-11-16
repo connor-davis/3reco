@@ -252,3 +252,49 @@ func TestMarketFiltersAndPagination(t *testing.T) {
 		t.Fatal("removed seller visible")
 	}
 }
+
+// A page that mixes sellers must show each seller's own rating. A wrong key in
+// the batched lookup would give a listing another seller's average.
+func TestListingsRatingsBatched(t *testing.T) {
+	w := newTradeWorld(t)
+	unreviewed := tradeNewUser(t, w.app, "business")
+	other := tradeNewUser(t, w.app, "business")
+
+	unreviewedStock := tradeStock(t, w.app, unreviewed.id, w.material, "100", "8")
+	otherStock := tradeStock(t, w.app, other.id, w.material, "100", "8")
+
+	reviewSale(t, w, w.seller, 5)
+	reviewSale(t, w, w.seller, 4)
+	reviewSale(t, w, other, 2)
+
+	page := pageItems(t, status(t, w.buyer.c.Do("GET", "/api/market/listings?limit=50", nil), 200))
+
+	want := map[string]struct {
+		average any
+		count   float64
+	}{
+		w.stock:         {4.5, 2},
+		unreviewedStock: {nil, 0},
+		otherStock:      {float64(2), 1},
+	}
+
+	seen := 0
+
+	for _, item := range page {
+		expected, ok := want[item["id"].(string)]
+		if !ok {
+			continue
+		}
+
+		seen++
+
+		if item["average_rating"] != expected.average || item["review_count"] != expected.count {
+			t.Errorf("listing %v: rating %v over %v, want %v over %v", item["id"],
+				item["average_rating"], item["review_count"], expected.average, expected.count)
+		}
+	}
+
+	if seen != len(want) {
+		t.Fatalf("saw %d of %d listings: %v", seen, len(want), page)
+	}
+}

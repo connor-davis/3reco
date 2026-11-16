@@ -101,6 +101,41 @@ func (s *Store) Average(ctx context.Context, sellerID string) (Summary, error) {
 	return sum, err
 }
 
+// AverageMany returns the summary of every seller in one query, keyed by
+// seller id. A seller with no reviews is left out of the map, so callers read
+// a missing key as "no reviews". The rounding matches Average.
+func (s *Store) AverageMany(ctx context.Context, sellerIDs []string) (map[string]Summary, error) {
+	out := make(map[string]Summary, len(sellerIDs))
+
+	// An empty page needs no round trip.
+	if len(sellerIDs) == 0 {
+		return out, nil
+	}
+
+	rows, err := s.db.Q(ctx).Query(ctx, `
+		SELECT seller_id, ROUND(AVG(rating), 1)::float8, count(*)
+		FROM store_reviews WHERE seller_id = ANY($1) GROUP BY seller_id`, sellerIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			sellerID string
+			sum      Summary
+		)
+
+		if err := rows.Scan(&sellerID, &sum.Average, &sum.Count); err != nil {
+			return nil, err
+		}
+
+		out[sellerID] = sum
+	}
+
+	return out, rows.Err()
+}
+
 // Reviewable lists the buyer's business trades with a seller that have no
 // review yet.
 func (s *Store) Reviewable(ctx context.Context, buyerID, sellerID string) ([]Reviewable, error) {
