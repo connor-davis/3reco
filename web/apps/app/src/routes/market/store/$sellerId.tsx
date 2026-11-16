@@ -11,6 +11,7 @@ import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
+import { WhatsAppShare } from '@/components/whatsapp-share';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import type { Listing } from '@/lib/api/types';
@@ -99,34 +100,40 @@ function StorePage() {
                   Member since {formatDate(store.data.created_at)}
                 </p>
               </div>
-              {user?.role === 'business' && user.id !== sellerId && (
-                <ButtonRow>
-                  <Button
-                    nativeButton={false}
-                    render={
-                      <Link to="/cart" search={{ seller_id: sellerId }} />
-                    }
-                    variant="outline"
-                  >
-                    Cart
-                  </Button>
-                  <Button
-                    disabled={
-                      !listings.data?.items.some(
-                        (item) => toGrams(item.weight) > 0
-                      )
-                    }
-                    onClick={() => {
-                      const item = listings.data?.items.find(
-                        (item) => toGrams(item.weight) > 0
-                      );
-                      if (item) setChatListing(item);
-                    }}
-                  >
-                    Message store
-                  </Button>
-                </ButtonRow>
-              )}
+              <ButtonRow>
+                <WhatsAppShare
+                  text={`${store.data.name} on 3REco`}
+                  path={`/market/store/${sellerId}`}
+                />
+                {user?.role === 'business' && user.id !== sellerId && (
+                  <>
+                    <Button
+                      nativeButton={false}
+                      render={
+                        <Link to="/cart" search={{ seller_id: sellerId }} />
+                      }
+                      variant="outline"
+                    >
+                      Cart
+                    </Button>
+                    <Button
+                      disabled={
+                        !listings.data?.items.some(
+                          (item) => toGrams(item.weight) > 0
+                        )
+                      }
+                      onClick={() => {
+                        const item = listings.data?.items.find(
+                          (item) => toGrams(item.weight) > 0
+                        );
+                        if (item) setChatListing(item);
+                      }}
+                    >
+                      Message store
+                    </Button>
+                  </>
+                )}
+              </ButtonRow>
             </header>
           </Panel>
           <Tabs defaultValue="stock" className="mt-8">

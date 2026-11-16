@@ -260,6 +260,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
 | Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; cursor reset on filter or page-size change `src/components/transactions/pager-state.ts`; shared record count, rows-per-page select and navigation `src/components/transactions/list-tools.tsx` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
+| WhatsApp share link (`whatsAppUrl`, encoded text plus absolute page URL) and the "Share on WhatsApp" button on the listing and store pages | `web/apps/app/src/lib/share.ts`, `src/components/whatsapp-share.tsx`, tests in `web/apps/app/tests/share.test.mjs` |
 | Owner and Manager Team directory, invitations and confirmed role/removal actions | `web/apps/app/src/routes/team.tsx`, `src/lib/api/team.ts` |
 | Public invite preview, new account and signed-in acceptance | `web/apps/app/src/routes/accept-invite.tsx`; full-width auth layout option in `components/auth-shell.tsx` |
 | Active-business Owner/Manager gates and Team navigation on desktop, phone and search | `web/apps/app/src/lib/access.ts` (`canManageTeam`, `canSeeTeam`), `src/lib/nav.ts` (`navFor`), `components/shell/{app-sidebar,bottom-tabs,command-search}.tsx` |

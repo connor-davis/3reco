@@ -15,6 +15,7 @@ import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
 import { Section } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { WhatsAppShare } from '@/components/whatsapp-share';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import { useListing, useListings } from '@/lib/api/listings';
@@ -288,6 +289,11 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 {plural(listing.review_count, 'review')}
               </p>
             </div>
+            <WhatsAppShare
+              className="min-h-11"
+              text={`${listing.material_name} at ${formatRate(listing.price)} on 3REco`}
+              path={`/market/listing/${listing.id}`}
+            />
             <Link
               className="inline-flex min-h-11 items-center rounded px-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring"
               to="/market/store/$sellerId"

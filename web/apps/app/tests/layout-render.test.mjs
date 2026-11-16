@@ -162,14 +162,15 @@ with sync_playwright() as p:
                             assert abs(box['y'] + box['height'] - (1000 - 52)) < 2
                     if route == '/market/store/seller':
                         buttons = page.locator('header [data-slot="button-row"] button, header [data-slot="button-row"] a')
-                        expect(buttons).to_have_count(2)
+                        # Share on WhatsApp, Cart and Message store.
+                        expect(buttons).to_have_count(3)
+                        boxes = [button.bounding_box() for button in buttons.all()]
                         if width < 768:
-                            boxes = [button.bounding_box() for button in buttons.all()]
-                            assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
-                            assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height'] + 7
+                            for above, below in zip(boxes, boxes[1:]):
+                                assert abs(above['width'] - below['width']) < 1
+                                assert below['y'] >= above['y'] + above['height'] + 7
                         else:
-                            boxes = [button.bounding_box() for button in buttons.all()]
-                            assert abs(boxes[0]['y'] - boxes[1]['y']) < 1
+                            assert all(abs(box['y'] - boxes[0]['y']) < 1 for box in boxes)
                     if route == '/market/listing/stock':
                         buttons = page.locator('[data-slot="action-bar"] button')
                         expect(buttons).to_have_count(2)
