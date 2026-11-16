@@ -254,6 +254,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Avatar byte validation, caller-only replacement and after-commit object removal | `internal/services/profile/avatar.go` |
 | Active avatar reference reads, row locks and updates | `internal/stores/profile/avatar.go` |
 | Owner stock mutation handlers | `internal/api/stock/crud.go` |
+| CSV stock import routes (manager or owner): file or fixed rows to preview, rows to commit, 1 MB file cap | `internal/api/stock/import.go`, routes in `handler.go` |
 | Stock route registration and reads | `internal/api/stock/handler.go` |
 | Public store route registration | `internal/api/stores/handler.go` |
 | Public store detail and directory handlers | `internal/api/stores/profile.go` |
@@ -272,6 +273,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Caller-only profile edits, bank completeness and safe directory reads | `internal/services/profile/profile.go` |
 | Shared South African phone, bank and address validation | `internal/services/profile/validation.go` |
 | Stock ownership, row locks and exact decimal/base-price validation | `internal/services/stock/stock.go` |
+| CSV stock import rules: parse, 500-row cap, per-row checks reusing `validate`, formula-cell refusal, all-or-nothing commit in one transaction | `internal/services/stock/import.go` |
 | Favourites and follows: a person (`users.id`) saves visible listings and follows stores; routes under `/api/favourites` and `/api/follows` (list, `ids`, `PUT`/`DELETE :id`), all scoped to the caller | `internal/stores/favourites/favourites.go`, `internal/services/favourites/favourites.go`, `internal/api/favourites/handler.go`; saved listings reuse `Filter.FavouriteOf` in `internal/stores/market/listings.go`, followed stores reuse `Followed` in `internal/stores/stores/profile.go` |
 | First publish alert: `Create`/`Update` report the first time a row is listed (`first_listed_at`), then `TellFollowers` writes one person-only `store_new_listing` notice per follower in the same transaction (never `InsertBusiness`) | `internal/stores/stock/stock.go`, `save` in `internal/services/stock/stock.go` |
 | Favourites and follows tests (CRUD, other-person isolation, hidden listing, alert once, followers only, unfollow, live) | `tests/favourites_test.go`, `web/apps/app/tests/favourites.test.mjs` |
@@ -287,6 +289,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Catalog persistence and foreign-key protected deletion SQL | `internal/stores/materials/materials.go` |
 | Private profile and allowlisted public account SQL | `internal/stores/profile/profile.go` |
 | Owner inventory, stock locks and material base-price SQL | `internal/stores/stock/stock.go` |
+| Import SQL: material catalogue read and the one-alert-per-person import notice (followers, then non-follower searchers) | `internal/stores/stock/import.go` |
 | Safe active business profiles and listed-stock aggregate SQL | `internal/stores/stores/profile.go` |
 | Public store database construction | `internal/stores/stores/stores.go` |
 | Cart isolation, unavailable stock and stale visibility tests | `tests/cart_test.go` |
@@ -296,6 +299,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public catalog and administrator-only mutation tests | `tests/materials_test.go` |
 | Profile email protection, bank rules and public account leak tests | `tests/profile_test.go` |
 | Stock ownership, explicit zero price and notification rollback tests | `tests/stock_test.go` |
+| CSV import tests: preview writes nothing, all-or-nothing, limits, decimals, formulas, foreign ids, roles, one alert per person | `tests/stock_import_test.go` |
 | Store profiles, listed inventory summaries and public reviews integration tests | `tests/stores_test.go` |
 
 ## Web API client and public statistics
@@ -394,6 +398,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Read stock photo keys before account erase and include them in own exports | `internal/stores/privacy/{erase,export}.go`; after-commit cleanup in `internal/services/privacy/erase.go` |
 | Shared picture avatar with initials fallback | `web/apps/app/src/components/visuals.tsx` (`PersonAvatar`) |
 | Photo list with add, drag/move, remove (saves at once on an existing line) | `web/apps/app/src/components/dialogs/stock-photos.tsx`; used by `stock-dialog.tsx`; hooks in `src/lib/api/stock.ts` |
+| CSV import dialog (upload, per-cell fixes, publish) and its hooks; button on the stock page for owners and managers (`canImportStock`) | `web/apps/app/src/components/dialogs/stock-import-dialog.tsx`, `usePreviewStockImport`/`useCommitStockImport` in `src/lib/api/stock.ts`, tests in `web/apps/app/tests/stock-import.test.mjs` |
 | Marketplace card photos and seller logos, swipe gallery with thumbnails | `web/apps/app/src/components/listing-card.tsx`, `src/routes/market/listing/-components/gallery.tsx` |
 | Stock photo access, visibility, replacement, rollback, privacy and live routing tests | `tests/stock_images_test.go`, `tests/stock_images_live_test.go`, `tests/stock_photos_test.go` |
 | Photo/placeholder, avatar, stock photo validation, staged-save and default-price prefill web tests | `web/apps/app/tests/stock-images.test.mjs` |

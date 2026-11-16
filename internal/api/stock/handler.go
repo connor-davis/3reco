@@ -24,6 +24,9 @@ func (handler *Handler) Register(router fiber.Router) {
 	router.Post("/stock/:id/photos", middleware.RequireRole(auth.RoleBusiness), handler.addPhoto)
 	router.Put("/stock/:id/photos/order", middleware.RequireRole(auth.RoleBusiness), handler.orderPhotos)
 	router.Delete("/stock/:id/photos/:photo_id", middleware.RequireRole(auth.RoleBusiness), handler.deletePhoto)
+	// Importing is for managers and owners, not every team member.
+	router.Post("/stock/import/preview", middleware.RequireBusiness("manager"), handler.previewImport)
+	router.Post("/stock/import/commit", middleware.RequireBusiness("manager"), handler.commitImport)
 	router.Get("/stock/:id", handler.find)
 	router.Get("/stock", middleware.RequireUser, handler.list)
 	router.Post("/stock", middleware.RequireRole(auth.RoleBusiness), handler.create)

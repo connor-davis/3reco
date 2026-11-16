@@ -19,6 +19,14 @@ export function canSeeTeam(
   );
 }
 
+/** Importing stock from a CSV is for Owners and Managers of the selected business. */
+export function canImportStock(
+  user:
+    Pick<AuthUser, 'active_business_id' | 'business_role'> | null | undefined
+): boolean {
+  return canSeeTeam(user);
+}
+
 /** The Business page is for Owners and Managers of the selected business. */
 export function canViewBusiness(
   user:

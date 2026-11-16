@@ -133,6 +133,24 @@ export interface StockInput {
   is_listed: boolean;
 }
 export type StockPatch = Partial<Omit<StockInput, 'material_id'>>;
+/** One line of a stock CSV, every cell as typed. */
+export interface StockImportRow {
+  material: string;
+  weight_kg: string;
+  price_per_kg: string;
+  listed: string;
+  fulfillment: string;
+  pickup_area: string;
+}
+/** A checked line; errors are keyed by column name. */
+export interface StockImportLine extends StockImportRow {
+  material_name: string;
+  errors: Record<string, string>;
+}
+export interface StockImportPreview {
+  rows: StockImportLine[];
+  ok: boolean;
+}
 export interface Listing {
   fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
   pickup_area?: string;
