@@ -117,6 +117,8 @@ test('receipt remove is restricted and only mutates after confirmation', () => {
     };
     let selected = null;
     const { TradeDetail } = compile('components/dialogs/record-dialogs.tsx', {
+      '@tanstack/react-router': { useNavigate: () => () => {} },
+      '@/lib/api/cart': { useSaveCart: () => ({}) },
       react: {
         useState: (value) =>
           value === null

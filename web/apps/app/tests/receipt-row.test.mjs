@@ -36,6 +36,8 @@ test('a 60 character receipt name truncates inside its row and keeps its actions
   const name = `receipt-${'a'.repeat(48)}.jpg`;
   assert.equal(name.length, 60);
   const { TradeDetail } = compile('components/dialogs/record-dialogs.tsx', {
+    '@tanstack/react-router': { useNavigate: () => () => {} },
+    '@/lib/api/cart': { useSaveCart: () => ({}) },
     react: { useState: (value) => [value, () => {}] },
     '@/lib/auth/use-auth': {
       useAuth: () => ({ user: { id: 'u', role: 'admin' } }),

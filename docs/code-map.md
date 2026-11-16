@@ -291,6 +291,8 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 
 ## Web API client and public statistics
 
+`web/apps/app/src/lib/reorder.ts` owns exact-weight Buy again cart merging and skipped materials; the buyer owner/manager action lives in `src/components/dialogs/record-dialogs.tsx`. `web/apps/app/tests/buy-again.test.mjs` and `buy-again-render.test.mjs` cover merge rules, access, failures and responsive themes.
+
 | Job | Owner |
 | --- | --- |
 | Public settled trade totals and top five stores SQL | `internal/stores/stats/stats.go` |

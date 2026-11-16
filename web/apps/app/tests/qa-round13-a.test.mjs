@@ -48,6 +48,8 @@ test('receipt removal follows the server permission, including linked collectors
     ['staff', false, true, true, true],
   ]) {
     const { TradeDetail } = compile('components/dialogs/record-dialogs.tsx', {
+      '@tanstack/react-router': { useNavigate: () => () => {} },
+      '@/lib/api/cart': { useSaveCart: () => ({}) },
       react,
       '@/components/ui/button-variants': {
         buttonVariants: () => '',
