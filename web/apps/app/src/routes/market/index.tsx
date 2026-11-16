@@ -14,6 +14,7 @@ import { formatKg, plural } from '@/lib/format';
 import { formatCo2 } from '@/lib/impact';
 import { filterListings } from './-components/filter-listings';
 import { MarketFilters } from './-components/market-filters';
+import { SaveSearch } from './-components/save-search';
 import {
   changeFilter,
   parseMarketSearch,
@@ -73,6 +74,7 @@ function MarketPage() {
           onChange={(change) => go(changeFilter(search, change))}
         />
       </div>
+      <SaveSearch search={search} />
       <DataState
         query={query}
         isEmpty={!results.length}

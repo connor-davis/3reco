@@ -202,10 +202,11 @@ func (records *Store) TellFollowers(ctx context.Context, id string) error {
 			`+database.DisplayName("u")+`||' has a new listing',
 			m.name||' at R '||s.price::text||' per kg','/market/listing/'||s.id
 		FROM stock s JOIN materials m ON m.id=s.material_id
-		JOIN users u ON u.id=s.owner_id
+		JOIN business_profiles u ON u.id=s.owner_id
 		JOIN follows f ON f.store_id=s.owner_id
 		JOIN users person ON person.id=f.user_id AND NOT person.is_removed
-		WHERE s.id=$1 AND `+database.Verified("u"),
+		WHERE s.id=$1 AND s.is_listed AND s.weight>0
+		AND NOT u.is_removed AND u.role='business' AND `+database.Verified("u"),
 		id,
 	)
 

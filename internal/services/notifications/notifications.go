@@ -28,6 +28,8 @@ const (
 	CartExpired      = "cart_expired"
 	// StoreNewListing is written by the stock store for each follower.
 	StoreNewListing = "store_new_listing"
+	// SavedSearchMatch is written for a person's matching first publication.
+	SavedSearchMatch = "saved_search_match"
 )
 
 // Notify tells one user something. Call it in the same transaction as the

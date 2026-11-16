@@ -13,6 +13,7 @@ import { Panel } from '@/components/panel';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
 import { useFavouriteListings, useFollowedStores } from '@/lib/api/favourites';
+import { SavedSearches } from './-components/saved-searches';
 
 export const Route = createFileRoute('/saved')({
   component: () => (
@@ -27,9 +28,10 @@ function SavedPage() {
     <>
       <PageHeader
         title="Saved"
-        description="Listings you saved and stores you follow. You get a message when a store you follow lists something new."
+        description="Your saved listings, searches and followed stores. Get alerts for new listings."
       />
       <div className="space-y-8">
+        <SavedSearches />
         <SavedListings />
         <FollowedStores />
       </div>

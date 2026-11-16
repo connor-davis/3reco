@@ -179,8 +179,8 @@ func (service *Service) Create(ctx context.Context, owner string, in Input) (str
 }
 
 // save writes the row and, the first time it reaches the market, tells the
-// seller's followers in the same transaction. Edits, unlisting and later
-// re-listing tell nobody.
+// seller's followers and matching searchers in the same transaction. Edits,
+// unlisting and later re-listing tell nobody.
 func (service *Service) save(
 	ctx context.Context,
 	item store.Item,
@@ -191,7 +191,11 @@ func (service *Service) save(
 		return err
 	}
 
-	return service.store.TellFollowers(ctx, item.ID)
+	if err := service.store.TellFollowers(ctx, item.ID); err != nil {
+		return err
+	}
+
+	return service.store.TellSearchers(ctx, item.ID)
 }
 
 // Update locks stock before checking ownership and applying only provided fields.

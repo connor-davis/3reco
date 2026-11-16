@@ -3,6 +3,17 @@
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
 
+## Saved searches
+
+| Job | Owner |
+| --- | --- |
+| Personal material and exact price ranges, indexes and person-only live changes | `internal/platform/database/migrations/0037_saved_searches.sql` |
+| Caller-scoped create/list/delete and filter validation | `internal/stores/savedsearches/savedsearches.go`, `internal/services/savedsearches/savedsearches.go`, `internal/api/savedsearches/handler.go`; registration in `internal/api/server.go` |
+| First-publication matching in the stock transaction, one alert per person with follower deduplication | `internal/stores/stock/searches.go`, `internal/services/stock/stock.go` |
+| Save current market filters and manage personal searches on Saved | `web/apps/app/src/lib/api/saved-searches.ts`, `src/routes/market/-components/save-search.tsx`, `src/routes/-components/saved-searches.tsx`; live keys in `src/lib/live/connection.ts` |
+| Keep copied market price filters as exact text before route validation | `web/apps/app/src/main.tsx` (`parseSearch`) |
+| Ownership, matching, first publication and live recipient regression | `tests/saved_searches_test.go`, `web/apps/app/tests/saved-searches.test.mjs`, `web/apps/app/tests/saved-searches-render.test.mjs` |
+
 ## Duplicate trade review
 
 | Job | Owner |

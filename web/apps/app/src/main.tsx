@@ -1,6 +1,10 @@
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
-import { createRouter, RouterProvider } from '@tanstack/react-router';
+import {
+  createRouter,
+  defaultParseSearch,
+  RouterProvider,
+} from '@tanstack/react-router';
 import './index.css';
 import { routeTree } from './routeTree.gen';
 import { RouteError } from './components/route-error';
@@ -14,7 +18,22 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000 } },
 });
 
-const router = createRouter({ routeTree, defaultErrorComponent: RouteError });
+const router = createRouter({
+  routeTree,
+  defaultErrorComponent: RouteError,
+  parseSearch: (raw) => {
+    const parsed = defaultParseSearch(raw) as Record<string, unknown>;
+    const params = new URLSearchParams(raw);
+    // The router normally parses numbers as floats. Prices must retain every
+    // digit before market validation, including in copied or saved-search links.
+    for (const key of ['min_price', 'max_price']) {
+      if (params.has(key) && typeof parsed[key] !== 'string') {
+        parsed[key] = params.get(key);
+      }
+    }
+    return parsed;
+  },
+});
 
 // Register the router instance for type safety.
 declare module '@tanstack/react-router' {

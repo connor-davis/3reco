@@ -27,6 +27,7 @@ import (
 	"github.com/connor-davis/3reco/internal/api/middleware"
 	privacyapi "github.com/connor-davis/3reco/internal/api/privacy"
 	profileapi "github.com/connor-davis/3reco/internal/api/profile"
+	savedsearchesapi "github.com/connor-davis/3reco/internal/api/savedsearches"
 	"github.com/connor-davis/3reco/internal/api/sockets"
 	statsapi "github.com/connor-davis/3reco/internal/api/stats"
 	stockapi "github.com/connor-davis/3reco/internal/api/stock"
@@ -49,6 +50,7 @@ import (
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
+	savedsearchessvc "github.com/connor-davis/3reco/internal/services/savedsearches"
 	statssvc "github.com/connor-davis/3reco/internal/services/stats"
 	stocksvc "github.com/connor-davis/3reco/internal/services/stock"
 	storessvc "github.com/connor-davis/3reco/internal/services/stores"
@@ -61,6 +63,7 @@ import (
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
 	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
 	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
+	savedsearchesstore "github.com/connor-davis/3reco/internal/stores/savedsearches"
 	statsstore "github.com/connor-davis/3reco/internal/stores/stats"
 	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
 	storesstore "github.com/connor-davis/3reco/internal/stores/stores"
@@ -110,6 +113,9 @@ var Module = fx.Module("api",
 		favouritesstore.New,
 		favouritessvc.New,
 		favouritesapi.New,
+		savedsearchesstore.New,
+		savedsearchessvc.New,
+		savedsearchesapi.New,
 		sockets.New,
 		New,
 		Listen,
@@ -171,23 +177,24 @@ func backfillProfileLast4(lc fx.Lifecycle, records *profilestore.Store) {
 type routes struct {
 	fx.In
 
-	Config     config.Config
-	DB         *database.DB
-	Auth       *auth.Service
-	AuthH      *authapi.Handler
-	Socket     *sockets.Handler
-	Collectors *collectorsapi.Handler
-	Market     *marketapi.Handler
-	Stats      *statsapi.Handler
-	Materials  *materialsapi.Handler
-	Privacy    *privacyapi.Handler
-	Profile    *profileapi.Handler
-	Stock      *stockapi.Handler
-	Stores     *storesapi.Handler
-	Favourites *favouritesapi.Handler
-	Team       *teamapi.Handler
-	Business   *businessapi.Handler
-	Trade      tradeRoutes
+	Config        config.Config
+	DB            *database.DB
+	Auth          *auth.Service
+	AuthH         *authapi.Handler
+	Socket        *sockets.Handler
+	Collectors    *collectorsapi.Handler
+	Market        *marketapi.Handler
+	Stats         *statsapi.Handler
+	Materials     *materialsapi.Handler
+	Privacy       *privacyapi.Handler
+	Profile       *profileapi.Handler
+	Stock         *stockapi.Handler
+	Stores        *storesapi.Handler
+	Favourites    *favouritesapi.Handler
+	SavedSearches *savedsearchesapi.Handler
+	Team          *teamapi.Handler
+	Business      *businessapi.Handler
+	Trade         tradeRoutes
 }
 
 // New builds the Fiber app with every route.
@@ -255,6 +262,7 @@ func New(r routes) *fiber.App {
 	r.Stock.Register(api)
 	r.Stores.Register(api)
 	r.Favourites.Register(api)
+	r.SavedSearches.Register(api)
 	r.Team.Register(api)
 	r.Business.Register(api)
 
