@@ -312,7 +312,7 @@ with sync_playwright() as p:
                         else:
                             page.get_by_role('button', name='Invoice and receipts: Clear glass · 12.5 kg').first.click()
                         expect(page.get_by_role('heading', name='Invoice INV-2048')).to_be_visible()
-                        page.get_by_role('link', name='Back to transactions').click()
+                        page.get_by_role('link', name='Go back').click()
                         expect(page.get_by_role('heading', name='Transactions', exact=True)).to_be_visible()
                     if route in ['/transactions', '/market/incoming', '/market/outgoing']:
                         expect(page.get_by_role('link', name='Open messages')).to_have_count(0)

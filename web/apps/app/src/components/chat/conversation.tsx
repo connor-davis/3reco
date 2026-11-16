@@ -6,11 +6,11 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, LoaderCircle, MessageSquare } from 'lucide-react';
+import { Info, LoaderCircle, MessageSquare } from 'lucide-react';
+import { BackButton } from '@/components/back-button';
 import { BusinessName, StatusBadge } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
@@ -173,13 +173,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
       <header className="flex min-h-20 shrink-0 items-center gap-3 border-b bg-card px-4 py-3 sm:px-6">
-        <Link
-          to="/messages"
-          aria-label="Back to messages"
-          className="inline-flex size-11 items-center justify-center rounded-md hover:bg-muted lg:hidden"
-        >
-          <ArrowLeft className="size-5" />
-        </Link>
+        <BackButton fallback="/messages" className="shrink-0 lg:hidden" />
         <PersonAvatar name={other.name} />
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold">
