@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Package } from 'lucide-react';
 import { BusinessName } from '@/components/badges';
+import { FavouriteButton } from '@/components/favourite-button';
 import { PersonAvatar } from '@/components/visuals';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatKg, formatRate, toGrams } from '@/lib/format';
@@ -41,6 +42,11 @@ export function ListingCard({
             aria-hidden="true"
           />
         )}
+        <FavouriteButton
+          listingId={listing.id}
+          name={listing.material_name}
+          className="absolute right-2 top-2 z-10"
+        />
       </div>
       <CardContent className="space-y-1.5 p-4">
         <h3 className="line-clamp-2 font-semibold tracking-tight">

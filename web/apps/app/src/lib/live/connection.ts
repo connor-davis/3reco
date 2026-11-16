@@ -27,7 +27,9 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
     case 'listing':
       return [
         ['listings'],
+        ['favourites', 'list'],
         ['stores'],
+        ['follows', 'list'],
         ['reviews'],
         ['cart'],
         ...(id ? [['stock', id]] : []),

@@ -3,6 +3,7 @@ import {
   Building2,
   ClipboardList,
   History,
+  Heart,
   Home,
   LayoutDashboard,
   type LucideIcon,
@@ -47,6 +48,8 @@ const browse: NavLink = {
   to: '/market',
   icon: Search,
 };
+
+const saved: NavLink = { label: 'Saved', to: '/saved', icon: Heart };
 
 const setup: NavLink = { label: 'Finish setup', to: '/setup', icon: UserPlus };
 
@@ -108,7 +111,7 @@ function roleNav(role: Role | null): NavGroup[] {
     case 'business':
       return [
         {
-          links: [dashboard, messages, browse],
+          links: [dashboard, messages, browse, saved],
         },
         {
           label: 'Your trade',
@@ -133,7 +136,7 @@ function roleNav(role: Role | null): NavGroup[] {
         },
       ];
     case 'collector':
-      return [{ links: [dashboard, browse] }];
+      return [{ links: [dashboard, browse, saved] }];
     case 'guest':
       return [{ links: [setup] }];
     default:
@@ -252,6 +255,7 @@ const pageTitles: Record<string, string> = {
   '': 'Dashboard',
   about: 'About',
   cart: 'Your cart',
+  saved: 'Saved',
   collections: 'Collections',
   collectors: 'Collectors',
   materials: 'Materials',

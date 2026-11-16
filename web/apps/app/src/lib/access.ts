@@ -43,6 +43,7 @@ export type PageId =
   | 'incoming'
   | 'outgoing'
   | 'cart'
+  | 'saved'
   | 'profile'
   | 'users'
   | 'activity'
@@ -63,6 +64,7 @@ const allowed: Record<PageId, Role[]> = {
   incoming: ['business'],
   outgoing: ['business'],
   cart: ['business'],
+  saved: ['admin', 'staff', 'business', 'collector'],
   profile: ['guest', 'admin', 'staff', 'business', 'collector'],
   users: ['admin'],
   activity: ['admin'],

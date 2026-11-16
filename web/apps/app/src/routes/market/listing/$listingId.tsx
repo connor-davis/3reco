@@ -12,6 +12,7 @@ import { ActionBar, ActionBarSpacer } from '@/components/action-bar';
 import { Panel } from '@/components/panel';
 import { DecimalField } from '@/components/form-fields';
 import { LinkButton } from '@/components/link-button';
+import { FavouriteButton } from '@/components/favourite-button';
 import { ListingCard } from '@/components/listing-card';
 import { Section } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -303,6 +304,12 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 {plural(listing.review_count, 'review')}
               </p>
             </div>
+            <FavouriteButton
+              labelled
+              className="min-h-11"
+              listingId={listing.id}
+              name={listing.material_name}
+            />
             <WhatsAppShare
               className="min-h-11"
               text={`${listing.material_name} at ${formatRate(listing.price)} on 3REco`}

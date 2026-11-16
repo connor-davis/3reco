@@ -23,6 +23,7 @@ import {
   useReviewSummary,
   useReviewable,
 } from '@/lib/api/reviews';
+import { FollowButton } from '@/components/favourite-button';
 import { useAuth } from '@/lib/auth/use-auth';
 import { formatDate, plural, toGrams } from '@/lib/format';
 
@@ -105,6 +106,10 @@ function StorePage() {
                   text={`${store.data.name} on 3REco`}
                   path={`/market/store/${sellerId}`}
                 />
+                {user?.id !== sellerId &&
+                  user?.active_business_id !== sellerId && (
+                    <FollowButton storeId={sellerId} name={store.data.name} />
+                  )}
                 {user?.role === 'business' && user.id !== sellerId && (
                   <>
                     <Button

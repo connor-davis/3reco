@@ -197,7 +197,7 @@ test('completed unreviewed trade enables review launch; reviewed trades disable 
   assert.equal(button.props.disabled, false);
   button.props.onClick();
   const dialog = nodes(render()).find(
-    (node) => node.props?.storeId === 'seller'
+    (node) => node.props?.storeId === 'seller' && 'open' in node.props
   );
   assert.equal(dialog.props.open, true);
   items = [];

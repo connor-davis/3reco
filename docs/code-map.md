@@ -56,6 +56,7 @@ line when you add an owner.
 | `0017_export_audit_details.sql` | Download kind and filters on privacy export audit events |
 | `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
 | `0034_listing_fulfillment.sql` | Listing pickup/delivery choice and public collection town/area, saved through the existing stock owners |
+| `0036_favourites_follows.sql` | `stock.first_listed_at`, `favourites` and `follows` (per person, `users.id`), notification type `store_new_listing` |
 | `0035_business_location.sql` | `businesses.latitude/longitude`: the map point of the saved address, private, set only by the Business save |
 | `0020_stock_images.sql` | One photo per stock item and live business logo changes |
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
@@ -236,6 +237,10 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Caller-only profile edits, bank completeness and safe directory reads | `internal/services/profile/profile.go` |
 | Shared South African phone, bank and address validation | `internal/services/profile/validation.go` |
 | Stock ownership, row locks and exact decimal/base-price validation | `internal/services/stock/stock.go` |
+| Favourites and follows: a person (`users.id`) saves visible listings and follows stores; routes under `/api/favourites` and `/api/follows` (list, `ids`, `PUT`/`DELETE :id`), all scoped to the caller | `internal/stores/favourites/favourites.go`, `internal/services/favourites/favourites.go`, `internal/api/favourites/handler.go`; saved listings reuse `Filter.FavouriteOf` in `internal/stores/market/listings.go`, followed stores reuse `Followed` in `internal/stores/stores/profile.go` |
+| First publish alert: `Create`/`Update` report the first time a row is listed (`first_listed_at`), then `TellFollowers` writes one person-only `store_new_listing` notice per follower in the same transaction (never `InsertBusiness`) | `internal/stores/stock/stock.go`, `save` in `internal/services/stock/stock.go` |
+| Favourites and follows tests (CRUD, other-person isolation, hidden listing, alert once, followers only, unfollow, live) | `tests/favourites_test.go`, `web/apps/app/tests/favourites.test.mjs` |
+| Heart on cards and the listing page, Follow button on the store page, `/saved` page, client hooks | `web/apps/app/src/components/favourite-button.tsx`, `src/routes/saved.tsx`, `src/lib/api/favourites.ts` |
 | Active store visibility and composition with the review service | `internal/services/stores/profile.go` |
 | Store service construction and review dependency | `internal/services/stores/stores.go` |
 | Collector records, creator scope and phone conflict SQL | `internal/stores/collectors/collectors.go` |

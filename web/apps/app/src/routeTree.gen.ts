@@ -16,6 +16,7 @@ import { Route as StockRouteImport } from './routes/stock'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as SavedRouteImport } from './routes/saved'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MaterialsRouteImport } from './routes/materials'
@@ -77,6 +78,11 @@ const SignInRoute = SignInRouteImport.update({
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavedRoute = SavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saved': typeof SavedRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saved': typeof SavedRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saved': typeof SavedRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/saved'
     | '/setup'
     | '/sign-in'
     | '/sign-up'
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/saved'
     | '/setup'
     | '/sign-in'
     | '/sign-up'
@@ -411,6 +422,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/saved'
     | '/setup'
     | '/sign-in'
     | '/sign-up'
@@ -448,6 +460,7 @@ export interface RootRouteChildren {
   MaterialsRoute: typeof MaterialsRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SavedRoute: typeof SavedRoute
   SetupRoute: typeof SetupRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -522,6 +535,13 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saved': {
+      id: '/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof SavedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -728,6 +748,7 @@ const rootRouteChildren: RootRouteChildren = {
   MaterialsRoute: MaterialsRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SavedRoute: SavedRoute,
   SetupRoute: SetupRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,

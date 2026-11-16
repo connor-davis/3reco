@@ -21,6 +21,7 @@ import (
 	authapi "github.com/connor-davis/3reco/internal/api/auth"
 	businessapi "github.com/connor-davis/3reco/internal/api/business"
 	collectorsapi "github.com/connor-davis/3reco/internal/api/collectors"
+	favouritesapi "github.com/connor-davis/3reco/internal/api/favourites"
 	marketapi "github.com/connor-davis/3reco/internal/api/market"
 	materialsapi "github.com/connor-davis/3reco/internal/api/materials"
 	"github.com/connor-davis/3reco/internal/api/middleware"
@@ -41,6 +42,7 @@ import (
 	"github.com/connor-davis/3reco/internal/services/auth"
 	businesssvc "github.com/connor-davis/3reco/internal/services/business"
 	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
+	favouritessvc "github.com/connor-davis/3reco/internal/services/favourites"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
 	privacysvc "github.com/connor-davis/3reco/internal/services/privacy"
@@ -54,6 +56,7 @@ import (
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 	"github.com/connor-davis/3reco/internal/stores/businesses"
 	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
+	favouritesstore "github.com/connor-davis/3reco/internal/stores/favourites"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
 	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
@@ -104,6 +107,9 @@ var Module = fx.Module("api",
 		storesstore.New,
 		storessvc.New,
 		storesapi.New,
+		favouritesstore.New,
+		favouritessvc.New,
+		favouritesapi.New,
 		sockets.New,
 		New,
 		Listen,
@@ -178,6 +184,7 @@ type routes struct {
 	Profile    *profileapi.Handler
 	Stock      *stockapi.Handler
 	Stores     *storesapi.Handler
+	Favourites *favouritesapi.Handler
 	Team       *teamapi.Handler
 	Business   *businessapi.Handler
 	Trade      tradeRoutes
@@ -247,6 +254,7 @@ func New(r routes) *fiber.App {
 	r.Profile.Register(api)
 	r.Stock.Register(api)
 	r.Stores.Register(api)
+	r.Favourites.Register(api)
 	r.Team.Register(api)
 	r.Business.Register(api)
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 )
@@ -87,6 +89,33 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 	}
 	defer rows.Close()
 
+	return scanProfiles(rows)
+}
+
+// Followed lists the stores a person follows, in the same shape and order as
+// List. A store that is not verified is hidden, as everywhere else.
+func (records *Store) Followed(ctx context.Context, userID string, query paging.Query) ([]Profile, error) {
+	rows, err := records.db.Q(ctx).Query(
+		ctx,
+		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed
+		AND `+database.Verified("u")+`
+		AND u.id IN (SELECT store_id FROM follows WHERE user_id=$1)
+		AND ($2='' OR (u.created_at,u.id)<($3,$2))
+		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($4,0)`),
+		userID,
+		query.ID,
+		query.At,
+		query.Size(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanProfiles(rows)
+}
+
+func scanProfiles(rows pgx.Rows) ([]Profile, error) {
 	items := []Profile{}
 	for rows.Next() {
 		var item Profile

@@ -103,6 +103,7 @@ with sync_playwright() as p:
                 elif path.endswith('/summary'): body = {'average_rating': None, 'review_count': 0}
                 elif path.endswith('/reviewable'): body = {'items': []}
                 elif path.endswith('/unread-count'): body = {'count': 0}
+                elif path in ['/favourites/ids', '/follows/ids']: body = {'ids': []}
                 route.fulfill(content_type='application/json', body=json.dumps(body))
             context.route(base + '/api/**', handle)
             context.route_web_socket('**/api/live', lambda ws: None)
@@ -163,8 +164,8 @@ with sync_playwright() as p:
                             assert abs(box['y'] + box['height'] - (1000 - 52)) < 2
                     if route == '/market/store/seller':
                         buttons = page.locator('header [data-slot="button-row"] button, header [data-slot="button-row"] a')
-                        # Share on WhatsApp, Cart and Message store.
-                        expect(buttons).to_have_count(3)
+                        # Share on WhatsApp, Follow, Cart and Message store.
+                        expect(buttons).to_have_count(4)
                         boxes = [button.bounding_box() for button in buttons.all()]
                         if width < 768:
                             for above, below in zip(boxes, boxes[1:]):

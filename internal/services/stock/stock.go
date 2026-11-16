@@ -171,11 +171,27 @@ func (service *Service) Create(ctx context.Context, owner string, in Input) (str
 				return err
 			}
 
-			return service.store.Create(ctx, item)
+			return service.save(ctx, item, service.store.Create)
 		},
 	)
 
 	return item.ID, err
+}
+
+// save writes the row and, the first time it reaches the market, tells the
+// seller's followers in the same transaction. Edits, unlisting and later
+// re-listing tell nobody.
+func (service *Service) save(
+	ctx context.Context,
+	item store.Item,
+	write func(context.Context, store.Item) (bool, error),
+) error {
+	first, err := write(ctx, item)
+	if err != nil || !first {
+		return err
+	}
+
+	return service.store.TellFollowers(ctx, item.ID)
 }
 
 // Update locks stock before checking ownership and applying only provided fields.
@@ -245,7 +261,7 @@ func (service *Service) Update(ctx context.Context, id, owner string, in Input) 
 				return err
 			}
 
-			return service.store.Update(ctx, item)
+			return service.save(ctx, item, service.store.Update)
 		},
 	)
 }

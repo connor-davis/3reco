@@ -36,6 +36,20 @@ func (service *Service) List(ctx context.Context, search, exclude string, query 
 		return paging.Page[store.Profile]{}, err
 	}
 
+	return service.page(ctx, items, query)
+}
+
+// Followed lists the stores the caller follows, with the same summaries.
+func (service *Service) Followed(ctx context.Context, userID string, query paging.Query) (paging.Page[store.Profile], error) {
+	items, err := service.store.Followed(ctx, userID, query)
+	if err != nil {
+		return paging.Page[store.Profile]{}, err
+	}
+
+	return service.page(ctx, items, query)
+}
+
+func (service *Service) page(ctx context.Context, items []store.Profile, query paging.Query) (paging.Page[store.Profile], error) {
 	// One query for the whole page, not one per store.
 	sellerIDs := make([]string, len(items))
 	for i := range items {
