@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/connor-davis/3reco/internal/platform/geo"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
@@ -39,7 +40,7 @@ func cartExpire(t *testing.T, w tradeWorld) {
 	t.Helper()
 
 	notes := notifications.New(notesstore.New(w.app.DB))
-	service := marketsvc.New(w.app.DB, marketstore.New(w.app.DB), nil, notes)
+	service := marketsvc.New(w.app.DB, marketstore.New(w.app.DB), nil, notes, geo.Fake{})
 	if err := service.ExpireCartHolds(context.Background()); err != nil {
 		t.Fatal(err)
 	}

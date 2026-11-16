@@ -42,6 +42,10 @@ type Config struct {
 	S3SecretKey string
 	S3Region    string
 	S3UseTLS    bool
+
+	// Geocoder names the map service that places business addresses for the
+	// market distance filter. Empty means the fake in dev and none in production.
+	Geocoder string
 }
 
 // EnvVar documents one setting.
@@ -76,6 +80,7 @@ var EnvVars = []EnvVar{
 	{"THREERECO_S3_SECRET_KEY", "threereco-secret", "S3 secret key."},
 	{"THREERECO_S3_REGION", "us-east-1", "S3 region."},
 	{"THREERECO_S3_TLS", "false", "Use HTTPS to reach S3."},
+	{"THREERECO_GEOCODER", "", "Map service that places business addresses for the distance filter. Empty is the offline fake in dev and off in production (the filter is hidden); `fake` forces the fake; `off` turns the filter off."},
 }
 
 // Load reads the environment. It fails on a value it cannot read.
@@ -99,6 +104,7 @@ func Load() (Config, error) {
 		S3SecretKey:    Env("THREERECO_S3_SECRET_KEY", "threereco-secret"),
 		S3Region:       Env("THREERECO_S3_REGION", "us-east-1"),
 		S3UseTLS:       envBool("THREERECO_S3_TLS"),
+		Geocoder:       Env("THREERECO_GEOCODER", ""),
 	}
 
 	var err error

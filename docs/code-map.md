@@ -56,6 +56,7 @@ line when you add an owner.
 | `0017_export_audit_details.sql` | Download kind and filters on privacy export audit events |
 | `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
 | `0034_listing_fulfillment.sql` | Listing pickup/delivery choice and public collection town/area, saved through the existing stock owners |
+| `0035_business_location.sql` | `businesses.latitude/longitude`: the map point of the saved address, private, set only by the Business save |
 | `0020_stock_images.sql` | One photo per stock item and live business logo changes |
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
 | `0022_cart_holds.sql` | `stock_holds.cart_id` (request or cart owner, never both), active cart-hold indexes, realtime trigger for cart holds, notification type `cart_expired` |
@@ -198,7 +199,11 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Caller-owned cart handlers | `internal/api/market/cart.go` |
 | Public listing detail handler | `internal/api/market/detail.go` |
 | Market and cart route registration | `internal/api/market/handler.go` |
-| Public listing filters and seller listing handlers | `internal/api/market/listings.go` |
+| Public listing filters and seller listing handlers; `GET /market/distance` (is the distance filter usable for the caller) | `internal/api/market/listings.go` |
+| Market filters: price range and distance checks, the caller's own origin, haversine SQL (`kmApart`), whole-km `distance_km`; tests in `tests/market_filters_test.go` | `internal/services/market/filters.go`, `internal/stores/market/listings.go` |
+| Address to map point: `Geocoder` interface, offline `Fake` (`@lat,lng` pins, `fail:` fails), `FromName` (dev fake, production off, never fails) | `internal/platform/geo/geo.go` |
+| Business save looks up the point only when the address changes; a failed lookup never blocks the save | `internal/services/business/business.go` (`place`) |
+| Market filter URL state (parse, reset cursor, exact price range check) and the filter controls | `web/apps/app/src/routes/market/-components/market-search.ts`, `market-filters.tsx`; tests in `web/apps/app/tests/market-filters.test.mjs` |
 | Catalog reads and administrator mutation handlers | `internal/api/materials/catalog.go` |
 | Material catalog route registration | `internal/api/materials/handler.go` |
 | Private person-only profile edits (a business field gets 400) and safe account directory handlers | `internal/api/profile/handler.go` |

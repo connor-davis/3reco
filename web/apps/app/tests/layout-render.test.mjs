@@ -94,6 +94,7 @@ with sync_playwright() as p:
                 elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']: body = dashboard
                 elif path == '/stats': body = {'total_kg': '87.5', 'co2_kg': '100', 'deals': 7, 'top_stores': []}
                 elif path == '/market/listings/stock': body = listing
+                elif path == '/market/distance': body = {'enabled': True, 'has_origin': True}
                 elif path == '/market/listings': body['items'] = [dict(listing, id='related-' + str(i)) for i in range(3)]
                 elif path == '/stores/seller': body = {'id': 'seller', 'name': 'Greenloop', 'city': 'Cape Town', 'province': 'Western Cape', 'created_at': '2026-11-08T08:00:00Z', 'average_rating': None, 'review_count': 0}
                 elif path == '/stores/seller/listings': body['items'] = [listing]
@@ -184,6 +185,12 @@ with sync_playwright() as p:
                             last_card = page.locator('section [data-slot="card"]').last.bounding_box()
                             bar = page.locator('[data-slot="action-bar"]').bounding_box()
                             assert last_card['y'] + last_card['height'] <= bar['y'] + 1, 'stacked actions cover last card'
+                    if route == '/market':
+                        for name in ['Material', 'Distance', 'Lowest R / kg', 'Highest R / kg', 'Sort this page']:
+                            control = page.get_by_label(name, exact=True)
+                            expect(control).to_be_visible()
+                            box = control.bounding_box()
+                            assert 0 <= box['x'] and box['x'] + box['width'] <= width, f'market filter {name} off screen {width} {mode}'
                     if route in ['/market', '/market/store/seller', '/market/listing/stock']:
                         cards = page.locator('[data-slot="card"]').filter(has=page.locator('h3'))
                         assert cards.count() > 0

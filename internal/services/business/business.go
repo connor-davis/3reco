@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
+	"github.com/connor-davis/3reco/internal/platform/geo"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/profile"
 	"github.com/connor-davis/3reco/internal/stores/businesses"
@@ -27,11 +30,18 @@ type Service struct {
 	store   *businesses.Store
 	privacy *privacy.Store
 	cipher  *crypt.Cipher
+	geocode geo.Geocoder
 }
 
 // New builds the service.
-func New(db *database.DB, rows *businesses.Store, events *privacy.Store, cipher *crypt.Cipher) *Service {
-	return &Service{db: db, store: rows, privacy: events, cipher: cipher}
+func New(
+	db *database.DB,
+	rows *businesses.Store,
+	events *privacy.Store,
+	cipher *crypt.Cipher,
+	geocoder geo.Geocoder,
+) *Service {
+	return &Service{db: db, store: rows, privacy: events, cipher: cipher, geocode: geocoder}
 }
 
 // Input lists the editable business fields. The business id is never accepted:
@@ -121,9 +131,13 @@ func (s *Service) Update(ctx context.Context, user auth.User, in Input) error {
 			return err
 		}
 
+		before := addressLine(item)
+
 		if err := apply(&item, in); err != nil {
 			return err
 		}
+
+		s.place(ctx, &item, before)
 
 		sealed, err := s.cipher.Encrypt(item.BankAccountNumber)
 		if err != nil {
@@ -132,6 +146,63 @@ func (s *Service) Update(ctx context.Context, user auth.User, in Input) error {
 
 		return s.store.SaveProfile(ctx, item, sealed, collectors.Last4(item.BankAccountNumber))
 	})
+}
+
+// addressLine is the address as one line for the map service. A business with
+// no street address has none, so it gets no map point.
+func addressLine(item businesses.Profile) string {
+	if item.StreetAddress == "" {
+		return ""
+	}
+
+	parts := []string{item.StreetAddress, item.City, item.Province}
+	if item.AreaCode != nil {
+		parts = append(parts, fmt.Sprint(*item.AreaCode))
+	}
+
+	kept := parts[:0]
+	for _, part := range parts {
+		if part != "" {
+			kept = append(kept, part)
+		}
+	}
+
+	return strings.Join(kept, ", ") + ", South Africa"
+}
+
+// place sets the business's map point. It looks the address up only when the
+// address changed or the last try failed. A failed lookup leaves the point empty
+// and never blocks the save.
+// ponytail: the lookup runs inside the save's transaction (3 second cap, one
+// business row held). Move it after commit if a slow provider makes that hurt.
+func (s *Service) place(ctx context.Context, item *businesses.Profile, before string) {
+	line := addressLine(*item)
+	if line == "" {
+		item.Lat, item.Lng = nil, nil
+
+		return
+	}
+
+	if line == before && item.Lat != nil {
+		return
+	}
+
+	item.Lat, item.Lng = nil, nil
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	point, err := s.geocode.Geocode(ctx, line)
+	if err != nil {
+		// The address is private, so the log names only the business.
+		if !errors.Is(err, geo.ErrDisabled) {
+			slog.Warn("address not placed on the map", "business", item.ID, "err", err)
+		}
+
+		return
+	}
+
+	item.Lat, item.Lng = &point.Lat, &point.Lng
 }
 
 // apply merges the sent fields over the stored ones and validates the result.

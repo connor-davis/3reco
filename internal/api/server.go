@@ -35,6 +35,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
+	"github.com/connor-davis/3reco/internal/platform/geo"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
@@ -67,6 +68,7 @@ import (
 var Module = fx.Module("api",
 	fx.Provide(
 		crypt.FromConfig,
+		newGeocoder,
 		mail.New,
 		storage.New,
 		authstore.New,
@@ -113,6 +115,17 @@ var Module = fx.Module("api",
 	fx.Invoke(background),
 	fx.Invoke(func(*Listener) {}),
 )
+
+// newGeocoder picks the map service. With none set up the distance filter is
+// off, and the server says so once at start instead of failing.
+func newGeocoder(cfg config.Config) geo.Geocoder {
+	geocoder := geo.FromName(cfg.Geocoder, cfg.Dev)
+	if !geo.Enabled(geocoder) {
+		slog.Warn("distance filter is off: no map service is set (THREERECO_GEOCODER)")
+	}
+
+	return geocoder
+}
 
 func storageLifecycle(lc fx.Lifecycle, objects *storage.Client) {
 	lc.Append(fx.Hook{OnStart: objects.EnsureBucket})

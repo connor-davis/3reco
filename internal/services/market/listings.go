@@ -14,6 +14,11 @@ import (
 
 // Listings returns safe listed stock, with all filters applied before seeking.
 func (service *Service) Listings(ctx context.Context, filter store.Filter, query paging.Query) (paging.Page[store.Listing], error) {
+	filter, err := service.prepare(ctx, filter)
+	if err != nil {
+		return paging.Page[store.Listing]{}, err
+	}
+
 	items, err := service.store.Listings(ctx, filter, query)
 	if err != nil {
 		return paging.Page[store.Listing]{}, err

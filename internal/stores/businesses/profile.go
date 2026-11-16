@@ -22,6 +22,10 @@ type Profile struct {
 	AvatarURL                  string `json:"avatar_url"`
 	CanEdit                    bool   `json:"can_edit"`
 
+	// The map point of the saved address. Private: never sent as JSON.
+	Lat *float64 `json:"-"`
+	Lng *float64 `json:"-"`
+
 	// The service sets this only when the Owner typed a new full number.
 	ReplaceBankAccount bool `json:"-"`
 }
@@ -41,7 +45,8 @@ func (s *Store) FindProfile(ctx context.Context, id string, lock bool) (Profile,
 		COALESCE(city,''),
 		COALESCE(province,''),
 		area_code,
-		CASE WHEN avatar_key IS NOT NULL THEN '/api/stores/'||id||'/logo' ELSE COALESCE(image,'') END
+		CASE WHEN avatar_key IS NOT NULL THEN '/api/stores/'||id||'/logo' ELSE COALESCE(image,'') END,
+		latitude,longitude
 		FROM businesses WHERE id=$1 AND NOT is_removed`
 	if lock {
 		query += ` FOR UPDATE`
@@ -62,6 +67,8 @@ func (s *Store) FindProfile(ctx context.Context, id string, lock bool) (Profile,
 		&item.Province,
 		&item.AreaCode,
 		&item.AvatarURL,
+		&item.Lat,
+		&item.Lng,
 	)
 
 	return item, err
@@ -83,11 +90,13 @@ func (s *Store) SaveProfile(ctx context.Context, item Profile, sealed, last4 str
 		city=NULLIF($10,''),
 		province=NULLIF($11,''),
 		area_code=$12,
+		latitude=$15,
+		longitude=$16,
 		updated_at=now()
 		WHERE id=$1 AND NOT is_removed`,
 		item.ID, item.BusinessName, item.BusinessRegistrationNumber, item.BankAccountHolderName,
 		item.BankName, sealed, item.BankBranchCode, item.BankAccountType, item.StreetAddress,
-		item.City, item.Province, item.AreaCode, item.ReplaceBankAccount, last4)
+		item.City, item.Province, item.AreaCode, item.ReplaceBankAccount, last4, item.Lat, item.Lng)
 
 	return err
 }

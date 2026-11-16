@@ -74,6 +74,11 @@ export function ListingCard({
             Collection area: {listing.pickup_area}
           </p>
         )}
+        {listing.distance_km != null && (
+          <p className="text-sm text-muted-foreground">
+            About {listing.distance_km} km away
+          </p>
+        )}
         {showSeller && (
           <Link
             className="relative z-10 inline-flex min-h-11 max-w-full items-center gap-2 text-sm hover:underline"

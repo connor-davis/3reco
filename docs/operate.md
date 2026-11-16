@@ -32,6 +32,7 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_S3_SECRET_KEY` | `threereco-secret` | S3 secret key. |
 | `THREERECO_S3_REGION` | `us-east-1` | S3 region. |
 | `THREERECO_S3_TLS` | `false` | Use HTTPS to reach S3. |
+| `THREERECO_GEOCODER` | _(empty)_ | Map service that places business addresses for the distance filter. Empty is the offline fake in dev and off in production (the filter is hidden); `fake` forces the fake; `off` turns the filter off. |
 
 ## Web app
 

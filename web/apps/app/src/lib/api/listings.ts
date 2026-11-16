@@ -6,6 +6,11 @@ export interface ListingFilters extends Paging {
   q?: string;
   seller_id?: string;
   material_id?: string;
+  /** Exact R/kg decimals, both ends included. */
+  min_price?: string;
+  max_price?: string;
+  /** One of 10, 25, 50, 100. */
+  max_km?: number;
 }
 export function useListings(
   params: ListingFilters = {},
@@ -34,5 +39,12 @@ export function useStoreListings(id: string, params: Paging = {}) {
     `/stores/${idPath(id)}/listings${queryString(params)}`,
     false,
     !!id
+  );
+}
+/** Whether the distance filter works, and if the caller has a point to start from. */
+export function useDistanceStatus() {
+  return useResource<{ enabled: boolean; has_origin: boolean }>(
+    ['listings', 'distance'],
+    '/market/distance'
   );
 }

@@ -152,6 +152,8 @@ export interface Listing {
   price: Decimal;
   average_rating: number | null;
   review_count: number;
+  /** Whole km from the viewer; sent only while the distance filter is on. */
+  distance_km?: number | null;
   created_at: string;
 }
 export interface CartItem {
