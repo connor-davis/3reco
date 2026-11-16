@@ -77,5 +77,9 @@ func (h *Hub) listen(ctx context.Context) error {
 		// Recheck before delivery, including changes queued just before removal.
 		h.Recheck(ctx)
 		h.route(ch)
+
+		if ch.Kind == "notification" && ch.Op == "insert" && h.onNotification != nil {
+			h.onNotification(ch.ID)
+		}
 	}
 }

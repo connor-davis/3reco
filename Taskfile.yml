@@ -19,6 +19,9 @@ env:
   THREERECO_DEV: "true"
   # Dev-only key for the encrypted personal fields. Never use it in production.
   THREERECO_FIELD_KEY: "M3JlY28tZGV2LWZpZWxkLWtleS0wMTIzNDU2Nzg5YWI="
+  # Dev-only VAPID pair for phone alerts (web push). Never use it in production.
+  THREERECO_VAPID_PUBLIC_KEY: "BEKSVM-9TlLTb7_vrOekPXRt6-4zqsFEF-2nr3INu-PGhH9MCMOb99aC44213gmpZx1s8ESsO4m5t8RnG8pLZRg"
+  THREERECO_VAPID_PRIVATE_KEY: "fE2rpOHwxvyMj7vPEwgGf0nQNnu4HeIQBWwpnFb4f24"
 
 tasks:
   default:

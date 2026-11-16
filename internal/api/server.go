@@ -27,6 +27,7 @@ import (
 	"github.com/connor-davis/3reco/internal/api/middleware"
 	privacyapi "github.com/connor-davis/3reco/internal/api/privacy"
 	profileapi "github.com/connor-davis/3reco/internal/api/profile"
+	pushapi "github.com/connor-davis/3reco/internal/api/push"
 	savedsearchesapi "github.com/connor-davis/3reco/internal/api/savedsearches"
 	"github.com/connor-davis/3reco/internal/api/sockets"
 	statsapi "github.com/connor-davis/3reco/internal/api/stats"
@@ -48,6 +49,7 @@ import (
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
 	privacysvc "github.com/connor-davis/3reco/internal/services/privacy"
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
+	pushsvc "github.com/connor-davis/3reco/internal/services/push"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
 	savedsearchessvc "github.com/connor-davis/3reco/internal/services/savedsearches"
@@ -63,6 +65,7 @@ import (
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
 	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
 	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
+	pushstore "github.com/connor-davis/3reco/internal/stores/push"
 	savedsearchesstore "github.com/connor-davis/3reco/internal/stores/savedsearches"
 	statsstore "github.com/connor-davis/3reco/internal/stores/stats"
 	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
@@ -116,6 +119,9 @@ var Module = fx.Module("api",
 		savedsearchesstore.New,
 		savedsearchessvc.New,
 		savedsearchesapi.New,
+		pushstore.New,
+		pushsvc.New,
+		pushapi.New,
 		sockets.New,
 		New,
 		Listen,
@@ -125,6 +131,7 @@ var Module = fx.Module("api",
 	fx.Invoke(backfillPayoutLast4),
 	fx.Invoke(backfillProfileLast4),
 	fx.Invoke(background),
+	fx.Invoke(sendPhoneAlerts),
 	fx.Invoke(func(*Listener) {}),
 )
 
@@ -192,6 +199,7 @@ type routes struct {
 	Stores        *storesapi.Handler
 	Favourites    *favouritesapi.Handler
 	SavedSearches *savedsearchesapi.Handler
+	Push          *pushapi.Handler
 	Team          *teamapi.Handler
 	Business      *businessapi.Handler
 	Trade         tradeRoutes
@@ -263,6 +271,7 @@ func New(r routes) *fiber.App {
 	r.Stores.Register(api)
 	r.Favourites.Register(api)
 	r.SavedSearches.Register(api)
+	r.Push.Register(api)
 	r.Team.Register(api)
 	r.Business.Register(api)
 
@@ -341,6 +350,10 @@ func errorHandler(c fiber.Ctx, err error) error {
 	return c.Status(fiber.StatusInternalServerError).
 		JSON(fiber.Map{"code": "internal", "message": "Something went wrong on our side."})
 }
+
+// sendPhoneAlerts sends a phone alert for every notification the database
+// announces, after its commit and without holding up the hub.
+func sendPhoneAlerts(hub *realtime.Hub, p *pushsvc.Service) { hub.OnNotification(p.Notify) }
 
 // background starts the realtime hub and the hourly purge with the app.
 func background(

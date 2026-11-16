@@ -18,6 +18,7 @@ import { initials } from '@/lib/format';
 import { PrivacyPanel } from './-components/privacy-panel';
 import { LocationForm, PayoutForm, PersonalForm } from './-components/forms';
 import { SessionsPanel } from './-components/sessions-panel';
+import { PhoneAlerts } from './-components/phone-alerts';
 
 export const Route = createFileRoute('/profile/')({
   component: () => (
@@ -65,6 +66,7 @@ function ProfilePage() {
             <TabsTrigger value="personal">Personal</TabsTrigger>
             {collector && <TabsTrigger value="bank">Bank & payout</TabsTrigger>}
             {collector && <TabsTrigger value="location">Location</TabsTrigger>}
+            <TabsTrigger value="alerts">Alerts</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="privacy">Your data</TabsTrigger>
           </TabsList>
@@ -116,6 +118,14 @@ function ProfilePage() {
               description="Your privacy and account controls."
             >
               <PrivacyPanel />
+            </Section>
+          </TabsContent>
+          <TabsContent value="alerts">
+            <Section
+              title="Alerts"
+              description="Get 3REco alerts on this phone or computer."
+            >
+              <PhoneAlerts />
             </Section>
           </TabsContent>
           <TabsContent value="sessions">

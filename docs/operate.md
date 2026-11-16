@@ -33,6 +33,21 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_S3_REGION` | `us-east-1` | S3 region. |
 | `THREERECO_S3_TLS` | `false` | Use HTTPS to reach S3. |
 | `THREERECO_GEOCODER` | _(empty)_ | Map service that places business addresses for the distance filter. Empty is the offline fake in dev and off in production (the filter is hidden); `fake` forces the fake; `off` turns the filter off. |
+| `THREERECO_VAPID_PUBLIC_KEY` | (empty) | Public VAPID key for phone alerts (web push). Phone alerts are off unless both keys are set. See [Phone alerts](#phone-alerts). |
+| `THREERECO_VAPID_PRIVATE_KEY` | (empty) | Private VAPID key for phone alerts. A secret: keep it out of git. |
+| `THREERECO_VAPID_SUBJECT` | `mailto:admin@localhost` | Contact the push services can reach, as a `mailto:` or `https:` address. |
+
+## Phone alerts
+
+Phone alerts are web push: a person switches them on in Profile, Alerts, and the
+browser then shows the same alerts as the bell, even when 3REco is closed. They
+need a fixed VAPID key pair; a new pair makes every saved subscription useless.
+Make one with `npx web-push generate-vapid-keys` (or webpush-go's
+`GenerateVAPIDKeys`), set both keys and `THREERECO_VAPID_SUBJECT`, and keep the
+private key as secret as `THREERECO_FIELD_KEY`. With either key empty, push is
+off and the switch says so. `task dev` sets a dev-only pair from `Taskfile.yml`;
+never use it in production. The service worker (`/sw.js`) caches only the built
+app files, never `/api`.
 
 ## Web app
 

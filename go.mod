@@ -3,6 +3,7 @@ module github.com/connor-davis/3reco
 go 1.27.1
 
 require (
+	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/fasthttp/websocket v1.5.12
 	github.com/gofiber/contrib/v3/websocket v1.2.12
 	github.com/gofiber/fiber/v3 v3.6.1
@@ -21,6 +22,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gofiber/schema v1.9.3 // indirect
 	github.com/gofiber/utils/v2 v2.6.4 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

@@ -81,7 +81,15 @@ type Hub struct {
 	byUser     map[string]map[*Client]struct{}
 	byRole     map[string]map[*Client]struct{}
 	byBusiness map[string]map[*Client]struct{}
+
+	// onNotification hears the id of every new notification row. It must
+	// return at once; set it before Run.
+	onNotification func(id string)
 }
+
+// OnNotification registers a callback for every newly inserted notification,
+// the one place all writers of the bell pass through after their commit.
+func (h *Hub) OnNotification(fn func(id string)) { h.onNotification = fn }
 
 // New builds a hub. Call Run to start listening.
 func New(db *database.DB, a *auth.Service) *Hub {

@@ -14,6 +14,21 @@ line when you add an owner.
 | Keep copied market price filters as exact text before route validation | `web/apps/app/src/main.tsx` (`parseSearch`) |
 | Ownership, matching, first publication and live recipient regression | `tests/saved_searches_test.go`, `web/apps/app/tests/saved-searches.test.mjs`, `web/apps/app/tests/saved-searches-render.test.mjs` |
 
+## Phone alerts (web push)
+
+| Job | Owner |
+| --- | --- |
+| Per-browser subscriptions, unique endpoint, user index | `internal/platform/database/migrations/0038_push_subscriptions.sql` |
+| Caller-scoped save, remove, dead-endpoint delete, notification and subscription load | `internal/stores/push/push.go` |
+| Validation, VAPID on/off, same-origin link rule, best-effort async send (webpush-go; 404/410 deletes the subscription), `Sender` seam for tests | `internal/services/push/push.go` |
+| `GET /api/push/key`, `POST /api/push/subscriptions`, `POST /api/push/unsubscribe`; registration in `internal/api/server.go` | `internal/api/push/handler.go` |
+| Send point: every notification INSERT announced by the database, after commit, whichever writer made it | `OnNotification` in `internal/services/realtime/{hub,listen}.go`, wired by `sendPhoneAlerts` in `internal/api/server.go` |
+| VAPID keys and subject | `internal/platform/config/config.go` (`THREERECO_VAPID_*`) |
+| Service worker: app-shell cache (never `/api`), push display, same-origin click target | `web/apps/app/public/sw.js` |
+| Register the worker (production only) and subscribe/unsubscribe in the browser | `web/apps/app/src/lib/push/{register,subscribe}.ts` |
+| Phone alerts switch (Profile, Alerts tab) and the API client | `web/apps/app/src/routes/profile/-components/phone-alerts.tsx`, `src/lib/api/push.ts` |
+| Auth, ownership, validation, send targeting, 410 cleanup, failure isolation | `tests/push_test.go`; web: `web/apps/app/tests/push.test.mjs` |
+
 ## Duplicate trade review
 
 | Job | Owner |
