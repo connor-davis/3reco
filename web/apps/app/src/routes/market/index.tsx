@@ -21,7 +21,9 @@ function MarketPage() {
   const [search, setSearch] = useState('');
   const [cursor, setCursor] = useState<string>();
   const [sort, setSort] = useState('newest');
-  const query = useListings({ q: search, cursor });
+  const query = useListings({ q: search, cursor }, true, {
+    keepPrevious: true,
+  });
   const stats = useStats();
   const results = filterListings(query.data?.items ?? [], sort);
 

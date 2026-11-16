@@ -24,6 +24,10 @@ export function ListingCard({
           <img
             src={listing.image_url}
             alt={listing.material_name}
+            loading="lazy"
+            decoding="async"
+            width={400}
+            height={300}
             onError={() => setFailedImage(listing.image_url)}
             className="absolute inset-0 size-full object-cover"
           />

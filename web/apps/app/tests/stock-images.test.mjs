@@ -75,9 +75,15 @@ test('a broken listing card image falls back to the box and recovers on a new UR
   });
   const props = { listing: { image_url: '/broken', weight: '1', price: '2' } };
   const render = () => nodes(ListingCard(props));
-  render()
-    .find((node) => node.type === 'img')
-    .props.onError();
+  const image = render().find((node) => node.type === 'img');
+  assert.equal(image.props.loading, 'lazy');
+  assert.equal(image.props.decoding, 'async');
+  assert.equal(image.props.width / image.props.height, 4 / 3);
+  assert.ok(image.props.width > 0 && image.props.height > 0);
+  assert.ok(
+    render().some((node) => node.props?.className?.includes('aspect-[4/3]'))
+  );
+  image.props.onError();
   assert.equal(
     render().some((node) => node.type === 'img'),
     false

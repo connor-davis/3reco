@@ -7,6 +7,7 @@ export const accountRemovedReason = 'account-removed';
 
 // A burst of events for one key (a chat flurry) refetches it once.
 const settleMs = 300;
+const listingSettleMs = 1500;
 
 /**
  * The query keys a change of this kind may have made stale. An id adds the
@@ -121,13 +122,21 @@ export class LiveConnection {
 
   private invalidate(key: QueryKey) {
     const name = JSON.stringify(key);
-    if (this.pending.has(name)) return;
+    const listing = key[0] === 'listings';
+    if (this.pending.has(name)) {
+      if (!listing) return;
+      clearTimeout(this.pending.get(name));
+    }
+
     this.pending.set(
       name,
-      setTimeout(() => {
-        this.pending.delete(name);
-        void this.client.invalidateQueries({ queryKey: key });
-      }, settleMs)
+      setTimeout(
+        () => {
+          this.pending.delete(name);
+          void this.client.invalidateQueries({ queryKey: key });
+        },
+        listing ? listingSettleMs : settleMs
+      )
     );
   }
 
