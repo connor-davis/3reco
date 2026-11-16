@@ -28,6 +28,7 @@ import (
 	privacyapi "github.com/connor-davis/3reco/internal/api/privacy"
 	profileapi "github.com/connor-davis/3reco/internal/api/profile"
 	pushapi "github.com/connor-davis/3reco/internal/api/push"
+	quickrepliesapi "github.com/connor-davis/3reco/internal/api/quickreplies"
 	savedsearchesapi "github.com/connor-davis/3reco/internal/api/savedsearches"
 	"github.com/connor-davis/3reco/internal/api/sockets"
 	statsapi "github.com/connor-davis/3reco/internal/api/stats"
@@ -50,6 +51,7 @@ import (
 	privacysvc "github.com/connor-davis/3reco/internal/services/privacy"
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
 	pushsvc "github.com/connor-davis/3reco/internal/services/push"
+	quickrepliessvc "github.com/connor-davis/3reco/internal/services/quickreplies"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
 	savedsearchessvc "github.com/connor-davis/3reco/internal/services/savedsearches"
@@ -66,6 +68,7 @@ import (
 	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
 	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
 	pushstore "github.com/connor-davis/3reco/internal/stores/push"
+	quickrepliesstore "github.com/connor-davis/3reco/internal/stores/quickreplies"
 	savedsearchesstore "github.com/connor-davis/3reco/internal/stores/savedsearches"
 	statsstore "github.com/connor-davis/3reco/internal/stores/stats"
 	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
@@ -122,6 +125,9 @@ var Module = fx.Module("api",
 		pushstore.New,
 		pushsvc.New,
 		pushapi.New,
+		quickrepliesstore.New,
+		quickrepliessvc.New,
+		quickrepliesapi.New,
 		sockets.New,
 		New,
 		Listen,
@@ -200,6 +206,7 @@ type routes struct {
 	Favourites    *favouritesapi.Handler
 	SavedSearches *savedsearchesapi.Handler
 	Push          *pushapi.Handler
+	QuickReplies  *quickrepliesapi.Handler
 	Team          *teamapi.Handler
 	Business      *businessapi.Handler
 	Trade         tradeRoutes
@@ -272,6 +279,7 @@ func New(r routes) *fiber.App {
 	r.Favourites.Register(api)
 	r.SavedSearches.Register(api)
 	r.Push.Register(api)
+	r.QuickReplies.Register(api)
 	r.Team.Register(api)
 	r.Business.Register(api)
 

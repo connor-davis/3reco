@@ -3,6 +3,15 @@
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
 
+## Quick replies
+
+| Job | Owner |
+| --- | --- |
+| One list per person (`users.id`), used in every chat; max 20 replies of 500 characters, text trimmed | `internal/platform/database/migrations/0039_quick_replies.sql`, `internal/services/quickreplies/quickreplies.go` |
+| Caller-scoped list/create/update/delete (other people's ids answer 404); the limit is checked under a lock on the person's row | `internal/stores/quickreplies/quickreplies.go`, `internal/api/quickreplies/handler.go`; registration in `internal/api/server.go` |
+| Menu in the chat footer: tap fills the message box, never sends; add, edit and delete from the same menu; client hooks (loads on open and after a change, no live events) | `web/apps/app/src/components/chat/quick-replies-menu.tsx`, `src/lib/api/quick-replies.ts` |
+| CRUD, other-person isolation, empty and long text, the 21st reply, guest blocked; web fill-not-send, empty state, client | `tests/quick_replies_test.go`, `web/apps/app/tests/quick-replies.test.mjs` |
+
 ## Saved searches
 
 | Job | Owner |

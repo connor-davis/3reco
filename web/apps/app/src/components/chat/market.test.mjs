@@ -259,6 +259,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
     './cards',
     './deal-aside',
     './deal-stepper',
+    './quick-replies-menu',
   ])
     deps[name] = component;
   const { Conversation } = load('./conversation.tsx', deps);

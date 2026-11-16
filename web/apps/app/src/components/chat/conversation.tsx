@@ -37,6 +37,7 @@ import {
   requestLabel,
   messageText,
 } from './helpers';
+import { QuickRepliesMenu } from './quick-replies-menu';
 import { useRequestActions } from './use-request-actions';
 
 type Confirm = 'cancel' | 'reject' | 'withdraw';
@@ -383,6 +384,12 @@ export function Conversation({ request }: { request: TradeRequest }) {
                 autoComplete="off"
               />
             </div>
+            <QuickRepliesMenu
+              onPick={(text) => {
+                form.setValue('content', text, { shouldValidate: true });
+                form.setFocus('content');
+              }}
+            />
             <Button
               type="submit"
               disabled={
