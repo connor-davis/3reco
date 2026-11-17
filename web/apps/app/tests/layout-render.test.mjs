@@ -93,6 +93,7 @@ with sync_playwright() as p:
                 elif path == '/requests/request': body = request
                 elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']: body = dashboard
                 elif path == '/stats': body = {'total_kg': '87.5', 'co2_kg': '100', 'deals': 7, 'top_stores': []}
+                elif path == '/stats/seller': body = {'views': {'days_7': 3, 'days_30': 8, 'lifetime': 10}, 'listings': [], 'replies': {'requests': 6, 'within_day': 4}}
                 elif path == '/market/listings/stock': body = listing
                 elif path == '/market/distance': body = {'enabled': True, 'has_origin': True}
                 elif path == '/market/listings': body['items'] = [dict(listing, id='related-' + str(i)) for i in range(3)]

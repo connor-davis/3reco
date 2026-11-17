@@ -79,6 +79,19 @@ export function VerifiedBadge({ verified }: { verified: boolean }) {
   );
 }
 
+/** A public reply signal without the seller's private request counts. */
+export function ReplySpeedBadge({
+  usuallyWithinDay,
+}: {
+  usuallyWithinDay?: boolean;
+}) {
+  return usuallyWithinDay ? (
+    <Badge variant="mint" className="max-w-full whitespace-normal">
+      Usually replies within 1 day
+    </Badge>
+  ) : null;
+}
+
 /** The small check shown beside a business 3REco has verified. */
 export function VerifiedMark({ verified }: { verified?: boolean }) {
   return verified ? (

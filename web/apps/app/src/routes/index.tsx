@@ -30,6 +30,7 @@ import {
 } from './-dashboard/panels';
 import { PhoneHome } from './-dashboard/phone-home';
 import { StockMix } from './-dashboard/stock-mix';
+import { SellerStatsPanel } from './-dashboard/seller-stats';
 
 export const Route = createFileRoute('/')({
   component: () => (
@@ -316,6 +317,9 @@ function Dashboard() {
           </>
         )}
       </DataState>
+      {!!user?.active_business_id && !!user.business_role && (
+        <SellerStatsPanel />
+      )}
       {(!dashboard ||
         dashboard.totals.count === 0 ||
         query.isPending ||

@@ -2,7 +2,11 @@ import { ModerationActions } from '@/components/moderation-actions';
 import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
-import { BusinessName, UnverifiedBanner } from '@/components/badges';
+import {
+  BusinessName,
+  ReplySpeedBadge,
+  UnverifiedBanner,
+} from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ButtonRow } from '@/components/button-row';
 import { Panel } from '@/components/panel';
@@ -86,11 +90,14 @@ function StorePage() {
                 className="size-16"
               />
               <div className="min-w-0 flex-1 space-y-1">
-                <h1 className="text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
+                <h1 className="flex flex-wrap items-center gap-2 text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
                   <BusinessName
                     name={store.data.name}
                     verified={store.data.business_verified}
                     wrap
+                  />
+                  <ReplySpeedBadge
+                    usuallyWithinDay={store.data.usually_replies_within_day}
                   />
                 </h1>
                 <p>

@@ -14,24 +14,25 @@ import (
 
 // Listing is an allowlisted market view, never a private user or stock record.
 type Listing struct {
-	FulfillmentMode string   `json:"fulfillment_mode"`
-	PickupArea      string   `json:"pickup_area"`
-	ImageURL        string   `json:"image_url"`
-	ThumbURL        string   `json:"thumb_url"`
-	ImageURLs       []string `json:"image_urls"`
-	SellerAvatarURL string   `json:"seller_avatar_url"`
-	ID              string   `json:"id"`
-	SellerID        string   `json:"seller_id"`
-	SellerName      string   `json:"seller_name"`
-	SellerVerified  bool     `json:"seller_verified"`
-	MaterialID      string   `json:"material_id"`
-	MaterialName    string   `json:"material_name"`
-	CarbonFactor    string   `json:"carbon_factor"`
-	GWCode          string   `json:"gw_code"`
-	HeldWeight      string   `json:"held_weight"`
-	Weight          string   `json:"weight"`
-	Price           string   `json:"price"`
-	AverageRating   *float64 `json:"average_rating"`
+	UsuallyRepliesWithinDay *bool    `json:"usually_replies_within_day,omitempty"`
+	FulfillmentMode         string   `json:"fulfillment_mode"`
+	PickupArea              string   `json:"pickup_area"`
+	ImageURL                string   `json:"image_url"`
+	ThumbURL                string   `json:"thumb_url"`
+	ImageURLs               []string `json:"image_urls"`
+	SellerAvatarURL         string   `json:"seller_avatar_url"`
+	ID                      string   `json:"id"`
+	SellerID                string   `json:"seller_id"`
+	SellerName              string   `json:"seller_name"`
+	SellerVerified          bool     `json:"seller_verified"`
+	MaterialID              string   `json:"material_id"`
+	MaterialName            string   `json:"material_name"`
+	CarbonFactor            string   `json:"carbon_factor"`
+	GWCode                  string   `json:"gw_code"`
+	HeldWeight              string   `json:"held_weight"`
+	Weight                  string   `json:"weight"`
+	Price                   string   `json:"price"`
+	AverageRating           *float64 `json:"average_rating"`
 	// DistanceKm is a whole number of km from the viewer, sent only while the
 	// distance filter is on. The seller's point itself never leaves the database.
 	DistanceKm  *int      `json:"distance_km"`

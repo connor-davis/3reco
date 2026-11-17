@@ -24,7 +24,18 @@ func (service *Service) Find(ctx context.Context, id, viewer string) (store.Prof
 	}
 
 	summary, err := service.reviews.Summary(ctx, id)
+	if err != nil {
+		return item, err
+	}
+
 	item.AverageRating, item.ReviewCount = summary.Average, summary.Count
+	replies, err := service.stats.Replies(ctx, id)
+	if err != nil {
+		return item, err
+	}
+
+	badge := replies.UsuallyWithinDay()
+	item.UsuallyRepliesWithinDay = &badge
 
 	return item, err
 }

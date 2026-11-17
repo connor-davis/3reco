@@ -12,18 +12,19 @@ import (
 
 // Profile is a public store profile and listing/review summary.
 type Profile struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Verified      bool      `json:"business_verified"`
-	Image         string    `json:"image"`
-	AvatarURL     string    `json:"avatar_url"`
-	City          string    `json:"city"`
-	Province      string    `json:"province"`
-	ItemCount     int       `json:"item_count"`
-	MaterialNames []string  `json:"material_names"`
-	AverageRating *float64  `json:"average_rating"`
-	ReviewCount   int       `json:"review_count"`
-	CreatedAt     time.Time `json:"created_at"`
+	UsuallyRepliesWithinDay *bool     `json:"usually_replies_within_day,omitempty"`
+	ID                      string    `json:"id"`
+	Name                    string    `json:"name"`
+	Verified                bool      `json:"business_verified"`
+	Image                   string    `json:"image"`
+	AvatarURL               string    `json:"avatar_url"`
+	City                    string    `json:"city"`
+	Province                string    `json:"province"`
+	ItemCount               int       `json:"item_count"`
+	MaterialNames           []string  `json:"material_names"`
+	AverageRating           *float64  `json:"average_rating"`
+	ReviewCount             int       `json:"review_count"`
+	CreatedAt               time.Time `json:"created_at"`
 }
 
 var profileColumns = `u.id,` + database.DisplayName("u") + `,

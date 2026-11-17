@@ -17,6 +17,7 @@ func New(service *svc.Service) *Handler { return &Handler{svc: service} }
 // Register adds public totals and the authenticated price-history route under /api.
 func (handler *Handler) Register(router fiber.Router) {
 	router.Get("/stats", handler.stats)
+	router.Get("/stats/seller", middleware.RequireUser, handler.seller)
 	router.Get("/materials/:id/price-history", middleware.RequireUser, handler.prices)
 }
 

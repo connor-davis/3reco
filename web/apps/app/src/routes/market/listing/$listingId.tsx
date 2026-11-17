@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { PackageSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/back-button';
-import { BusinessName } from '@/components/badges';
+import { BusinessName, ReplySpeedBadge } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { ActionBar, ActionBarSpacer } from '@/components/action-bar';
 import { Panel } from '@/components/panel';
@@ -292,10 +292,13 @@ function ListingDetail({ listing }: { listing: Listing }) {
               image={listing.seller_avatar_url}
             />
             <div className="min-w-0 flex-1">
-              <p className="font-medium">
+              <p className="flex flex-wrap items-center gap-2 font-medium">
                 <BusinessName
                   name={listing.seller_name}
                   verified={listing.seller_verified}
+                />
+                <ReplySpeedBadge
+                  usuallyWithinDay={listing.usually_replies_within_day}
                 />
               </p>
               {listing.average_rating !== null && (

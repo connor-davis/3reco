@@ -91,6 +91,7 @@ export interface PublicUser {
   created_at: string;
 }
 export interface Store {
+  usually_replies_within_day?: boolean;
   id: string;
   name: string;
   business_verified: boolean;
@@ -152,6 +153,7 @@ export interface StockImportPreview {
   ok: boolean;
 }
 export interface Listing {
+  usually_replies_within_day?: boolean;
   fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
   pickup_area?: string;
   image_url: string;

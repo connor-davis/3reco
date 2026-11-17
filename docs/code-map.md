@@ -19,6 +19,17 @@ line when you add an owner.
 | Block-event cache invalidation for discovery, stores, wanted, requests, chats, cart and blocks; reports never have realtime events | `web/apps/app/src/lib/live/connection.ts` |
 | Block direction/team isolation, contact and history rules, alert filtering, private reports, admin audit/notices, suspension/reversal and id-only live routing; web dialogs, hooks and gating | `tests/report_block_test.go`, `web/apps/app/tests/report-block.test.mjs`; team chat sender regression in `src/components/chat/market.test.mjs`, store action layout in `tests/layout-render.test.mjs` |
 
+## Seller stats
+
+| Job | Owner |
+| --- | --- |
+| Unique signed-in account/listing/Johannesburg-day views, kept for lifetime totals and cascaded on stock deletion; stock/day aggregation and human system-message audit lookup indexes | `internal/platform/database/migrations/0042_seller_stats.sql` |
+| Successful visible detail view recording, all-workspace team/admin exclusion, owner-scoped 7/30-day and lifetime counts, 90-day first seller reply with human audit actor for system events | `internal/stores/stats/seller.go`; detail seam in `internal/services/market/listings.go` |
+| Active business member-only `GET /api/stats/seller`, with no party parameter | `internal/services/stats/seller.go`, `internal/api/stats/seller.go`; registration in `internal/api/stats/handler.go` |
+| Public boolean reply badge on listing/store details (at least five requests, half within 24 hours); no view or reply counts | `internal/services/{market/listings,stores/profile}.go`, `internal/stores/{market/listings,stores/profile}.go`; shared `web/apps/app/src/components/badges.tsx` |
+| Private listing views panel, per-business/person cache, refresh on dashboard mount and request/stock events | `web/apps/app/src/routes/-dashboard/seller-stats.tsx`, `src/routes/index.tsx`, `src/lib/api/stats.ts`, `src/lib/live/connection.ts` |
+| Deduplication, day windows, view exclusions, active-party isolation, badge edges, actor attribution; panel states and responsive badge rendering | `tests/seller_stats_test.go`, `web/apps/app/tests/seller-stats.test.mjs`, `seller-stats-render.test.mjs` |
+
 ## Price history
 
 | Job | Owner |
