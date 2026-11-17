@@ -73,8 +73,8 @@ test('the banner is mounted above the app on every page', () => {
 
 test('downloads are hidden in the demo and kept everywhere else', () => {
   const list = source('routes/transactions/-components/record-list.tsx');
-  assert.match(list, /const canExport = !readOnly && !demo;/);
-  assert.equal((list.match(/canExport/g) ?? []).length, 4);
+  assert.match(list, /const canExport =[\s\S]*?!readOnly &&\s*!demo &&/);
+  assert.equal((list.match(/canExport/g) ?? []).length, 3);
 
   const users = source('routes/admin/users.tsx');
   assert.match(users, /action=\{\s*!demo && \(\s*<Button/);

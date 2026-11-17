@@ -25,10 +25,11 @@ test('qa-round7: request status filter reuses the badge labels', () => {
   assert.match(source('lib/request-status.ts'), /export const requestStatuses/);
 });
 
-test('qa-round7: the filter bar keeps its controls on the Pending tab', () => {
+test('qa-round7: status stays in Filters while export is hidden for Pending', () => {
   const list = source('routes/transactions/-components/record-list.tsx');
-  assert.match(list, /\{exportKind && canExport && \(/);
-  assert.match(list, /disabled=\{status !== 'complete'\}/);
+  assert.match(list, /<FilterField label="Status">\s*<ChoiceSelect/);
+  assert.match(list, /\{canExport && \(\s*<FilterField label="Export format">/);
+  assert.match(list, /const canExport =[\s\S]*?status === 'complete' &&/);
 });
 
 test('qa-round7: the receipt picker is a styled label over a hidden input', () => {

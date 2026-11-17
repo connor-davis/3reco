@@ -67,6 +67,7 @@ with sync_playwright() as p:
             bought = trade('Bought-invoice', 'business-b', 'business-a')
             sold = trade('Sold-invoice', 'business-a', 'business-b')
             invoice_status = 'complete'
+            total_count = 2
             requests, errors = [], []
             def handle(route):
                 parsed = urlparse(route.request.url)
@@ -79,7 +80,7 @@ with sync_playwright() as p:
                 if path == '/auth/me': body = {'user': user}
                 elif path == '/auth/sessions': body = {'sessions': []}
                 elif path == '/businesses/mine': body = []
-                elif path == '/transactions/totals': body = {'count': 2, 'weight': '4', 'value': '32', 'carbon_savings': '1'}
+                elif path == '/transactions/totals': body = {'count': total_count, 'weight': '4', 'value': '32', 'carbon_savings': '1'}
                 elif path.startswith('/transactions/') and path.split('/')[-1] in ['Bought-invoice', 'Sold-invoice']: body = bought if path.endswith('Bought-invoice') else sold
                 elif path.startswith('/transactions'):
                     rows = [bought] if path.endswith('/purchases') else [sold] if path.endswith('/sales') else [bought, sold]
@@ -104,9 +105,29 @@ with sync_playwright() as p:
                 for invoice, label in [('Bought-invoice', 'Bought'), ('Sold-invoice', 'Sold')]:
                     row = rows.filter(has_text=invoice + ' glass').first
                     expect(row.get_by_text(label, exact=True) if width >= 1024 else row.get_by_text(re.compile('^' + label + ' · '))).to_be_visible()
-                expect(page.get_by_role('button', name='Export', exact=True)).to_be_disabled()
-                expect(page.get_by_text('Pick Bought or Sold to export', exact=True)).to_be_visible()
+                expect(page.get_by_role('button', name='Export', exact=True)).to_have_count(0)
+                expect(page.get_by_text('Pick Bought or Sold to export', exact=True)).to_have_count(0)
+                expect(page.get_by_role('tablist')).to_have_count(1)
+                expect(rows.get_by_text('Business', exact=True)).to_have_count(0)
+                page.get_by_role('button', name='Actions for transactions', exact=True).click()
+                expect(page.get_by_role('menuitem', name='Recycling record', exact=True)).to_be_visible()
+                page.keyboard.press('Escape')
+                page.get_by_role('button', name='Filters', exact=True).click()
+                status = page.get_by_role('combobox', name='Transaction status', exact=True)
+                expect(status).to_contain_text('Complete')
+                status.click()
+                page.get_by_role('option', name='Pending', exact=True).click()
+                page.get_by_role('button', name='Show results', exact=True).click()
+                expect(page.get_by_role('button', name='Filters (1)', exact=True)).to_be_visible()
+                page.get_by_role('button', name='Filters (1)', exact=True).click()
+                page.get_by_role('button', name='Clear', exact=True).click()
+                expect(status).to_contain_text('Complete')
+                page.get_by_role('button', name='Show results', exact=True).click()
                 assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
+                if os.environ.get('THREERECO_UX4_SHOTS') and width in [390, 1280]:
+                    expect(page.get_by_role('dialog', name='Filters', exact=True)).to_have_count(0)
+                    os.makedirs(os.environ['THREERECO_UX4_SHOTS'], exist_ok=True)
+                    page.screenshot(path=os.path.join(os.environ['THREERECO_UX4_SHOTS'], mode + '-' + str(width) + '-list.png'), full_page=True)
                 # The phone action is a sibling of the primary row tap; desktop keeps its menu.
                 if width < 1024:
                     invoice_action = page.get_by_role('button', name='Download invoice Bought-invoice', exact=True)
@@ -174,6 +195,20 @@ with sync_playwright() as p:
                 expect(page.get_by_role('button', name='Export', exact=True)).to_be_enabled()
                 with page.expect_download(): page.get_by_role('button', name='Export', exact=True).click()
                 assert any(path == '/exports/purchases' for path, _ in requests)
+                page.get_by_role('button', name='Filters', exact=True).click()
+                page.get_by_role('combobox', name='Transaction status', exact=True).click()
+                page.get_by_role('option', name='Pending', exact=True).click()
+                page.get_by_role('button', name='Show results', exact=True).click()
+                expect(page.get_by_role('button', name='Export', exact=True)).to_have_count(0)
+                page.get_by_role('button', name='Filters (1)', exact=True).click()
+                page.get_by_role('button', name='Clear', exact=True).click()
+                page.get_by_role('button', name='Show results', exact=True).click()
+                expect(page.get_by_role('button', name='Export', exact=True)).to_be_enabled()
+                total_count = 0
+                page.reload()
+                page.wait_for_load_state('networkidle')
+                expect(page.get_by_role('button', name='Export', exact=True)).to_have_count(0)
+                total_count = 2
                 page.get_by_role('tab', name='Sold', exact=True).click()
                 expect(page.get_by_text('Bought-invoice glass', exact=False)).to_have_count(0)
                 expect(page.get_by_text('Sold-invoice glass', exact=False)).to_be_visible()
@@ -187,12 +222,38 @@ with sync_playwright() as p:
                 page.goto(base + '/transactions/purchases?open=Bought-invoice')
                 expect(page.get_by_role('heading', name='Invoice Bought-invoice', exact=True)).to_be_visible()
                 assert '/transactions/Bought-invoice' in page.url
+                primary = page.get_by_role('button', name='Download invoice', exact=True)
+                expect(primary).to_be_visible()
+                assert primary.evaluate('(el) => el.closest("header") !== null')
+                receipts = page.locator('details').filter(has=page.locator('summary', has_text='Receipts (0)'))
+                expect(receipts).not_to_have_attribute('open', '')
+                expect(page.get_by_text('No receipts yet.', exact=True)).not_to_be_visible()
+                summary = page.get_by_role('heading', name='Summary', exact=True)
+                items = page.get_by_role('heading', name='Items', exact=True)
+                receipt_toggle = receipts.locator('summary')
+                assert summary.bounding_box()['y'] < receipt_toggle.bounding_box()['y']
+                assert items.bounding_box()['y'] < receipt_toggle.bounding_box()['y']
+                assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
+                if os.environ.get('THREERECO_UX4_SHOTS') and width in [390, 1280]:
+                    page.screenshot(path=os.path.join(os.environ['THREERECO_UX4_SHOTS'], mode + '-' + str(width) + '-detail.png'), full_page=True)
+                with page.expect_download(): primary.click()
+                receipt_toggle.click()
+                expect(page.get_by_text('No receipts yet.', exact=True)).to_be_visible()
+                expect(page.get_by_text('Add a receipt', exact=True)).to_have_count(0)
+                bought['receipts'] = [{'id': 'receipt', 'file_name': 'weighbridge.png', 'uploaded_by': 'someone-else'}]
+                page.reload()
+                page.wait_for_load_state('networkidle')
+                expect(page.locator('details')).to_have_attribute('open', '')
+                expect(page.get_by_text('weighbridge.png', exact=True)).to_be_visible()
+                bought['receipts'] = []
                 user['role'] = 'staff'
                 page.goto(base + '/transactions?filter=sold')
                 page.wait_for_load_state('networkidle')
                 expect(page.get_by_role('heading', name='All transactions', exact=True)).to_be_visible()
                 expect(page.get_by_role('tab', name='Bought', exact=True)).to_have_count(0)
-                expect(page.get_by_role('combobox', name='Transaction type', exact=True)).to_be_visible() if width >= 1024 else None
+                page.get_by_role('button', name='Filters', exact=True).click()
+                expect(page.get_by_role('combobox', name='Transaction type', exact=True)).to_be_visible()
+                page.get_by_role('button', name='Show results', exact=True).click()
                 user['role'] = 'collector'
                 page.goto(base + '/transactions/sales')
                 page.wait_for_load_state('networkidle')

@@ -40,6 +40,7 @@ import {
   toGrams,
 } from '@/lib/format';
 import { tradeTypeLabel } from '@/lib/trade-type';
+import { FilterField } from '@/components/toolbar';
 
 const day = (date: Date) => format(date, 'yyyy-MM-dd');
 
@@ -56,12 +57,13 @@ type Props = {
   // Staff pages add a Business-to-business / collector filter.
   typeFilter?: boolean;
   actions?: ReactNode;
+  // A lone "..." menu sits beside the title on a phone instead of on its own row.
+  actionsBeside?: boolean;
   // Collections show a stats row. Other pages skip it.
   stats?: boolean;
   readOnly?: boolean;
   businessFilter?: 'all' | 'bought' | 'sold';
   onBusinessFilterChange?: (filter: string) => void;
-  exportHint?: string;
 };
 
 const typeOptions = [
@@ -115,11 +117,11 @@ export function RecordList({
   emptyTitle,
   typeFilter = false,
   actions,
+  actionsBeside = false,
   stats = false,
   readOnly = false,
   businessFilter,
   onBusinessFilterChange,
-  exportHint,
 }: Props) {
   const { user } = useAuth();
   const direction = (row: Transaction) =>
@@ -214,14 +216,15 @@ export function RecordList({
           {businessFilter && (
             <Badge variant="secondary">{direction(row.original)}</Badge>
           )}
-          {/* The plain compact label: a Badge inside the fixed-height Badge was clipped. */}
-          <Badge variant="outline" className="h-5 px-2 text-xs">
-            <TradeTypeLabel
-              compact
-              type={row.original.type}
-              verified={row.original.business_verified}
-            />
-          </Badge>
+          {collectionsOnly && (
+            <Badge variant="outline" className="h-5 px-2 text-xs">
+              <TradeTypeLabel
+                compact
+                type={row.original.type}
+                verified={row.original.business_verified}
+              />
+            </Badge>
+          )}
         </div>
       ),
     },
@@ -297,7 +300,17 @@ export function RecordList({
   const download = useExport(exportKind ?? 'transactions');
   // The demo has no downloads at all.
   const { demo } = useAppConfig();
-  const canExport = !readOnly && !demo;
+  // Hidden when it can never run; only greyed while totals reload or a search settles,
+  // so the button doesn't blink in and out as you type.
+  const canExport =
+    !!exportKind &&
+    (collectionsOnly || kind !== 'mine') &&
+    !readOnly &&
+    !demo &&
+    status === 'complete' &&
+    !!totals.data?.count;
+  const exportBusy =
+    download.isPending || totals.isFetching || query.trim() !== q;
 
   const shown = list.data?.items ?? [];
   const filtered = !!(q || range?.from || (!collectionsOnly && type !== 'all'));
@@ -329,7 +342,12 @@ export function RecordList({
 
   return (
     <>
-      <PageHeader title={title} description={description} actions={actions} />
+      <PageHeader
+        title={title}
+        description={description}
+        actions={actions}
+        compactActionsBelow={!actionsBeside}
+      />
       {stats && (
         <div className="mb-8">
           <StatGrid threeUp>
@@ -376,76 +394,78 @@ export function RecordList({
             ]}
           />
         )}
-        {!collectionsOnly && (
-          <FilterTabs
-            label="Transaction status"
-            value={status}
-            onChange={setStatus}
-            options={[
-              { value: 'complete', label: 'Complete' },
-              { value: 'pending', label: 'Pending' },
-            ]}
-          />
-        )}
         <Toolbar
+          sheetOnDesktop
           label="Search records"
           value={query}
           onChange={setQuery}
           activeFilters={
             Number(!!range?.from) +
             Number(type !== 'all') +
-            Number(csv !== 'transaction')
+            Number(csv !== 'transaction') +
+            Number(!collectionsOnly && status !== 'complete')
           }
           onClear={() => {
             setRange(undefined);
             setType('all');
             setCsv('transaction');
+            setStatus('complete');
           }}
           filters={
             <>
-              <DateRangePicker
-                value={range}
-                onChange={setRange}
-                placeholder="From – to date"
-                align="start"
-              />
-              {typeFilter && (
-                <ChoiceSelect
-                  label="Transaction type"
-                  value={type}
-                  options={typeOptions}
-                  onChange={setType}
-                />
+              {!collectionsOnly && (
+                <FilterField label="Status">
+                  <ChoiceSelect
+                    label="Transaction status"
+                    className="w-full"
+                    value={status}
+                    onChange={setStatus}
+                    options={[
+                      { value: 'complete', label: 'Complete' },
+                      { value: 'pending', label: 'Pending' },
+                    ]}
+                  />
+                </FilterField>
               )}
-              {exportKind && canExport && (
-                <ChoiceSelect
-                  label="Export format"
-                  value={csv}
-                  options={csvOptions(collectionsOnly)}
-                  onChange={setCsv}
-                  disabled={status !== 'complete'}
+              <FilterField label="Dates">
+                <DateRangePicker
+                  value={range}
+                  onChange={setRange}
+                  placeholder="From – to date"
+                  align="start"
                 />
+              </FilterField>
+              {typeFilter && (
+                <FilterField label="Type">
+                  <ChoiceSelect
+                    label="Transaction type"
+                    className="w-full"
+                    value={type}
+                    options={typeOptions}
+                    onChange={setType}
+                  />
+                </FilterField>
+              )}
+              {canExport && (
+                <FilterField label="Export format">
+                  <ChoiceSelect
+                    label="Export format"
+                    className="w-full"
+                    value={csv}
+                    options={csvOptions(collectionsOnly)}
+                    onChange={setCsv}
+                  />
+                </FilterField>
               )}
             </>
           }
           action={
-            (exportKind || exportHint) &&
             canExport && (
               <Button
                 variant="outline"
                 className="h-11 max-lg:w-11 max-lg:px-0 max-lg:has-data-[icon=inline-start]:pl-0"
                 aria-label="Export"
-                aria-describedby={
-                  exportHint ? 'transaction-export-hint' : undefined
-                }
-                disabled={
-                  !!exportHint ||
-                  status !== 'complete' ||
-                  download.isPending ||
-                  totals.isFetching ||
-                  !totals.data?.count ||
-                  query.trim() !== q
-                }
+                disabled={exportBusy}
                 onClick={exportCsv}
               >
                 <Download data-icon="inline-start" />
@@ -454,14 +474,6 @@ export function RecordList({
             )
           }
         />
-        {exportHint && canExport && (
-          <p
-            id="transaction-export-hint"
-            className="text-sm text-muted-foreground"
-          >
-            {exportHint}
-          </p>
-        )}
       </div>
       <DataState
         query={list}
@@ -528,13 +540,15 @@ export function RecordList({
                             : 'Cancelled'
                     }
                   />
-                  <Badge variant="outline" className="h-5 px-2 text-xs">
-                    <TradeTypeLabel
-                      compact
-                      type={row.type}
-                      verified={row.business_verified}
-                    />
-                  </Badge>
+                  {collectionsOnly && (
+                    <Badge variant="outline" className="h-5 px-2 text-xs">
+                      <TradeTypeLabel
+                        compact
+                        type={row.type}
+                        verified={row.business_verified}
+                      />
+                    </Badge>
+                  )}
                   {row.status === 'pending' && row.request_id && (
                     <span className="sr-only">
                       <WaitingTag requestId={row.request_id} />

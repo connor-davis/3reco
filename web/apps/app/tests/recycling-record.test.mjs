@@ -36,6 +36,29 @@ const nodes = (node) =>
 const textOf = (node) =>
   [node?.props?.children].flat(Infinity).filter((x) => typeof x === 'string');
 
+test('the batch recycling record opens from the transaction header overflow', () => {
+  let open = false;
+  const { RecyclingRecordButton } = compile(
+    'components/dialogs/recycling-record-dialog.tsx',
+    {
+      react: {
+        useState: () => [
+          open,
+          (value) => {
+            open = value;
+          },
+        ],
+      },
+    }
+  );
+  const tree = nodes(RecyclingRecordButton());
+  const menu = tree.find((node) => node.type === 'RowActions');
+  assert.equal(menu.props.name, 'transactions');
+  assert.equal(menu.props.actions[0].label, 'Recycling record');
+  menu.props.actions[0].onSelect();
+  assert.equal(open, true);
+});
+
 test('this month runs to today and last month covers whole days across year ends', () => {
   const range = (which, day) => JSON.stringify(format.monthRange(which, day));
   assert.equal(

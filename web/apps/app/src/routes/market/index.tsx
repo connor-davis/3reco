@@ -9,12 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useListings } from '@/lib/api/listings';
 import { filterListings } from './-components/filter-listings';
-import { Toolbar } from '@/components/toolbar';
-import {
-  FilterField,
-  MarketFilters,
-  MarketSort,
-} from './-components/market-filters';
+import { FilterField, Toolbar } from '@/components/toolbar';
+import { MarketFilters, MarketSort } from './-components/market-filters';
 import { SaveSearch } from './-components/save-search';
 import { PriceHistory } from './-components/price-history';
 import {
