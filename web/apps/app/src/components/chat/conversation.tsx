@@ -10,15 +10,15 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Info, LoaderCircle, MessageSquare } from 'lucide-react';
+import { LoaderCircle, MessageSquare } from 'lucide-react';
 import { BackButton } from '@/components/back-button';
 import { BusinessName, StatusBadge } from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
 import { TextField } from '@/components/form-fields';
-import { IconButton } from '@/components/icon-button';
 import { OfferDialog } from '@/components/dialogs/offer-dialog';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { RowActions, type RowAction } from '@/components/row-actions';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -76,6 +76,25 @@ export function Conversation({ request }: { request: TradeRequest }) {
   // An admin may read any chat, but never writes or acts in one.
   const viewer = user?.role === 'admin';
   const canAct = user?.role === 'business' && participant && !isClosed(request);
+  // One "..." menu: details first, then the way out of the deal.
+  const menu: RowAction[] = [
+    { label: 'Request details', onSelect: () => setInfoOpen(true) },
+    ...(canAct
+      ? [
+          {
+            label: seller ? 'Reject request' : 'Cancel request',
+            destructive: true,
+            disabled: actions.isPending,
+            onSelect: () => setConfirm(seller ? 'reject' : 'cancel'),
+          },
+        ]
+      : []),
+  ];
+  const showOfferRow =
+    canAct &&
+    (canMakeOffer(request, party) ||
+      (request.offer_by === party && request.status === 'offered') ||
+      seller);
   const messages = orderedMessages(
     history.data?.pages.flatMap((page) => page.items) ?? []
   );
@@ -175,66 +194,34 @@ export function Conversation({ request }: { request: TradeRequest }) {
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
-      <header className="flex min-h-20 shrink-0 items-center gap-3 border-b bg-card px-4 py-3 sm:px-6">
+      <header className="flex shrink-0 items-center gap-3 border-b bg-card px-4 py-2 sm:min-h-20 sm:px-6 sm:py-3">
         <BackButton fallback="/messages" className="shrink-0 lg:hidden" />
-        <PersonAvatar name={other.name} />
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate font-semibold">
-            {viewer ? (
-              `${request.buyer.name} and ${request.seller.name}`
-            ) : (
-              <BusinessName
-                name={other.name}
-                verified={other.business_verified}
-              />
-            )}
-          </h2>
-          <StatusBadge status={requestLabel(request, party)} />
-        </div>
-        {!viewer && <ModerationActions partyId={other.id} name={other.name} />}
-        <IconButton label="Request details" onClick={() => setInfoOpen(true)}>
-          <Info />
-        </IconButton>
+        <PersonAvatar name={other.name} className="max-sm:hidden" />
+        <h2 className="min-w-0 flex-1 truncate font-semibold">
+          {viewer ? (
+            `${request.buyer.name} and ${request.seller.name}`
+          ) : (
+            <BusinessName
+              name={other.name}
+              verified={other.business_verified}
+            />
+          )}
+        </h2>
+        <StatusBadge status={requestLabel(request, party)} />
+        {viewer ? (
+          <RowActions name={other.name} actions={menu} />
+        ) : (
+          <ModerationActions
+            partyId={other.id}
+            name={other.name}
+            extra={menu}
+          />
+        )}
       </header>
       {/* A closed deal has no steps or actions, so no band is drawn. */}
       {!isClosed(request) && (
-        <div className="shrink-0 space-y-3 border-b bg-card px-4 py-3 sm:px-6">
+        <div className="shrink-0 border-b bg-card px-4 py-2 sm:px-6">
           <DealStepper request={request} />
-          {canAct && (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              {request.status === 'pending' && !seller && (
-                <p className="text-sm text-muted-foreground">
-                  Waiting for {request.seller.name} to make an offer.
-                </p>
-              )}
-              {canMakeOffer(request, party) && (
-                <Button
-                  disabled={actions.isPending}
-                  onClick={() => setOfferOpen(true)}
-                >
-                  {request.status === 'offered'
-                    ? 'Counter offer'
-                    : 'Make offer'}
-                </Button>
-              )}
-              {request.offer_by === party && request.status === 'offered' && (
-                <Button
-                  variant="outline"
-                  disabled={actions.isPending}
-                  onClick={() => setConfirm('withdraw')}
-                >
-                  Withdraw offer
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                disabled={actions.isPending}
-                onClick={() => setConfirm(seller ? 'reject' : 'cancel')}
-              >
-                {seller ? 'Reject request' : 'Cancel request'}
-              </Button>
-            </div>
-          )}
         </div>
       )}
       <div
@@ -356,7 +343,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
           )}
         </div>
       </div>
-      <footer className="shrink-0 space-y-3 border-t bg-card px-4 py-4 sm:px-6">
+      <footer className="shrink-0 space-y-3 border-t bg-card px-4 py-3 sm:px-6 sm:py-4">
         {actions.error && (
           <p role="alert" className="text-sm text-destructive">
             {actions.error}
@@ -369,6 +356,36 @@ export function Conversation({ request }: { request: TradeRequest }) {
               Retry read receipt
             </Button>
           </p>
+        )}
+        {showOfferRow && (
+          <div className="flex flex-wrap items-center gap-2">
+            {canMakeOffer(request, party) && (
+              <Button
+                disabled={actions.isPending}
+                onClick={() => setOfferOpen(true)}
+              >
+                {request.status === 'offered' ? 'Counter offer' : 'Make offer'}
+              </Button>
+            )}
+            {request.offer_by === party && request.status === 'offered' && (
+              <Button
+                variant="outline"
+                disabled={actions.isPending}
+                onClick={() => setConfirm('withdraw')}
+              >
+                Withdraw offer
+              </Button>
+            )}
+            {seller && (
+              <Button
+                variant="outline"
+                disabled={actions.isPending}
+                onClick={() => setConfirm('reject')}
+              >
+                Reject request
+              </Button>
+            )}
+          </div>
         )}
         {canAct ? (
           <form
@@ -383,6 +400,8 @@ export function Conversation({ request }: { request: TradeRequest }) {
                 control={form.control}
                 name="content"
                 label={`Message ${other.name}`}
+                hideLabel
+                placeholder={`Message ${other.name}`}
                 autoComplete="off"
               />
             </div>

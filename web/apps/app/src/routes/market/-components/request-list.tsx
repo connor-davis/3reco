@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Inbox } from 'lucide-react';
-import { StatusBadge, TradeTypeLabel, TradeParties } from '@/components/badges';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge, TradeParties } from '@/components/badges';
 import {
+  canMakeOffer,
+  canRespond,
   counterpartyOf,
   isClosed,
   requestTotal,
@@ -31,6 +32,9 @@ import {
   toGrams,
 } from '@/lib/format';
 
+// A short tab name; the status pill keeps its full label.
+const tabLabel: Record<string, string> = { offered: 'Offers' };
+
 export function RequestList({
   direction,
   title,
@@ -48,13 +52,19 @@ export function RequestList({
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const requests = query.data?.items ?? [];
-  const shown = requests.filter(
-    (request) =>
-      (status === 'all' || request.status === status) &&
-      `${counterpartyOf(request, user?.id).name} ${request.items.map((item) => item.material_name).join(' ')} ${request.id}`
-        .toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  // Rows waiting for this person's answer come first.
+  // ponytail: this sorts only the loaded page; a server-side sort needs a Go change.
+  const waiting = (request: TradeRequest) =>
+    canRespond(request, user?.id) || canMakeOffer(request, user?.id) ? 0 : 1;
+  const shown = requests
+    .filter(
+      (request) =>
+        (status === 'all' || request.status === status) &&
+        `${counterpartyOf(request, user?.id).name} ${request.items.map((item) => item.material_name).join(' ')} ${request.id}`
+          .toLowerCase()
+          .includes(search.toLowerCase())
+    )
+    .sort((a, b) => waiting(a) - waiting(b));
 
   const navigate = useNavigate();
   const open = (request: TradeRequest) =>
@@ -160,7 +170,9 @@ export function RequestList({
             label:
               value === 'all'
                 ? 'All statuses'
-                : (requestStatuses[value as RequestStatus]?.label ?? value),
+                : (tabLabel[value] ??
+                  requestStatuses[value as RequestStatus]?.label ??
+                  value),
           }))}
         />
       </div>
@@ -202,18 +214,7 @@ export function RequestList({
                   ) / 1000
                 )}
                 meta={`${formatDate(request.created_at)} · ${request.id.slice(-8).toUpperCase()}`}
-                status={
-                  <>
-                    <StatusBadge dotOnly status={request.status} />
-                    <Badge variant="outline">
-                      <TradeTypeLabel
-                        compact
-                        type="b2b"
-                        verified={request.seller.business_verified}
-                      />
-                    </Badge>
-                  </>
-                }
+                status={<StatusBadge status={request.status} />}
                 value={
                   request.items.some((item) => item.offer_price !== null)
                     ? formatRand(requestTotal(request))

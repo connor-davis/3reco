@@ -18,7 +18,10 @@ test('H1: only the seller may make the first offer on a pending request', () => 
   };
   assert.equal(helpers.canMakeOffer(request, 's'), true);
   assert.equal(helpers.canMakeOffer(request, 'b'), false);
-  assert.match(source('components/chat/conversation.tsx'), /to make an offer/);
+  assert.doesNotMatch(
+    source('components/chat/conversation.tsx'),
+    /to make an offer/
+  );
 });
 
 test('H2: an inbox row says "both sides" when both are waiting', () => {

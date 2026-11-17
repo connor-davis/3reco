@@ -92,14 +92,24 @@ function conversation(actions = {}, react = hooks, globals = {}) {
   ).Conversation;
 }
 
-test('B1: pending text and cancel action share centred, wrapping space', () => {
+test('B1: the offer row sits in the footer and the waiting sentence is gone', () => {
   const tree = conversation()({ request: { ...request, status: 'pending' } });
-  const row = nodes(tree).find((node) =>
-    node.props?.className?.includes('gap-x-3 gap-y-2')
-  );
-  assert.match(row.props.className, /flex-wrap items-center/);
-  assert.match(words(row), /Waiting for\s+Seller\s+to make an offer/);
-  assert.match(words(row), /Cancel request/);
+  const footer = nodes(tree).find((node) => node.type === 'footer');
+  assert.ok(footer, 'the footer holds the composer');
+  assert.doesNotMatch(words(tree), /to make an offer/);
+  // The buyer cancels from the "..." menu, so no row sits above the composer.
+  assert.doesNotMatch(words(footer), /Cancel request/);
+});
+
+test('B1b: the stepper is one line of text', () => {
+  const stepper = source('components/chat/deal-stepper.tsx');
+  assert.match(stepper, /Step \{current \+ 1\} of \{steps\.length\}/);
+  assert.doesNotMatch(stepper, /<ol/);
+});
+
+test('B1c: the composer hides its label but keeps it for screen readers', () => {
+  assert.match(source('components/chat/conversation.tsx'), /hideLabel/);
+  assert.match(source('components/form-fields.tsx'), /'sr-only'/);
 });
 
 test('B2: offer-only resizes follow the bottom and preserve a reader in history', () => {
