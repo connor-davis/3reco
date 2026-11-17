@@ -19,6 +19,10 @@ var demoBlocked = []struct{ prefix, message string }{
 	{"/api/privacy/delete", "You cannot delete a demo account. The demo resets every night."},
 	{"/api/auth/sign-up", "Sign-up is switched off in the demo. Use one of the demo sign-ins."},
 	{"/api/auth/forgot-password", "Password reset is switched off in the demo."},
+	{"/api/team/invites", "Invitations are switched off in the demo."},
+	{"/api/auth/invites", "Invitations are switched off in the demo."},
+	// Every admin route (users, catalog, reviews, audit log, reports) sits here.
+	{"/api/admin", "The admin area is switched off in the demo."},
 }
 
 // demoRoutes adds the public /api/config route that tells the web app whether

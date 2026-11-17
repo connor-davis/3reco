@@ -25,6 +25,7 @@ import {
   useSetBusinessVerified,
   useDeleteUser,
 } from '@/lib/api/admin';
+import { useAppConfig } from '@/lib/api/app-config';
 import { useExport } from '@/lib/api/exports';
 import { roleLabel } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -121,6 +122,7 @@ function UsersPage() {
   const remove = useDeleteUser();
   const verify = useSetBusinessVerified();
   const download = useExport('users');
+  const { demo } = useAppConfig();
   const [roleUser, setRoleUser] = useState<AdminUser | null>(null);
   const [removing, setRemoving] = useState<AdminUser | null>(null);
   const [verifying, setVerifying] = useState<AdminUser | null>(null);
@@ -218,20 +220,22 @@ function UsersPage() {
           />
         }
         action={
-          <Button
-            className="min-h-11 max-lg:w-11 max-lg:px-0 max-lg:has-data-[icon=inline-start]:pl-0"
-            aria-label={download.isPending ? 'Exporting…' : 'Export users'}
-            variant="outline"
-            disabled={download.isPending}
-            onClick={() =>
-              download.mutate({ role: role === 'all' ? undefined : role, q })
-            }
-          >
-            <Download data-icon="inline-start" />
-            <span className="max-lg:sr-only">
-              {download.isPending ? 'Exporting…' : 'Export users'}
-            </span>
-          </Button>
+          !demo && (
+            <Button
+              className="min-h-11 max-lg:w-11 max-lg:px-0 max-lg:has-data-[icon=inline-start]:pl-0"
+              aria-label={download.isPending ? 'Exporting…' : 'Export users'}
+              variant="outline"
+              disabled={download.isPending}
+              onClick={() =>
+                download.mutate({ role: role === 'all' ? undefined : role, q })
+              }
+            >
+              <Download data-icon="inline-start" />
+              <span className="max-lg:sr-only">
+                {download.isPending ? 'Exporting…' : 'Export users'}
+              </span>
+            </Button>
+          )
         }
       />
       {(remove.error || download.error || verify.error) && (

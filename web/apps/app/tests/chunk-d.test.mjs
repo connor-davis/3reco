@@ -273,6 +273,7 @@ test('account deletion requires both password and the exact typed confirmation',
       },
     },
     '@hookform/resolvers/zod': { zodResolver: (value) => value },
+    '@/lib/api/app-config': { useAppConfig: () => ({ demo: false }) },
     '@/lib/api/privacy': {
       usePrivacyNotice: () => ready({ version: '2026-11', accepted: false }),
       useAcceptPrivacyNotice: () => ({}),

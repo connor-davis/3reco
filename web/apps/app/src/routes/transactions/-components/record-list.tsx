@@ -19,6 +19,7 @@ import { errorText, usePager } from '@/components/transactions/pager-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { useAppConfig } from '@/lib/api/app-config';
 import { useExport, type ExportKind } from '@/lib/api/exports';
 import { useRequest } from '@/lib/api/requests';
 import {
@@ -294,6 +295,9 @@ export function RecordList({
   const list = useTransactions(kind, pager.params);
   const totals = useTransactionTotals(kind, filters);
   const download = useExport(exportKind ?? 'transactions');
+  // The demo has no downloads at all.
+  const { demo } = useAppConfig();
+  const canExport = !readOnly && !demo;
 
   const shown = list.data?.items ?? [];
   const filtered = !!(q || range?.from || (!collectionsOnly && type !== 'all'));
@@ -413,7 +417,7 @@ export function RecordList({
                   onChange={setType}
                 />
               )}
-              {exportKind && !readOnly && (
+              {exportKind && canExport && (
                 <ChoiceSelect
                   label="Export format"
                   value={csv}
@@ -426,7 +430,7 @@ export function RecordList({
           }
           action={
             (exportKind || exportHint) &&
-            !readOnly && (
+            canExport && (
               <Button
                 variant="outline"
                 className="h-11 max-lg:w-11 max-lg:px-0 max-lg:has-data-[icon=inline-start]:pl-0"
@@ -450,7 +454,7 @@ export function RecordList({
             )
           }
         />
-        {exportHint && !readOnly && (
+        {exportHint && canExport && (
           <p
             id="transaction-export-hint"
             className="text-sm text-muted-foreground"

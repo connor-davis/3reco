@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { canManageTeam, canSeeTeam, roleLabel } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
+import { useAppConfig } from '@/lib/api/app-config';
 import type { BusinessRole } from '@/lib/api/types';
 import {
   useTeam,
@@ -82,6 +83,7 @@ function TeamPage({ businessId }: { businessId: string }) {
   const remove = useRemoveTeamMember();
   const resend = useResendInvite();
   const revoke = useRevokeInvite();
+  const { demo } = useAppConfig();
   const [search, setSearch] = useState('');
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<TeamMember | null>(null);
@@ -124,7 +126,7 @@ function TeamPage({ businessId }: { businessId: string }) {
   }
 
   function inviteActions(invite: TeamInvite): RowAction[] {
-    if (!owner && invite.role === 'owner') return [];
+    if (demo || (!owner && invite.role === 'owner')) return [];
     return [
       {
         label: 'Resend invitation',
@@ -221,10 +223,12 @@ function TeamPage({ businessId }: { businessId: string }) {
         title="Team"
         description="Invite people and manage access to your business."
         actions={
-          <Button onClick={() => setInviting(true)}>
-            <UserPlus />
-            Invite someone
-          </Button>
+          !demo && (
+            <Button onClick={() => setInviting(true)}>
+              <UserPlus />
+              Invite someone
+            </Button>
+          )
         }
       />
       <div className="space-y-4">

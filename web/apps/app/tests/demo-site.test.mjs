@@ -70,3 +70,35 @@ test('the banner is mounted above the app on every page', () => {
   const root = source('routes/__root.tsx');
   assert.ok(root.indexOf('<DemoBanner />') < root.indexOf('<AppShell>'));
 });
+
+test('downloads are hidden in the demo and kept everywhere else', () => {
+  const list = source('routes/transactions/-components/record-list.tsx');
+  assert.match(list, /const canExport = !readOnly && !demo;/);
+  assert.equal((list.match(/canExport/g) ?? []).length, 4);
+
+  const users = source('routes/admin/users.tsx');
+  assert.match(users, /action=\{\s*!demo && \(\s*<Button/);
+
+  const business = source('routes/business.tsx');
+  assert.match(business, /const canDownload = !readOnly && !demo;/);
+  assert.match(business, /\{canDownload && \(\s*<TabsTrigger value="data">/);
+  assert.match(business, /\{canDownload && \(\s*<TabsContent value="data">/);
+
+  const privacy = source('routes/profile/-components/privacy-panel.tsx');
+  assert.match(
+    privacy,
+    /\{!demo && \(\s*<section[^>]*>\s*<p[^>]*>\s*Download your profile/
+  );
+});
+
+test('team invitations are hidden in the demo and kept everywhere else', () => {
+  const team = source('routes/team.tsx');
+  assert.match(
+    team,
+    /actions=\{\s*!demo && \(\s*<Button onClick=\{\(\) => setInviting\(true\)\}>/
+  );
+  assert.match(
+    team,
+    /if \(demo \|\| \(!owner && invite\.role === 'owner'\)\) return \[\];/
+  );
+});

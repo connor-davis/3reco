@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { canViewBusiness } from '@/lib/access';
+import { useAppConfig } from '@/lib/api/app-config';
 import { useBusiness, useDownloadBusinessData } from '@/lib/api/business';
 import { useAuth } from '@/lib/auth/use-auth';
 import { initials } from '@/lib/format';
@@ -39,6 +40,8 @@ function BusinessPage() {
   const [logoOpen, setLogoOpen] = useState(false);
   const download = useDownloadBusinessData();
   const readOnly = !business?.can_edit;
+  const { demo } = useAppConfig();
+  const canDownload = !readOnly && !demo;
   const name = business?.business_name ?? '';
 
   return (
@@ -65,7 +68,7 @@ function BusinessPage() {
               <TabsTrigger value="business">Business</TabsTrigger>
               <TabsTrigger value="bank">Bank & payout</TabsTrigger>
               <TabsTrigger value="location">Location</TabsTrigger>
-              {!readOnly && (
+              {canDownload && (
                 <TabsTrigger value="data">Business data</TabsTrigger>
               )}
             </TabsList>
@@ -109,7 +112,7 @@ function BusinessPage() {
                 <LocationForm profile={business} business readOnly={readOnly} />
               </Panel>
             </TabsContent>
-            {!readOnly && (
+            {canDownload && (
               <TabsContent value="data">
                 <Panel
                   title="Business data"

@@ -16,8 +16,10 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/demo"
+	"github.com/connor-davis/3reco/internal/services/materials"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 	demostore "github.com/connor-davis/3reco/internal/stores/demo"
+	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
 )
 
 // demoCommand runs `3reco demo seed` or `3reco demo reset --yes`.
@@ -131,11 +133,12 @@ func demoSeed(ctx context.Context, cfg config.Config, db *database.DB) error {
 	store := demostore.New(db)
 
 	seeder := &demo.Seeder{
-		Config:  private,
-		BaseURL: "http://" + listener.Addr(),
-		Auth:    auth.New(db, users, mail.New(private), private),
-		Users:   users,
-		Store:   store,
+		Config:    private,
+		BaseURL:   "http://" + listener.Addr(),
+		Auth:      auth.New(db, users, mail.New(private), private),
+		Materials: materials.New(db, materialsstore.New(db)),
+		Users:     users,
+		Store:     store,
 	}
 
 	if err := seeder.Seed(ctx); err != nil {

@@ -117,6 +117,7 @@ function adminPage(list) {
         useDeleteUser: () => ({}),
         useSetBusinessVerified: () => ({}),
       },
+      '@/lib/api/app-config': { useAppConfig: () => ({ demo: false }) },
       '@/lib/api/exports': { useExport: () => ({}) },
       '@/lib/format': {
         plural: (count) => `${count} users`,

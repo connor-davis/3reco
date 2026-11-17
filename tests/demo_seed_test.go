@@ -9,8 +9,10 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/demo"
+	"github.com/connor-davis/3reco/internal/services/materials"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 	demostore "github.com/connor-davis/3reco/internal/stores/demo"
+	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
 	"github.com/connor-davis/3reco/tests/testutil"
 )
 
@@ -18,11 +20,12 @@ func demoSeeder(app *testutil.App) *demo.Seeder {
 	users := authstore.New(app.DB)
 
 	return &demo.Seeder{
-		Config:  app.Config,
-		BaseURL: app.URL,
-		Auth:    auth.New(app.DB, users, mail.New(app.Config), app.Config),
-		Users:   users,
-		Store:   demostore.New(app.DB),
+		Config:    app.Config,
+		BaseURL:   app.URL,
+		Auth:      auth.New(app.DB, users, mail.New(app.Config), app.Config),
+		Materials: materials.New(app.DB, materialsstore.New(app.DB)),
+		Users:     users,
+		Store:     demostore.New(app.DB),
 	}
 }
 
