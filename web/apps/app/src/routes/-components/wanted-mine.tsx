@@ -26,7 +26,7 @@ export function MyWanted() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Your wanted posts">
+    <Panel>
       <DataState
         query={query}
         isEmpty={!items.length}

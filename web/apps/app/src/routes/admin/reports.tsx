@@ -34,15 +34,6 @@ const actionLabels = {
   unsuspend: 'Unsuspend business',
 };
 
-function ordinal(count: number) {
-  const lastTwo = count % 100;
-  const suffix =
-    lastTwo >= 11 && lastTwo <= 13
-      ? 'th'
-      : ({ 1: 'st', 2: 'nd', 3: 'rd' }[count % 10] ?? 'th');
-  return `${count}${suffix}`;
-}
-
 function ReportsPage() {
   const query = useAdminReports();
   const resolve = useResolveReport();
@@ -106,8 +97,8 @@ function ReportsPage() {
                   </p>
                   {report.party_report_count > 1 && (
                     <p className="text-sm text-muted-foreground">
-                      {ordinal(report.party_report_count)} report on this
-                      business
+                      {report.party_report_count} reports on this business in
+                      total
                     </p>
                   )}
                   {report.target_kind === 'listing' && (

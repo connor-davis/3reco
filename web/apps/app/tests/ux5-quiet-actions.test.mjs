@@ -14,7 +14,7 @@ test('quiet actions preserve shared state, role gates and scrolling contracts', 
   );
   assert.match(
     source('routes/wanted.tsx'),
-    /defaultValue=\{user\?\.business_verified \? 'browse' : 'mine'\}/
+    /user\?\.business_verified && !mine\.data\?\.items\.length \? 'browse' : 'mine'/
   );
   assert.match(
     source('routes/-components/wanted-form.tsx'),
@@ -237,9 +237,9 @@ with sync_playwright() as p:
                 if role == 'admin':
                     visit('/admin/reports')
                     expect(page.get_by_text('Reported by Reporter Recycling',exact=True)).to_have_count(4)
-                    for text in ['3rd report on this business','11th report on this business','22nd report on this business']:
+                    for text in ['3 reports on this business in total','11 reports on this business in total','22 reports on this business in total']:
                         expect(page.get_by_text(text,exact=True)).to_be_visible()
-                    expect(page.get_by_text('1st report on this business',exact=True)).to_have_count(0)
+                    expect(page.get_by_text('1 reports on this business in total',exact=True)).to_have_count(0)
                     for label, count in [('Dismiss report',2),('Remove listing',1),('Suspend business',2),('Unsuspend business',1)]:
                         expect(page.get_by_role('button',name=label,exact=True)).to_have_count(count)
                     page.get_by_role('button',name='Remove listing',exact=True).click()

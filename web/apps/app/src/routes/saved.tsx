@@ -82,7 +82,7 @@ function SavedListings() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Saved listings">
+    <Panel>
       <DataState
         query={query}
         isEmpty={!items.length}
@@ -113,7 +113,7 @@ function FollowedStores() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Stores you follow">
+    <Panel>
       <DataState
         query={query}
         isEmpty={!items.length}

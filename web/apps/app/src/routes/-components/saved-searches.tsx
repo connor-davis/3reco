@@ -14,7 +14,7 @@ export function SavedSearches() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Saved searches">
+    <Panel>
       <p className="mb-3 text-sm text-muted-foreground">
         Get one alert when a new listing matches a material and price range.
       </p>
