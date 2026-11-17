@@ -4,11 +4,12 @@ import { useResource, useWrite, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
 
-export function useStock(params: Paging = {}) {
+export function useStock(params: Paging = {}, enabled = true) {
   return useResource<Page<T.StockItem>>(
     ['stock', params],
     `/stock${queryString(params)}`,
-    true
+    true,
+    enabled
   );
 }
 export function useStockItem(id: string) {

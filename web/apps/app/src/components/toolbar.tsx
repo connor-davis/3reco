@@ -13,6 +13,8 @@ type ToolbarProps = {
   activeFilters?: number;
   onClear?: () => void;
   action?: ReactNode;
+  // Keep the Filters button and sheet on wide screens too (the market page).
+  sheetOnDesktop?: boolean;
 };
 
 /** One search row; compact filters use the existing responsive bottom sheet. */
@@ -24,6 +26,7 @@ export function Toolbar({
   activeFilters = 0,
   onClear,
   action,
+  sheetOnDesktop = false,
 }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const compact = useIsMobile();
@@ -40,7 +43,7 @@ export function Toolbar({
         className="min-w-0 basis-0 sm:max-w-none"
       />
       {filters &&
-        (compact ? (
+        (compact || sheetOnDesktop ? (
           <>
             <Button
               variant="outline"
@@ -83,12 +86,13 @@ export function FilterSheet({
       title="Filters"
       description="Choose which results to show."
       footer={
-        <>
+        // Side by side, so the two buttons don't eat half a phone screen.
+        <div className="grid w-full grid-cols-2 gap-2">
           <Button variant="outline" onClick={onClear}>
             Clear
           </Button>
           <Button onClick={() => onOpenChange(false)}>Show results</Button>
-        </>
+        </div>
       }
     >
       <div className="flex flex-col gap-4 [&>*]:w-full">{children}</div>

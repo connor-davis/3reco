@@ -1,9 +1,19 @@
 import { canOpen } from '@/lib/access';
 import { useInbox } from '@/lib/api/messages';
+import { useStock } from '@/lib/api/stock';
 import { queryString, type Page } from '@/lib/api/paging';
 import { useResource } from '@/lib/api/resource';
 import type { TradeRequest } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
+
+/** True once a business has at least one stock lot; tabs use it to offer Add stock. */
+export function useHasStock() {
+  const { user } = useAuth();
+  const enabled = user?.role === 'business' && !!user.active_business_id;
+  const stock = useStock({ limit: 1 }, enabled);
+
+  return enabled && (stock.data?.items.length ?? 0) > 0;
+}
 
 /**
  * The small numbers on nav links and tabs. Messages counts threads with

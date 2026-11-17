@@ -20,11 +20,17 @@ export function ListingCard({
   // The small copy loads fast on a phone; old photos without one still answer
   // this URL with the full image.
   const cardImage = listing.thumb_url || listing.image_url;
+  const hasPhoto = !!cardImage && failedImage !== cardImage;
 
   return (
     <Card className="group/card relative flex flex-col gap-0 overflow-hidden rounded-2xl border bg-card py-0 shadow-[var(--shadow)] ring-0 dark:shadow-none">
-      <div className="relative flex overflow-hidden aspect-[4/3] items-center justify-center rounded-none bg-muted text-muted-foreground">
-        {cardImage && failedImage !== cardImage ? (
+      {/* No photo means a short card, so a page of them is not a wall of empty boxes. */}
+      <div
+        className={`relative flex items-center justify-center overflow-hidden rounded-none bg-muted text-muted-foreground ${
+          hasPhoto ? 'aspect-[4/3]' : 'h-[120px]'
+        }`}
+      >
+        {hasPhoto ? (
           <img
             src={cardImage}
             alt={listing.material_name}

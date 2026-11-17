@@ -38,6 +38,16 @@ export function parseMarketSearch(raw: Record<string, unknown>): MarketSearch {
   ) as MarketSearch;
 }
 
+/** How many filters beyond the search text are set; the Filters button shows it. */
+export function activeFilterCount(search: MarketSearch) {
+  return [
+    search.material_id,
+    search.min_price,
+    search.max_price,
+    search.max_km,
+  ].filter((value) => value !== undefined).length;
+}
+
 /** A change to a filter starts again from the first page. */
 export function changeFilter(
   current: MarketSearch,

@@ -159,13 +159,17 @@ function roleNav(role: Role | null): NavGroup[] {
 export type Tab = {
   label: string;
   to: string;
+  search?: Record<string, unknown>;
   icon: LucideIcon;
   raised?: boolean;
   badge?: 'messages';
 };
 
-/** Phone bottom tabs. A role only sees tabs it can open (map section 2.2). */
-export function tabsFor(role: Role | null): Tab[] {
+/**
+ * Phone bottom tabs. A role only sees tabs it can open (map section 2.2).
+ * Only a business that already holds stock gets the raised "Add stock" tab.
+ */
+export function tabsFor(role: Role | null, hasStock = false): Tab[] {
   const home: Tab = { label: 'Home', to: '/', icon: Home };
   const search: Tab = { label: 'Search', to: '/market', icon: Search };
   const inbox: Tab = {
@@ -182,12 +186,7 @@ export function tabsFor(role: Role | null): Tab[] {
       return [
         home,
         search,
-        {
-          label: 'Collect',
-          to: '/collections',
-          icon: ClipboardList,
-          raised: true,
-        },
+        { label: 'Collect', to: '/collections', icon: ClipboardList },
         inbox,
         account,
       ];
@@ -195,36 +194,33 @@ export function tabsFor(role: Role | null): Tab[] {
       return [
         home,
         search,
-        { label: 'Sell', to: '/stock', icon: Store, raised: true },
+        ...(hasStock
+          ? [
+              {
+                label: 'Add stock',
+                to: '/stock',
+                search: { new: true },
+                icon: Store,
+                raised: true,
+              },
+            ]
+          : []),
         inbox,
         account,
       ];
     case 'collector':
       return [
         home,
-        {
-          label: 'My sales',
-          to: '/transactions/sales',
-          icon: TrendingUp,
-          raised: true,
-        },
+        { label: 'My sales', to: '/transactions/sales', icon: TrendingUp },
         account,
       ];
     case 'guest':
-      return [
-        { label: 'Setup', to: '/setup', icon: UserPlus, raised: true },
-        account,
-      ];
+      return [{ label: 'Setup', to: '/setup', icon: UserPlus }, account];
     default:
       return [
         search,
         { label: 'Sign in', to: '/sign-in', icon: UserCircle },
-        {
-          label: 'Create account',
-          to: '/sign-up',
-          icon: UserPlus,
-          raised: true,
-        },
+        { label: 'Create account', to: '/sign-up', icon: UserPlus },
       ];
   }
 }
@@ -254,6 +250,15 @@ export function isRequestPath(pathname: string) {
 /** Chat screens run edge to edge, like a messenger. */
 export const isChatPath = (pathname: string) =>
   pathname.startsWith('/messages') || isRequestPath(pathname);
+
+/** A listing page or one chat thread: the phone tabs step aside for these. */
+export function hidesTabs(pathname: string) {
+  const [first, second, third] = pathname.split('/').filter(Boolean);
+  if (first === 'messages') return !!second;
+  if (first === 'market' && second === 'listing') return !!third;
+
+  return isRequestPath(pathname);
+}
 
 const pageTitles: Record<string, string> = {
   '': 'Dashboard',

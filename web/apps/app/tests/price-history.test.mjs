@@ -38,20 +38,13 @@ function chart(query, allowed = true) {
     Object.fromEntries(names.map((name) => [name, 'div']));
   return load('routes/market/-components/price-history.tsx', {
     recharts: tags(['CartesianGrid', 'Line', 'LineChart', 'XAxis', 'YAxis']),
-    '@/components/ui/card': tags([
-      'Card',
-      'CardContent',
-      'CardDescription',
-      'CardHeader',
-      'CardTitle',
-    ]),
+    '@/components/responsive-overlay': { ResponsiveOverlay: () => null },
     '@/components/ui/chart': tags([
       'ChartContainer',
       'ChartTooltip',
       'ChartTooltipContent',
     ]),
     '@/components/ui/button': { Button: 'button' },
-    '@/components/ui/skeleton': { Skeleton: 'div' },
     '@/lib/api/price-history': {
       useCanSeePrices: () => allowed,
       usePriceHistory: () => query,
@@ -60,21 +53,35 @@ function chart(query, allowed = true) {
   });
 }
 
-test('price trend shows the specified empty state and stays hidden without permission or a material', () => {
-  const query = {
+test('the trend line shows the latest priced week and nothing without a price, permission or material', () => {
+  const weeks = [
+    { period: '2026-11-02', avg_price: '19.50', status: 'available' },
+    { period: '2026-11-09', avg_price: '22.40', status: 'available' },
+    { period: '2026-11-16', avg_price: null, status: 'not_enough_deals' },
+  ];
+  const { PriceHistory, latestPrice, pricePoints } = chart({ data: { weeks } });
+  assert.equal(latestPrice(pricePoints(weeks)).avg_price, '22.40');
+  const html = renderToStaticMarkup(PriceHistory({ materialId: 'glass' }));
+  assert.match(html, /Avg R 22\.40\/kg, week of/);
+  assert.match(html, /See trend/);
+  assert.doesNotMatch(html, /Not enough deals/);
+
+  const empty = chart({
     data: {
       weeks: [
         { period: '2026-11-16', avg_price: null, status: 'not_enough_deals' },
       ],
     },
-  };
-  const { PriceHistory } = chart(query);
-  assert.match(
-    renderToStaticMarkup(PriceHistory({ materialId: 'glass' })),
-    /Not enough deals yet to show a price\./
+  });
+  assert.equal(
+    renderToStaticMarkup(empty.PriceHistory({ materialId: 'glass' })),
+    ''
   );
   assert.equal(PriceHistory({}), null);
-  assert.equal(chart(query, false).PriceHistory({ materialId: 'glass' }), null);
+  assert.equal(
+    chart({ data: { weeks } }, false).PriceHistory({ materialId: 'glass' }),
+    null
+  );
 });
 
 test('exact strings survive chart conversion and suppressed weeks remain gaps', () => {
@@ -99,21 +106,11 @@ test('exact strings survive chart conversion and suppressed weeks remain gaps', 
   );
 });
 
-test('price trend has loading and recoverable error states', () => {
-  assert.match(
-    renderToStaticMarkup(
-      chart({ isPending: true }).PriceHistory({ materialId: 'glass' })
-    ),
-    /Loading price trend/
-  );
-  const html = renderToStaticMarkup(
-    chart({ isError: true }).PriceHistory({ materialId: 'glass' })
-  );
-  assert.match(html, /Price trends could not be loaded/);
-  assert.match(html, /Try again/);
-});
-
-test('transaction live changes invalidate the aggregate', () => {
-  const { keysFor } = load('lib/live/connection.ts');
-  assert.ok(keysFor('transaction').some((key) => key[0] === 'price-history'));
+test('the trend line stays out of the page while loading or after an error', () => {
+  for (const state of [{ isPending: true }, { isError: true }]) {
+    assert.equal(
+      renderToStaticMarkup(chart(state).PriceHistory({ materialId: 'glass' })),
+      ''
+    );
+  }
 });

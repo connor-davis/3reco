@@ -107,8 +107,14 @@ with sync_playwright() as p:
             page.wait_for_load_state('networkidle')
             assert not errors, errors
             expect(page.locator('html')).to_have_class('dark' if mode == 'dark' else 'light')
-            expect(page.get_by_role('button', name='Save this search', exact=True)).to_be_enabled()
-            page.get_by_role('button', name='Save this search', exact=True).click()
+            # Phones keep Save inside the Filters sheet; wide screens have it in the results row.
+            if width < 1024:
+                page.get_by_role('button', name='Filters (4)', exact=True).click()
+                save = page.get_by_role('button', name='Save this search', exact=True)
+            else:
+                save = page.get_by_role('button', name='Save search', exact=True)
+            expect(save).to_be_enabled()
+            save.click()
             expect(page.get_by_text('Search saved. Manage it in Saved.', exact=True)).to_be_visible()
             assert writes == [{'material_id': 'glass', 'min_price': '7.0100', 'max_price': '9.9900'}], writes
             page.goto(base + '/saved')
@@ -122,13 +128,18 @@ with sync_playwright() as p:
             page.wait_for_load_state('networkidle')
             query = parse_qs(urlparse(page.url).query)
             assert set(query) == {'material_id', 'min_price', 'max_price'}, query
+            page.get_by_role('button', name='Filters (3)', exact=True).click()
             expect(page.get_by_role('textbox', name='Lowest R / kg', exact=True)).to_have_value('7.0100')
             expect(page.get_by_role('textbox', name='Highest R / kg', exact=True)).to_have_value('9.9900')
             page.goto(base + '/saved')
             page.get_by_role('button', name='Delete saved search for Glass', exact=True).click()
             expect(page.get_by_text('No saved searches yet', exact=True)).to_be_visible()
             page.goto(base + '/market')
-            expect(page.get_by_role('button', name='Save this search', exact=True)).to_be_disabled()
+            if width < 1024:
+                page.get_by_role('button', name='Filters', exact=True).click()
+                expect(page.get_by_role('button', name='Save this search', exact=True)).to_be_disabled()
+            else:
+                expect(page.get_by_role('button', name='Save search', exact=True)).to_have_count(0)
             assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth'), (mode, width, 'market overflow')
             assert not errors, errors
             # Observe loading before the response arrives, then fail it and retry.

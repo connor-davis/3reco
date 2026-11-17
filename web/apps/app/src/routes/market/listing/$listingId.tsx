@@ -236,7 +236,9 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 emptyTitle="Your cart"
                 emptyText="Add this material to your cart."
               >
+                {/* The tab bar is hidden here, so the actions sit at the screen edge. */}
                 <ActionBar
+                  className="max-lg:bottom-[env(safe-area-inset-bottom)]"
                   label={
                     <>
                       <p>
