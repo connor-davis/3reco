@@ -24,10 +24,13 @@ export function SaveSearch({
   if (!canSave) return null;
 
   const header = variant === 'header';
+  const sheet = variant === 'sheet';
   const button = (
     <Button
       variant="outline"
-      className={header ? 'ml-auto max-lg:hidden' : undefined}
+      className={
+        header ? 'ml-auto max-lg:hidden' : sheet ? 'w-full' : undefined
+      }
       disabled={
         !search.material_id ||
         !!priceRangeError(search.min_price, search.max_price) ||
@@ -55,9 +58,11 @@ export function SaveSearch({
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 text-sm ${
-        variant === 'sheet' ? 'lg:hidden' : 'mb-6'
-      }`}
+      className={
+        sheet
+          ? 'flex flex-col gap-2 border-t pt-4 text-sm lg:hidden'
+          : 'mb-6 flex flex-wrap items-center gap-2 text-sm'
+      }
     >
       {button}
       <p className="text-muted-foreground">

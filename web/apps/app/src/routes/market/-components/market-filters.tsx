@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ChoiceSelect } from '@/components/filters';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,22 @@ import {
 } from './market-search';
 
 const ANY = 'any';
+
+/** A small visible heading over one group in the Filters sheet. */
+export function FilterField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium">{label}</span>
+      {children}
+    </div>
+  );
+}
 
 /** A price box. It writes to the URL only once the text is a whole amount. */
 function PriceField({
@@ -38,7 +54,7 @@ function PriceField({
       aria-label={label}
       placeholder={label}
       aria-invalid={!validPrice(draft)}
-      className="w-36 shrink-0"
+      className="w-full min-w-0"
       value={draft}
       onChange={(event) => {
         const next = event.target.value.trim();
@@ -49,7 +65,7 @@ function PriceField({
   );
 }
 
-/** The page-local sort, small enough to share the first row on a phone. */
+/** The page-local sort: in the first row on wide screens, in the Filters sheet on a phone. */
 export function MarketSort({
   sort,
   onSort,
@@ -62,7 +78,7 @@ export function MarketSort({
       label="Sort this page"
       value={sort}
       onChange={onSort}
-      className="w-28 min-w-0 lg:w-auto lg:min-w-36"
+      className="w-full lg:w-auto"
       options={[
         { value: 'newest', label: 'Newest first' },
         { value: 'price', label: 'Price: low to high' },
@@ -86,45 +102,55 @@ export function MarketFilters({
 
   return (
     <>
-      <ChoiceSelect
-        label="Material"
-        value={search.material_id ?? ANY}
-        onChange={(value) =>
-          onChange({ material_id: value === ANY ? undefined : value })
-        }
-        options={[
-          { value: ANY, label: 'All materials' },
-          ...(materials.data ?? []).map((item) => ({
-            value: item.id,
-            label: item.name,
-          })),
-        ]}
-      />
-      <PriceField
-        label="Lowest R / kg"
-        value={search.min_price}
-        onCommit={(value) => onChange({ min_price: value || undefined })}
-      />
-      <PriceField
-        label="Highest R / kg"
-        value={search.max_price}
-        onCommit={(value) => onChange({ max_price: value || undefined })}
-      />
-      {distance.data?.enabled && distance.data.has_origin && (
+      <FilterField label="Material">
         <ChoiceSelect
-          label="Distance"
-          value={String(search.max_km ?? ANY)}
+          label="Material"
+          className="w-full"
+          value={search.material_id ?? ANY}
           onChange={(value) =>
-            onChange({ max_km: value === ANY ? undefined : Number(value) })
+            onChange({ material_id: value === ANY ? undefined : value })
           }
           options={[
-            { value: ANY, label: 'Any distance' },
-            ...DISTANCES.map((km) => ({
-              value: String(km),
-              label: `Within ${km} km`,
+            { value: ANY, label: 'All materials' },
+            ...(materials.data ?? []).map((item) => ({
+              value: item.id,
+              label: item.name,
             })),
           ]}
         />
+      </FilterField>
+      <FilterField label="Price (R / kg)">
+        <div className="grid grid-cols-2 gap-2">
+          <PriceField
+            label="Lowest R / kg"
+            value={search.min_price}
+            onCommit={(value) => onChange({ min_price: value || undefined })}
+          />
+          <PriceField
+            label="Highest R / kg"
+            value={search.max_price}
+            onCommit={(value) => onChange({ max_price: value || undefined })}
+          />
+        </div>
+      </FilterField>
+      {distance.data?.enabled && distance.data.has_origin && (
+        <FilterField label="Distance">
+          <ChoiceSelect
+            label="Distance"
+            className="w-full"
+            value={String(search.max_km ?? ANY)}
+            onChange={(value) =>
+              onChange({ max_km: value === ANY ? undefined : Number(value) })
+            }
+            options={[
+              { value: ANY, label: 'Any distance' },
+              ...DISTANCES.map((km) => ({
+                value: String(km),
+                label: `Within ${km} km`,
+              })),
+            ]}
+          />
+        </FilterField>
       )}
       {rangeError && (
         <p role="alert" className="basis-full text-sm text-destructive">

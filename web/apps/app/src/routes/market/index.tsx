@@ -6,10 +6,15 @@ import { ListingCard } from '@/components/listing-card';
 import { ButtonRow } from '@/components/button-row';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useListings } from '@/lib/api/listings';
 import { filterListings } from './-components/filter-listings';
 import { Toolbar } from '@/components/toolbar';
-import { MarketFilters, MarketSort } from './-components/market-filters';
+import {
+  FilterField,
+  MarketFilters,
+  MarketSort,
+} from './-components/market-filters';
 import { SaveSearch } from './-components/save-search';
 import { PriceHistory } from './-components/price-history';
 import {
@@ -37,6 +42,9 @@ function MarketPage() {
     : filterListings(query.data?.items ?? [], sort);
   const go = (next: MarketSearch) =>
     void navigate({ to: '/market', search: next, replace: true });
+  // A phone row only fits search and Filters, so sort moves into the sheet there.
+  const phone = useIsMobile();
+  const sortControl = <MarketSort sort={sort} onSort={setSort} />;
 
   return (
     <>
@@ -52,9 +60,12 @@ function MarketPage() {
           activeFilters={activeFilterCount(search)}
           onClear={() => go({ q: search.q })}
           sheetOnDesktop
-          action={<MarketSort sort={sort} onSort={setSort} />}
+          action={phone ? undefined : sortControl}
           filters={
             <>
+              {phone && (
+                <FilterField label="Sort by">{sortControl}</FilterField>
+              )}
               <MarketFilters
                 search={search}
                 onChange={(change) => go(changeFilter(search, change))}

@@ -56,11 +56,12 @@ test('the Filters count covers material, prices and distance, not the search tex
   );
 });
 
-test('the market page has no impact banner and keeps sort in the first row', () => {
+test('the market page has no impact banner; sort is in the first row, or the sheet on a phone', () => {
   const page = source('routes/market/index.tsx');
   assert.doesNotMatch(page, /Community impact|useStats/);
   assert.match(page, /sheetOnDesktop/);
-  assert.match(page, /action=\{<MarketSort/);
+  assert.match(page, /action=\{phone \? undefined : sortControl\}/);
+  assert.match(page, /<FilterField label="Sort by">\{sortControl\}/);
   assert.match(page, /variant="header"/);
 });
 

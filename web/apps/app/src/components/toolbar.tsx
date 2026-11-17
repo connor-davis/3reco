@@ -86,12 +86,13 @@ export function FilterSheet({
       title="Filters"
       description="Choose which results to show."
       footer={
-        <>
+        // Side by side, so the two buttons don't eat half a phone screen.
+        <div className="grid w-full grid-cols-2 gap-2">
           <Button variant="outline" onClick={onClear}>
             Clear
           </Button>
           <Button onClick={() => onOpenChange(false)}>Show results</Button>
-        </>
+        </div>
       }
     >
       <div className="flex flex-col gap-4 [&>*]:w-full">{children}</div>
