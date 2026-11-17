@@ -13,7 +13,7 @@ import {
 import { navFor, tabsFor, type NavLink } from '@/lib/nav';
 import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
-import { useBadgeCounts } from './use-badge-counts';
+import { useBadgeCounts, useHasStock } from './use-badge-counts';
 
 const tabClass = cn(
   'relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5',
@@ -37,8 +37,9 @@ export function BottomTabs() {
     select: (state) => state.location.pathname,
   });
   const counts = useBadgeCounts();
+  const hasStock = useHasStock();
   // "More" takes the Account tab's place; the account link lives in the sheet.
-  const tabs = tabsFor(role).filter((tab) => tab.label !== 'Account');
+  const tabs = tabsFor(role, hasStock).filter((tab) => tab.label !== 'Account');
 
   function current(to: string) {
     if (to === '/') return pathname === '/';
@@ -52,6 +53,7 @@ export function BottomTabs() {
           <li key={tab.to} className="flex flex-1">
             <Link
               to={tab.to}
+              search={tab.search}
               aria-current={current(tab.to) ? 'page' : undefined}
               className={cn(tabClass, tab.raised && 'text-foreground')}
             >

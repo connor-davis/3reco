@@ -165,7 +165,7 @@ with sync_playwright() as p:
                 assert any(path.startswith('/transactions') and query.get('limit') == ['20'] for path, query in requests)
                 assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
                 content = page.locator('#main-content > div').last
-                expected_padding = '88px' if width < 1024 else '32px'
+                expected_padding = '52px' if width < 1024 else '32px'
                 assert content.evaluate('(el) => getComputedStyle(el).paddingBottom') == expected_padding
                 assert content.evaluate('(el) => getComputedStyle(el).flexGrow') == '0'
                 page.get_by_role('tab', name='Bought', exact=True).click()

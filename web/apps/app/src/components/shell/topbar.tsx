@@ -1,7 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
-import { IconButton } from '@/components/icon-button';
 import { LinkButton } from '@/components/link-button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -68,14 +67,6 @@ export function Topbar({ onSearch }: TopbarProps) {
           </span>
           <Kbd>Ctrl K</Kbd>
         </Button>
-        <IconButton
-          label="Search"
-          variant="outline"
-          className="min-[1020px]:hidden"
-          onClick={onSearch}
-        >
-          <Search />
-        </IconButton>
         <ThemeToggle />
         {!user ? (
           <LinkButton to="/sign-in">Sign in</LinkButton>

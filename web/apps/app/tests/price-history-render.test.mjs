@@ -72,8 +72,6 @@ with sync_playwright() as p:
                 elif path.endswith('/price-history'):
                     state['calls'] += 1
                     if state['kind'] == 'error':
-                        expect(page.get_by_label('Loading price trend', exact=True)).to_be_visible()
-                        state['loading'] = True
                         body, code = {'message': 'Unavailable'}, 400
                     else:
                         body = {'weeks': [{'period': str(date(2026, 8, 31) + timedelta(weeks=i)), 'avg_price': '6.00' if i % 2 == 0 and state['kind'] == 'prices' else None, 'status': 'available' if i % 2 == 0 and state['kind'] == 'prices' else 'not_enough_deals'} for i in range(12)]}
@@ -91,13 +89,20 @@ with sync_playwright() as p:
             page.on('console', lambda message: errors.append(message.text) if message.type == 'error' and '400 (Bad Request)' not in message.text else None)
             page.goto(base + '/market?material_id=glass')
             page.wait_for_load_state('networkidle')
-            expect(page.get_by_role('heading', name='Price trend', exact=True)).to_be_visible()
-            expect(page.get_by_text('Not enough deals yet to show a price.', exact=True)).to_be_visible()
+            trend = page.get_by_role('button', name='See trend', exact=True)
+            # Too few deals: no card, no empty text, no trend line.
+            expect(trend).to_have_count(0)
+            expect(page.get_by_text('Not enough deals', exact=False)).to_have_count(0)
+            expect(page.get_by_role('heading', name='Price trend', exact=True)).to_have_count(0)
             expect(page.locator('html')).to_have_class(mode)
             assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth'), (mode, width, 'empty overflow')
             state['kind'] = 'prices'
             page.reload()
             page.wait_for_load_state('networkidle')
+            expect(page.get_by_text('Avg R 6.00/kg, week of', exact=False)).to_be_visible()
+            expect(page.locator('[data-chart]')).to_have_count(0)
+            trend.click()
+            expect(page.get_by_role('heading', name='Price trend', exact=True)).to_be_visible()
             expect(page.locator('[data-chart]')).to_be_visible()
             for path in page.locator('.recharts-line path').all():
                 shape = path.get_attribute('d') or ''
@@ -111,20 +116,18 @@ with sync_playwright() as p:
             assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth'), (mode, width, 'chart overflow')
             state['kind'] = 'error'
             page.reload()
-            expect(page.get_by_text('Price trends could not be loaded.', exact=True)).to_be_visible()
-            assert state['loading']
-            state['kind'] = 'empty'
-            page.get_by_role('button', name='Try again', exact=True).click()
-            expect(page.get_by_text('Not enough deals yet to show a price.', exact=True)).to_be_visible()
+            page.wait_for_load_state('networkidle')
+            expect(trend).to_have_count(0)
+            expect(page.get_by_text('Price trends could not be loaded.', exact=True)).to_have_count(0)
             calls = state['calls']
             page.goto(base + '/market')
             page.wait_for_load_state('networkidle')
-            expect(page.get_by_role('heading', name='Price trend', exact=True)).to_have_count(0)
+            expect(trend).to_have_count(0)
             assert state['calls'] == calls
             state['role'] = 'collector'
             page.goto(base + '/market?material_id=glass')
             page.wait_for_load_state('networkidle')
-            expect(page.get_by_role('heading', name='Price trend', exact=True)).to_have_count(0)
+            expect(trend).to_have_count(0)
             assert state['calls'] == calls
             assert not errors, errors
             context.close()

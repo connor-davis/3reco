@@ -49,16 +49,35 @@ function PriceField({
   );
 }
 
-/** Material, price and distance filters, then the page-local sort. */
-export function MarketFilters({
-  search,
+/** The page-local sort, small enough to share the first row on a phone. */
+export function MarketSort({
   sort,
   onSort,
+}: {
+  sort: string;
+  onSort: (sort: string) => void;
+}) {
+  return (
+    <ChoiceSelect
+      label="Sort this page"
+      value={sort}
+      onChange={onSort}
+      className="w-28 min-w-0 lg:w-auto lg:min-w-36"
+      options={[
+        { value: 'newest', label: 'Newest first' },
+        { value: 'price', label: 'Price: low to high' },
+        { value: 'available', label: 'Most available' },
+      ]}
+    />
+  );
+}
+
+/** Material, price and distance filters; they live in the Filters sheet. */
+export function MarketFilters({
+  search,
   onChange,
 }: {
   search: MarketSearch;
-  sort: string;
-  onSort: (sort: string) => void;
   onChange: (change: Partial<MarketSearch>) => void;
 }) {
   const materials = useMaterialCatalog();
@@ -107,16 +126,6 @@ export function MarketFilters({
           ]}
         />
       )}
-      <ChoiceSelect
-        label="Sort this page"
-        value={sort}
-        onChange={onSort}
-        options={[
-          { value: 'newest', label: 'Newest first' },
-          { value: 'price', label: 'Price: low to high' },
-          { value: 'available', label: 'Most available' },
-        ]}
-      />
       {rangeError && (
         <p role="alert" className="basis-full text-sm text-destructive">
           {rangeError}

@@ -15,7 +15,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppSidebar } from './app-sidebar';
 import { BottomTabs } from './bottom-tabs';
 import { Topbar } from './topbar';
-import { isAuthPath, isChatPath, pageTitleFor } from '@/lib/nav';
+import { hidesTabs, isAuthPath, isChatPath, pageTitleFor } from '@/lib/nav';
 import { useLiveEvents } from '@/lib/live/use-live';
 import { GuestOnly } from '@/lib/auth/guest-only';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -27,10 +27,11 @@ const CommandSearch = lazy(() =>
   }))
 );
 
-const chatPad = 'pb-[3.25rem] lg:pb-0';
-// Phone padding clears the tabs, raised action and device safe area.
+// The inbox list keeps its tabs, so it clears them.
+const chatTabsPad = 'pb-[3.25rem] lg:pb-0';
+// Phone padding clears the tab bar and the device safe area.
 const pagePad = cn(
-  'px-5 pt-3.5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-8 lg:px-8',
+  'px-5 pt-3.5 pb-[calc(52px+env(safe-area-inset-bottom))] sm:px-6 sm:pt-8 lg:px-8',
   'lg:pt-10 lg:pb-8'
 );
 
@@ -59,6 +60,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const bare = isAuthPath(pathname);
   // Chat screens run edge to edge, like a messenger, so they skip the page padding.
   const chat = isChatPath(pathname);
+  // A thread or a listing has its own pinned actions, so the tab bar steps aside.
+  const noTabs = hidesTabs(pathname);
+  const chatPad = noTabs ? 'pb-0' : chatTabsPad;
 
   // Set the fallback before route effects apply the loaded store or listing name.
   useLayoutEffect(() => {
@@ -117,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {children}
             </div>
           </SidebarInset>
-          <BottomTabs />
+          {!noTabs && <BottomTabs />}
           {searchLoaded && (
             <Suspense fallback={null}>
               <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} />

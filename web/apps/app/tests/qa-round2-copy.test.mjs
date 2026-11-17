@@ -43,7 +43,6 @@ test('formatCo2 says CO₂e in kg, from a number or exact text', () => {
 test('every impact line goes through formatCo2', () => {
   for (const path of [
     '../src/routes/index.tsx',
-    '../src/routes/market/index.tsx',
     '../src/routes/about.tsx',
     '../src/components/dialogs/impact-dialog.tsx',
   ]) {

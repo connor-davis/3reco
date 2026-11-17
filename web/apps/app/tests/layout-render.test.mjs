@@ -162,7 +162,9 @@ with sync_playwright() as p:
                         if width < 1024:
                             box = bar.bounding_box()
                             assert abs(box['x']) < 1 and abs(box['width'] - width) < 1
-                            assert abs(box['y'] + box['height'] - (1000 - 52)) < 2
+                            # A listing page hides the tab bar, so its actions sit at the screen edge.
+                            tab_height = 0 if route.startswith('/market/listing/') else 52
+                            assert abs(box['y'] + box['height'] - (1000 - tab_height)) < 2
                     if route == '/market/store/seller':
                         buttons = page.locator('header [data-slot="button-row"] button, header [data-slot="button-row"] a')
                         # Sharing, moderation, follow, cart and contact stay together.
@@ -188,11 +190,19 @@ with sync_playwright() as p:
                             bar = page.locator('[data-slot="action-bar"]').bounding_box()
                             assert last_card['y'] + last_card['height'] <= bar['y'] + 1, 'stacked actions cover last card'
                     if route == '/market':
-                        for name in ['Material', 'Distance', 'Lowest R / kg', 'Highest R / kg', 'Sort this page']:
+                        # Sort stays in the first row; the other filters sit in the Filters sheet.
+                        sort = page.get_by_label('Sort this page', exact=True)
+                        expect(sort).to_be_visible()
+                        box = sort.bounding_box()
+                        assert 0 <= box['x'] and box['x'] + box['width'] <= width, f'market sort off screen {width} {mode}'
+                        page.get_by_role('button', name=re.compile('^Filters')).click()
+                        for name in ['Material', 'Distance', 'Lowest R / kg', 'Highest R / kg']:
                             control = page.get_by_label(name, exact=True)
                             expect(control).to_be_visible()
                             box = control.bounding_box()
                             assert 0 <= box['x'] and box['x'] + box['width'] <= width, f'market filter {name} off screen {width} {mode}'
+                        page.keyboard.press('Escape')
+                        assert 'Community impact' not in page.locator('main').inner_text(), 'market has no impact banner'
                     if route in ['/market', '/market/store/seller', '/market/listing/stock']:
                         cards = page.locator('[data-slot="card"]').filter(has=page.locator('h3'))
                         assert cards.count() > 0

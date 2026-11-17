@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDebounced } from '@/lib/use-debounced';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { PackageOpen, Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -27,6 +27,10 @@ import type { StockItem } from '@/lib/api/types';
 import { formatKg, formatRate, toGrams, plural } from '@/lib/format';
 
 export const Route = createFileRoute('/stock')({
+  // The phone "Add stock" tab links here with ?new=true to open the form.
+  validateSearch: (raw: Record<string, unknown>) => ({
+    new: raw.new === true || raw.new === 'true' ? true : undefined,
+  }),
   component: () => (
     <Guarded page="stock">
       <StockPage />
@@ -128,6 +132,17 @@ function StockPage() {
     setEditing(item);
     setFormOpen(true);
   }
+
+  // Open the form once for a ?new=true link, then drop the flag so a refresh
+  // or the back button does not open it again.
+  const wantsNew = Route.useSearch().new;
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!wantsNew) return;
+    openForm();
+    void navigate({ to: '/stock', search: { new: undefined }, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsNew]);
 
   function actions(item: StockItem) {
     // Two lots can share a material, so the name carries weight and price.

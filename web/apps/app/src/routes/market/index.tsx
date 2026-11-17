@@ -1,22 +1,19 @@
 import { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Leaf, SearchX } from 'lucide-react';
+import { SearchX } from 'lucide-react';
 import { CardsSkeleton, DataState } from '@/components/data-state';
-import { SearchBox } from '@/components/filters';
 import { ListingCard } from '@/components/listing-card';
 import { ButtonRow } from '@/components/button-row';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useListings } from '@/lib/api/listings';
-import { useStats } from '@/lib/api/stats';
-import { formatKg, plural } from '@/lib/format';
-import { formatCo2 } from '@/lib/impact';
 import { filterListings } from './-components/filter-listings';
-import { MarketFilters } from './-components/market-filters';
+import { Toolbar } from '@/components/toolbar';
+import { MarketFilters, MarketSort } from './-components/market-filters';
 import { SaveSearch } from './-components/save-search';
 import { PriceHistory } from './-components/price-history';
 import {
+  activeFilterCount,
   changeFilter,
   parseMarketSearch,
   priceRangeError,
@@ -35,7 +32,6 @@ function MarketPage() {
   const [sort, setSort] = useState('newest');
   const rangeError = priceRangeError(search.min_price, search.max_price);
   const query = useListings(search, !rangeError, { keepPrevious: true });
-  const stats = useStats();
   const results = rangeError
     ? []
     : filterListings(query.data?.items ?? [], sort);
@@ -48,35 +44,31 @@ function MarketPage() {
         title="Find your next material."
         description="Materials from local recyclers. Prices in R / kg."
       />
-      <DataState
-        query={stats}
-        icon={Leaf}
-        emptyTitle="Community impact"
-        emptyText="Completed trades appear here."
-        skeleton={<Skeleton className="h-[46px] rounded-lg" />}
-      >
-        {stats.data && (
-          <p className="rounded-lg border bg-muted/50 px-4 py-3 text-sm">
-            Community impact: {formatKg(stats.data.total_kg)} diverted ·{' '}
-            {formatCo2(stats.data.co2_kg)} · {plural(stats.data.deals, 'trade')}
-          </p>
-        )}
-      </DataState>
-      <div className="my-6 flex flex-wrap items-center gap-2 sm:gap-3">
-        <SearchBox
+      <div className="my-6">
+        <Toolbar
           label="Search materials or stores"
           value={search.q ?? ''}
           onChange={(value) => go(changeFilter(search, { q: value }))}
-        />
-        <MarketFilters
-          search={search}
-          sort={sort}
-          onSort={setSort}
-          onChange={(change) => go(changeFilter(search, change))}
+          activeFilters={activeFilterCount(search)}
+          onClear={() => go({ q: search.q })}
+          sheetOnDesktop
+          action={<MarketSort sort={sort} onSort={setSort} />}
+          filters={
+            <>
+              <MarketFilters
+                search={search}
+                onChange={(change) => go(changeFilter(search, change))}
+              />
+              <SaveSearch search={search} variant="sheet" />
+            </>
+          }
         />
       </div>
-      <SaveSearch search={search} />
-      <PriceHistory materialId={search.material_id} />
+      {/* The trend line and, on wide screens, Save search; nothing when both are empty. */}
+      <div className="-mt-2 mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 empty:hidden">
+        <PriceHistory materialId={search.material_id} />
+        {search.material_id && <SaveSearch search={search} variant="header" />}
+      </div>
       <DataState
         query={query}
         isEmpty={!results.length}
