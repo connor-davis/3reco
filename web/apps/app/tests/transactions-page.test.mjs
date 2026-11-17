@@ -43,6 +43,9 @@ function routePage(path, role, search = {}) {
       }),
     },
     './-components/record-list': { RecordList: 'RecordList' },
+    '@/components/dialogs/recycling-record-dialog': {
+      RecyclingRecordButton: 'RecyclingRecordButton',
+    },
   });
   return {
     route: module.Route,
@@ -81,6 +84,7 @@ test('validated transaction filters select their list and export without changin
       filter === 'all' ? 'Pick Bought or Sold to export' : undefined
     );
     assert.equal(props.typeFilter, false);
+    assert.equal(props.actions.type, 'RecyclingRecordButton');
   }
   for (const role of ['admin', 'staff']) {
     const props = routePage('routes/transactions/index.tsx', role, {
@@ -90,6 +94,7 @@ test('validated transaction filters select their list and export without changin
     assert.equal(props.exportKind, 'transactions');
     assert.equal(props.typeFilter, true);
     assert.equal(props.businessFilter, undefined);
+    assert.equal(props.actions, undefined);
   }
 });
 

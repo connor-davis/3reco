@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -11,13 +12,16 @@ export function useResource<T>(
   key: QueryKey,
   path: string,
   privateQuery = false,
-  enabled = true
+  enabled = true,
+  { keepPrevious = false }: { keepPrevious?: boolean } = {}
 ) {
   const { user } = useAuth();
   return useQuery({
     queryKey: [...key, ...(privateQuery ? [user?.id] : [])],
     queryFn: ({ signal }) => api<T>(path, { signal }),
     enabled: enabled && (!privateQuery || !!user),
+    placeholderData:
+      keepPrevious && !privateQuery ? keepPreviousData : undefined,
     retry: (count, error) =>
       count < 2 && !('status' in error && Number(error.status) < 500),
   });

@@ -1,7 +1,114 @@
 # Code map
 
+## Business address lookup
+
+| Job | Owner |
+| --- | --- |
+| Nominatim HTTP, private error sentinels and process-wide one-request-per-second limit | `internal/platform/geocode/nominatim.go` |
+| Persistent normalized address cache, successful points and daily failure retry dates | `internal/stores/geocode/geocode.go`, `internal/platform/database/migrations/0043_geocode_cache.sql` |
+| Address normalization, cached lookup, demo/off guard and startup backfill at 15-second intervals | `internal/services/geocode/geocode.go`; startup in `internal/api/server.go` |
+| Post-commit business placement, clearing stale points and conditional address-matching point writes | `internal/services/business/business.go`, `internal/stores/businesses/geocode.go` |
+| Fake HTTP provider, cache reuse/retry, private point writes, caller isolation, startup backfill and off/demo checks | `internal/platform/geocode/nominatim_test.go`, `internal/services/geocode/geocode_test.go`, `tests/geocode_test.go` |
+
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
+
+## Demo site
+
+| Job | Owner |
+| --- | --- |
+| `THREERECO_DEMO` flag and the start-up guards (database name ends `_demo`, bucket has `demo`, no mail, push or dev settings) | `internal/platform/config/demo.go` (`CheckDemo`), called by `withDB` in `cmd/3reco/main.go` |
+| Public `GET /api/config`, blocked routes (sign-up, password reset, exports, privacy), `noindex` header, meta tag and `robots.txt` | `internal/api/demo.go`; wired in `internal/api/server.go` and `internal/api/web.go` |
+| Mail logs the subject only; push stays off | `internal/platform/mail/mail.go`, `internal/services/push/push.go` |
+| Fictional data and the seed order (materials, people, stock, trades, collections, extras), run through the routes of a private local server | `internal/services/demo/{data,seed,seed_trade,client}.go` |
+| Counts, verify and schema wipe | `internal/stores/demo/demo.go`; bucket emptying in `internal/platform/storage/storage.go` (`Clear`) |
+| `3reco demo seed` and `3reco demo reset --yes` | `cmd/3reco/demo.go` |
+| Compose file, env example and nightly reset | `deployments/docker-compose.demo.yml`, `deployments/.env.demo.example`, `deployments/demo/reset.sh` |
+| Banner on every page, one-click sign-ins, hidden sign-up and Alerts tab, runtime config query | `web/apps/app/src/components/{demo-banner,demo-logins}.tsx`, `src/lib/demo-logins.ts`, `src/lib/api/app-config.ts`, `src/routes/{__root,sign-in}.tsx`, `src/routes/profile/index.tsx` |
+| Guards, config route, blocks, robots, seed counts and logins; web banner and buttons | `tests/demo_{config,routes,seed}_test.go`, `web/apps/app/tests/demo-site.test.mjs` |
+
+## Reports and blocks
+
+| Job | Owner |
+| --- | --- |
+| Business blocks, private reports and active uniqueness; suspension columns; shared `contact_allowed` and team alert predicate; party-only block events and audit triggers | `internal/platform/database/migrations/0041_report_block.sql` |
+| Caller-scoped block/report SQL, admin queue, report locks, unlisting, suspension and explicit admin audit lines | `internal/stores/moderation/moderation.go` |
+| Manager/owner block and report rules, fixed reasons, private statuses, admin resolution and generic `report_closed` notices; shared contact guard | `internal/services/moderation/moderation.go`, notification type in `internal/services/notifications/notifications.go` |
+| `/api/blocks`, `/api/reports`, admin queue/resolution and unsuspend endpoints with caller and admin guards | `internal/api/moderation/handler.go`; registration in `internal/api/server.go` |
+| New-contact checks for requests, offers, accepts, messages, wanted replies, cart holds and follows; old history and exits remain readable/available | `internal/services/requests/{requests,state,messages}.go`, `internal/services/wanted/wanted.go`, `internal/services/market/cart.go`, `internal/services/favourites/favourites.go` |
+| Block/suspension discovery filtering and personal alert suppression across business memberships | `internal/stores/market/{listings,cart}.go`, `internal/stores/stores/profile.go`, `internal/stores/wanted/wanted.go`, `internal/stores/stock/{stock,searches,import}.go` |
+| Shared Report and Block/Unblock menus on listing/store/chat, report overlay, block confirmation and typed hooks | `web/apps/app/src/components/moderation-actions.tsx`, `src/components/dialogs/report-dialog.tsx`, `src/lib/api/{blocks,reports}.ts` |
+| Manager/owner Blocked profile tab, confirmed unblock and own report statuses | `web/apps/app/src/routes/profile/index.tsx`, `src/routes/profile/-components/blocked-panel.tsx` |
+| Admin-only reports queue, confirmed dismiss/unlist/suspend/unsuspend and navigation/access guards | `web/apps/app/src/routes/admin/reports.tsx`, `src/lib/{access,nav}.ts` |
+| Block-event cache invalidation for discovery, stores, wanted, requests, chats, cart and blocks; reports never have realtime events | `web/apps/app/src/lib/live/connection.ts` |
+| Block direction/team isolation, contact and history rules, alert filtering, private reports, admin audit/notices, suspension/reversal and id-only live routing; web dialogs, hooks and gating | `tests/report_block_test.go`, `web/apps/app/tests/report-block.test.mjs`; team chat sender regression in `src/components/chat/market.test.mjs`, store action layout in `tests/layout-render.test.mjs` |
+
+## Seller stats
+
+| Job | Owner |
+| --- | --- |
+| Unique signed-in account/listing/Johannesburg-day views, kept for lifetime totals and cascaded on stock deletion; stock/day aggregation and human system-message audit lookup indexes | `internal/platform/database/migrations/0042_seller_stats.sql` |
+| Successful visible detail view recording, all-workspace team/admin exclusion, owner-scoped 7/30-day and lifetime counts, 90-day first seller reply with human audit actor for system events | `internal/stores/stats/seller.go`; detail seam in `internal/services/market/listings.go` |
+| Active business member-only `GET /api/stats/seller`, with no party parameter | `internal/services/stats/seller.go`, `internal/api/stats/seller.go`; registration in `internal/api/stats/handler.go` |
+| Public boolean reply badge on listing/store details (at least five requests, half within 24 hours); no view or reply counts | `internal/services/{market/listings,stores/profile}.go`, `internal/stores/{market/listings,stores/profile}.go`; shared `web/apps/app/src/components/badges.tsx` |
+| Private listing views panel, per-business/person cache, refresh on dashboard mount and request/stock events | `web/apps/app/src/routes/-dashboard/seller-stats.tsx`, `src/routes/index.tsx`, `src/lib/api/stats.ts`, `src/lib/live/connection.ts` |
+| Deduplication, day windows, view exclusions, active-party isolation, badge edges, actor attribution; panel states and responsive badge rendering | `tests/seller_stats_test.go`, `web/apps/app/tests/seller-stats.test.mjs`, `seller-stats-render.test.mjs` |
+
+## Price history
+
+| Job | Owner |
+| --- | --- |
+| Twelve Monday-start UTC weeks of completed b2b trades, numeric weight-weighted per-kg prices; SQL hides weeks below 5 deals / 3 selling businesses, with no identities or counts | `internal/stores/stats/prices.go` |
+| Business members, admin and staff only; fixed weekly window and suppression thresholds; `GET /api/materials/:id/price-history` | `internal/services/stats/prices.go`, `internal/api/stats/prices.go`; registration in `internal/api/stats/handler.go` |
+| Price-trend notice and version requiring re-acceptance; matching version on account creation and invite acceptance | `internal/platform/config/privacy.go`, `tests/privacy_test.go`, `web/apps/app/src/routes/sign-up.tsx`, `src/routes/accept-invite.tsx`; invite regression in `web/apps/app/tests/team-render.test.mjs` |
+| Single-material market card, line chart with gaps and exact displayed strings, client key and stale time | `web/apps/app/src/routes/market/-components/price-history.tsx`, `src/lib/api/price-history.ts`; transaction invalidation in `src/lib/live/connection.ts` |
+| Thresholds, exclusions, exact average, anonymous projection, caller access and same aggregate for participants and outsiders; web states and responsive themes | `tests/price_history_test.go`, `web/apps/app/tests/price-history.test.mjs`, `web/apps/app/tests/price-history-render.test.mjs` |
+
+## Quick replies
+
+| Job | Owner |
+| --- | --- |
+| One list per person (`users.id`), used in every chat; max 20 replies of 500 characters, text trimmed | `internal/platform/database/migrations/0039_quick_replies.sql`, `internal/services/quickreplies/quickreplies.go` |
+| Caller-scoped list/create/update/delete (other people's ids answer 404); the limit is checked under a lock on the person's row | `internal/stores/quickreplies/quickreplies.go`, `internal/api/quickreplies/handler.go`; registration in `internal/api/server.go` |
+| Menu in the chat footer: tap fills the message box, never sends; add, edit and delete from the same menu; client hooks (loads on open and after a change, no live events) | `web/apps/app/src/components/chat/quick-replies-menu.tsx`, `src/lib/api/quick-replies.ts` |
+| CRUD, other-person isolation, empty and long text, the 21st reply, guest blocked; web fill-not-send, empty state, client | `tests/quick_replies_test.go`, `web/apps/app/tests/quick-replies.test.mjs` |
+
+## Saved searches
+
+| Job | Owner |
+| --- | --- |
+| Personal material and exact price ranges, indexes and person-only live changes | `internal/platform/database/migrations/0037_saved_searches.sql` |
+| Caller-scoped create/list/delete and filter validation | `internal/stores/savedsearches/savedsearches.go`, `internal/services/savedsearches/savedsearches.go`, `internal/api/savedsearches/handler.go`; registration in `internal/api/server.go` |
+| First-publication matching in the stock transaction, one alert per person with follower deduplication | `internal/stores/stock/searches.go`, `internal/services/stock/stock.go` |
+| Save current market filters and manage personal searches on Saved | `web/apps/app/src/lib/api/saved-searches.ts`, `src/routes/market/-components/save-search.tsx`, `src/routes/-components/saved-searches.tsx`; live keys in `src/lib/live/connection.ts` |
+| Keep copied market price filters as exact text before route validation | `web/apps/app/src/main.tsx` (`parseSearch`) |
+| Ownership, matching, first publication and live recipient regression | `tests/saved_searches_test.go`, `web/apps/app/tests/saved-searches.test.mjs`, `web/apps/app/tests/saved-searches-render.test.mjs` |
+
+## Wanted posts
+
+| Job | Owner |
+| --- | --- |
+| `wanted_posts` table, open-post index, `transaction_requests.wanted_post_id` with one reply per seller, and the live `wanted` trigger | `internal/platform/database/migrations/0040_wanted_posts.sql` |
+| Post SQL: create, locked get, discovery (never the buyer), buyer's list, replies, status | `internal/stores/wanted/wanted.go` |
+| Post rules: create checks, verified-only browse and reply, one reply per seller, owner-only replies and close | `internal/services/wanted/wanted.go`; routes `/api/wanted` in `internal/api/wanted/handler.go`; registration in `internal/api/server.go` |
+| A reply is an ordinary request: insert, the shared offer rules (`applyOffer`), and ending sibling replies when one is accepted or the post is closed | `internal/services/requests/wanted.go`, `internal/services/requests/state.go`; `internal/stores/requests/wanted.go` |
+| Wanted page: post form, own posts with Close, browse and Reply dialog, client hooks, live keys | `web/apps/app/src/routes/wanted.tsx`, `src/routes/-components/wanted-*.tsx`, `src/lib/api/wanted.ts`, `src/lib/live/connection.ts`, `src/lib/nav.ts`, `src/lib/access.ts` |
+| Access, privacy, one reply, holds, winner and close cascades, expiry, live event; web states | `tests/wanted_test.go`, `web/apps/app/tests/wanted.test.mjs` |
+
+## Phone alerts (web push)
+
+| Job | Owner |
+| --- | --- |
+| Per-browser subscriptions, unique endpoint, user index | `internal/platform/database/migrations/0038_push_subscriptions.sql` |
+| Caller-scoped save, remove, dead-endpoint delete, notification and subscription load | `internal/stores/push/push.go` |
+| Validation, VAPID on/off, same-origin link rule, best-effort async send (webpush-go; 404/410 deletes the subscription), `Sender` seam for tests | `internal/services/push/push.go` |
+| `GET /api/push/key`, `POST /api/push/subscriptions`, `POST /api/push/unsubscribe`; registration in `internal/api/server.go` | `internal/api/push/handler.go` |
+| Send point: every notification INSERT announced by the database, after commit, whichever writer made it | `OnNotification` in `internal/services/realtime/{hub,listen}.go`, wired by `sendPhoneAlerts` in `internal/api/server.go` |
+| VAPID keys and subject | `internal/platform/config/config.go` (`THREERECO_VAPID_*`) |
+| Service worker: app-shell cache (never `/api`), push display, same-origin click target | `web/apps/app/public/sw.js` |
+| Register the worker (production only) and subscribe/unsubscribe in the browser | `web/apps/app/src/lib/push/{register,subscribe}.ts` |
+| Phone alerts switch (Profile, Alerts tab) and the API client | `web/apps/app/src/routes/profile/-components/phone-alerts.tsx`, `src/lib/api/push.ts` |
+| Auth, ownership, validation, send targeting, 410 cleanup, failure isolation | `tests/push_test.go`; web: `web/apps/app/tests/push.test.mjs` |
 
 ## Duplicate trade review
 
@@ -30,7 +137,9 @@ line when you add an owner.
 | Send email (Resend, or SMTP to Mailpit) and the action email template | `mail/mail.go` |
 | Bounded PNG/JPEG/WEBP byte sniffing and image size limits | `storage/image.go` (`Image`) |
 | Files in MinIO or S3: put, get, remove, presign | `storage/storage.go` |
+| Small JPEG copy of an uploaded image (long edge cap, white behind see-through, pixel cap; `golang.org/x/image`) | `storage/thumb.go` (`Thumbnail`) |
 | A4 invoice layout, wrapping, pagination and exact decimal formatting (MIT-licensed gpdf-dev/gpdf; Montserrat font and logo embedded from `pdf/assets`, OFL-1.1) | `pdf/invoice.go` |
+| Recycling record PDF (same header, footer, table cells and fonts as the invoice, drawn by the shared `renderPages`; wording says it records reported trade weights and makes no legal or audit claim) | `pdf/certificate.go` (`RenderCertificate`), shared parts in `pdf/invoice.go` |
 
 ## Database tables (`internal/platform/database/migrations`)
 
@@ -54,6 +163,9 @@ line when you add an owner.
 | `0016_request_system_messages.sql` | Explicit system request events sharing message unread tracking |
 | `0017_export_audit_details.sql` | Download kind and filters on privacy export audit events |
 | `0018_receipt_delete.sql` | Drops the row-delete block on `transaction_receipts` so a receipt can be removed (the trade stays undeletable) |
+| `0034_listing_fulfillment.sql` | Listing pickup/delivery choice and public collection town/area, saved through the existing stock owners |
+| `0036_favourites_follows.sql` | `stock.first_listed_at`, `favourites` and `follows` (per person, `users.id`), notification type `store_new_listing` |
+| `0035_business_location.sql` | `businesses.latitude/longitude`: the map point of the saved address, private, set only by the Business save |
 | `0020_stock_images.sql` | One photo per stock item and live business logo changes |
 | `0021_business_verification.sql` | `users.business_verified_at/by`, privacy kind `business_verify`, notification type `business_verified`, users realtime trigger watches the new column |
 | `0022_cart_holds.sql` | `stock_holds.cart_id` (request or cart owner, never both), active cart-hold indexes, realtime trigger for cart holds, notification type `cart_expired` |
@@ -138,6 +250,8 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Receipt removal (`DELETE /api/transactions/:id/receipts/:receipt_id`: access rule, row delete, file removed after commit) | `Remove` in `internal/services/files/receipts.go`, `receiptRemove` in `internal/api/transactions/receipts.go` |
 | Snapshot-first private document reads, invoice key locking/replacement and bounded export ID pages | `internal/stores/transactions/documents.go` |
 | After-commit invoice hook, document composition, storage replacement, attached buyer mail and on-demand recovery | `internal/services/invoices/invoices.go` |
+| Recycling records on demand, nothing stored: one completed trade (read rule of `Detail`) or the caller's own completed trades in an inclusive South African day range of at most a year, grouped by material, carbon = weight x `materials.carbon_factor` as exact numerics | `internal/services/certificates/certificates.go`; `OwnTrades` and `DayRange` in `internal/services/transactions/own.go`; `TradeImpact`, `PeriodImpact` in `internal/stores/transactions/certificates.go` |
+| Recycling record downloads (`GET /api/transactions/:id/certificate`, `GET /api/certificates?from=&to=`; PDF, private no-store) | `internal/api/transactions/certificate.go` |
 | CSV download routes and response streaming | `internal/api/admin/exports.go` |
 | Export roles, inclusive timestamps, exact columns, SAST formatting and formula guard | `internal/services/admin/exports.go` |
 | Streaming allowlisted active account export SQL | `internal/stores/admin/exports.go` |
@@ -173,11 +287,13 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Unique MinIO test bucket, required-service gate and object/bucket cleanup | `tests/testutil/storage.go` |
 | Receipt sniffing, access leaks, SHA duplicate cleanup, concurrent sixth upload and upload/removal role rules | `tests/receipts_test.go`, `tests/receipts_roles_test.go` |
 | Invoice authorization, exact decimals, pagination, snapshots, regeneration, rollback and attached Mailpit messages | `tests/invoices_test.go` |
+| Recycling record text and exact carbon, completed-only, party and team access, period own-party scope, Johannesburg day edges, range refusals and pagination | `tests/certificates_test.go` |
 | Five CSV schemas, role/owner scope, effective date bounds, escaping and formula guard | `tests/exports_test.go` |
 | Round 3 trade regressions: payout roles and mail attachments, weight writes, stock prices, history, export filters and negotiated reviews | `tests/qa_round3_trade_test.go`, `web/apps/app/tests/qa-round3-trade.test.mjs` |
 | Code rules: doc comments, file length | `tests/style_test.go` |
 | Offer holds, races, rollback, expiry, stock safeguards, availability and realtime | `tests/stock_holds_test.go` |
 | Round 19 stock visibility changes leave the actor's bell empty | `tests/qa_round19_a_test.go` |
+| Listing pickup/delivery persistence, validation, owner isolation and public address privacy | `tests/fulfillment_test.go` |
 | Request terms, dual confirmation, pending isolation, counter/cancellation, privacy and migration backfill | `tests/market_flow_test.go` |
 | Password hashes, with vectors made by Better Auth's own code | `tests/password_test.go` |
 | Auth routes, sessions, leaks, rate limit | `tests/auth_test.go` |
@@ -195,7 +311,11 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Caller-owned cart handlers | `internal/api/market/cart.go` |
 | Public listing detail handler | `internal/api/market/detail.go` |
 | Market and cart route registration | `internal/api/market/handler.go` |
-| Public listing filters and seller listing handlers | `internal/api/market/listings.go` |
+| Public listing filters and seller listing handlers; `GET /market/distance` (is the distance filter usable for the caller) | `internal/api/market/listings.go` |
+| Market filters: price range and distance checks, the caller's own origin, haversine SQL (`kmApart`), whole-km `distance_km`; tests in `tests/market_filters_test.go` | `internal/services/market/filters.go`, `internal/stores/market/listings.go` |
+| Address to map point: `Geocoder` interface, offline `Fake` (`@lat,lng` pins, `fail:` fails), `FromName` (dev fake, production off, never fails) | `internal/platform/geo/geo.go` |
+| Business save looks up the point only when the address changes; a failed lookup never blocks the save | `internal/services/business/business.go` (`place`) |
+| Market filter URL state (parse, reset cursor, exact price range check) and the filter controls | `web/apps/app/src/routes/market/-components/market-search.ts`, `market-filters.tsx`; tests in `web/apps/app/tests/market-filters.test.mjs` |
 | Catalog reads and administrator mutation handlers | `internal/api/materials/catalog.go` |
 | Material catalog route registration | `internal/api/materials/handler.go` |
 | Private person-only profile edits (a business field gets 400) and safe account directory handlers | `internal/api/profile/handler.go` |
@@ -210,6 +330,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Avatar byte validation, caller-only replacement and after-commit object removal | `internal/services/profile/avatar.go` |
 | Active avatar reference reads, row locks and updates | `internal/stores/profile/avatar.go` |
 | Owner stock mutation handlers | `internal/api/stock/crud.go` |
+| CSV stock import routes (manager or owner): file or fixed rows to preview, rows to commit, 1 MB file cap | `internal/api/stock/import.go`, routes in `handler.go` |
 | Stock route registration and reads | `internal/api/stock/handler.go` |
 | Public store route registration | `internal/api/stores/handler.go` |
 | Public store detail and directory handlers | `internal/api/stores/profile.go` |
@@ -228,6 +349,11 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Caller-only profile edits, bank completeness and safe directory reads | `internal/services/profile/profile.go` |
 | Shared South African phone, bank and address validation | `internal/services/profile/validation.go` |
 | Stock ownership, row locks and exact decimal/base-price validation | `internal/services/stock/stock.go` |
+| CSV stock import rules: parse, 500-row cap, per-row checks reusing `validate`, formula-cell refusal, all-or-nothing commit in one transaction | `internal/services/stock/import.go` |
+| Favourites and follows: a person (`users.id`) saves visible listings and follows stores; routes under `/api/favourites` and `/api/follows` (list, `ids`, `PUT`/`DELETE :id`), all scoped to the caller | `internal/stores/favourites/favourites.go`, `internal/services/favourites/favourites.go`, `internal/api/favourites/handler.go`; saved listings reuse `Filter.FavouriteOf` in `internal/stores/market/listings.go`, followed stores reuse `Followed` in `internal/stores/stores/profile.go` |
+| First publish alert: `Create`/`Update` report the first time a row is listed (`first_listed_at`), then `TellFollowers` writes one person-only `store_new_listing` notice per follower in the same transaction (never `InsertBusiness`) | `internal/stores/stock/stock.go`, `save` in `internal/services/stock/stock.go` |
+| Favourites and follows tests (CRUD, other-person isolation, hidden listing, alert once, followers only, unfollow, live) | `tests/favourites_test.go`, `web/apps/app/tests/favourites.test.mjs` |
+| Heart on cards and the listing page, Follow button on the store page, `/saved` page, client hooks | `web/apps/app/src/components/favourite-button.tsx`, `src/routes/saved.tsx`, `src/lib/api/favourites.ts` |
 | Active store visibility and composition with the review service | `internal/services/stores/profile.go` |
 | Store service construction and review dependency | `internal/services/stores/stores.go` |
 | Collector records, creator scope and phone conflict SQL | `internal/stores/collectors/collectors.go` |
@@ -239,6 +365,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Catalog persistence and foreign-key protected deletion SQL | `internal/stores/materials/materials.go` |
 | Private profile and allowlisted public account SQL | `internal/stores/profile/profile.go` |
 | Owner inventory, stock locks and material base-price SQL | `internal/stores/stock/stock.go` |
+| Import SQL: material catalogue read and the one-alert-per-person import notice (followers, then non-follower searchers) | `internal/stores/stock/import.go` |
 | Safe active business profiles and listed-stock aggregate SQL | `internal/stores/stores/profile.go` |
 | Public store database construction | `internal/stores/stores/stores.go` |
 | Cart isolation, unavailable stock and stale visibility tests | `tests/cart_test.go` |
@@ -248,9 +375,12 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public catalog and administrator-only mutation tests | `tests/materials_test.go` |
 | Profile email protection, bank rules and public account leak tests | `tests/profile_test.go` |
 | Stock ownership, explicit zero price and notification rollback tests | `tests/stock_test.go` |
+| CSV import tests: preview writes nothing, all-or-nothing, limits, decimals, formulas, foreign ids, roles, one alert per person | `tests/stock_import_test.go` |
 | Store profiles, listed inventory summaries and public reviews integration tests | `tests/stores_test.go` |
 
 ## Web API client and public statistics
+
+`web/apps/app/src/lib/reorder.ts` owns exact-weight Buy again cart merging and skipped materials; the buyer owner/manager action lives in `src/components/dialogs/record-dialogs.tsx`. `web/apps/app/tests/buy-again.test.mjs` and `buy-again-render.test.mjs` cover merge rules, access, failures and responsive themes.
 
 | Job | Owner |
 | --- | --- |
@@ -260,6 +390,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
 | Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; cursor reset on filter or page-size change `src/components/transactions/pager-state.ts`; shared record count, rows-per-page select and navigation `src/components/transactions/list-tools.tsx` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
+| WhatsApp share link (`whatsAppUrl`, encoded text plus absolute page URL) and the "Share on WhatsApp" button on the listing and store pages | `web/apps/app/src/lib/share.ts`, `src/components/whatsapp-share.tsx`, tests in `web/apps/app/tests/share.test.mjs` |
 | Owner and Manager Team directory, invitations and confirmed role/removal actions | `web/apps/app/src/routes/team.tsx`, `src/lib/api/team.ts` |
 | Public invite preview, new account and signed-in acceptance | `web/apps/app/src/routes/accept-invite.tsx`; full-width auth layout option in `components/auth-shell.tsx` |
 | Active-business Owner/Manager gates and Team navigation on desktop, phone and search | `web/apps/app/src/lib/access.ts` (`canManageTeam`, `canSeeTeam`), `src/lib/nav.ts` (`navFor`), `components/shell/{app-sidebar,bottom-tabs,command-search}.tsx` |
@@ -275,6 +406,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Compact divided list rows, three-line trade/request rows, primary taps and sibling More menus | `web/apps/app/src/components/list-row.tsx`; compact status dots, plain type labels and flowing `TradeParties` names in `components/badges.tsx` |
 | Responsive soft-panel tables, fitted columns with reserved numeric widths, compact rows and keyboard row activation | `web/apps/app/src/components/data-table.tsx`; trade and request columns in `routes/transactions/-components/record-list.tsx`, `routes/market/-components/request-list.tsx` |
 | Guarded trade detail page, allowlisted Back destination and legacy `?open=` redirect | `web/apps/app/src/routes/transactions/$transactionId.tsx`, `routes/transactions/-components/record-list.tsx`; panels, invoice and receipt actions in `components/dialogs/record-dialogs.tsx` (`TradeDetail`) |
+| Recycling record actions: "Recycling record" in the trade detail menu (completed trades), and the Transactions page header button with its This month / Last month / Custom dates dialog (`monthRange` in `lib/format.ts`, hooks `useDownloadRecord` and `useDownloadPeriodRecord` in `lib/api/transactions.ts`) | `web/apps/app/src/components/dialogs/recycling-record-dialog.tsx`, `record-dialogs.tsx`, `src/routes/transactions/index.tsx`; tests in `web/apps/app/tests/recycling-record.test.mjs` |
 | Dashboard panels, stat tiles with trends (`formatPercent` in `lib/format.ts`), stock mix ring (`-dashboard/stock-mix.tsx`), business phone home below 768px (`-dashboard/phone-home.tsx`), quick links and capped activity/partners | `web/apps/app/src/routes/index.tsx`, `routes/-dashboard/panels.tsx`; phase 2 layout checks in `tests/layout-phase2.test.mjs`, `tests/layout-render.test.mjs` |
 | Soft section panels sharing the Section heading and action slot | `web/apps/app/src/components/panel.tsx`, `page-header.tsx` |
 | One-row search toolbar and responsive filter sheet with clear/results actions | `web/apps/app/src/components/toolbar.tsx` |
@@ -290,7 +422,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Caller-only business list and membership-checked session selection (`GET /api/businesses/mine`, `POST /api/businesses/:id/select`), fresh auth and after-commit socket recheck | `internal/api/team/workspaces.go`, `internal/services/team/workspaces.go`, `internal/stores/businesses/workspaces.go`; access, session isolation and live tests in `tests/workspaces_test.go` |
 | API error to form field errors | `web/apps/app/src/lib/form-errors.ts` |
 | Auth page layout (sign-in, sign-up, verify, reset) | `web/apps/app/src/components/auth-shell.tsx`, routes `src/routes/{sign-in,sign-up,verify-email,forgot-password,reset-password}.tsx` |
-| Full-page setup (`/setup`): choose collector or business, then the forms in `routes/profile/-components/forms.tsx` | `web/apps/app/src/routes/setup.tsx` |
+| Full-page setup (`/setup`): choose collector or business, then two screens using the shared profile forms; grouped forms validate before saving and share one action | `web/apps/app/src/routes/setup.tsx`, `routes/profile/-components/forms.tsx`; role, theme, phone/desktop and retry checks in `tests/setup.test.mjs` |
 | Who must finish setup (guest, or unfinished collector/business) and the redirect | `web/apps/app/src/lib/setup.ts`, `src/components/setup-gate.tsx` (wraps the outlet in `routes/__root.tsx`), tests in `tests/setup.test.mjs` |
 | Tidy a person's name (ALL CAPS / all lower only); used on first/last name, sign-up and collector name | `web/apps/app/src/lib/names.ts` (`personName` prop of `TextField`), tests in `tests/names.test.mjs` |
 | Money, weight, date and count formatting (`plural(count, one, many?)` for every on-screen count) | `web/apps/app/src/lib/format.ts`, tests in `tests/counter.test.mjs` |
@@ -338,10 +470,12 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Separate personal pictures and store logos, including shared migrated object references | `internal/stores/profile/avatar.go`, `internal/services/profile/avatar.go`, `GET /api/stores/:id/logo` in `internal/api/profile/avatar.go` |
 | Stock photo cap, add/remove/reorder, compensation and after-commit cleanup | `internal/services/stock/image.go`; stock deletion in `stock.go` |
 | Photo rows, order, verified-seller read rule, `stock_photos` table and live trigger | `internal/stores/stock/image.go`, `internal/platform/database/migrations/0029_stock_photos.sql` |
+| Photo small copy: made on upload, served with `?size=thumb` (full image for old photos), removed with the photo, key hidden in the audit log | `internal/services/stock/image.go`, `internal/stores/stock/image.go` (`thumb_key`, `CoverThumbURL`), `0033_stock_photo_thumbs.sql`, tests in `tests/stock_thumbs_test.go` |
 | Versioned listing photo and seller logo projections | `internal/stores/market/listings.go`; stock photo projection in `internal/stores/stock/stock.go` |
 | Read stock photo keys before account erase and include them in own exports | `internal/stores/privacy/{erase,export}.go`; after-commit cleanup in `internal/services/privacy/erase.go` |
 | Shared picture avatar with initials fallback | `web/apps/app/src/components/visuals.tsx` (`PersonAvatar`) |
 | Photo list with add, drag/move, remove (saves at once on an existing line) | `web/apps/app/src/components/dialogs/stock-photos.tsx`; used by `stock-dialog.tsx`; hooks in `src/lib/api/stock.ts` |
+| CSV import dialog (upload, per-cell fixes, publish) and its hooks; button on the stock page for owners and managers (`canImportStock`) | `web/apps/app/src/components/dialogs/stock-import-dialog.tsx`, `usePreviewStockImport`/`useCommitStockImport` in `src/lib/api/stock.ts`, tests in `web/apps/app/tests/stock-import.test.mjs` |
 | Marketplace card photos and seller logos, swipe gallery with thumbnails | `web/apps/app/src/components/listing-card.tsx`, `src/routes/market/listing/-components/gallery.tsx` |
 | Stock photo access, visibility, replacement, rollback, privacy and live routing tests | `tests/stock_images_test.go`, `tests/stock_images_live_test.go`, `tests/stock_photos_test.go` |
 | Photo/placeholder, avatar, stock photo validation, staged-save and default-price prefill web tests | `web/apps/app/tests/stock-images.test.mjs` |

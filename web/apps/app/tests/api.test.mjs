@@ -27,6 +27,144 @@ function load(relative, globals = {}) {
   return exports;
 }
 
+test('listing bursts refresh once after 1500 ms of silence while other keys settle at 300 ms', () => {
+  let now = 0;
+  let timerId = 0;
+  let socket;
+  const pending = new Map();
+  const invalidations = [];
+  const { LiveConnection } = load('../src/lib/live/connection.ts', {
+    window: { location: { href: 'https://3reco.test/market' } },
+    WebSocket: class {
+      constructor() {
+        socket = this;
+      }
+      close() {}
+    },
+    setTimeout: (callback, delay) => {
+      const id = ++timerId;
+      pending.set(id, { callback, at: now + delay });
+      return id;
+    },
+    clearTimeout: (id) => pending.delete(id),
+  });
+  const advance = (milliseconds) => {
+    now += milliseconds;
+    for (const [id, timer] of [...pending]) {
+      if (timer.at > now) continue;
+      pending.delete(id);
+      timer.callback();
+    }
+  };
+  const connection = new LiveConnection({
+    invalidateQueries: (options) => invalidations.push(options),
+  });
+  const event = (kind) =>
+    socket.onmessage({ data: JSON.stringify({ type: 'changed', kind }) });
+  const listingRefreshes = () =>
+    invalidations.filter((options) => options?.queryKey[0] === 'listings');
+
+  connection.start();
+  socket.onopen();
+  event('listing');
+  event('notification');
+  advance(250);
+  event('listing');
+  advance(50);
+  assert.equal(listingRefreshes().length, 0);
+  assert.equal(
+    invalidations.filter((options) => options?.queryKey[0] === 'notifications')
+      .length,
+    1
+  );
+  advance(200);
+  event('listing');
+  advance(1000);
+  assert.equal(
+    listingRefreshes().length,
+    0,
+    'the first event deadline was reset'
+  );
+  advance(499);
+  assert.equal(listingRefreshes().length, 0);
+  advance(1);
+  assert.equal(listingRefreshes().length, 1);
+  advance(1500);
+  assert.equal(listingRefreshes().length, 1, 'no polling after the burst');
+
+  event('listing');
+  socket.onmessage({ data: JSON.stringify({ type: 'resync' }) });
+  assert.equal(invalidations.at(-1), undefined);
+  advance(1500);
+  assert.equal(
+    listingRefreshes().length,
+    1,
+    'resync cancels the delayed refresh'
+  );
+  event('listing');
+  connection.stop();
+  advance(1500);
+  assert.equal(
+    listingRefreshes().length,
+    1,
+    'stop cancels the delayed refresh'
+  );
+  assert.equal(pending.size, 0);
+});
+
+test('only opted-in public resource lists retain rows across query key changes', async () => {
+  const { useResource } = load('../src/lib/api/resource.ts', {
+    require: (name) => {
+      if (name === '@tanstack/react-query')
+        return { ...query, useQuery: (options) => options };
+      if (name === '../auth/use-auth')
+        return { useAuth: () => ({ user: { id: 'business-user' } }) };
+      if (name === './client') return { api: () => new Promise(() => {}) };
+      throw new Error(`Unexpected dependency: ${name}`);
+    },
+  });
+  const client = new query.QueryClient();
+  const previous = { items: [{ id: 'old-listing' }] };
+  client.setQueryData(['listings', 'first'], previous);
+
+  for (const [keepPrevious, privateQuery, expected] of [
+    [true, false, previous],
+    [false, false, undefined],
+    [true, true, undefined],
+  ]) {
+    const observer = new query.QueryObserver(client, {
+      queryKey: ['listings', 'first'],
+      enabled: false,
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    try {
+      observer.setOptions(
+        useResource(
+          ['listings', 'next'],
+          '/market/listings',
+          privateQuery,
+          true,
+          {
+            keepPrevious,
+          }
+        )
+      );
+      const result = observer.getCurrentResult();
+      assert.equal(result.data, expected);
+      assert.equal(result.isFetching, true);
+      assert.equal(result.isPlaceholderData, expected !== undefined);
+    } finally {
+      unsubscribe();
+    }
+  }
+  assert.equal(
+    useResource(['listings'], '/market/listings').placeholderData,
+    undefined,
+    'previous rows are off by default'
+  );
+  client.clear();
+});
+
 test('HTTP preserves decimal strings, credentials, error fields and Retry-After', async () => {
   let request;
   let status = 200;

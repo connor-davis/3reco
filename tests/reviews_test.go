@@ -1,8 +1,11 @@
 package tests
 
 import (
+	"context"
 	"strings"
 	"testing"
+
+	reviewstore "github.com/connor-davis/3reco/internal/stores/reviews"
 )
 
 func TestReviewFlow(t *testing.T) {
@@ -133,5 +136,75 @@ func TestReviewsPublicProjection(t *testing.T) {
 	empty := anon.Do("GET", "/api/stores/nobody/reviews/summary", nil)
 	if empty.Body["average"] != nil || empty.Body["count"] != float64(0) {
 		t.Errorf("empty summary %s, want a null average and 0", empty.Raw)
+	}
+}
+
+// reviewSale makes one finished sale and the buyer's review of it.
+func reviewSale(t *testing.T, w tradeWorld, seller tradeUser, stars int) {
+	t.Helper()
+
+	tx := tradeSale(t, seller, w.buyer, w.material, "1", "8")
+
+	tradeWant(t, "review", w.buyer.c.Do("POST", "/api/transactions/"+tx+"/review",
+		map[string]any{"rating": stars}), 200)
+}
+
+// The batched summary must give every seller the same answer the one-seller
+// query gives, including a seller nobody has reviewed.
+func TestSummaryManyMatchesSingle(t *testing.T) {
+	w := newTradeWorld(t)
+	unreviewed := tradeNewUser(t, w.app, "business")
+	single := tradeNewUser(t, w.app, "business")
+
+	tradeStock(t, w.app, single.id, w.material, "100", "8")
+
+	// 5, 4 and 4 average 4.33, so this also checks the one-decimal rounding.
+	for _, stars := range []int{5, 4, 4} {
+		reviewSale(t, w, w.seller, stars)
+	}
+
+	reviewSale(t, w, single, 3)
+
+	ctx := context.Background()
+	store := reviewstore.New(w.app.DB)
+	ids := []string{w.seller.id, unreviewed.id, single.id, "nobody"}
+
+	many, err := store.AverageMany(ctx, ids)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, id := range ids {
+		want, err := store.Average(ctx, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got := many[id]
+		if got.Count != want.Count {
+			t.Errorf("seller %s: count %d, want %d", id, got.Count, want.Count)
+		}
+
+		if (got.Average == nil) != (want.Average == nil) ||
+			(got.Average != nil && *got.Average != *want.Average) {
+			t.Errorf("seller %s: average %v, want %v", id, got.Average, want.Average)
+		}
+	}
+
+	if got := many[w.seller.id]; got.Average == nil || *got.Average != 4.3 || got.Count != 3 {
+		t.Errorf("three reviews: %+v, want average 4.3 over 3", got)
+	}
+
+	if got := many[single.id]; got.Average == nil || *got.Average != 3 || got.Count != 1 {
+		t.Errorf("one review: %+v, want average 3 over 1", got)
+	}
+
+	if _, ok := many[unreviewed.id]; ok {
+		t.Errorf("a seller with no reviews should be left out of the map")
+	}
+
+	empty, err := store.AverageMany(ctx, nil)
+	if err != nil || len(empty) != 0 {
+		t.Errorf("no sellers: got %v, %v, want an empty map", empty, err)
 	}
 }

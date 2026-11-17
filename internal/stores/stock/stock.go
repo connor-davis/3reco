@@ -13,6 +13,8 @@ import (
 
 // Item is a stock row with its material's safe catalog fields.
 type Item struct {
+	FulfillmentMode string    `json:"fulfillment_mode"`
+	PickupArea      string    `json:"pickup_area"`
 	ImageURL        string    `json:"image_url"`
 	Photos          []Photo   `json:"photos"`
 	ID              string    `json:"id"`
@@ -35,7 +37,7 @@ func New(db *database.DB) *Store { return &Store{db: db} }
 
 var columns = `s.id,s.owner_id,s.material_id,m.name,s.weight::text,s.price::text,
 	m.price::text,s.is_listed,s.created_at,stock_available(s.id,s.weight)::text,
-	` + CoverURL("s") + `,` + PhotoList("s")
+	` + CoverURL("s") + `,` + PhotoList("s") + `,COALESCE(s.fulfillment_mode,''),COALESCE(s.pickup_area,'')`
 
 func scan(row pgx.Row, item *Item) error {
 	return row.Scan(
@@ -51,6 +53,8 @@ func scan(row pgx.Row, item *Item) error {
 		&item.AvailableWeight,
 		&item.ImageURL,
 		&item.Photos,
+		&item.FulfillmentMode,
+		&item.PickupArea,
 	)
 }
 
@@ -136,34 +140,74 @@ func (records *Store) BasePrice(ctx context.Context, id string) (string, error) 
 	return price, err
 }
 
-// Create inserts stock for its caller, listed only when the item says so.
-func (records *Store) Create(ctx context.Context, item Item) error {
-	_, err := records.db.Q(ctx).Exec(
+// Create inserts stock for its caller, listed only when the item says so. It
+// reports true when the row is published for the first time.
+func (records *Store) Create(ctx context.Context, item Item) (bool, error) {
+	var first bool
+
+	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`INSERT INTO stock(id,owner_id,material_id,weight,price,is_listed)
-		VALUES($1,$2,$3,$4::numeric,$5::numeric,$6)`,
+		`INSERT INTO stock(id,owner_id,material_id,weight,price,is_listed,fulfillment_mode,pickup_area,
+			first_listed_at)
+		VALUES($1,$2,$3,$4::numeric,$5::numeric,$6,NULLIF($7,''),NULLIF($8,''),
+			CASE WHEN $6 AND $4::numeric>0 THEN now() END)
+		RETURNING first_listed_at IS NOT NULL`,
 		item.ID,
 		item.OwnerID,
 		item.MaterialID,
 		item.Weight,
 		item.Price,
 		item.IsListed,
-	)
+		item.FulfillmentMode,
+		item.PickupArea,
+	).Scan(&first)
 
-	return err
+	return first, err
 }
 
-// Update saves an already locked row, retaining owner scope in the write.
-func (records *Store) Update(ctx context.Context, item Item) error {
-	_, err := records.db.Q(ctx).Exec(
+// Update saves an already locked row, retaining owner scope in the write. It
+// reports true when this save is the row's first time on the market.
+func (records *Store) Update(ctx context.Context, item Item) (bool, error) {
+	var first bool
+
+	err := records.db.Q(ctx).QueryRow(
 		ctx,
-		`UPDATE stock SET weight=$3::numeric,price=$4::numeric,
-		is_listed=$5,updated_at=now() WHERE id=$1 AND owner_id=$2`,
+		`WITH before AS (SELECT first_listed_at FROM stock WHERE id=$1 AND owner_id=$2)
+		UPDATE stock SET weight=$3::numeric,price=$4::numeric,
+		is_listed=$5,fulfillment_mode=NULLIF($6,''),pickup_area=NULLIF($7,''),
+		first_listed_at=COALESCE(first_listed_at,CASE WHEN $5 AND $3::numeric>0 THEN now() END),
+		updated_at=now() WHERE id=$1 AND owner_id=$2
+		RETURNING (SELECT first_listed_at FROM before) IS NULL AND first_listed_at IS NOT NULL`,
 		item.ID,
 		item.OwnerID,
 		item.Weight,
 		item.Price,
 		item.IsListed,
+		item.FulfillmentMode,
+		item.PickupArea,
+	).Scan(&first)
+
+	return first, err
+}
+
+// TellFollowers writes one in-app alert for every person who follows the
+// seller of a row that was just published. It joins the caller's transaction,
+// so a save that rolls back tells nobody. Only people get a row, never the
+// store's team. A store that is not verified yet stays quiet.
+func (records *Store) TellFollowers(ctx context.Context, id string) error {
+	_, err := records.db.Q(ctx).Exec(
+		ctx,
+		`INSERT INTO notifications (id,user_id,type,title,body,link)
+		SELECT md5(random()::text||f.user_id||s.id),f.user_id,'store_new_listing',
+			`+database.DisplayName("u")+`||' has a new listing',
+			m.name||' at R '||s.price::text||' per kg','/market/listing/'||s.id
+		FROM stock s JOIN materials m ON m.id=s.material_id
+		JOIN business_profiles u ON u.id=s.owner_id
+		JOIN follows f ON f.store_id=s.owner_id
+		JOIN users person ON person.id=f.user_id AND NOT person.is_removed
+		WHERE s.id=$1 AND s.is_listed AND s.weight>0
+		AND NOT u.is_removed AND u.role='business' AND person_contact_allowed(person.id,u.id) AND `+database.Verified("u"),
+		id,
 	)
 
 	return err

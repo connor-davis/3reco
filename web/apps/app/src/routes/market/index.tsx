@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Leaf, SearchX } from 'lucide-react';
 import { CardsSkeleton, DataState } from '@/components/data-state';
 import { SearchBox } from '@/components/filters';
@@ -14,16 +14,33 @@ import { formatKg, plural } from '@/lib/format';
 import { formatCo2 } from '@/lib/impact';
 import { filterListings } from './-components/filter-listings';
 import { MarketFilters } from './-components/market-filters';
+import { SaveSearch } from './-components/save-search';
+import { PriceHistory } from './-components/price-history';
+import {
+  changeFilter,
+  parseMarketSearch,
+  priceRangeError,
+  type MarketSearch,
+} from './-components/market-search';
 
-export const Route = createFileRoute('/market/')({ component: MarketPage });
+export const Route = createFileRoute('/market/')({
+  validateSearch: parseMarketSearch,
+  component: MarketPage,
+});
 
 function MarketPage() {
-  const [search, setSearch] = useState('');
-  const [cursor, setCursor] = useState<string>();
+  // Every filter and the page cursor live in the URL.
+  const search = Route.useSearch();
+  const navigate = useNavigate();
   const [sort, setSort] = useState('newest');
-  const query = useListings({ q: search, cursor });
+  const rangeError = priceRangeError(search.min_price, search.max_price);
+  const query = useListings(search, !rangeError, { keepPrevious: true });
   const stats = useStats();
-  const results = filterListings(query.data?.items ?? [], sort);
+  const results = rangeError
+    ? []
+    : filterListings(query.data?.items ?? [], sort);
+  const go = (next: MarketSearch) =>
+    void navigate({ to: '/market', search: next, replace: true });
 
   return (
     <>
@@ -48,20 +65,24 @@ function MarketPage() {
       <div className="my-6 flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBox
           label="Search materials or stores"
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setCursor(undefined);
-          }}
+          value={search.q ?? ''}
+          onChange={(value) => go(changeFilter(search, { q: value }))}
         />
-        <MarketFilters sort={sort} onChange={setSort} />
+        <MarketFilters
+          search={search}
+          sort={sort}
+          onSort={setSort}
+          onChange={(change) => go(changeFilter(search, change))}
+        />
       </div>
+      <SaveSearch search={search} />
+      <PriceHistory materialId={search.material_id} />
       <DataState
         query={query}
         isEmpty={!results.length}
         icon={SearchX}
         emptyTitle="No materials found"
-        emptyText="Try a different search."
+        emptyText={rangeError || 'Try a different search.'}
         skeleton={<CardsSkeleton />}
       >
         <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -71,15 +92,20 @@ function MarketPage() {
         </div>
       </DataState>
       <ButtonRow className="my-6">
-        {cursor && (
-          <Button variant="outline" onClick={() => setCursor(undefined)}>
+        {search.cursor && (
+          <Button
+            variant="outline"
+            onClick={() => go({ ...search, cursor: undefined })}
+          >
             First page
           </Button>
         )}
         {query.data?.has_more && (
           <Button
             variant="outline"
-            onClick={() => setCursor(query.data?.next_cursor ?? undefined)}
+            onClick={() =>
+              go({ ...search, cursor: query.data?.next_cursor ?? undefined })
+            }
           >
             Next page
           </Button>

@@ -175,16 +175,13 @@ func (service *Service) Update(ctx context.Context, id string, in Input, busines
 				item.AreaCode = in.AreaCode
 			}
 
+			// Only setup may complete a profile; admin role changes reset it separately.
 			if in.ProfileComplete != nil {
-				item.ProfileComplete = *in.ProfileComplete
+				return apperr.BadRequest("Finish your setup to complete your profile.", nil)
 			}
 
 			if in.AgreedToTerms != nil {
 				item.AgreedToTerms = *in.AgreedToTerms
-			}
-
-			if item.Role == "guest" && in.ProfileComplete != nil && *in.ProfileComplete {
-				return apperr.BadRequest("Finish your setup to complete your profile.", nil)
 			}
 
 			if item.Name == "" {

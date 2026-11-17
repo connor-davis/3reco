@@ -6,3 +6,6 @@ app/dist.zip
 
 # Local scratch (maps, design mockups)
 mystuff/
+
+# Demo site secrets
+.env.demo

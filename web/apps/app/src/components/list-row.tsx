@@ -105,7 +105,10 @@ export function ListRow({
               </span>
             </div>
             <div
-              className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+              className={cn(
+                'flex items-center gap-1.5 text-[11px] text-muted-foreground',
+                trailing && 'flex-wrap'
+              )}
               data-slot="record-meta"
             >
               <span className="whitespace-nowrap">{meta}</span>

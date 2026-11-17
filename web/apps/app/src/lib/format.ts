@@ -150,6 +150,24 @@ export function today(): string {
   }).format(new Date());
 }
 
+/**
+ * The first and last day of this month (up to today) or of last month, as
+ * "2026-11-01" texts, from a South African "2026-11-06" day.
+ */
+export function monthRange(which: 'this' | 'last', day = today()) {
+  const [year, month] = day.split('-').map(Number);
+  const text = (date: Date) => date.toISOString().slice(0, 10);
+
+  if (which === 'this') {
+    return { from: text(new Date(Date.UTC(year, month - 1, 1))), to: day };
+  }
+
+  return {
+    from: text(new Date(Date.UTC(year, month - 2, 1))),
+    to: text(new Date(Date.UTC(year, month - 1, 0))),
+  };
+}
+
 /** A trend against the previous period: what to print and which way it went. */
 export type Trend = { label: string; dir: 'up' | 'down' | 'flat' | 'new' };
 

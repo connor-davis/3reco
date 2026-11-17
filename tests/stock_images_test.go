@@ -168,8 +168,8 @@ func TestStockPhotoFailedWriteCleanup(t *testing.T) {
 		`ALTER TABLE stock_photos ADD CONSTRAINT reject_photo CHECK (object_key='`+key+`')`,
 	)
 	tradeWant(t, "failed DB write", uploadImage(t, w.app, w.seller.c, photos, receiptImage(3)), 500)
-	if count := objectCount(t, w.app, "stock/"+w.stock+"/"); count != 1 {
-		t.Fatalf("failed write left %d objects", count)
+	if count := objectCount(t, w.app, "stock/"+w.stock+"/"); count != 2 {
+		t.Fatalf("failed write left %d objects (want the first photo and its small copy)", count)
 	}
 
 	current := w.seller.c.Do("GET", "/api/stock/"+w.stock, nil)
@@ -242,7 +242,8 @@ func photoKeys(t *testing.T, app *testutil.App, stockID string) []string {
 	t.Helper()
 	rows, err := app.DB.Pool.Query(
 		context.Background(),
-		`SELECT object_key FROM stock_photos WHERE stock_id=$1 ORDER BY position`,
+		`SELECT k FROM stock_photos p, unnest(ARRAY[p.object_key, p.thumb_key]) AS k
+		WHERE p.stock_id=$1 AND k IS NOT NULL ORDER BY p.position, k`,
 		stockID,
 	)
 	if err != nil {

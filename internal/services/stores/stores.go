@@ -3,6 +3,7 @@ package stores
 
 import (
 	"github.com/connor-davis/3reco/internal/services/reviews"
+	"github.com/connor-davis/3reco/internal/stores/stats"
 	store "github.com/connor-davis/3reco/internal/stores/stores"
 )
 
@@ -10,9 +11,10 @@ import (
 type Service struct {
 	store   *store.Store
 	reviews *reviews.Service
+	stats   *stats.Store
 }
 
 // New builds the service.
-func New(rows *store.Store, reviewService *reviews.Service) *Service {
-	return &Service{store: rows, reviews: reviewService}
+func New(rows *store.Store, reviewService *reviews.Service, metrics *stats.Store) *Service {
+	return &Service{store: rows, reviews: reviewService, stats: metrics}
 }

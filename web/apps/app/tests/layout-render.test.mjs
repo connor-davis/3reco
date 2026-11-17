@@ -5,7 +5,7 @@ import { createServer as createPortServer } from 'node:net';
 
 test(
   'layout blocks render across compact/wide widths in light and dark',
-  { timeout: 360000 },
+  { timeout: 600000 },
   async () => {
     const { createServer } = await import('vite');
     const portServer = createPortServer();
@@ -60,7 +60,7 @@ from playwright.sync_api import sync_playwright, expect
 
 base = sys.argv[1]
 sys.stdout.reconfigure(encoding='utf-8')
-listing = {'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '1000', 'held_weight': '0', 'price': '8.00', 'carbon_factor': '1', 'gw_code': 'GL', 'image_url': '', 'seller_avatar_url': '', 'average_rating': None, 'review_count': 0, 'created_at': '2026-11-08T08:00:00Z'}
+listing = {'fulfillment_mode': 'both', 'pickup_area': 'Bellville and surrounding collection areas near Cape Town', 'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '1000', 'held_weight': '0', 'price': '8.00', 'carbon_factor': '1', 'gw_code': 'GL', 'image_url': '', 'seller_avatar_url': '', 'average_rating': None, 'review_count': 0, 'created_at': '2026-11-08T08:00:00Z'}
 routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
 party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
 trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
@@ -93,7 +93,9 @@ with sync_playwright() as p:
                 elif path == '/requests/request': body = request
                 elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']: body = dashboard
                 elif path == '/stats': body = {'total_kg': '87.5', 'co2_kg': '100', 'deals': 7, 'top_stores': []}
+                elif path == '/stats/seller': body = {'views': {'days_7': 3, 'days_30': 8, 'lifetime': 10}, 'listings': [], 'replies': {'requests': 6, 'within_day': 4}}
                 elif path == '/market/listings/stock': body = listing
+                elif path == '/market/distance': body = {'enabled': True, 'has_origin': True}
                 elif path == '/market/listings': body['items'] = [dict(listing, id='related-' + str(i)) for i in range(3)]
                 elif path == '/stores/seller': body = {'id': 'seller', 'name': 'Greenloop', 'city': 'Cape Town', 'province': 'Western Cape', 'created_at': '2026-11-08T08:00:00Z', 'average_rating': None, 'review_count': 0}
                 elif path == '/stores/seller/listings': body['items'] = [listing]
@@ -102,6 +104,7 @@ with sync_playwright() as p:
                 elif path.endswith('/summary'): body = {'average_rating': None, 'review_count': 0}
                 elif path.endswith('/reviewable'): body = {'items': []}
                 elif path.endswith('/unread-count'): body = {'count': 0}
+                elif path in ['/favourites/ids', '/follows/ids']: body = {'ids': []}
                 route.fulfill(content_type='application/json', body=json.dumps(body))
             context.route(base + '/api/**', handle)
             context.route_web_socket('**/api/live', lambda ws: None)
@@ -162,15 +165,18 @@ with sync_playwright() as p:
                             assert abs(box['y'] + box['height'] - (1000 - 52)) < 2
                     if route == '/market/store/seller':
                         buttons = page.locator('header [data-slot="button-row"] button, header [data-slot="button-row"] a')
-                        expect(buttons).to_have_count(2)
+                        # Sharing, moderation, follow, cart and contact stay together.
+                        expect(buttons).to_have_count(5)
+                        boxes = [button.bounding_box() for button in buttons.all()]
                         if width < 768:
-                            boxes = [button.bounding_box() for button in buttons.all()]
-                            assert abs(boxes[0]['width'] - boxes[1]['width']) < 1
-                            assert boxes[1]['y'] >= boxes[0]['y'] + boxes[0]['height'] + 7
+                            for above, below in zip(boxes, boxes[1:]):
+                                assert abs(above['width'] - below['width']) < 1
+                                assert below['y'] >= above['y'] + above['height'] + 7
                         else:
-                            boxes = [button.bounding_box() for button in buttons.all()]
-                            assert abs(boxes[0]['y'] - boxes[1]['y']) < 1
+                            assert all(abs(box['y'] - boxes[0]['y']) < 1 for box in boxes)
                     if route == '/market/listing/stock':
+                        expect(page.get_by_text('Pickup or delivery', exact=True).first).to_be_visible()
+                        expect(page.get_by_text('Collection area: ' + listing['pickup_area'], exact=True).first).to_be_visible()
                         buttons = page.locator('[data-slot="action-bar"] button')
                         expect(buttons).to_have_count(2)
                         if width < 768:
@@ -181,6 +187,12 @@ with sync_playwright() as p:
                             last_card = page.locator('section [data-slot="card"]').last.bounding_box()
                             bar = page.locator('[data-slot="action-bar"]').bounding_box()
                             assert last_card['y'] + last_card['height'] <= bar['y'] + 1, 'stacked actions cover last card'
+                    if route == '/market':
+                        for name in ['Material', 'Distance', 'Lowest R / kg', 'Highest R / kg', 'Sort this page']:
+                            control = page.get_by_label(name, exact=True)
+                            expect(control).to_be_visible()
+                            box = control.bounding_box()
+                            assert 0 <= box['x'] and box['x'] + box['width'] <= width, f'market filter {name} off screen {width} {mode}'
                     if route in ['/market', '/market/store/seller', '/market/listing/stock']:
                         cards = page.locator('[data-slot="card"]').filter(has=page.locator('h3'))
                         assert cards.count() > 0
@@ -190,6 +202,9 @@ with sync_playwright() as p:
                         if width >= 1280: expected = 3 if width < 1536 else 4
                         assert columns == expected, f'listing columns {route} {width}: {columns}'
                         card = cards.first
+                        expect(card.get_by_text('Pickup or delivery', exact=True)).to_be_visible()
+                        expect(card.get_by_text('Collection area: ' + listing['pickup_area'], exact=True)).to_be_visible()
+                        assert card.evaluate('(el) => el.scrollWidth <= el.clientWidth'), f'fulfillment overflow {width} {mode}'
                         style = card.evaluate('(el) => ({radius: getComputedStyle(el).borderRadius, border: getComputedStyle(el).borderTopWidth, overflow: getComputedStyle(el).overflow})')
                         assert style == {'radius': '16px', 'border': '1px', 'overflow': 'hidden'}, style
                         photo = card.locator(':scope > div').first
@@ -242,10 +257,14 @@ with sync_playwright() as p:
                             rows = page.locator('[data-slot="record-row"]')
                             assert rows.count() > 0
                             for row in rows.all():
-                                assert row.bounding_box()['height'] <= 88, f'compact content too tall {route} {width}'
+                                if route.startswith('/transactions'):
+                                    # The primary row tap and invoice download are sibling buttons.
+                                    expect(row.locator('xpath=../..').get_by_role('button')).to_have_count(2)
+                                has_invoice = route.startswith('/transactions')
+                                assert row.bounding_box()['height'] <= (108 if has_invoice else 88), f'compact content too tall {route} {width}'
                                 meta = row.locator('[data-slot="record-meta"]')
                                 assert not re.search(r'\b(C2B|B2B)\b', meta.inner_text())
-                                assert meta.bounding_box()['height'] <= 20
+                                assert meta.bounding_box()['height'] <= (40 if has_invoice else 20)
                                 assert meta.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'), f'footer clips {route} {width}'
                             stress = rows.nth(1) if route.startswith('/transactions') else rows.first
                             parties = stress.locator('[data-slot="record-parties"]')

@@ -55,6 +55,16 @@ func (s *Service) Summary(ctx context.Context, sellerID string) (store.Summary, 
 	return s.store.Average(ctx, sellerID)
 }
 
+// SummaryMany returns the summaries of many sellers in one database call, so a
+// page of listings or stores does not ask once per row. A seller with no
+// reviews is missing from the map.
+func (s *Service) SummaryMany(
+	ctx context.Context,
+	sellerIDs []string,
+) (map[string]store.Summary, error) {
+	return s.store.AverageMany(ctx, sellerIDs)
+}
+
 // Reviewable lists the caller's business trades with a seller they have not
 // reviewed. It only ever looks at the caller's own purchases.
 func (s *Service) Reviewable(

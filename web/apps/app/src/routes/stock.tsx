@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useDebounced } from '@/lib/use-debounced';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { PackageOpen, Plus } from 'lucide-react';
+import { PackageOpen, Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Guarded } from '@/components/access-guard';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState, RowsSkeleton } from '@/components/data-state';
 import { DataTable } from '@/components/data-table';
 import { StockDialog } from '@/components/dialogs/stock-dialog';
+import { StockImportDialog } from '@/components/dialogs/stock-import-dialog';
 import { ChoiceSelect } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
 import { RowActions } from '@/components/row-actions';
@@ -19,6 +20,8 @@ import { Button } from '@/components/ui/button';
 import { ListRow } from '@/components/list-row';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
+import { canImportStock } from '@/lib/access';
+import { useAuth } from '@/lib/auth/use-auth';
 import { useDeleteStock, useStock, useUpdateStock } from '@/lib/api/stock';
 import type { StockItem } from '@/lib/api/types';
 import { formatKg, formatRate, toGrams, plural } from '@/lib/format';
@@ -112,6 +115,8 @@ function StockPage() {
     status: status === 'all' ? undefined : status,
   });
   const stock = useStock(pager.params);
+  const { user } = useAuth();
+  const [importOpen, setImportOpen] = useState(false);
   const remove = useDeleteStock();
   const [editing, setEditing] = useState<StockItem | undefined>();
   const [formOpen, setFormOpen] = useState(false);
@@ -189,10 +194,18 @@ function StockPage() {
         title="Your stock"
         description="What's in the yard, ready for the next conversation."
         actions={
-          <Button aria-label="Add stock" onClick={() => openForm()}>
-            <Plus data-icon="inline-start" />
-            Add stock
-          </Button>
+          <>
+            <Button aria-label="Add stock" onClick={() => openForm()}>
+              <Plus data-icon="inline-start" />
+              Add stock
+            </Button>
+            {canImportStock(user) && (
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload data-icon="inline-start" />
+                Import CSV
+              </Button>
+            )}
+          </>
         }
       />
       <div className="mb-6">
@@ -254,6 +267,7 @@ function StockPage() {
       </DataState>
       <Pager pager={pager} page={stock.data} />
       <StockDialog open={formOpen} onOpenChange={setFormOpen} stock={editing} />
+      <StockImportDialog open={importOpen} onOpenChange={setImportOpen} />
       <ConfirmDialog
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}

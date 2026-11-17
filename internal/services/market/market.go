@@ -3,6 +3,7 @@ package market
 
 import (
 	"github.com/connor-davis/3reco/internal/platform/database"
+	"github.com/connor-davis/3reco/internal/platform/geo"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/reviews"
 	store "github.com/connor-davis/3reco/internal/stores/market"
@@ -10,10 +11,11 @@ import (
 
 // Service owns marketplace rules.
 type Service struct {
-	db      *database.DB
-	store   *store.Store
-	reviews *reviews.Service
-	notes   *notifications.Service
+	db       *database.DB
+	store    *store.Store
+	reviews  *reviews.Service
+	notes    *notifications.Service
+	geocoder geo.Geocoder
 }
 
 // New builds the service.
@@ -22,6 +24,7 @@ func New(
 	rows *store.Store,
 	reviewService *reviews.Service,
 	notes *notifications.Service,
+	geocoder geo.Geocoder,
 ) *Service {
-	return &Service{db: db, store: rows, reviews: reviewService, notes: notes}
+	return &Service{db: db, store: rows, reviews: reviewService, notes: notes, geocoder: geocoder}
 }

@@ -1,3 +1,4 @@
+import { ModerationActions } from '@/components/moderation-actions';
 import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
@@ -6,15 +7,17 @@ import { z } from 'zod';
 import { PackageSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/back-button';
-import { BusinessName } from '@/components/badges';
+import { BusinessName, ReplySpeedBadge } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { ActionBar, ActionBarSpacer } from '@/components/action-bar';
 import { Panel } from '@/components/panel';
 import { DecimalField } from '@/components/form-fields';
 import { LinkButton } from '@/components/link-button';
+import { FavouriteButton } from '@/components/favourite-button';
 import { ListingCard } from '@/components/listing-card';
 import { Section } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { WhatsAppShare } from '@/components/whatsapp-share';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import { useListing, useListings } from '@/lib/api/listings';
@@ -182,6 +185,20 @@ function ListingDetail({ listing }: { listing: Listing }) {
               ? 'Fully reserved'
               : `${formatKg(listing.weight)} available`}
           </p>
+          {listing.fulfillment_mode && (
+            <p className="text-sm text-muted-foreground">
+              {listing.fulfillment_mode === 'both'
+                ? 'Pickup or delivery'
+                : listing.fulfillment_mode === 'pickup'
+                  ? 'Pickup'
+                  : 'Delivery'}
+            </p>
+          )}
+          {listing.pickup_area && (
+            <p className="break-words text-sm text-muted-foreground">
+              Collection area: {listing.pickup_area}
+            </p>
+          )}
           {own && listing.gw_code && (
             <p className="text-sm text-muted-foreground">
               Material code: {listing.gw_code}
@@ -275,10 +292,13 @@ function ListingDetail({ listing }: { listing: Listing }) {
               image={listing.seller_avatar_url}
             />
             <div className="min-w-0 flex-1">
-              <p className="font-medium">
+              <p className="flex flex-wrap items-center gap-2 font-medium">
                 <BusinessName
                   name={listing.seller_name}
                   verified={listing.seller_verified}
+                />
+                <ReplySpeedBadge
+                  usuallyWithinDay={listing.usually_replies_within_day}
                 />
               </p>
               {listing.average_rating !== null && (
@@ -288,6 +308,22 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 {plural(listing.review_count, 'review')}
               </p>
             </div>
+            <ModerationActions
+              partyId={listing.seller_id}
+              name={listing.seller_name}
+              listingId={listing.id}
+            />
+            <FavouriteButton
+              labelled
+              className="min-h-11"
+              listingId={listing.id}
+              name={listing.material_name}
+            />
+            <WhatsAppShare
+              className="min-h-11"
+              text={`${listing.material_name} at ${formatRate(listing.price)} on 3REco`}
+              path={`/market/listing/${listing.id}`}
+            />
             <Link
               className="inline-flex min-h-11 items-center rounded px-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring"
               to="/market/store/$sellerId"

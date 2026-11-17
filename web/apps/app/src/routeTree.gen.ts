@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WantedRouteImport } from './routes/wanted'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TeamRouteImport } from './routes/team'
@@ -16,6 +17,7 @@ import { Route as StockRouteImport } from './routes/stock'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as SavedRouteImport } from './routes/saved'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MaterialsRouteImport } from './routes/materials'
@@ -39,11 +41,17 @@ import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminReportsRouteImport } from './routes/admin/reports'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin/duplicates'
 import { Route as AdminActivityRouteImport } from './routes/admin/activity'
 import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store/$sellerId'
 import { Route as MarketListingListingIdRouteImport } from './routes/market/listing/$listingId'
 
+const WantedRoute = WantedRouteImport.update({
+  id: '/wanted',
+  path: '/wanted',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
@@ -77,6 +85,11 @@ const SignInRoute = SignInRouteImport.update({
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavedRoute = SavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -195,6 +208,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDuplicatesRoute = AdminDuplicatesRouteImport.update({
   id: '/admin/duplicates',
   path: '/admin/duplicates',
@@ -228,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saved': typeof SavedRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -235,8 +254,10 @@ export interface FileRoutesByFullPath {
   '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -264,6 +285,7 @@ export interface FileRoutesByTo {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saved': typeof SavedRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -271,8 +293,10 @@ export interface FileRoutesByTo {
   '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -301,6 +325,7 @@ export interface FileRoutesById {
   '/materials': typeof MaterialsRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saved': typeof SavedRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -308,8 +333,10 @@ export interface FileRoutesById {
   '/team': typeof TeamRoute
   '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -339,6 +366,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/saved'
     | '/setup'
     | '/sign-in'
     | '/sign-up'
@@ -346,8 +374,10 @@ export interface FileRouteTypes {
     | '/team'
     | '/terms'
     | '/verify-email'
+    | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
+    | '/admin/reports'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -375,6 +405,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/saved'
     | '/setup'
     | '/sign-in'
     | '/sign-up'
@@ -382,8 +413,10 @@ export interface FileRouteTypes {
     | '/team'
     | '/terms'
     | '/verify-email'
+    | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
+    | '/admin/reports'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -411,6 +444,7 @@ export interface FileRouteTypes {
     | '/materials'
     | '/privacy'
     | '/reset-password'
+    | '/saved'
     | '/setup'
     | '/sign-in'
     | '/sign-up'
@@ -418,8 +452,10 @@ export interface FileRouteTypes {
     | '/team'
     | '/terms'
     | '/verify-email'
+    | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
+    | '/admin/reports'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -448,6 +484,7 @@ export interface RootRouteChildren {
   MaterialsRoute: typeof MaterialsRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SavedRoute: typeof SavedRoute
   SetupRoute: typeof SetupRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -455,8 +492,10 @@ export interface RootRouteChildren {
   TeamRoute: typeof TeamRoute
   TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  WantedRoute: typeof WantedRoute
   AdminActivityRoute: typeof AdminActivityRoute
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   MarketRequestIdRoute: typeof MarketRequestIdRoute
   MarketIncomingRoute: typeof MarketIncomingRoute
@@ -475,6 +514,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wanted': {
+      id: '/wanted'
+      path: '/wanted'
+      fullPath: '/wanted'
+      preLoaderRoute: typeof WantedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify-email': {
       id: '/verify-email'
       path: '/verify-email'
@@ -522,6 +568,13 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saved': {
+      id: '/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof SavedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -685,6 +738,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/duplicates': {
       id: '/admin/duplicates'
       path: '/admin/duplicates'
@@ -728,6 +788,7 @@ const rootRouteChildren: RootRouteChildren = {
   MaterialsRoute: MaterialsRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SavedRoute: SavedRoute,
   SetupRoute: SetupRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
@@ -735,8 +796,10 @@ const rootRouteChildren: RootRouteChildren = {
   TeamRoute: TeamRoute,
   TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  WantedRoute: WantedRoute,
   AdminActivityRoute: AdminActivityRoute,
   AdminDuplicatesRoute: AdminDuplicatesRoute,
+  AdminReportsRoute: AdminReportsRoute,
   AdminUsersRoute: AdminUsersRoute,
   MarketRequestIdRoute: MarketRequestIdRoute,
   MarketIncomingRoute: MarketIncomingRoute,

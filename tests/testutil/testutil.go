@@ -29,6 +29,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/invoices"
 	"github.com/connor-davis/3reco/internal/services/privacy"
+	pushsvc "github.com/connor-davis/3reco/internal/services/push"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 )
@@ -133,6 +134,7 @@ type App struct {
 	Invoices *invoices.Service
 	Trades   *transactions.Service
 	Privacy  *privacy.Service
+	Push     *pushsvc.Service
 	Storage  *storage.Client
 	DB       *database.DB
 	Config   config.Config
@@ -176,6 +178,9 @@ func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 	cfg.SMTPPort = 1026
 	cfg.ResendAPIKey = ""
 	cfg.Dev = true
+	// Tests never inherit a real provider from the shell environment.
+	cfg.Geocoder = "fake"
+	cfg.GeocoderURL = "http://127.0.0.1:1"
 	cfg.ShutdownTimeout = 2 * time.Second
 	cfg.FieldKey = FieldKey
 
@@ -190,12 +195,13 @@ func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 	var invoiceService *invoices.Service
 	var transactionService *transactions.Service
 	var privacyService *privacy.Service
+	var pushService *pushsvc.Service
 
 	app := fx.New(
 		fx.NopLogger,
 		fx.Supply(cfg, db),
 		api.Module,
-		fx.Populate(&listener, &hub, &invoiceService, &transactionService, &privacyService),
+		fx.Populate(&listener, &hub, &invoiceService, &transactionService, &privacyService, &pushService),
 	)
 
 	if err := app.Err(); err != nil {
@@ -217,7 +223,7 @@ func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 	})
 
 	return &App{
-		DB: db, Hub: hub, Storage: objects, Invoices: invoiceService, Trades: transactionService, Privacy: privacyService,
+		DB: db, Hub: hub, Storage: objects, Invoices: invoiceService, Trades: transactionService, Privacy: privacyService, Push: pushService,
 		Config: cfg, URL: "http://" + listener.Addr(), Host: listener.Addr(),
 	}, nil
 }

@@ -162,6 +162,12 @@ export function RecordList({
     });
   }
 
+  function downloadInvoice(row: Transaction) {
+    invoice.mutate(row, {
+      onError: (error) => toast.error(errorText(error)),
+    });
+  }
+
   const columns: ColumnDef<Transaction>[] = [
     {
       id: 'date',
@@ -258,14 +264,15 @@ export function RecordList({
           name={row.original.invoice_number}
           actions={[
             { label: 'Open', onSelect: () => openRow(row.original) },
-            {
-              label: 'Download invoice',
-              disabled: invoice.isPending,
-              onSelect: () =>
-                invoice.mutate(row.original, {
-                  onError: (error) => toast.error(errorText(error)),
-                }),
-            },
+            ...(row.original.status === 'complete'
+              ? [
+                  {
+                    label: 'Download invoice',
+                    disabled: invoice.isPending,
+                    onSelect: () => downloadInvoice(row.original),
+                  },
+                ]
+              : []),
           ]}
         />
       ),
@@ -489,6 +496,20 @@ export function RecordList({
               subtitle={<Parties row={row} />}
               meta={`${formatDate(dayOf(row))} · ${row.invoice_number}`}
               value={formatRand(toCents(row.total_price))}
+              trailing={
+                row.status === 'complete' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="min-h-11 min-w-11"
+                    aria-label={`Download invoice ${row.invoice_number}`}
+                    disabled={invoice.isPending}
+                    onClick={() => downloadInvoice(row)}
+                  >
+                    <Download aria-hidden="true" />
+                  </Button>
+                )
+              }
               status={
                 <>
                   <StatusBadge

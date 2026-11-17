@@ -6,9 +6,11 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { AuthShell } from '@/components/auth-shell';
 import { TextField } from '@/components/form-fields';
+import { DemoLogins } from '@/components/demo-logins';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { ApiError } from '@/lib/api/client';
+import { useAppConfig } from '@/lib/api/app-config';
 import { useSignIn } from '@/lib/api/auth';
 import { showApiError } from '@/lib/form-errors';
 import { authDestination } from '@/lib/auth/redirect';
@@ -47,6 +49,8 @@ function SignInPage() {
   const reason = params.get('reason');
   const ended = reason === 'ended';
   const signIn = useSignIn();
+  // The demo has no sign-up or password reset: it offers one-click sign-ins.
+  const { demo } = useAppConfig();
   const [failure, setFailure] = useState<string | null>(null);
   const [unverified, setUnverified] = useState<string | null>(null);
 
@@ -113,15 +117,17 @@ function SignInPage() {
               </Link>
             </p>
           )}
-          <p>
-            New to 3REco?{' '}
-            <Link
-              to="/sign-up"
-              className="inline-flex min-h-11 items-center font-medium text-foreground underline"
-            >
-              Create an account
-            </Link>
-          </p>
+          {!demo && (
+            <p>
+              New to 3REco?{' '}
+              <Link
+                to="/sign-up"
+                className="inline-flex min-h-11 items-center font-medium text-foreground underline"
+              >
+                Create an account
+              </Link>
+            </p>
+          )}
           {unverified && (
             <p>
               <Link
@@ -152,14 +158,16 @@ function SignInPage() {
           type="password"
           autoComplete="current-password"
         />
-        <div className="text-right">
-          <Link
-            to="/forgot-password"
-            className="inline-flex min-h-11 items-center text-sm underline"
-          >
-            Forgot password?
-          </Link>
-        </div>
+        {!demo && (
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              className="inline-flex min-h-11 items-center text-sm underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        )}
         <Button type="submit" className="w-full" disabled={signIn.isPending}>
           {signIn.isPending || formState.isSubmitting ? (
             <>
@@ -170,6 +178,7 @@ function SignInPage() {
           )}
         </Button>
       </form>
+      <DemoLogins onPick={onSubmit} disabled={signIn.isPending} />
     </AuthShell>
   );
 }

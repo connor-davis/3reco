@@ -19,6 +19,14 @@ export function canSeeTeam(
   );
 }
 
+/** Importing stock from a CSV is for Owners and Managers of the selected business. */
+export function canImportStock(
+  user:
+    Pick<AuthUser, 'active_business_id' | 'business_role'> | null | undefined
+): boolean {
+  return canSeeTeam(user);
+}
+
 /** The Business page is for Owners and Managers of the selected business. */
 export function canViewBusiness(
   user:
@@ -43,10 +51,13 @@ export type PageId =
   | 'incoming'
   | 'outgoing'
   | 'cart'
+  | 'saved'
+  | 'wanted'
   | 'profile'
   | 'users'
   | 'activity'
-  | 'duplicates';
+  | 'duplicates'
+  | 'reports';
 
 // Pages that are not listed here (market, store, listing, about, auth) are
 // open to everyone, signed in or not. The old app's permissions decide this.
@@ -63,10 +74,13 @@ const allowed: Record<PageId, Role[]> = {
   incoming: ['business'],
   outgoing: ['business'],
   cart: ['business'],
+  saved: ['admin', 'staff', 'business', 'collector'],
+  wanted: ['business'],
   profile: ['guest', 'admin', 'staff', 'business', 'collector'],
   users: ['admin'],
   activity: ['admin'],
   duplicates: ['admin'],
+  reports: ['admin'],
 };
 
 /** A guest (no role yet) opens nothing but their profile and the setup. */

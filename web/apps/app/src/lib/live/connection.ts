@@ -7,6 +7,7 @@ export const accountRemovedReason = 'account-removed';
 
 // A burst of events for one key (a chat flurry) refetches it once.
 const settleMs = 300;
+const listingSettleMs = 1500;
 
 /**
  * The query keys a change of this kind may have made stale. An id adds the
@@ -21,12 +22,30 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
       return [['auth'], ['team'], ['businesses', 'mine']];
     case 'notification':
       return [['notifications']];
+    case 'block':
+      return [
+        ['blocks'],
+        ['listings'],
+        ['favourites', 'list'],
+        ['stores'],
+        ['follows', 'list'],
+        ['wanted'],
+        ['requests'],
+        ['messages'],
+        ['cart'],
+      ];
+    case 'wanted':
+      return [['wanted']];
+    case 'saved_search':
+      return [['saved-searches']];
     case 'stock':
-      return [['stock'], ['dashboards']];
+      return [['stock'], ['dashboards'], ['seller-stats']];
     case 'listing':
       return [
         ['listings'],
+        ['favourites', 'list'],
         ['stores'],
+        ['follows', 'list'],
         ['reviews'],
         ['cart'],
         ...(id ? [['stock', id]] : []),
@@ -35,8 +54,10 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
       return [['cart']];
     case 'request':
       return [
+        ['seller-stats'],
         ['requests', 'incoming'],
         ['requests', 'outgoing'],
+        ['wanted'],
         ['messages', 'inbox'],
         ['dashboards'],
         ...(id
@@ -52,6 +73,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
         ['admin', 'duplicates'],
         ['admin', 'activity'],
         ['transactions'],
+        ['price-history'],
         ['dashboards'],
         ['stats'],
         ['collectors'],
@@ -121,13 +143,21 @@ export class LiveConnection {
 
   private invalidate(key: QueryKey) {
     const name = JSON.stringify(key);
-    if (this.pending.has(name)) return;
+    const listing = key[0] === 'listings';
+    if (this.pending.has(name)) {
+      if (!listing) return;
+      clearTimeout(this.pending.get(name));
+    }
+
     this.pending.set(
       name,
-      setTimeout(() => {
-        this.pending.delete(name);
-        void this.client.invalidateQueries({ queryKey: key });
-      }, settleMs)
+      setTimeout(
+        () => {
+          this.pending.delete(name);
+          void this.client.invalidateQueries({ queryKey: key });
+        },
+        listing ? listingSettleMs : settleMs
+      )
     );
   }
 

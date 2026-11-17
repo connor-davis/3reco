@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { FileText, MoreHorizontal, Upload } from 'lucide-react';
 import { BusinessName, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { toast } from 'sonner';
@@ -25,9 +26,17 @@ import {
   useDownloadReceipt,
   useDeleteReceipt,
 } from '@/lib/api/receipts';
-import { useDownloadInvoice, useTransaction } from '@/lib/api/transactions';
-import type { Receipt, Transaction } from '@/lib/api/types';
+import {
+  useDownloadInvoice,
+  useDownloadRecord,
+  useTransaction,
+} from '@/lib/api/transactions';
+import { api, ApiError } from '@/lib/api/client';
+import { useSaveCart } from '@/lib/api/cart';
+import { queryString, type Page } from '@/lib/api/paging';
+import type { Cart, Listing, Receipt, Transaction } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/use-auth';
+import { mergeReorder } from '@/lib/reorder';
 import { cn } from '@/lib/utils';
 import {
   formatDate,
@@ -51,8 +60,60 @@ export function TradeDetail({ record }: Props) {
   const remove = useDeleteReceipt(record?.id ?? '');
   const [removing, setRemoving] = useState<Receipt | null>(null);
   const invoice = useDownloadInvoice();
+  const recyclingRecord = useDownloadRecord();
   const [fileError, setFileError] = useState('');
   const shown = fresh.data ?? record;
+  const navigate = useNavigate();
+  const saveCart = useSaveCart(shown.seller.id);
+  const [buyingAgain, setBuyingAgain] = useState(false);
+  const canBuyAgain =
+    user?.role === 'business' &&
+    (user.business_role === 'owner' || user.business_role === 'manager') &&
+    !!user.active_business_id &&
+    shown.buyer.id === user.active_business_id &&
+    shown.type === 'b2b' &&
+    shown.status === 'complete';
+
+  async function buyAgain() {
+    if (!canBuyAgain || buyingAgain) return;
+
+    setBuyingAgain(true);
+    try {
+      // Read at the tap, rather than overwriting newer cart choices with a cache.
+      const seller = { seller_id: shown.seller.id };
+      const [cart, ...pages] = await Promise.all([
+        api<Cart>(`/cart${queryString(seller)}`),
+        ...[...new Set(shown.items.map((item) => item.material_id))].map(
+          (material_id) =>
+            api<Page<Listing>>(
+              `/market/listings${queryString({ ...seller, material_id })}`
+            )
+        ),
+      ]);
+      const { lines, skipped } = mergeReorder(
+        shown.items,
+        pages.flatMap((page) => page.items),
+        cart.items
+      );
+
+      // A failed save leaves both the saved cart and the current page alone.
+      await saveCart.mutateAsync({ items: lines });
+      if (skipped.length) {
+        toast.info(
+          `Not added because they are no longer listed: ${skipped.join(', ')}.`
+        );
+      }
+      await navigate({ to: '/cart', search: seller });
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError && error.fields?.items
+          ? error.fields.items
+          : errorText(error)
+      );
+    } finally {
+      setBuyingAgain(false);
+    }
+  }
 
   // The buyer, a business seller, admins and staff may add receipts.
   // The collector may view receipts but never upload them.
@@ -137,6 +198,14 @@ export function TradeDetail({ record }: Props) {
                 <MoreHorizontal />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {canBuyAgain && (
+                  <DropdownMenuItem
+                    disabled={buyingAgain}
+                    onClick={() => void buyAgain()}
+                  >
+                    {buyingAgain ? 'Adding to cart…' : 'Buy again'}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   disabled={invoice.isPending}
                   onClick={() =>
@@ -147,6 +216,18 @@ export function TradeDetail({ record }: Props) {
                 >
                   Download invoice
                 </DropdownMenuItem>
+                {shown.status === 'complete' && (
+                  <DropdownMenuItem
+                    disabled={recyclingRecord.isPending}
+                    onClick={() =>
+                      recyclingRecord.mutate(shown, {
+                        onError: (error) => toast.error(errorText(error)),
+                      })
+                    }
+                  >
+                    Recycling record
+                  </DropdownMenuItem>
+                )}
                 {shown.request_id && (
                   <DropdownMenuItem
                     render={

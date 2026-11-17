@@ -3,6 +3,8 @@
 //	3reco serve          run the API
 //	3reco migrate        apply the SQL migrations and stop
 //	3reco admin create   make (or promote) an admin: --email --password --name
+//	3reco demo seed      fill an empty demo database with made-up data
+//	3reco demo reset --yes  wipe the demo database and bucket, then seed again
 //	3reco import-convex <export.zip>  load a Convex export into an empty database
 //	3reco health         exit 0 when the local server answers (for Docker)
 //	3reco version        print the version
@@ -62,6 +64,8 @@ func run(args []string) error {
 		})
 	case "import-convex":
 		return importConvex(args[1:])
+	case "demo":
+		return demoCommand(args[1:])
 	case "admin":
 		if len(args) > 1 && args[1] == "create" {
 			return adminCreate(args[2:])
@@ -72,13 +76,18 @@ func run(args []string) error {
 }
 
 func usage() error {
-	return fmt.Errorf("usage: 3reco serve | migrate | admin create | import-convex <export.zip> | health | version")
+	return fmt.Errorf("usage: 3reco serve | migrate | admin create | demo seed | demo reset --yes | import-convex <export.zip> | health | version")
 }
 
 // withDB loads the config, connects and migrates, then runs fn.
 func withDB(fn func(context.Context, config.Config, *database.DB) error) error {
 	cfg, err := config.Load()
 	if err != nil {
+		return err
+	}
+
+	// A demo run is refused unless every setting says it is the demo.
+	if err := cfg.CheckDemo(); err != nil {
 		return err
 	}
 

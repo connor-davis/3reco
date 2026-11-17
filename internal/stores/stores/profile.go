@@ -4,24 +4,27 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 )
 
 // Profile is a public store profile and listing/review summary.
 type Profile struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Verified      bool      `json:"business_verified"`
-	Image         string    `json:"image"`
-	AvatarURL     string    `json:"avatar_url"`
-	City          string    `json:"city"`
-	Province      string    `json:"province"`
-	ItemCount     int       `json:"item_count"`
-	MaterialNames []string  `json:"material_names"`
-	AverageRating *float64  `json:"average_rating"`
-	ReviewCount   int       `json:"review_count"`
-	CreatedAt     time.Time `json:"created_at"`
+	UsuallyRepliesWithinDay *bool     `json:"usually_replies_within_day,omitempty"`
+	ID                      string    `json:"id"`
+	Name                    string    `json:"name"`
+	Verified                bool      `json:"business_verified"`
+	Image                   string    `json:"image"`
+	AvatarURL               string    `json:"avatar_url"`
+	City                    string    `json:"city"`
+	Province                string    `json:"province"`
+	ItemCount               int       `json:"item_count"`
+	MaterialNames           []string  `json:"material_names"`
+	AverageRating           *float64  `json:"average_rating"`
+	ReviewCount             int       `json:"review_count"`
+	CreatedAt               time.Time `json:"created_at"`
 }
 
 var profileColumns = `u.id,` + database.DisplayName("u") + `,
@@ -48,7 +51,7 @@ func (records *Store) Find(ctx context.Context, id, viewer string) (Profile, err
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
 		profileSelect(`SELECT * FROM business_profiles u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed
-		AND (`+database.Verified("u")+` OR u.id=$2)`),
+		AND (`+database.Verified("u")+` OR u.id=$2) AND contact_allowed($2,u.id)`),
 		id,
 		viewer,
 	).Scan(
@@ -72,7 +75,7 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
-		AND `+database.Verified("u")+`
+		AND `+database.Verified("u")+` AND contact_allowed($1,u.id)
 		AND ($2='' OR u.business_name ILIKE '%'||$2||'%' OR u.name ILIKE '%'||$2||'%')
 		AND ($3='' OR (u.created_at,u.id)<($4,$3))
 		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($5,0)`),
@@ -87,6 +90,34 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 	}
 	defer rows.Close()
 
+	return scanProfiles(rows)
+}
+
+// Followed lists the stores a person follows, in the same shape and order as
+// List. A store that is not verified is hidden, as everywhere else.
+func (records *Store) Followed(ctx context.Context, userID string, query paging.Query) ([]Profile, error) {
+	rows, err := records.db.Q(ctx).Query(
+		ctx,
+		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed
+		AND `+database.Verified("u")+`
+		AND person_contact_allowed($1,u.id)
+		AND u.id IN (SELECT store_id FROM follows WHERE user_id=$1)
+		AND ($2='' OR (u.created_at,u.id)<($3,$2))
+		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($4,0)`),
+		userID,
+		query.ID,
+		query.At,
+		query.Size(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanProfiles(rows)
+}
+
+func scanProfiles(rows pgx.Rows) ([]Profile, error) {
 	items := []Profile{}
 	for rows.Next() {
 		var item Profile

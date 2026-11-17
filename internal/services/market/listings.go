@@ -9,22 +9,37 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/paging"
+	"github.com/connor-davis/3reco/internal/services/auth"
 	store "github.com/connor-davis/3reco/internal/stores/market"
+	"github.com/connor-davis/3reco/internal/stores/stats"
 )
 
 // Listings returns safe listed stock, with all filters applied before seeking.
 func (service *Service) Listings(ctx context.Context, filter store.Filter, query paging.Query) (paging.Page[store.Listing], error) {
+	filter, err := service.prepare(ctx, filter)
+	if err != nil {
+		return paging.Page[store.Listing]{}, err
+	}
+
 	items, err := service.store.Listings(ctx, filter, query)
 	if err != nil {
 		return paging.Page[store.Listing]{}, err
 	}
 
+	// One query for the whole page, not one per listing.
+	sellerIDs := make([]string, len(items))
 	for i := range items {
-		summary, err := service.reviews.Summary(ctx, items[i].SellerID)
-		if err != nil {
-			return paging.Page[store.Listing]{}, err
-		}
+		sellerIDs[i] = items[i].SellerID
+	}
 
+	summaries, err := service.reviews.SummaryMany(ctx, sellerIDs)
+	if err != nil {
+		return paging.Page[store.Listing]{}, err
+	}
+
+	// A seller missing from the map has no reviews: zero count, no average.
+	for i := range items {
+		summary := summaries[items[i].SellerID]
 		items[i].AverageRating, items[i].ReviewCount = summary.Average, summary.Count
 	}
 
@@ -38,8 +53,8 @@ func (service *Service) Listings(ctx context.Context, filter store.Filter, query
 }
 
 // Detail hides stock immediately when it is unlisted.
-func (service *Service) Detail(ctx context.Context, id, viewer string) (store.Listing, error) {
-	item, err := service.store.Listing(ctx, id, viewer)
+func (service *Service) Detail(ctx context.Context, id string, user auth.User) (store.Listing, error) {
+	item, err := service.store.Listing(ctx, id, auth.PartyID(user))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return item, apperr.NotFound("No such listing.")
 	}
@@ -49,7 +64,22 @@ func (service *Service) Detail(ctx context.Context, id, viewer string) (store.Li
 	}
 
 	summary, err := service.reviews.Summary(ctx, item.SellerID)
+	if err != nil {
+		return item, err
+	}
+
 	item.AverageRating, item.ReviewCount = summary.Average, summary.Count
+	metrics := stats.New(service.db)
+	replies, err := metrics.Replies(ctx, item.SellerID)
+	if err != nil {
+		return item, err
+	}
+
+	badge := replies.UsuallyWithinDay()
+	item.UsuallyRepliesWithinDay = &badge
+	if user.ID != "" && !auth.HasRole(user, "admin", "staff") {
+		err = metrics.RecordView(ctx, item.ID, user.ID)
+	}
 
 	return item, err
 }

@@ -2,7 +2,10 @@ package market
 
 import (
 	"context"
+	"errors"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/platform/paging"
@@ -11,23 +14,30 @@ import (
 
 // Listing is an allowlisted market view, never a private user or stock record.
 type Listing struct {
-	ImageURL        string    `json:"image_url"`
-	ImageURLs       []string  `json:"image_urls"`
-	SellerAvatarURL string    `json:"seller_avatar_url"`
-	ID              string    `json:"id"`
-	SellerID        string    `json:"seller_id"`
-	SellerName      string    `json:"seller_name"`
-	SellerVerified  bool      `json:"seller_verified"`
-	MaterialID      string    `json:"material_id"`
-	MaterialName    string    `json:"material_name"`
-	CarbonFactor    string    `json:"carbon_factor"`
-	GWCode          string    `json:"gw_code"`
-	HeldWeight      string    `json:"held_weight"`
-	Weight          string    `json:"weight"`
-	Price           string    `json:"price"`
-	AverageRating   *float64  `json:"average_rating"`
-	ReviewCount     int       `json:"review_count"`
-	CreatedAt       time.Time `json:"created_at"`
+	UsuallyRepliesWithinDay *bool    `json:"usually_replies_within_day,omitempty"`
+	FulfillmentMode         string   `json:"fulfillment_mode"`
+	PickupArea              string   `json:"pickup_area"`
+	ImageURL                string   `json:"image_url"`
+	ThumbURL                string   `json:"thumb_url"`
+	ImageURLs               []string `json:"image_urls"`
+	SellerAvatarURL         string   `json:"seller_avatar_url"`
+	ID                      string   `json:"id"`
+	SellerID                string   `json:"seller_id"`
+	SellerName              string   `json:"seller_name"`
+	SellerVerified          bool     `json:"seller_verified"`
+	MaterialID              string   `json:"material_id"`
+	MaterialName            string   `json:"material_name"`
+	CarbonFactor            string   `json:"carbon_factor"`
+	GWCode                  string   `json:"gw_code"`
+	HeldWeight              string   `json:"held_weight"`
+	Weight                  string   `json:"weight"`
+	Price                   string   `json:"price"`
+	AverageRating           *float64 `json:"average_rating"`
+	// DistanceKm is a whole number of km from the viewer, sent only while the
+	// distance filter is on. The seller's point itself never leaves the database.
+	DistanceKm  *int      `json:"distance_km"`
+	ReviewCount int       `json:"review_count"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // Filter narrows public listings before paging.
@@ -38,35 +48,58 @@ type Filter struct {
 	ExcludeOwner string
 	// ViewerID is the caller, who may see their own stock even when unverified.
 	ViewerID string
+	// MinPrice and MaxPrice are exact R/kg decimal strings, both ends included.
+	// Empty means no bound.
+	MinPrice string
+	MaxPrice string
+	// MaxKm and the origin switch the distance filter on. Listings whose seller
+	// has no map point are left out while it is on.
+	MaxKm     int
+	OriginLat *float64
+	OriginLng *float64
+	// FavouriteOf is a person's id; only that person's saved listings match.
+	FavouriteOf string
 }
 
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
 	s.material_id,m.name,m.carbon_factor::text,m.gw_code,GREATEST(s.weight-COALESCE(h.held,0),0)::text,s.price::text,
 	s.created_at,COALESCE(h.held,0)::text,
-	` + stock.CoverURL("s") + `,` + stock.PhotoURLs("s") + `,
+	` + stock.CoverURL("s") + `,` + stock.CoverThumbURL("s") + `,` + stock.PhotoURLs("s") + `,
 	CASE WHEN u.avatar_key IS NOT NULL THEN '/api/stores/'||u.id||'/logo?v='||md5(u.avatar_key) ELSE COALESCE(u.image,'') END,
-	` + database.Verified("u")
+	` + database.Verified("u") + `,COALESCE(s.fulfillment_mode,''),COALESCE(s.pickup_area,'')`
 
 // Held weight is summed once for all stock, not once per row through stock_available().
 const listingJoin = ` FROM stock s JOIN materials m ON m.id=s.material_id
 	JOIN business_profiles u ON u.id=s.owner_id
+	LEFT JOIN businesses b ON b.id=s.owner_id
 	LEFT JOIN (SELECT stock_id,sum(weight) AS held FROM stock_holds
 		WHERE status='active' AND expires_at>clock_timestamp() GROUP BY stock_id) h ON h.stock_id=s.id
 	WHERE s.is_listed AND s.weight>0
 	AND NOT u.is_removed AND u.role='business'`
 
+// kmApart is the haversine distance in km between the seller's point and the
+// origin in $11 and $12. Postgres does the maths, so no PostGIS is needed.
+const kmApart = `6371*2*asin(sqrt(least(1,
+	sin(radians(b.latitude-$11::float8)/2)^2
+	+cos(radians($11::float8))*cos(radians(b.latitude))*sin(radians(b.longitude-$12::float8)/2)^2)))`
+
 // sellerVisible hides an unverified business's stock from everyone but its owner,
 // whose id is the numbered placeholder.
 func sellerVisible(viewer string) string {
-	return ` AND (` + database.Verified("u") + ` OR u.id=` + viewer + `)`
+	return ` AND (` + database.Verified("u") + ` OR u.id=` + viewer + `) AND contact_allowed(` + viewer + `,u.id)`
 }
 
 // Listings excludes hidden, empty and removed-seller stock at the SQL boundary.
 func (records *Store) Listings(ctx context.Context, filter Filter, query paging.Query) ([]Listing, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
-		`SELECT `+listingColumns+listingJoin+sellerVisible("$8")+`
+		`SELECT `+listingColumns+`,
+		CASE WHEN $13::int>0 AND b.latitude IS NOT NULL THEN round(`+kmApart+`)::int END`+
+			listingJoin+sellerVisible("$8")+`
 		AND ($1='' OR s.owner_id=$1) AND ($2='' OR s.material_id=$2)
+		AND ($9='' OR s.price>=NULLIF($9,'')::numeric) AND ($10='' OR s.price<=NULLIF($10,'')::numeric)
+		AND ($13::int=0 OR (b.latitude IS NOT NULL AND `+kmApart+`<=$13::int))
+		AND ($14='' OR s.id IN (SELECT stock_id FROM favourites WHERE user_id=$14))
 		AND ($3='' OR m.name ILIKE '%'||$3||'%' OR u.business_name ILIKE '%'||$3||'%')
 		AND ($4='' OR s.owner_id<>$4) AND ($5='' OR (s.created_at,s.id)<($6,$5))
 		ORDER BY s.created_at DESC,s.id DESC LIMIT NULLIF($7,0)`,
@@ -78,6 +111,12 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 		query.At,
 		query.Size(),
 		filter.ViewerID,
+		filter.MinPrice,
+		filter.MaxPrice,
+		filter.OriginLat,
+		filter.OriginLng,
+		filter.MaxKm,
+		filter.FavouriteOf,
 	)
 	if err != nil {
 		return nil, err
@@ -100,9 +139,13 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 			&item.CreatedAt,
 			&item.HeldWeight,
 			&item.ImageURL,
+			&item.ThumbURL,
 			&item.ImageURLs,
 			&item.SellerAvatarURL,
 			&item.SellerVerified,
+			&item.FulfillmentMode,
+			&item.PickupArea,
+			&item.DistanceKm,
 		); err != nil {
 			return nil, err
 		}
@@ -134,10 +177,28 @@ func (records *Store) Listing(ctx context.Context, id, viewer string) (Listing, 
 		&item.CreatedAt,
 		&item.HeldWeight,
 		&item.ImageURL,
+		&item.ThumbURL,
 		&item.ImageURLs,
 		&item.SellerAvatarURL,
 		&item.SellerVerified,
+		&item.FulfillmentMode,
+		&item.PickupArea,
 	)
 
 	return item, err
+}
+
+// Origin reads the map point of a business's saved address. Both are nil when
+// it has none.
+func (records *Store) Origin(ctx context.Context, businessID string) (lat, lng *float64, err error) {
+	err = records.db.Q(ctx).QueryRow(
+		ctx,
+		`SELECT latitude,longitude FROM businesses WHERE id=$1 AND NOT is_removed`,
+		businessID,
+	).Scan(&lat, &lng)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil, nil
+	}
+
+	return lat, lng, err
 }

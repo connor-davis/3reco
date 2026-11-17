@@ -15,6 +15,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/geocode"
 	"github.com/connor-davis/3reco/internal/services/profile"
 	"github.com/connor-davis/3reco/internal/stores/businesses"
 	"github.com/connor-davis/3reco/internal/stores/collectors"
@@ -27,11 +28,18 @@ type Service struct {
 	store   *businesses.Store
 	privacy *privacy.Store
 	cipher  *crypt.Cipher
+	geocode *geocode.Service
 }
 
 // New builds the service.
-func New(db *database.DB, rows *businesses.Store, events *privacy.Store, cipher *crypt.Cipher) *Service {
-	return &Service{db: db, store: rows, privacy: events, cipher: cipher}
+func New(
+	db *database.DB,
+	rows *businesses.Store,
+	events *privacy.Store,
+	cipher *crypt.Cipher,
+	geocoder *geocode.Service,
+) *Service {
+	return &Service{db: db, store: rows, privacy: events, cipher: cipher, geocode: geocoder}
 }
 
 // Input lists the editable business fields. The business id is never accepted:
@@ -121,8 +129,14 @@ func (s *Service) Update(ctx context.Context, user auth.User, in Input) error {
 			return err
 		}
 
+		before := geocode.Address(item)
+
 		if err := apply(&item, in); err != nil {
 			return err
+		}
+
+		if geocode.Address(item) != before {
+			item.Lat, item.Lng = nil, nil
 		}
 
 		sealed, err := s.cipher.Encrypt(item.BankAccountNumber)
@@ -130,7 +144,16 @@ func (s *Service) Update(ctx context.Context, user auth.User, in Input) error {
 			return err
 		}
 
-		return s.store.SaveProfile(ctx, item, sealed, collectors.Last4(item.BankAccountNumber))
+		if err := s.store.SaveProfile(ctx, item, sealed, collectors.Last4(item.BankAccountNumber)); err != nil {
+			return err
+		}
+
+		// ActorTx owns the outer commit. Never reuse its completed transaction.
+		database.AfterCommit(ctx, func() {
+			s.geocode.Place(database.WithActor(context.Background(), user.ID, item.ID), item)
+		})
+
+		return nil
 	})
 }
 

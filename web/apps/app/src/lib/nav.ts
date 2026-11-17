@@ -2,7 +2,9 @@ import {
   Boxes,
   Building2,
   ClipboardList,
+  Flag,
   History,
+  Heart,
   Home,
   LayoutDashboard,
   type LucideIcon,
@@ -10,6 +12,7 @@ import {
   PackageOpen,
   Receipt,
   Search,
+  Megaphone,
   Send,
   Store,
   TrendingUp,
@@ -47,6 +50,8 @@ const browse: NavLink = {
   to: '/market',
   icon: Search,
 };
+
+const saved: NavLink = { label: 'Saved', to: '/saved', icon: Heart };
 
 const setup: NavLink = { label: 'Finish setup', to: '/setup', icon: UserPlus };
 
@@ -97,6 +102,7 @@ function roleNav(role: Role | null): NavGroup[] {
             ...staffWorkspace,
             { label: 'User management', to: '/admin/users', icon: Users },
             { label: 'Activity log', to: '/admin/activity', icon: History },
+            { label: 'Reports', to: '/admin/reports', icon: Flag },
           ],
         },
       ];
@@ -108,7 +114,7 @@ function roleNav(role: Role | null): NavGroup[] {
     case 'business':
       return [
         {
-          links: [dashboard, messages, browse],
+          links: [dashboard, messages, browse, saved],
         },
         {
           label: 'Your trade',
@@ -120,6 +126,7 @@ function roleNav(role: Role | null): NavGroup[] {
               badge: 'incoming',
             },
             { label: 'Outgoing requests', to: '/market/outgoing', icon: Send },
+            { label: 'Wanted', to: '/wanted', icon: Megaphone },
           ],
         },
         {
@@ -133,7 +140,7 @@ function roleNav(role: Role | null): NavGroup[] {
         },
       ];
     case 'collector':
-      return [{ links: [dashboard, browse] }];
+      return [{ links: [dashboard, browse, saved] }];
     case 'guest':
       return [{ links: [setup] }];
     default:
@@ -252,6 +259,8 @@ const pageTitles: Record<string, string> = {
   '': 'Dashboard',
   about: 'About',
   cart: 'Your cart',
+  saved: 'Saved',
+  wanted: 'Wanted',
   collections: 'Collections',
   collectors: 'Collectors',
   materials: 'Materials',
@@ -282,6 +291,7 @@ const guardedPairs: Record<string, PageId> = {
   'admin/users': 'users',
   'admin/activity': 'activity',
   'admin/duplicates': 'duplicates',
+  'admin/reports': 'reports',
 };
 const guardedSingles: Record<string, PageId> = {
   '': 'dashboard',
@@ -292,6 +302,7 @@ const guardedSingles: Record<string, PageId> = {
   collections: 'collections',
   transactions: 'transactions',
   cart: 'cart',
+  wanted: 'wanted',
   profile: 'profile',
 };
 
@@ -321,6 +332,7 @@ export function pageTitleFor(pathname: string, role?: Role | null): string {
   if (page && role !== undefined && !canOpen(role, page))
     return 'Not available';
 
+  if (first === 'admin' && second === 'reports') return 'Reports';
   if (first === 'admin' && second === 'activity') return 'Activity log';
   if (first === 'admin' && second === 'duplicates') return 'Duplicates';
   if (first === 'market' && second === 'incoming') return 'Incoming requests';

@@ -295,6 +295,8 @@ test('receipt validation calls wrong-type and oversized files images', () => {
   const uploads = [];
   let stateIndex = 0;
   const { TradeDetail } = compile('components/dialogs/record-dialogs.tsx', {
+    '@tanstack/react-router': { useNavigate: () => () => {} },
+    '@/lib/api/cart': { useSaveCart: () => ({}) },
     react: {
       useState: (value) => {
         const index = stateIndex++;
@@ -310,6 +312,7 @@ test('receipt validation calls wrong-type and oversized files images', () => {
     '@/lib/api/transactions': {
       useTransaction: () => ({}),
       useDownloadInvoice: () => ({}),
+      useDownloadRecord: () => ({}),
     },
     '@/lib/api/receipts': {
       kinds: ['image/png', 'image/jpeg'],

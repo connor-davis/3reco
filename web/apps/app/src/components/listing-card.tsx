@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Package } from 'lucide-react';
 import { BusinessName } from '@/components/badges';
+import { FavouriteButton } from '@/components/favourite-button';
 import { PersonAvatar } from '@/components/visuals';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatKg, formatRate, toGrams } from '@/lib/format';
@@ -16,15 +17,22 @@ export function ListingCard({
   showSeller?: boolean;
 }) {
   const [failedImage, setFailedImage] = useState<string>();
+  // The small copy loads fast on a phone; old photos without one still answer
+  // this URL with the full image.
+  const cardImage = listing.thumb_url || listing.image_url;
 
   return (
     <Card className="group/card relative flex flex-col gap-0 overflow-hidden rounded-2xl border bg-card py-0 shadow-[var(--shadow)] ring-0 dark:shadow-none">
       <div className="relative flex overflow-hidden aspect-[4/3] items-center justify-center rounded-none bg-muted text-muted-foreground">
-        {listing.image_url && failedImage !== listing.image_url ? (
+        {cardImage && failedImage !== cardImage ? (
           <img
-            src={listing.image_url}
+            src={cardImage}
             alt={listing.material_name}
-            onError={() => setFailedImage(listing.image_url)}
+            loading="lazy"
+            decoding="async"
+            width={400}
+            height={300}
+            onError={() => setFailedImage(cardImage)}
             className="absolute inset-0 size-full object-cover"
           />
         ) : (
@@ -34,6 +42,11 @@ export function ListingCard({
             aria-hidden="true"
           />
         )}
+        <FavouriteButton
+          listingId={listing.id}
+          name={listing.material_name}
+          className="absolute right-2 top-2 z-10"
+        />
       </div>
       <CardContent className="space-y-1.5 p-4">
         <h3 className="line-clamp-2 font-semibold tracking-tight">
@@ -53,6 +66,25 @@ export function ListingCard({
         <p className="font-semibold tabular-nums">
           {formatRate(listing.price)}
         </p>
+        {listing.fulfillment_mode && (
+          <p className="text-sm text-muted-foreground">
+            {listing.fulfillment_mode === 'both'
+              ? 'Pickup or delivery'
+              : listing.fulfillment_mode === 'pickup'
+                ? 'Pickup'
+                : 'Delivery'}
+          </p>
+        )}
+        {listing.pickup_area && (
+          <p className="break-words text-sm text-muted-foreground">
+            Collection area: {listing.pickup_area}
+          </p>
+        )}
+        {listing.distance_km != null && (
+          <p className="text-sm text-muted-foreground">
+            About {listing.distance_km} km away
+          </p>
+        )}
         {showSeller && (
           <Link
             className="relative z-10 inline-flex min-h-11 max-w-full items-center gap-2 text-sm hover:underline"

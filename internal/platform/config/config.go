@@ -15,11 +15,14 @@ var Version = "dev"
 
 // Config holds the settings for one run of the server.
 type Config struct {
-	Addr            string
-	DatabaseURL     string
-	WebOrigin       string
-	WebDist         string
-	Dev             bool
+	Addr        string
+	DatabaseURL string
+	WebOrigin   string
+	WebDist     string
+	Dev         bool
+	// Demo turns this run into the demo site: dummy data, no real email, no
+	// sign-up, no exports. CheckDemo refuses it against real settings.
+	Demo            bool
 	CookieSecure    bool
 	TrustedProxies  []string
 	AuthRateLimit   int
@@ -42,6 +45,18 @@ type Config struct {
 	S3SecretKey string
 	S3Region    string
 	S3UseTLS    bool
+
+	// Geocoder names the map service that places business addresses for the
+	// market distance filter. Empty means the fake in dev and none in production.
+	Geocoder string
+	// GeocoderURL allows a self-hosted Nominatim to replace the public service.
+	GeocoderURL string
+
+	// VAPID keys sign phone alerts (web push). Both must be set for push to
+	// be on; the subject is a mailto: or https: contact for the push services.
+	VAPIDPublicKey  string
+	VAPIDPrivateKey string
+	VAPIDSubject    string
 }
 
 // EnvVar documents one setting.
@@ -58,6 +73,7 @@ var EnvVars = []EnvVar{
 	{"THREERECO_WEB_ORIGIN", "http://localhost:5173", "Origin of the web app. Used for CORS, CSRF, WebSockets and email links."},
 	{"THREERECO_WEB_DIST", "web/apps/app/dist", "Folder with the built web app. The server serves it next to /api; if it is missing, only the API runs."},
 	{"THREERECO_DEV", "false", "Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set."},
+	{"THREERECO_DEMO", "false", "Demo site: dummy data, a banner, no real email, no sign-up, no exports. Refused unless the database name ends in _demo and the bucket name has demo in it."},
 	{"THREERECO_COOKIE_SECURE", "false", "Set true in production so session cookies are HTTPS only."},
 	{"THREERECO_TRUSTED_PROXIES", "", "Comma-separated proxy addresses whose X-Forwarded-For is believed."},
 	{"THREERECO_AUTH_RATE_LIMIT", "20", "Requests per minute, per address, on each auth route."},
@@ -76,6 +92,11 @@ var EnvVars = []EnvVar{
 	{"THREERECO_S3_SECRET_KEY", "threereco-secret", "S3 secret key."},
 	{"THREERECO_S3_REGION", "us-east-1", "S3 region."},
 	{"THREERECO_S3_TLS", "false", "Use HTTPS to reach S3."},
+	{"THREERECO_GEOCODER", "", "Map service: nominatim enables address lookup; fake is offline; off disables it. Empty is fake in dev and off in production. Demo always disables lookup."},
+	{"THREERECO_GEOCODER_URL", "https://nominatim.openstreetmap.org", "Nominatim base URL; use a self-hosted service when needed."},
+	{"THREERECO_VAPID_PUBLIC_KEY", "", "Public VAPID key for phone alerts (web push). Phone alerts are off unless both keys are set."},
+	{"THREERECO_VAPID_PRIVATE_KEY", "", "Private VAPID key for phone alerts. A secret: keep it out of git and the browser."},
+	{"THREERECO_VAPID_SUBJECT", "mailto:admin@localhost", "Contact the push services can reach, as a mailto: or https: address."},
 }
 
 // Load reads the environment. It fails on a value it cannot read.
@@ -86,6 +107,7 @@ func Load() (Config, error) {
 		WebOrigin:      strings.TrimRight(Env("THREERECO_WEB_ORIGIN", "http://localhost:5173"), "/"),
 		WebDist:        Env("THREERECO_WEB_DIST", "web/apps/app/dist"),
 		Dev:            envBool("THREERECO_DEV"),
+		Demo:           envBool("THREERECO_DEMO"),
 		CookieSecure:   envBool("THREERECO_COOKIE_SECURE"),
 		TrustedProxies: envList("THREERECO_TRUSTED_PROXIES"),
 		FieldKey:       Env("THREERECO_FIELD_KEY", ""),
@@ -99,6 +121,12 @@ func Load() (Config, error) {
 		S3SecretKey:    Env("THREERECO_S3_SECRET_KEY", "threereco-secret"),
 		S3Region:       Env("THREERECO_S3_REGION", "us-east-1"),
 		S3UseTLS:       envBool("THREERECO_S3_TLS"),
+		Geocoder:       Env("THREERECO_GEOCODER", ""),
+		GeocoderURL:    Env("THREERECO_GEOCODER_URL", "https://nominatim.openstreetmap.org"),
+
+		VAPIDPublicKey:  Env("THREERECO_VAPID_PUBLIC_KEY", ""),
+		VAPIDPrivateKey: Env("THREERECO_VAPID_PRIVATE_KEY", ""),
+		VAPIDSubject:    Env("THREERECO_VAPID_SUBJECT", "mailto:admin@localhost"),
 	}
 
 	var err error

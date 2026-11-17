@@ -10,14 +10,17 @@ import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { isStaffRole } from '@/lib/access';
+import { canSeeTeam, isStaffRole } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
+import { useAppConfig } from '@/lib/api/app-config';
 import { useProfile } from '@/lib/api/profile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { initials } from '@/lib/format';
 import { PrivacyPanel } from './-components/privacy-panel';
 import { LocationForm, PayoutForm, PersonalForm } from './-components/forms';
 import { SessionsPanel } from './-components/sessions-panel';
+import { PhoneAlerts } from './-components/phone-alerts';
+import { BlockedPanel } from './-components/blocked-panel';
 
 export const Route = createFileRoute('/profile/')({
   component: () => (
@@ -30,6 +33,8 @@ export const Route = createFileRoute('/profile/')({
 function ProfilePage() {
   const { user } = useAuth();
   const role = user?.role;
+  // Phone alerts are off in the demo, so their tab is hidden.
+  const { demo } = useAppConfig();
   // Only collectors keep bank and location here. A business keeps its own on
   // the Business page; admin and staff have none.
   const collector = role === 'collector';
@@ -65,6 +70,10 @@ function ProfilePage() {
             <TabsTrigger value="personal">Personal</TabsTrigger>
             {collector && <TabsTrigger value="bank">Bank & payout</TabsTrigger>}
             {collector && <TabsTrigger value="location">Location</TabsTrigger>}
+            {!demo && <TabsTrigger value="alerts">Alerts</TabsTrigger>}
+            {canSeeTeam(user) && (
+              <TabsTrigger value="blocked">Blocked</TabsTrigger>
+            )}
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="privacy">Your data</TabsTrigger>
           </TabsList>
@@ -118,6 +127,26 @@ function ProfilePage() {
               <PrivacyPanel />
             </Section>
           </TabsContent>
+          {!demo && (
+            <TabsContent value="alerts">
+              <Section
+                title="Alerts"
+                description="Get 3REco alerts on this phone or computer."
+              >
+                <PhoneAlerts />
+              </Section>
+            </TabsContent>
+          )}
+          {canSeeTeam(user) && (
+            <TabsContent value="blocked">
+              <Section
+                title="Blocked"
+                description="People and businesses you blocked."
+              >
+                <BlockedPanel />
+              </Section>
+            </TabsContent>
+          )}
           <TabsContent value="sessions">
             <Section
               title="Sessions"

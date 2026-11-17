@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import { load, source } from './qa-round2-loader.mjs';
 
 const access = load('lib/access.ts');
+
+test('the business location form attributes address lookup', () => {
+  assert.match(
+    source('routes/profile/-components/forms.tsx'),
+    /Address lookup © OpenStreetMap contributors/
+  );
+});
 const { navFor } = load('lib/nav.ts', { '@/lib/access': access });
 
 const person = (business_role) => ({

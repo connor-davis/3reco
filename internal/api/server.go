@@ -21,45 +21,65 @@ import (
 	authapi "github.com/connor-davis/3reco/internal/api/auth"
 	businessapi "github.com/connor-davis/3reco/internal/api/business"
 	collectorsapi "github.com/connor-davis/3reco/internal/api/collectors"
+	favouritesapi "github.com/connor-davis/3reco/internal/api/favourites"
 	marketapi "github.com/connor-davis/3reco/internal/api/market"
 	materialsapi "github.com/connor-davis/3reco/internal/api/materials"
 	"github.com/connor-davis/3reco/internal/api/middleware"
+	moderationapi "github.com/connor-davis/3reco/internal/api/moderation"
 	privacyapi "github.com/connor-davis/3reco/internal/api/privacy"
 	profileapi "github.com/connor-davis/3reco/internal/api/profile"
+	pushapi "github.com/connor-davis/3reco/internal/api/push"
+	quickrepliesapi "github.com/connor-davis/3reco/internal/api/quickreplies"
+	savedsearchesapi "github.com/connor-davis/3reco/internal/api/savedsearches"
 	"github.com/connor-davis/3reco/internal/api/sockets"
 	statsapi "github.com/connor-davis/3reco/internal/api/stats"
 	stockapi "github.com/connor-davis/3reco/internal/api/stock"
 	storesapi "github.com/connor-davis/3reco/internal/api/stores"
 	teamapi "github.com/connor-davis/3reco/internal/api/team"
+	wantedapi "github.com/connor-davis/3reco/internal/api/wanted"
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/platform/crypt"
 	"github.com/connor-davis/3reco/internal/platform/database"
+	"github.com/connor-davis/3reco/internal/platform/geo"
 	"github.com/connor-davis/3reco/internal/platform/mail"
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	businesssvc "github.com/connor-davis/3reco/internal/services/business"
 	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
+	favouritessvc "github.com/connor-davis/3reco/internal/services/favourites"
+	geocodesvc "github.com/connor-davis/3reco/internal/services/geocode"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
+	moderationsvc "github.com/connor-davis/3reco/internal/services/moderation"
 	privacysvc "github.com/connor-davis/3reco/internal/services/privacy"
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
+	pushsvc "github.com/connor-davis/3reco/internal/services/push"
+	quickrepliessvc "github.com/connor-davis/3reco/internal/services/quickreplies"
 	"github.com/connor-davis/3reco/internal/services/realtime"
 	requestssvc "github.com/connor-davis/3reco/internal/services/requests"
+	savedsearchessvc "github.com/connor-davis/3reco/internal/services/savedsearches"
 	statssvc "github.com/connor-davis/3reco/internal/services/stats"
 	stocksvc "github.com/connor-davis/3reco/internal/services/stock"
 	storessvc "github.com/connor-davis/3reco/internal/services/stores"
 	teamsvc "github.com/connor-davis/3reco/internal/services/team"
+	wantedsvc "github.com/connor-davis/3reco/internal/services/wanted"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 	"github.com/connor-davis/3reco/internal/stores/businesses"
 	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
+	favouritesstore "github.com/connor-davis/3reco/internal/stores/favourites"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
+	moderationstore "github.com/connor-davis/3reco/internal/stores/moderation"
 	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
 	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
+	pushstore "github.com/connor-davis/3reco/internal/stores/push"
+	quickrepliesstore "github.com/connor-davis/3reco/internal/stores/quickreplies"
+	savedsearchesstore "github.com/connor-davis/3reco/internal/stores/savedsearches"
 	statsstore "github.com/connor-davis/3reco/internal/stores/stats"
 	stockstore "github.com/connor-davis/3reco/internal/stores/stock"
 	storesstore "github.com/connor-davis/3reco/internal/stores/stores"
+	wantedstore "github.com/connor-davis/3reco/internal/stores/wanted"
 )
 
 // Module wires everything the server needs. The caller supplies config.Config
@@ -67,6 +87,8 @@ import (
 var Module = fx.Module("api",
 	fx.Provide(
 		crypt.FromConfig,
+		newGeocoder,
+		geocodesvc.New,
 		mail.New,
 		storage.New,
 		authstore.New,
@@ -102,6 +124,24 @@ var Module = fx.Module("api",
 		storesstore.New,
 		storessvc.New,
 		storesapi.New,
+		favouritesstore.New,
+		favouritessvc.New,
+		favouritesapi.New,
+		savedsearchesstore.New,
+		savedsearchessvc.New,
+		savedsearchesapi.New,
+		pushstore.New,
+		pushsvc.New,
+		pushapi.New,
+		quickrepliesstore.New,
+		quickrepliessvc.New,
+		quickrepliesapi.New,
+		moderationstore.New,
+		moderationsvc.New,
+		moderationapi.New,
+		wantedstore.New,
+		wantedsvc.New,
+		wantedapi.New,
 		sockets.New,
 		New,
 		Listen,
@@ -111,8 +151,20 @@ var Module = fx.Module("api",
 	fx.Invoke(backfillPayoutLast4),
 	fx.Invoke(backfillProfileLast4),
 	fx.Invoke(background),
+	fx.Invoke(sendPhoneAlerts),
 	fx.Invoke(func(*Listener) {}),
 )
+
+// newGeocoder picks the map service. With none set up the distance filter is
+// off, and the server says so once at start instead of failing.
+func newGeocoder(geocoder *geocodesvc.Service) geo.Geocoder {
+	if !geocoder.Enabled() {
+		slog.Warn("distance filter is off: no map service is set (THREERECO_GEOCODER)")
+		return geo.FromName("off", false)
+	}
+
+	return geocoder
+}
 
 func storageLifecycle(lc fx.Lifecycle, objects *storage.Client) {
 	lc.Append(fx.Hook{OnStart: objects.EnsureBucket})
@@ -152,22 +204,28 @@ func backfillProfileLast4(lc fx.Lifecycle, records *profilestore.Store) {
 type routes struct {
 	fx.In
 
-	Config     config.Config
-	DB         *database.DB
-	Auth       *auth.Service
-	AuthH      *authapi.Handler
-	Socket     *sockets.Handler
-	Collectors *collectorsapi.Handler
-	Market     *marketapi.Handler
-	Stats      *statsapi.Handler
-	Materials  *materialsapi.Handler
-	Privacy    *privacyapi.Handler
-	Profile    *profileapi.Handler
-	Stock      *stockapi.Handler
-	Stores     *storesapi.Handler
-	Team       *teamapi.Handler
-	Business   *businessapi.Handler
-	Trade      tradeRoutes
+	Config        config.Config
+	DB            *database.DB
+	Auth          *auth.Service
+	AuthH         *authapi.Handler
+	Socket        *sockets.Handler
+	Collectors    *collectorsapi.Handler
+	Market        *marketapi.Handler
+	Stats         *statsapi.Handler
+	Materials     *materialsapi.Handler
+	Privacy       *privacyapi.Handler
+	Profile       *profileapi.Handler
+	Stock         *stockapi.Handler
+	Stores        *storesapi.Handler
+	Favourites    *favouritesapi.Handler
+	SavedSearches *savedsearchesapi.Handler
+	Push          *pushapi.Handler
+	QuickReplies  *quickrepliesapi.Handler
+	Moderation    *moderationapi.Handler
+	Wanted        *wantedapi.Handler
+	Team          *teamapi.Handler
+	Business      *businessapi.Handler
+	Trade         tradeRoutes
 }
 
 // New builds the Fiber app with every route.
@@ -194,6 +252,10 @@ func New(r routes) *fiber.App {
 	app.Use(requestid.New())
 	app.Use(securityHeaders)
 
+	if cfg.Demo {
+		demoRobots(app)
+	}
+
 	api := app.Group("/api")
 
 	api.Use(compress.New(compress.Config{Next: skipCompression}))
@@ -213,6 +275,12 @@ func New(r routes) *fiber.App {
 
 		return c.JSON(fiber.Map{"status": "ok", "version": config.Version})
 	})
+
+	demoRoutes(api, cfg)
+
+	if cfg.Demo {
+		api.Use(demoGuard)
+	}
 
 	// Every /api request may carry a cookie; this loads who it belongs to, once.
 	api.Use(middleware.Authenticate(r.Auth, cfg))
@@ -234,13 +302,19 @@ func New(r routes) *fiber.App {
 	r.Profile.Register(api)
 	r.Stock.Register(api)
 	r.Stores.Register(api)
+	r.Favourites.Register(api)
+	r.SavedSearches.Register(api)
+	r.Push.Register(api)
+	r.QuickReplies.Register(api)
+	r.Moderation.Register(api)
+	r.Wanted.Register(api)
 	r.Team.Register(api)
 	r.Business.Register(api)
 
 	// Unknown /api paths get a JSON 404.
 	api.Use(func(c fiber.Ctx) error { return apperr.NotFound("No such API endpoint.") })
 
-	serveWeb(app, cfg.WebDist)
+	serveWeb(app, cfg.WebDist, cfg.Demo)
 
 	return app
 }
@@ -313,6 +387,10 @@ func errorHandler(c fiber.Ctx, err error) error {
 		JSON(fiber.Map{"code": "internal", "message": "Something went wrong on our side."})
 }
 
+// sendPhoneAlerts sends a phone alert for every notification the database
+// announces, after its commit and without holding up the hub.
+func sendPhoneAlerts(hub *realtime.Hub, p *pushsvc.Service) { hub.OnNotification(p.Notify) }
+
 // background starts the realtime hub and the hourly purge with the app.
 func background(
 	lc fx.Lifecycle,
@@ -321,6 +399,7 @@ func background(
 	requests *requestssvc.Service,
 	market *marketsvc.Service,
 	p *privacysvc.Service,
+	geocoder *geocodesvc.Service,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -330,6 +409,7 @@ func background(
 			go purgeLoop(ctx, a)
 			go offerExpiryLoop(ctx, requests, market)
 			go retentionLoop(ctx, p)
+			go geocoder.Backfill(ctx)
 
 			return nil
 		},

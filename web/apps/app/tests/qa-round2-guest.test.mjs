@@ -18,6 +18,7 @@ test('G16: signed-out and guest hooks schedule neither forbidden query', () => {
         },
       },
       './paging': {},
+      './client': { api: () => assert.fail('unexpected request') },
     };
     const stats = load('lib/api/stats.ts', mocks).useStats();
     assert.equal(stats.isPending, user?.role === 'business');

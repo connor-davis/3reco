@@ -143,7 +143,7 @@ test('F17: friendly greeting and a step count that always shows', () => {
   assert.match(text('../src/routes/sign-in.tsx'), /'Welcome\.'/);
   assert.match(
     text('../src/routes/setup.tsx'),
-    /Step \{index \+ 1\} of \{total\}/
+    /Step \{detailIndex \+ 1\} of 2/
   );
 });
 

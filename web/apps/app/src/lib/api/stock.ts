@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, upload } from './client';
+import { api, json, upload } from './client';
 import { useResource, useWrite, idPath } from './resource';
 import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
@@ -71,5 +71,25 @@ export function useReorderStockPhotos(id: string) {
     'PUT',
     photoKeys,
     (ids) => ({ ids })
+  );
+}
+
+/** Checks a CSV file, or lines fixed on screen. Nothing is saved. */
+export function usePreviewStockImport() {
+  return useMutation({
+    mutationFn: (input: File | T.StockImportRow[]) =>
+      api<T.StockImportPreview>(
+        '/stock/import/preview',
+        input instanceof File ? upload(input) : json('POST', { rows: input })
+      ),
+  });
+}
+/** Publishes every checked line at once, or none. */
+export function useCommitStockImport() {
+  return useWrite<T.StockImportRow[], { count: number }>(
+    '/stock/import/commit',
+    'POST',
+    [['stock'], ['dashboards'], ['listings'], ['stores']],
+    (rows) => ({ rows })
   );
 }

@@ -222,6 +222,7 @@ test('a rejected profile save keeps the form dirty and never reports success', a
     id_number: '',
   };
   const forms = load('../src/routes/profile/-components/forms.tsx', {
+    react: { useImperativeHandle() {} },
     'react-hook-form': {
       useForm: () => ({
         control: {},
@@ -251,7 +252,7 @@ test('a rejected profile save keeps the form dirty and never reports success', a
   });
   const element = forms.PersonalForm({ profile: { phone: '' } });
   const form = element.type(element.props);
-  await form.props.onSubmit();
+  await form.props.onSubmit({ preventDefault() {} });
   assert.equal(resets, 0);
   assert.equal(successes.length, 0);
   assert.equal(errors.at(-1)[1].message, 'Save rejected');

@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/services/moderation"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 	store "github.com/connor-davis/3reco/internal/stores/market"
@@ -63,6 +64,10 @@ func (service *Service) SaveCart(ctx context.Context, buyer, seller string, item
 		func(ctx context.Context) error {
 			if len(items) == 0 {
 				return service.store.ClearCart(ctx, buyer, seller)
+			}
+
+			if err := moderation.RequireContact(ctx, service.db, buyer, seller); err != nil {
+				return err
 			}
 
 			if err := RequireVerified(ctx, service.store, seller); err != nil {

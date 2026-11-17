@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Guarded } from '@/components/access-guard';
+import { RecyclingRecordButton } from '@/components/dialogs/recycling-record-dialog';
 import { useAuth } from '@/lib/auth/use-auth';
 import { RecordList } from './-components/record-list';
 
@@ -45,6 +46,7 @@ function AllTransactions() {
           : 'Every trade on the marketplace, with its paperwork.'
       }
       kind={kind}
+      actions={business ? <RecyclingRecordButton /> : undefined}
       exportKind={
         business ? (kind === 'mine' ? undefined : kind) : 'transactions'
       }

@@ -196,8 +196,8 @@ func TestPrivacyNoticeFlow(t *testing.T) {
 		t.Errorf("notice after sign-up: %v", notice)
 	}
 
-	// A person on an older notice has not accepted the current one until they accept.
-	tradeExec(t, app, `DELETE FROM privacy_notice_acceptances WHERE user_id=$1`, user.id)
+	// Acceptance of the previous notice must not count for the new price-trend notice.
+	tradeExec(t, app, `UPDATE privacy_notice_acceptances SET version='2026-11' WHERE user_id=$1`, user.id)
 
 	if got := status(t, user.c.Do("GET", "/api/privacy/notice", nil), 200).Body["accepted"]; got != false {
 		t.Errorf("accepted before accepting: %v", got)

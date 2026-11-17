@@ -1,7 +1,12 @@
+import { ModerationActions } from '@/components/moderation-actions';
 import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
-import { BusinessName, UnverifiedBanner } from '@/components/badges';
+import {
+  BusinessName,
+  ReplySpeedBadge,
+  UnverifiedBanner,
+} from '@/components/badges';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ButtonRow } from '@/components/button-row';
 import { Panel } from '@/components/panel';
@@ -11,6 +16,7 @@ import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
+import { WhatsAppShare } from '@/components/whatsapp-share';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import type { Listing } from '@/lib/api/types';
@@ -22,6 +28,7 @@ import {
   useReviewSummary,
   useReviewable,
 } from '@/lib/api/reviews';
+import { FollowButton } from '@/components/favourite-button';
 import { useAuth } from '@/lib/auth/use-auth';
 import { formatDate, plural, toGrams } from '@/lib/format';
 
@@ -83,11 +90,14 @@ function StorePage() {
                 className="size-16"
               />
               <div className="min-w-0 flex-1 space-y-1">
-                <h1 className="text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
+                <h1 className="flex flex-wrap items-center gap-2 text-[26px] font-semibold tracking-[-0.035em] lg:text-4xl">
                   <BusinessName
                     name={store.data.name}
                     verified={store.data.business_verified}
                     wrap
+                  />
+                  <ReplySpeedBadge
+                    usuallyWithinDay={store.data.usually_replies_within_day}
                   />
                 </h1>
                 <p>
@@ -99,34 +109,45 @@ function StorePage() {
                   Member since {formatDate(store.data.created_at)}
                 </p>
               </div>
-              {user?.role === 'business' && user.id !== sellerId && (
-                <ButtonRow>
-                  <Button
-                    nativeButton={false}
-                    render={
-                      <Link to="/cart" search={{ seller_id: sellerId }} />
-                    }
-                    variant="outline"
-                  >
-                    Cart
-                  </Button>
-                  <Button
-                    disabled={
-                      !listings.data?.items.some(
-                        (item) => toGrams(item.weight) > 0
-                      )
-                    }
-                    onClick={() => {
-                      const item = listings.data?.items.find(
-                        (item) => toGrams(item.weight) > 0
-                      );
-                      if (item) setChatListing(item);
-                    }}
-                  >
-                    Message store
-                  </Button>
-                </ButtonRow>
-              )}
+              <ButtonRow>
+                <ModerationActions partyId={sellerId} name={store.data.name} />
+                <WhatsAppShare
+                  text={`${store.data.name} on 3REco`}
+                  path={`/market/store/${sellerId}`}
+                />
+                {user?.id !== sellerId &&
+                  user?.active_business_id !== sellerId && (
+                    <FollowButton storeId={sellerId} name={store.data.name} />
+                  )}
+                {user?.role === 'business' && user.id !== sellerId && (
+                  <>
+                    <Button
+                      nativeButton={false}
+                      render={
+                        <Link to="/cart" search={{ seller_id: sellerId }} />
+                      }
+                      variant="outline"
+                    >
+                      Cart
+                    </Button>
+                    <Button
+                      disabled={
+                        !listings.data?.items.some(
+                          (item) => toGrams(item.weight) > 0
+                        )
+                      }
+                      onClick={() => {
+                        const item = listings.data?.items.find(
+                          (item) => toGrams(item.weight) > 0
+                        );
+                        if (item) setChatListing(item);
+                      }}
+                    >
+                      Message store
+                    </Button>
+                  </>
+                )}
+              </ButtonRow>
             </header>
           </Panel>
           <Tabs defaultValue="stock" className="mt-8">
@@ -271,6 +292,7 @@ function StorePage() {
                 </p>
               )}
               <ButtonRow>
+                <ModerationActions partyId={sellerId} name={store.data.name} />
                 {reviewCursor && (
                   <Button
                     variant="outline"

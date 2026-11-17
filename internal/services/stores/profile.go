@@ -24,7 +24,18 @@ func (service *Service) Find(ctx context.Context, id, viewer string) (store.Prof
 	}
 
 	summary, err := service.reviews.Summary(ctx, id)
+	if err != nil {
+		return item, err
+	}
+
 	item.AverageRating, item.ReviewCount = summary.Average, summary.Count
+	replies, err := service.stats.Replies(ctx, id)
+	if err != nil {
+		return item, err
+	}
+
+	badge := replies.UsuallyWithinDay()
+	item.UsuallyRepliesWithinDay = &badge
 
 	return item, err
 }
@@ -36,12 +47,34 @@ func (service *Service) List(ctx context.Context, search, exclude string, query 
 		return paging.Page[store.Profile]{}, err
 	}
 
-	for i := range items {
-		summary, err := service.reviews.Summary(ctx, items[i].ID)
-		if err != nil {
-			return paging.Page[store.Profile]{}, err
-		}
+	return service.page(ctx, items, query)
+}
 
+// Followed lists the stores the caller follows, with the same summaries.
+func (service *Service) Followed(ctx context.Context, userID string, query paging.Query) (paging.Page[store.Profile], error) {
+	items, err := service.store.Followed(ctx, userID, query)
+	if err != nil {
+		return paging.Page[store.Profile]{}, err
+	}
+
+	return service.page(ctx, items, query)
+}
+
+func (service *Service) page(ctx context.Context, items []store.Profile, query paging.Query) (paging.Page[store.Profile], error) {
+	// One query for the whole page, not one per store.
+	sellerIDs := make([]string, len(items))
+	for i := range items {
+		sellerIDs[i] = items[i].ID
+	}
+
+	summaries, err := service.reviews.SummaryMany(ctx, sellerIDs)
+	if err != nil {
+		return paging.Page[store.Profile]{}, err
+	}
+
+	// A store missing from the map has no reviews: zero count, no average.
+	for i := range items {
+		summary := summaries[items[i].ID]
 		items[i].AverageRating, items[i].ReviewCount = summary.Average, summary.Count
 	}
 

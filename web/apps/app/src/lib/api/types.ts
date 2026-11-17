@@ -91,6 +91,7 @@ export interface PublicUser {
   created_at: string;
 }
 export interface Store {
+  usually_replies_within_day?: boolean;
   id: string;
   name: string;
   business_verified: boolean;
@@ -109,6 +110,8 @@ export interface StockPhoto {
   url: string;
 }
 export interface StockItem {
+  fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
+  pickup_area?: string;
   image_url: string;
   photos: StockPhoto[];
   id: string;
@@ -123,14 +126,38 @@ export interface StockItem {
   created_at: string;
 }
 export interface StockInput {
+  fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
+  pickup_area?: string;
   material_id: string;
   weight: Decimal;
   price: Decimal;
   is_listed: boolean;
 }
 export type StockPatch = Partial<Omit<StockInput, 'material_id'>>;
+/** One line of a stock CSV, every cell as typed. */
+export interface StockImportRow {
+  material: string;
+  weight_kg: string;
+  price_per_kg: string;
+  listed: string;
+  fulfillment: string;
+  pickup_area: string;
+}
+/** A checked line; errors are keyed by column name. */
+export interface StockImportLine extends StockImportRow {
+  material_name: string;
+  errors: Record<string, string>;
+}
+export interface StockImportPreview {
+  rows: StockImportLine[];
+  ok: boolean;
+}
 export interface Listing {
+  usually_replies_within_day?: boolean;
+  fulfillment_mode?: 'pickup' | 'delivery' | 'both' | '';
+  pickup_area?: string;
   image_url: string;
+  thumb_url?: string;
   image_urls: string[];
   seller_avatar_url: string;
   id: string;
@@ -145,6 +172,8 @@ export interface Listing {
   price: Decimal;
   average_rating: number | null;
   review_count: number;
+  /** Whole km from the viewer; sent only while the distance filter is on. */
+  distance_km?: number | null;
   created_at: string;
 }
 export interface CartItem {
@@ -247,6 +276,8 @@ export interface TradeRequest {
   buyer_confirmed_version: number | null;
   seller_confirmed_version: number | null;
   items: RequestItem[];
+  // Set when the request answers a wanted post.
+  wanted_post_id?: string | null;
   created_at: string;
   updated_at: string;
 }
