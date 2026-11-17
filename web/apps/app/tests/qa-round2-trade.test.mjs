@@ -39,7 +39,7 @@ test('invoice details lead with download, summary and totals before collapsible 
   assert.ok(dialog.indexOf('title="Items"') < dialog.indexOf('<details'));
   assert.match(
     dialog,
-    /<details key=\{shown.id\} open=\{shown.receipts.length > 0\}/
+    /<details\s+key=\{shown.id\}\s+open=\{shown.receipts.length > 0\}/
   );
   assert.match(dialog, /<summary[\s\S]*Receipts \(\{shown.receipts.length\}\)/);
 });

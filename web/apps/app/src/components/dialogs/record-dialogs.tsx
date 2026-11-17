@@ -1,6 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Download, FileText, MoreHorizontal, Upload } from 'lucide-react';
+import {
+  ChevronDown,
+  Download,
+  FileText,
+  MoreHorizontal,
+  Upload,
+} from 'lucide-react';
 import { BusinessName, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -335,9 +341,17 @@ export function TradeDetail({ record }: Props) {
           </div>
           <div className="mt-4">
             <Panel>
-              <details key={shown.id} open={shown.receipts.length > 0}>
-                <summary className="min-h-11 cursor-pointer content-center rounded-sm text-base font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                  Receipts ({shown.receipts.length})
+              <details
+                key={shown.id}
+                open={shown.receipts.length > 0}
+                className="group"
+              >
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-sm text-base font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+                  <span>Receipts ({shown.receipts.length})</span>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
+                  />
                 </summary>
                 <section aria-label="Receipts" className="space-y-3">
                   {shown.receipts.length === 0 && (
