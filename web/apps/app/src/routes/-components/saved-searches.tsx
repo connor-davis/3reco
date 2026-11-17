@@ -21,6 +21,7 @@ export function SavedSearches() {
       <DataState
         query={query}
         isEmpty={!items.length}
+        compact
         icon={Bell}
         emptyTitle="No saved searches yet"
         emptyText="Choose a material and price range in the market, then tap Save this search."

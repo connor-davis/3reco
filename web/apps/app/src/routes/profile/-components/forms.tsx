@@ -219,6 +219,12 @@ export function PersonalForm({ profile, onSaved, wizard, group }: Props) {
       />
       <TextField
         control={form.control}
+        name="phone"
+        label="Phone number"
+        type="tel"
+      />
+      <TextField
+        control={form.control}
         name="id_number"
         label="South African ID"
         inputMode="numeric"
@@ -228,12 +234,6 @@ export function PersonalForm({ profile, onSaved, wizard, group }: Props) {
             : '13 digits. Leave blank if you have none.'
         }
         autoComplete="off"
-      />
-      <TextField
-        control={form.control}
-        name="phone"
-        label="Phone number"
-        type="tel"
       />
     </FormShell>
   );

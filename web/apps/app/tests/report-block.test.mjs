@@ -111,7 +111,7 @@ test('report dialog has fixed reasons, private copy, a length check and pending 
   assert.match(dialog, /ResponsiveOverlay/);
   assert.match(dialog, /length > 1000/);
   assert.match(dialog, /The business will not be told/);
-  assert.match(dialog, /disabled=\{report\.isPending\}/);
+  assert.match(dialog, /disabled=\{report\.isPending \|\| !reason\}/);
   assert.match(dialog, /role="alert"/);
 });
 

@@ -72,10 +72,11 @@ export function FilterTabs({
   value,
   options,
   onChange,
-}: Omit<ChipGroupProps, 'outlined'>) {
+  className,
+}: Omit<ChipGroupProps, 'outlined'> & { className?: string }) {
   return (
     <Tabs value={value} onValueChange={(next) => onChange(String(next))}>
-      <TabsList aria-label={label}>
+      <TabsList aria-label={label} className={className}>
         {options.map(toOption).map((item) => (
           <TabsTrigger key={item.value} value={item.value}>
             {item.label}

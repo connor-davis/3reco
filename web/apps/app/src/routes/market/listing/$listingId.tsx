@@ -1,6 +1,6 @@
 import { ModerationActions } from '@/components/moderation-actions';
 import { useEffect, useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,7 +17,7 @@ import { FavouriteButton } from '@/components/favourite-button';
 import { ListingCard } from '@/components/listing-card';
 import { Section } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { WhatsAppShare } from '@/components/whatsapp-share';
+import { whatsAppUrl } from '@/lib/share';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import { useListing, useListings } from '@/lib/api/listings';
@@ -171,7 +171,16 @@ function ListingDetail({ listing }: { listing: Listing }) {
         listing={listing}
         initialWeight={problem ? '' : weight}
       />
-      <Gallery images={listing.image_urls} name={listing.material_name} />
+      <Gallery
+        images={listing.image_urls}
+        name={listing.material_name}
+        action={
+          <FavouriteButton
+            listingId={listing.id}
+            name={listing.material_name}
+          />
+        }
+      />
       <Panel title="Material details">
         <div className="space-y-4">
           <h1 className="text-3xl font-semibold tracking-tight">
@@ -209,7 +218,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
             className="space-y-4"
             noValidate
           >
-            {!own && (
+            {user?.role === 'business' && !own && (
               <>
                 <DecimalField
                   control={form.control}
@@ -241,14 +250,14 @@ function ListingDetail({ listing }: { listing: Listing }) {
                   className="max-lg:bottom-[env(safe-area-inset-bottom)]"
                   label={
                     <>
-                      <p>
-                        Estimated total{' '}
-                        <strong className="tabular-nums">
-                          {problem
-                            ? '-'
-                            : formatRand(lineCents(listing.price, weight))}
-                        </strong>
-                      </p>
+                      {weight.trim() && !problem && (
+                        <p>
+                          Estimated total{' '}
+                          <strong className="tabular-nums">
+                            {formatRand(lineCents(listing.price, weight))}
+                          </strong>
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         Adding to your cart holds it for 48 hours.
                       </p>
@@ -271,7 +280,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
                   </Button>
                 </ActionBar>
               </DataState>
-            ) : (
+            ) : user?.role !== 'collector' ? (
               <p className="text-sm text-muted-foreground">
                 {own
                   ? 'This is your own lot. Edit it from Stock.'
@@ -281,7 +290,7 @@ function ListingDetail({ listing }: { listing: Listing }) {
                       : 'Only business accounts can request materials and use the cart.'
                     : 'Sign in as a business to request materials and use the cart.'}
               </p>
-            )}
+            ) : null}
             {form.formState.errors.root?.message && (
               <p role="alert" className="text-sm text-destructive">
                 {form.formState.errors.root?.message}
@@ -314,25 +323,28 @@ function ListingDetail({ listing }: { listing: Listing }) {
               partyId={listing.seller_id}
               name={listing.seller_name}
               listingId={listing.id}
+              extra={[
+                {
+                  label: 'Share on WhatsApp',
+                  onSelect: () =>
+                    window.open(
+                      whatsAppUrl(
+                        `${listing.material_name} at ${formatRate(listing.price)} on 3REco`,
+                        `/market/listing/${listing.id}`
+                      ),
+                      '_blank',
+                      'noopener,noreferrer'
+                    ),
+                },
+              ]}
             />
-            <FavouriteButton
-              labelled
-              className="min-h-11"
-              listingId={listing.id}
-              name={listing.material_name}
-            />
-            <WhatsAppShare
-              className="min-h-11"
-              text={`${listing.material_name} at ${formatRate(listing.price)} on 3REco`}
-              path={`/market/listing/${listing.id}`}
-            />
-            <Link
-              className="inline-flex min-h-11 items-center rounded px-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring"
+            <LinkButton
+              variant="outline"
               to="/market/store/$sellerId"
               params={{ sellerId: listing.seller_id }}
             >
               View store
-            </Link>
+            </LinkButton>
           </div>
         </div>
       </Panel>

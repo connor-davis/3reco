@@ -27,8 +27,10 @@ export function ReportDialog({
 }) {
   const report = useReport();
   const [error, setError] = useState('');
-  const form = useForm({ defaultValues: { reason: 'scam', details: '' } });
+  const form = useForm({ defaultValues: { reason: '', details: '' } });
+  const reason = form.watch('reason');
   const submit = form.handleSubmit(async (values) => {
+    if (!values.reason) return;
     if ([...values.details.trim()].length > 1000) {
       setError('Use at most 1000 characters.');
       return;
@@ -59,7 +61,7 @@ export function ReportDialog({
       description="Only 3REco admins can see your report. The business will not be told."
       locked={report.isPending}
       footer={
-        <Button disabled={report.isPending} onClick={submit}>
+        <Button disabled={report.isPending || !reason} onClick={submit}>
           {report.isPending ? 'Sending…' : 'Send report'}
         </Button>
       }
@@ -69,6 +71,7 @@ export function ReportDialog({
           control={form.control}
           name="reason"
           label="Reason"
+          placeholder="Choose a reason"
           options={reasons}
         />
         <TextareaField

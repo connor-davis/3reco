@@ -57,7 +57,7 @@ test('hearts and the Follow button sit where the map puts them', () => {
   );
 
   const store = source('routes/market/store/$sellerId.tsx');
-  assert.ok(store.indexOf('<WhatsAppShare') < store.indexOf('<FollowButton'));
+  assert.match(store, /<ModerationActions[\s\S]*label: 'Share on WhatsApp'/);
   // A store's own people are never offered a Follow button for it.
   assert.match(store, /user\?\.id !== sellerId/);
   assert.match(store, /active_business_id !== sellerId/);

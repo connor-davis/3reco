@@ -240,5 +240,5 @@ test('listing waits for typed errors and hides material codes from buyers', () =
   assert.match(listing, /weight.trim\(\) &&/);
   assert.match(listing, /own && listing.gw_code/);
   assert.doesNotMatch(listing, /Enter a valid quantity/);
-  assert.match(listing, /problem\s*\? '-'/);
+  assert.match(listing, /weight\.trim\(\) && !problem && \(/);
 });

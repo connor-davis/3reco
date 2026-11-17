@@ -29,6 +29,8 @@ type DataStateProps = {
   emptyTitle: string;
   emptyText: string;
   emptyAction?: ReactNode;
+  // Lists inside tabs need a short empty line, with the same loading/error handling.
+  compact?: boolean;
   // What the page looks like while it loads. Defaults to a few rows.
   skeleton?: ReactNode;
   children: ReactNode;
@@ -45,6 +47,7 @@ export function DataState({
   emptyTitle,
   emptyText,
   emptyAction,
+  compact = false,
   skeleton,
   children,
 }: DataStateProps) {
@@ -85,6 +88,10 @@ export function DataState({
   }
 
   if (isEmpty || notFound) {
+    if (compact) {
+      return <p className="py-4 text-sm text-muted-foreground">{emptyTitle}</p>;
+    }
+
     return (
       <Empty>
         <EmptyHeader>

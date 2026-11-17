@@ -60,9 +60,13 @@ test('both pages show the share button to everyone', () => {
   const store = read('../src/routes/market/store/$sellerId.tsx');
   const button = read('../src/components/whatsapp-share.tsx');
 
-  assert.match(listing, /<WhatsAppShare/);
+  assert.match(listing, /<ModerationActions[\s\S]*label: 'Share on WhatsApp'/);
   assert.match(listing, /\/market\/listing\/\$\{listing\.id\}/);
-  assert.match(store, /<WhatsAppShare/);
+  assert.match(store, /<ModerationActions[\s\S]*label: 'Share on WhatsApp'/);
+  for (const page of [listing, store]) {
+    assert.match(page, /whatsAppUrl\(/);
+    assert.match(page, /noopener,noreferrer/);
+  }
   assert.match(store, /\/market\/store\/\$\{sellerId\}/);
   assert.match(button, /Share on WhatsApp/);
   assert.match(button, /rel="noopener noreferrer"/);

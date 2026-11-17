@@ -7,7 +7,9 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataState } from '@/components/data-state';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
-import { RowActions, type RowAction } from '@/components/row-actions';
+import { type RowAction } from '@/components/row-actions';
+import { ButtonRow } from '@/components/button-row';
+import { Button } from '@/components/ui/button';
 import {
   useAdminReports,
   useResolveReport,
@@ -31,6 +33,15 @@ const actionLabels = {
   suspend: 'Suspend business',
   unsuspend: 'Unsuspend business',
 };
+
+function ordinal(count: number) {
+  const lastTwo = count % 100;
+  const suffix =
+    lastTwo >= 11 && lastTwo <= 13
+      ? 'th'
+      : ({ 1: 'st', 2: 'nd', 3: 'rd' }[count % 10] ?? 'th');
+  return `${count}${suffix}`;
+}
 
 function ReportsPage() {
   const query = useAdminReports();
@@ -90,6 +101,15 @@ function ReportsPage() {
                     {formatDate(report.created_at)}
                   </p>
                   <p className="font-medium">{report.target_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Reported by {report.reporter_name}
+                  </p>
+                  {report.party_report_count > 1 && (
+                    <p className="text-sm text-muted-foreground">
+                      {ordinal(report.party_report_count)} report on this
+                      business
+                    </p>
+                  )}
                   {report.target_kind === 'listing' && (
                     <p className="text-sm text-muted-foreground">
                       Listed by {report.party_name}
@@ -104,8 +124,19 @@ function ReportsPage() {
                     </p>
                   )}
                 </div>
-                <RowActions name="report" actions={actions(report)} />
               </div>
+              <ButtonRow className="mt-4 flex-wrap">
+                {actions(report).map((action) => (
+                  <Button
+                    key={action.label}
+                    variant={action.destructive ? 'destructive' : 'outline'}
+                    disabled={action.disabled}
+                    onClick={action.onSelect}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </ButtonRow>
             </Panel>
           ))}
         </div>

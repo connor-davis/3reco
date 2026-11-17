@@ -26,7 +26,10 @@ test('request rows show materials, parties, weight and total in the shared recor
 });
 
 test('your own lot has no quantity form or validation', () => {
-  assert.match(listing, /\{!own && \(\s*<>\s*<DecimalField/);
+  assert.match(
+    listing,
+    /\{user\?\.role === 'business' && !own && \(\s*<>\s*<DecimalField/
+  );
   assert.match(listing, /This is your own lot\. Edit it from Stock\./);
 });
 

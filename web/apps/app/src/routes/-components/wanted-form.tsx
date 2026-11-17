@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { DecimalField, SelectField, TextField } from '@/components/form-fields';
-import { Panel } from '@/components/panel';
+import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
 import { useBusiness } from '@/lib/api/business';
 import { useMaterialCatalog } from '@/lib/api/materials';
@@ -55,7 +55,13 @@ const empty: Values = {
 };
 
 /** The buyer's form for a new post. */
-export function WantedForm() {
+export function WantedForm({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const create = useCreateWanted();
   const materials = useMaterialCatalog();
   const form = useForm<Values>({
@@ -87,7 +93,10 @@ export function WantedForm() {
   }, [form, suggested]);
 
   return (
-    <Panel
+    <ResponsiveOverlay
+      open={open}
+      onOpenChange={onOpenChange}
+      locked={create.isPending}
       title="Post what you want"
       description="Verified sellers see the material, weight, top price and area. They do not see who you are until you open a reply."
     >
@@ -106,6 +115,7 @@ export function WantedForm() {
             toast.success('Your wanted post is live.');
             typed.current = false;
             form.reset({ ...empty, area: suggested });
+            onOpenChange(false);
           } catch (cause) {
             form.setError('root', {
               message:
@@ -165,6 +175,6 @@ export function WantedForm() {
           Post it
         </Button>
       </form>
-    </Panel>
+    </ResponsiveOverlay>
   );
 }

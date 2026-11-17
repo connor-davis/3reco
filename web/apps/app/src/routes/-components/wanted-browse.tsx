@@ -23,8 +23,9 @@ export function WantedBrowse() {
       <DataState
         query={query}
         isEmpty={!items.length}
+        compact
         icon={Megaphone}
-        emptyTitle="Nothing wanted right now"
+        emptyTitle="Nothing wanted right now. New posts will appear here."
         emptyText="New posts from buyers show up here as they are made."
       >
         <div className="divide-y">

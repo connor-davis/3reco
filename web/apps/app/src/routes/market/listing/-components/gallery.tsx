@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Package } from 'lucide-react';
 import {
   Carousel,
@@ -42,9 +42,11 @@ function Slide({ src, name }: { src: string; name: string }) {
 export function Gallery({
   images = [],
   name,
+  action,
 }: {
   images?: string[];
   name: string;
+  action?: ReactNode;
 }) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
@@ -60,11 +62,17 @@ export function Gallery({
   }, [api]);
 
   if (images.length === 0) {
-    return <div className={frame}>{placeholder}</div>;
+    return (
+      <div className={frame}>
+        {placeholder}
+        <div className="absolute top-3 right-3 z-10">{action}</div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-2 lg:max-w-md">
+    <div className="relative space-y-2 lg:max-w-md">
+      <div className="absolute top-3 right-3 z-10">{action}</div>
       <Carousel
         setApi={setApi}
         className="w-full"
