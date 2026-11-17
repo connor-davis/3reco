@@ -7,10 +7,12 @@ type BackButtonProps = {
   /** Where to go when there is no page to go back to, like a shared link. */
   fallback: string;
   className?: string;
+  /** Show only the arrow; the words stay for screen readers. */
+  iconOnly?: boolean;
 };
 
 /** The one back button: an arrow and "Go back", returning to the last page. */
-export function BackButton({ fallback, className }: BackButtonProps) {
+export function BackButton({ fallback, className, iconOnly }: BackButtonProps) {
   const router = useRouter();
   const canGoBack = useCanGoBack();
 
@@ -34,7 +36,7 @@ export function BackButton({ fallback, className }: BackButtonProps) {
       }}
     >
       <ArrowLeft data-icon="inline-start" />
-      Go back
+      <span className={iconOnly ? 'sr-only' : undefined}>Go back</span>
     </Link>
   );
 }
