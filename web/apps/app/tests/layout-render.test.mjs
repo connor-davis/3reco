@@ -235,7 +235,7 @@ with sync_playwright() as p:
                             expect(priorities.get_by_text('Trades without an invoice yet', exact=True)).to_be_visible()
                             expect(priorities.get_by_text('Your listings', exact=True)).to_be_visible()
                             expect(priorities.get_by_text('2', exact=True)).to_be_visible()
-                            expect(priorities.get_by_role('button', name='View trades', exact=True)).to_be_visible()
+                            expect(priorities.get_by_role('link', name='Trades without an invoice yet', exact=False)).to_have_attribute('href', '/transactions')
                             assert priorities.bounding_box()['y'] < page.get_by_role('heading', name='Listing views', exact=True).bounding_box()['y']
                             collects = 'collects=no' not in route
                             expect(page.get_by_text('Active collectors', exact=True)).to_have_count(1 if collects else 0)

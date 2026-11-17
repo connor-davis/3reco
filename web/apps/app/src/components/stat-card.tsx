@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Trend } from '@/lib/format';
@@ -16,7 +16,6 @@ type StatCardProps = {
   label: string;
   value: string;
   hint?: string;
-  action?: ReactNode;
   trend?: Trend;
   icon?: LucideIcon;
   isLoading?: boolean;
@@ -30,7 +29,6 @@ export function StatCard({
   label,
   value,
   hint,
-  action,
   trend,
   icon: Icon,
   isLoading = false,
@@ -72,7 +70,6 @@ export function StatCard({
           {hint}
         </CardContent>
       )}
-      {action && <CardContent className="mt-auto pt-3">{action}</CardContent>}
     </Card>
   );
 }
