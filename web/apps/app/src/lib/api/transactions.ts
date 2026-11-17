@@ -72,6 +72,30 @@ export function invoiceUrl(id: string) {
 export function invoiceFilename(invoiceNumber: string) {
   return `3REco-Invoice-${invoiceNumber}.pdf`;
 }
+/** The saved file name of a one-trade recycling record. */
+export function recordFilename(invoiceNumber: string) {
+  return `3REco-Recycling-Record-${invoiceNumber}.pdf`;
+}
+/** Downloads the recycling record of one completed trade. */
+export function useDownloadRecord() {
+  return useMutation({
+    mutationFn: (trade: { id: string; invoice_number: string }) =>
+      download(
+        `/transactions/${idPath(trade.id)}/certificate`,
+        recordFilename(trade.invoice_number)
+      ),
+  });
+}
+/** Downloads the recycling record of the caller's trades from one day to another. */
+export function useDownloadPeriodRecord() {
+  return useMutation({
+    mutationFn: ({ from, to }: { from: string; to: string }) =>
+      download(
+        `/certificates${queryString({ from, to })}`,
+        `3REco-Recycling-Record-${from}-to-${to}.pdf`
+      ),
+  });
+}
 /** Pass the trade when you have it; a bare id looks the number up first. */
 export function useDownloadInvoice() {
   return useMutation({

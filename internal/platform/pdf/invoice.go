@@ -110,6 +110,52 @@ func Grouped(value string) string {
 // It builds gpdf's document tree directly, not through gpdf's template package,
 // because the template's table cannot pad a cell or fill it edge to edge.
 func Render(invoice Invoice) ([]byte, error) {
+	body := []document.DocumentNode{
+		&document.Box{
+			BoxStyle: document.BoxStyle{
+				Direction: document.DirectionHorizontal,
+				Margin:    document.Edges{Top: document.Mm(5), Bottom: document.Mm(5)},
+			},
+			Content: []document.DocumentNode{party("FROM", invoice.Seller), party("TO", invoice.Buyer)},
+		},
+		party("PAYMENT DETAILS", invoice.Payment),
+		linesTable(invoice.Lines),
+		spaced(document.Edges{Top: document.Mm(5)}, &document.Box{
+			BoxStyle: document.BoxStyle{
+				Padding: document.Edges{Top: document.Mm(2), Right: cellGap},
+				Border:  document.BorderEdges{Top: border(0.75, totalGrey)},
+			},
+			Content: []document.DocumentNode{
+				text("Grand total: R "+Grouped(invoice.Total), 13, true, green, document.AlignRight),
+			},
+		}),
+	}
+
+	page := pageParts{
+		Title:    "3REco Invoice " + invoice.Number,
+		Heading:  "INVOICE",
+		Subtitle: invoice.Number + " | " + invoice.Date,
+		Kind:     invoice.Type,
+		Footer:   "This invoice was generated automatically by 3REco.",
+		Body:     body,
+	}
+
+	return renderPages(page)
+}
+
+// pageParts is what differs between the documents this package draws: the words in
+// the repeating header and footer, and the body.
+type pageParts struct {
+	Title    string
+	Heading  string
+	Subtitle string
+	Kind     string
+	Footer   string
+	Body     []document.DocumentNode
+}
+
+// renderPages lays a body out on A4 pages under the shared logo header and footer.
+func renderPages(parts pageParts) ([]byte, error) {
 	logoSize, err := png.DecodeConfig(bytes.NewReader(logo))
 	if err != nil {
 		return nil, err
@@ -144,8 +190,8 @@ func Render(invoice Invoice) ([]byte, error) {
 				&document.Box{
 					BoxStyle: document.BoxStyle{Width: document.Pct(50)},
 					Content: []document.DocumentNode{
-						text("INVOICE", 17, true, green, document.AlignRight),
-						text(invoice.Number+" | "+invoice.Date, 10, false, mutedGrey, document.AlignRight),
+						text(parts.Heading, 17, true, green, document.AlignRight),
+						text(parts.Subtitle, 10, false, mutedGrey, document.AlignRight),
 					},
 				},
 			},
@@ -153,43 +199,22 @@ func Render(invoice Invoice) ([]byte, error) {
 		spaced(document.Edges{Top: document.Mm(2), Bottom: document.Mm(2)}, &document.Box{
 			BoxStyle: document.BoxStyle{Height: document.Pt(1.5), Background: &green},
 		}),
-		spaced(document.Edges{Bottom: document.Mm(4)}, text(invoice.Type, 9, false, mutedGrey, document.AlignLeft)),
+		spaced(document.Edges{Bottom: document.Mm(4)}, text(parts.Kind, 9, false, mutedGrey, document.AlignLeft)),
 	}
 	footer := []document.DocumentNode{
-		text("This invoice was generated automatically by 3REco.", 8, false, mutedGrey, document.AlignCenter),
+		text(parts.Footer, 8, false, mutedGrey, document.AlignCenter),
 		text("Page "+document.PageNumberPlaceholder, 8, false, mutedGrey, document.AlignCenter),
-	}
-
-	body := []document.DocumentNode{
-		&document.Box{
-			BoxStyle: document.BoxStyle{
-				Direction: document.DirectionHorizontal,
-				Margin:    document.Edges{Top: document.Mm(5), Bottom: document.Mm(5)},
-			},
-			Content: []document.DocumentNode{party("FROM", invoice.Seller), party("TO", invoice.Buyer)},
-		},
-		party("PAYMENT DETAILS", invoice.Payment),
-		linesTable(invoice.Lines),
-		spaced(document.Edges{Top: document.Mm(5)}, &document.Box{
-			BoxStyle: document.BoxStyle{
-				Padding: document.Edges{Top: document.Mm(2), Right: cellGap},
-				Border:  document.BorderEdges{Top: border(0.75, totalGrey)},
-			},
-			Content: []document.DocumentNode{
-				text("Grand total: R "+Grouped(invoice.Total), 13, true, green, document.AlignRight),
-			},
-		}),
 	}
 
 	doc := &document.Document{
 		Metadata: document.DocumentMetadata{
-			Title: "3REco Invoice " + invoice.Number, Author: "3REco", Producer: "gpdf",
+			Title: parts.Title, Author: "3REco", Producer: "gpdf",
 		},
 		DefaultStyle: document.Style{
 			FontFamily: fontFamily, FontSize: 10, FontWeight: document.WeightNormal,
 			Color: ink, TextAlign: document.AlignLeft, LineHeight: 1.2,
 		},
-		Pages: []*document.Page{{Size: document.A4, Margins: margins, Content: body}},
+		Pages: []*document.Page{{Size: document.A4, Margins: margins, Content: parts.Body}},
 	}
 
 	paginator := layout.NewPaginator(document.A4, margins, resolver)
@@ -219,41 +244,41 @@ const fontFamily = "Montserrat"
 // cellGap is the room between a table cell's edge and its text.
 var cellGap = document.Mm(2)
 
-// linesTable is the lines table: a solid green header bar and a grey line under every
-// row. gpdf repeats the header on each page the table runs onto.
-func linesTable(lines []Line) *document.Table {
-	// Material reads left, the amounts read right. Only the first column pads on the
-	// left, so the numbers sit flush to each column's right edge.
-	cell := func(content string, column int, header bool) document.TableCell {
-		align := document.AlignRight
-		padding := document.Edges{Right: cellGap}
-		if column == 0 {
-			align = document.AlignLeft
-			padding.Left = cellGap
-		}
+// tableCell is one cell of a document table: a solid green header bar and a grey line
+// under every row. The first column reads left, the amounts read right and sit flush
+// to each column's right edge.
+func tableCell(content string, column int, header bool) document.TableCell {
+	align := document.AlignRight
+	padding := document.Edges{Right: cellGap}
+	if column == 0 {
+		align = document.AlignLeft
+		padding.Left = cellGap
+	}
 
-		var look document.Style
-		textColor := ink
-		if header {
-			padding.Top, padding.Bottom = cellGap, cellGap
-			look = document.Style{Padding: padding, Background: &green}
-			textColor = whiteColor
-		} else {
-			padding.Top, padding.Bottom = document.Mm(1.75), document.Mm(1.75)
-			look = document.Style{
-				Padding: padding,
-				Border:  document.BorderEdges{Bottom: border(0.5, ruleGrey)},
-			}
-		}
-
-		return document.TableCell{
-			Content:   []document.DocumentNode{text(content, 9, header, textColor, align)},
-			ColSpan:   1,
-			RowSpan:   1,
-			CellStyle: look,
+	var look document.Style
+	textColor := ink
+	if header {
+		padding.Top, padding.Bottom = cellGap, cellGap
+		look = document.Style{Padding: padding, Background: &green}
+		textColor = whiteColor
+	} else {
+		padding.Top, padding.Bottom = document.Mm(1.75), document.Mm(1.75)
+		look = document.Style{
+			Padding: padding,
+			Border:  document.BorderEdges{Bottom: border(0.5, ruleGrey)},
 		}
 	}
 
+	return document.TableCell{
+		Content:   []document.DocumentNode{text(content, 9, header, textColor, align)},
+		ColSpan:   1,
+		RowSpan:   1,
+		CellStyle: look,
+	}
+}
+
+// linesTable is the lines table. gpdf repeats the header on each page the table runs onto.
+func linesTable(lines []Line) *document.Table {
 	table := &document.Table{
 		Columns: []document.TableColumn{
 			{Width: document.Pct(34)}, {Width: document.Pct(22)}, {Width: document.Pct(22)}, {Width: document.Pct(22)},
@@ -261,13 +286,13 @@ func linesTable(lines []Line) *document.Table {
 		Header: []document.TableRow{{}},
 	}
 	for column, label := range []string{"Material", "Weight (kg)", "Price / kg (R)", "Total (R)"} {
-		table.Header[0].Cells = append(table.Header[0].Cells, cell(label, column, true))
+		table.Header[0].Cells = append(table.Header[0].Cells, tableCell(label, column, true))
 	}
 
 	for _, line := range lines {
 		row := document.TableRow{}
 		for column, value := range []string{line.Material, Grouped(Weight(line.Weight)), Grouped(line.Price), Grouped(line.Total)} {
-			row.Cells = append(row.Cells, cell(value, column, false))
+			row.Cells = append(row.Cells, tableCell(value, column, false))
 		}
 		table.Body = append(table.Body, row)
 	}

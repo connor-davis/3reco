@@ -9,6 +9,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/certificates"
 	"github.com/connor-davis/3reco/internal/services/files"
 	"github.com/connor-davis/3reco/internal/services/invoices"
 	svc "github.com/connor-davis/3reco/internal/services/transactions"
@@ -19,16 +20,24 @@ type Handler struct {
 	svc      *svc.Service
 	files    *files.Service
 	invoices *invoices.Service
+	records  *certificates.Service
 }
 
 // New builds the handler.
-func New(s *svc.Service, files *files.Service, invoices *invoices.Service) *Handler {
-	return &Handler{svc: s, files: files, invoices: invoices}
+func New(
+	s *svc.Service,
+	files *files.Service,
+	invoices *invoices.Service,
+	records *certificates.Service,
+) *Handler {
+	return &Handler{svc: s, files: files, invoices: invoices, records: records}
 }
 
 // Register adds the routes to the /api router. Every one needs a signed-in
 // user; the service decides which rows that user may see.
 func (h *Handler) Register(api fiber.Router) {
+	api.Get("/certificates", middleware.RequireUser, h.period)
+
 	r := api.Group("/transactions", middleware.RequireUser)
 
 	// Fixed paths first, so "purchases" is never read as an id.
@@ -41,6 +50,7 @@ func (h *Handler) Register(api fiber.Router) {
 
 	r.Get("/:id", h.get)
 	r.Get("/:id/invoice", h.invoice)
+	r.Get("/:id/certificate", h.certificate)
 	r.Post("/:id/receipts", h.receiptAttach)
 	r.Get("/:id/receipts/:receipt_id", h.receiptDownload)
 	r.Delete("/:id/receipts/:receipt_id", h.receiptRemove)

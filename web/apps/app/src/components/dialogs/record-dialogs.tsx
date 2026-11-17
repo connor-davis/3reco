@@ -26,7 +26,11 @@ import {
   useDownloadReceipt,
   useDeleteReceipt,
 } from '@/lib/api/receipts';
-import { useDownloadInvoice, useTransaction } from '@/lib/api/transactions';
+import {
+  useDownloadInvoice,
+  useDownloadRecord,
+  useTransaction,
+} from '@/lib/api/transactions';
 import { api, ApiError } from '@/lib/api/client';
 import { useSaveCart } from '@/lib/api/cart';
 import { queryString, type Page } from '@/lib/api/paging';
@@ -56,6 +60,7 @@ export function TradeDetail({ record }: Props) {
   const remove = useDeleteReceipt(record?.id ?? '');
   const [removing, setRemoving] = useState<Receipt | null>(null);
   const invoice = useDownloadInvoice();
+  const recyclingRecord = useDownloadRecord();
   const [fileError, setFileError] = useState('');
   const shown = fresh.data ?? record;
   const navigate = useNavigate();
@@ -211,6 +216,18 @@ export function TradeDetail({ record }: Props) {
                 >
                   Download invoice
                 </DropdownMenuItem>
+                {shown.status === 'complete' && (
+                  <DropdownMenuItem
+                    disabled={recyclingRecord.isPending}
+                    onClick={() =>
+                      recyclingRecord.mutate(shown, {
+                        onError: (error) => toast.error(errorText(error)),
+                      })
+                    }
+                  >
+                    Recycling record
+                  </DropdownMenuItem>
+                )}
                 {shown.request_id && (
                   <DropdownMenuItem
                     render={

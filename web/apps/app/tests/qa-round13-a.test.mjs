@@ -63,6 +63,7 @@ test('receipt removal follows the server permission, including linked collectors
       '@/lib/api/transactions': {
         useTransaction: () => ({}),
         useDownloadInvoice: () => ({}),
+        useDownloadRecord: () => ({}),
       },
       '@/lib/api/receipts': {
         kinds: ['image/png', 'image/jpeg'],

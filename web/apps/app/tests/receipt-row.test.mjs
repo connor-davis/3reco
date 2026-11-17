@@ -47,6 +47,7 @@ test('a 60 character receipt name truncates inside its row and keeps its actions
     '@/lib/api/transactions': {
       useTransaction: () => ({}),
       useDownloadInvoice: () => ({}),
+      useDownloadRecord: () => ({}),
     },
     '@/lib/api/receipts': {
       kinds: [],

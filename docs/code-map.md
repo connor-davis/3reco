@@ -104,6 +104,7 @@ line when you add an owner.
 | Files in MinIO or S3: put, get, remove, presign | `storage/storage.go` |
 | Small JPEG copy of an uploaded image (long edge cap, white behind see-through, pixel cap; `golang.org/x/image`) | `storage/thumb.go` (`Thumbnail`) |
 | A4 invoice layout, wrapping, pagination and exact decimal formatting (MIT-licensed gpdf-dev/gpdf; Montserrat font and logo embedded from `pdf/assets`, OFL-1.1) | `pdf/invoice.go` |
+| Recycling record PDF (same header, footer, table cells and fonts as the invoice, drawn by the shared `renderPages`; wording says it records reported trade weights and makes no legal or audit claim) | `pdf/certificate.go` (`RenderCertificate`), shared parts in `pdf/invoice.go` |
 
 ## Database tables (`internal/platform/database/migrations`)
 
@@ -214,6 +215,8 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Receipt removal (`DELETE /api/transactions/:id/receipts/:receipt_id`: access rule, row delete, file removed after commit) | `Remove` in `internal/services/files/receipts.go`, `receiptRemove` in `internal/api/transactions/receipts.go` |
 | Snapshot-first private document reads, invoice key locking/replacement and bounded export ID pages | `internal/stores/transactions/documents.go` |
 | After-commit invoice hook, document composition, storage replacement, attached buyer mail and on-demand recovery | `internal/services/invoices/invoices.go` |
+| Recycling records on demand, nothing stored: one completed trade (read rule of `Detail`) or the caller's own completed trades in an inclusive South African day range of at most a year, grouped by material, carbon = weight x `materials.carbon_factor` as exact numerics | `internal/services/certificates/certificates.go`; `OwnTrades` and `DayRange` in `internal/services/transactions/own.go`; `TradeImpact`, `PeriodImpact` in `internal/stores/transactions/certificates.go` |
+| Recycling record downloads (`GET /api/transactions/:id/certificate`, `GET /api/certificates?from=&to=`; PDF, private no-store) | `internal/api/transactions/certificate.go` |
 | CSV download routes and response streaming | `internal/api/admin/exports.go` |
 | Export roles, inclusive timestamps, exact columns, SAST formatting and formula guard | `internal/services/admin/exports.go` |
 | Streaming allowlisted active account export SQL | `internal/stores/admin/exports.go` |
@@ -249,6 +252,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Unique MinIO test bucket, required-service gate and object/bucket cleanup | `tests/testutil/storage.go` |
 | Receipt sniffing, access leaks, SHA duplicate cleanup, concurrent sixth upload and upload/removal role rules | `tests/receipts_test.go`, `tests/receipts_roles_test.go` |
 | Invoice authorization, exact decimals, pagination, snapshots, regeneration, rollback and attached Mailpit messages | `tests/invoices_test.go` |
+| Recycling record text and exact carbon, completed-only, party and team access, period own-party scope, Johannesburg day edges, range refusals and pagination | `tests/certificates_test.go` |
 | Five CSV schemas, role/owner scope, effective date bounds, escaping and formula guard | `tests/exports_test.go` |
 | Round 3 trade regressions: payout roles and mail attachments, weight writes, stock prices, history, export filters and negotiated reviews | `tests/qa_round3_trade_test.go`, `web/apps/app/tests/qa-round3-trade.test.mjs` |
 | Code rules: doc comments, file length | `tests/style_test.go` |
@@ -367,6 +371,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Compact divided list rows, three-line trade/request rows, primary taps and sibling More menus | `web/apps/app/src/components/list-row.tsx`; compact status dots, plain type labels and flowing `TradeParties` names in `components/badges.tsx` |
 | Responsive soft-panel tables, fitted columns with reserved numeric widths, compact rows and keyboard row activation | `web/apps/app/src/components/data-table.tsx`; trade and request columns in `routes/transactions/-components/record-list.tsx`, `routes/market/-components/request-list.tsx` |
 | Guarded trade detail page, allowlisted Back destination and legacy `?open=` redirect | `web/apps/app/src/routes/transactions/$transactionId.tsx`, `routes/transactions/-components/record-list.tsx`; panels, invoice and receipt actions in `components/dialogs/record-dialogs.tsx` (`TradeDetail`) |
+| Recycling record actions: "Recycling record" in the trade detail menu (completed trades), and the Transactions page header button with its This month / Last month / Custom dates dialog (`monthRange` in `lib/format.ts`, hooks `useDownloadRecord` and `useDownloadPeriodRecord` in `lib/api/transactions.ts`) | `web/apps/app/src/components/dialogs/recycling-record-dialog.tsx`, `record-dialogs.tsx`, `src/routes/transactions/index.tsx`; tests in `web/apps/app/tests/recycling-record.test.mjs` |
 | Dashboard panels, stat tiles with trends (`formatPercent` in `lib/format.ts`), stock mix ring (`-dashboard/stock-mix.tsx`), business phone home below 768px (`-dashboard/phone-home.tsx`), quick links and capped activity/partners | `web/apps/app/src/routes/index.tsx`, `routes/-dashboard/panels.tsx`; phase 2 layout checks in `tests/layout-phase2.test.mjs`, `tests/layout-render.test.mjs` |
 | Soft section panels sharing the Section heading and action slot | `web/apps/app/src/components/panel.tsx`, `page-header.tsx` |
 | One-row search toolbar and responsive filter sheet with clear/results actions | `web/apps/app/src/components/toolbar.tsx` |
