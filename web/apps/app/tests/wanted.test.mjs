@@ -28,7 +28,10 @@ test('a wanted event and a request event both refresh the wanted lists', () => {
 
 test('only a verified business sees the browse list; every post shows its states', () => {
   const page = source('routes/wanted.tsx');
-  assert.match(page, /user\?\.business_verified && <WantedBrowse \/>/);
+  assert.match(
+    page,
+    /user\?\.business_verified && \([\s\S]*<TabsContent value="browse" keepMounted>[\s\S]*<WantedBrowse \/>/
+  );
 
   const mine = source('routes/-components/wanted-mine.tsx');
   assert.match(mine, /No wanted posts yet/);

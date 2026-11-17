@@ -154,7 +154,7 @@ function Wizard({ fixed }: { fixed: Choice | null }) {
       }
     >
       {step !== 'type' && (
-        <div className="space-y-2">
+        <div className="sticky top-0 z-10 space-y-2 bg-background py-2">
           <p className="text-sm text-muted-foreground">
             Step {detailIndex + 1} of 2
           </p>

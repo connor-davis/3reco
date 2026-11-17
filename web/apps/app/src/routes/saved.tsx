@@ -5,13 +5,13 @@ import { Guarded } from '@/components/access-guard';
 import { ButtonRow } from '@/components/button-row';
 import { CardsSkeleton, DataState } from '@/components/data-state';
 import { FollowButton } from '@/components/favourite-button';
-import { LinkButton } from '@/components/link-button';
 import { ListRow } from '@/components/list-row';
 import { ListingCard } from '@/components/listing-card';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFavouriteListings, useFollowedStores } from '@/lib/api/favourites';
 import { SavedSearches } from './-components/saved-searches';
 
@@ -30,11 +30,22 @@ function SavedPage() {
         title="Saved"
         description="Your saved listings, searches and followed stores. Get alerts for new listings."
       />
-      <div className="space-y-8">
-        <SavedSearches />
-        <SavedListings />
-        <FollowedStores />
-      </div>
+      <Tabs defaultValue="listings">
+        <TabsList aria-label="Saved items">
+          <TabsTrigger value="listings">Listings</TabsTrigger>
+          <TabsTrigger value="searches">Searches</TabsTrigger>
+          <TabsTrigger value="stores">Stores</TabsTrigger>
+        </TabsList>
+        <TabsContent value="listings" keepMounted>
+          <SavedListings />
+        </TabsContent>
+        <TabsContent value="searches" keepMounted>
+          <SavedSearches />
+        </TabsContent>
+        <TabsContent value="stores" keepMounted>
+          <FollowedStores />
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
@@ -71,18 +82,14 @@ function SavedListings() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Saved listings">
+    <Panel>
       <DataState
         query={query}
         isEmpty={!items.length}
+        compact
         icon={Heart}
         emptyTitle="Nothing saved yet"
         emptyText="Tap the heart on a listing to keep it here."
-        emptyAction={
-          <LinkButton to="/market" className="w-full md:w-auto">
-            Browse materials
-          </LinkButton>
-        }
         skeleton={<CardsSkeleton cards={3} />}
       >
         <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -106,10 +113,11 @@ function FollowedStores() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Stores you follow">
+    <Panel>
       <DataState
         query={query}
         isEmpty={!items.length}
+        compact
         icon={StoreIcon}
         emptyTitle="You don't follow any stores"
         emptyText="Open a store and tap Follow to hear about its new listings."

@@ -14,13 +14,14 @@ export function SavedSearches() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Saved searches">
+    <Panel>
       <p className="mb-3 text-sm text-muted-foreground">
         Get one alert when a new listing matches a material and price range.
       </p>
       <DataState
         query={query}
         isEmpty={!items.length}
+        compact
         icon={Bell}
         emptyTitle="No saved searches yet"
         emptyText="Choose a material and price range in the market, then tap Save this search."

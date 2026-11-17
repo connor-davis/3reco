@@ -16,15 +16,13 @@ export function WantedBrowse() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel
-      title="Buyers want these"
-      description="Reply with your price. Your stock is held for the buyer for 48 hours."
-    >
+    <Panel description="Reply with your price. Your stock is held for the buyer for 48 hours.">
       <DataState
         query={query}
         isEmpty={!items.length}
+        compact
         icon={Megaphone}
-        emptyTitle="Nothing wanted right now"
+        emptyTitle="Nothing wanted right now. New posts will appear here."
         emptyText="New posts from buyers show up here as they are made."
       >
         <div className="divide-y">

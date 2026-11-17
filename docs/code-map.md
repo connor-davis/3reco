@@ -32,7 +32,7 @@ line when you add an owner.
 | Job | Owner |
 | --- | --- |
 | Business blocks, private reports and active uniqueness; suspension columns; shared `contact_allowed` and team alert predicate; party-only block events and audit triggers | `internal/platform/database/migrations/0041_report_block.sql` |
-| Caller-scoped block/report SQL, admin queue, report locks, unlisting, suspension and explicit admin audit lines | `internal/stores/moderation/moderation.go` |
+| Caller-scoped block/report SQL, admin queue with reporter names and per-business all-status report counts, report locks, unlisting, suspension and explicit admin audit lines | `internal/stores/moderation/moderation.go` |
 | Manager/owner block and report rules, fixed reasons, private statuses, admin resolution and generic `report_closed` notices; shared contact guard | `internal/services/moderation/moderation.go`, notification type in `internal/services/notifications/notifications.go` |
 | `/api/blocks`, `/api/reports`, admin queue/resolution and unsuspend endpoints with caller and admin guards | `internal/api/moderation/handler.go`; registration in `internal/api/server.go` |
 | New-contact checks for requests, offers, accepts, messages, wanted replies, cart holds and follows; old history and exits remain readable/available | `internal/services/requests/{requests,state,messages}.go`, `internal/services/wanted/wanted.go`, `internal/services/market/cart.go`, `internal/services/favourites/favourites.go` |
@@ -42,6 +42,7 @@ line when you add an owner.
 | Admin-only reports queue, confirmed dismiss/unlist/suspend/unsuspend and navigation/access guards | `web/apps/app/src/routes/admin/reports.tsx`, `src/lib/{access,nav}.ts` |
 | Block-event cache invalidation for discovery, stores, wanted, requests, chats, cart and blocks; reports never have realtime events | `web/apps/app/src/lib/live/connection.ts` |
 | Block direction/team isolation, contact and history rules, alert filtering, private reports, admin audit/notices, suspension/reversal and id-only live routing; web dialogs, hooks and gating | `tests/report_block_test.go`, `web/apps/app/tests/report-block.test.mjs`; team chat sender regression in `src/components/chat/market.test.mjs`, store action layout in `tests/layout-render.test.mjs` |
+| Quiet listing/store actions, Wanted draft retention, Saved tabs and paging, blank report reasons, visible admin actions, mobile setup and desktop inbox tab hints across roles and light/dark | `web/apps/app/tests/ux5-quiet-actions.test.mjs` |
 
 ## Seller stats
 
@@ -390,7 +391,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Public totals, exact decimals and private field exclusion tests | `tests/stats_test.go` |
 | Credentialed HTTP, errors, downloads and paging | `web/apps/app/src/lib/api/client.ts`, `paging.ts`; search debounce `src/lib/use-debounced.ts`; cursor reset on filter or page-size change `src/components/transactions/pager-state.ts`; shared record count, rows-per-page select and navigation `src/components/transactions/list-tools.tsx` |
 | Go JSON contracts and resource query/mutation hooks | `web/apps/app/src/lib/api/types.ts`, resource files in `src/lib/api/` |
-| WhatsApp share link (`whatsAppUrl`, encoded text plus absolute page URL) and the "Share on WhatsApp" button on the listing and store pages | `web/apps/app/src/lib/share.ts`, `src/components/whatsapp-share.tsx`, tests in `web/apps/app/tests/share.test.mjs` |
+| WhatsApp share link (`whatsAppUrl`, encoded text plus absolute page URL), listing/store overflow actions and standalone share button | `web/apps/app/src/lib/share.ts`, `src/components/moderation-actions.tsx`, `src/components/whatsapp-share.tsx`, tests in `web/apps/app/tests/share.test.mjs` |
 | Owner and Manager Team directory, invitations and confirmed role/removal actions | `web/apps/app/src/routes/team.tsx`, `src/lib/api/team.ts` |
 | Public invite preview, new account and signed-in acceptance | `web/apps/app/src/routes/accept-invite.tsx`; full-width auth layout option in `components/auth-shell.tsx` |
 | Active-business Owner/Manager gates and Team navigation on desktop, phone and search | `web/apps/app/src/lib/access.ts` (`canManageTeam`, `canSeeTeam`), `src/lib/nav.ts` (`navFor`), `components/shell/{app-sidebar,bottom-tabs,command-search}.tsx` |
@@ -409,6 +410,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Recycling record actions: "Recycling record" in the trade detail menu (completed trades), and the Transactions page header button with its This month / Last month / Custom dates dialog (`monthRange` in `lib/format.ts`, hooks `useDownloadRecord` and `useDownloadPeriodRecord` in `lib/api/transactions.ts`) | `web/apps/app/src/components/dialogs/recycling-record-dialog.tsx`, `record-dialogs.tsx`, `src/routes/transactions/index.tsx`; tests in `web/apps/app/tests/recycling-record.test.mjs` |
 | Dashboard panels, stat tiles with trends (`formatPercent` in `lib/format.ts`), stock mix ring (`-dashboard/stock-mix.tsx`), business phone home below 768px (`-dashboard/phone-home.tsx`), quick links and capped activity/partners | `web/apps/app/src/routes/index.tsx`, `routes/-dashboard/panels.tsx`; phase 2 layout checks in `tests/layout-phase2.test.mjs`, `tests/layout-render.test.mjs` |
 | Soft section panels sharing the Section heading and action slot | `web/apps/app/src/components/panel.tsx`, `page-header.tsx` |
+| Shared loading, retry and empty states, including compact empty lines inside tabs | `web/apps/app/src/components/data-state.tsx` |
 | One-row search toolbar and responsive filter sheet with clear/results actions | `web/apps/app/src/components/toolbar.tsx` |
 | Full-width action groups stacked below md, natural-width rows from md up | `web/apps/app/src/components/button-row.tsx` |
 | Main actions above compact bottom tabs, reserved page space and wide end alignment | `web/apps/app/src/components/action-bar.tsx` |

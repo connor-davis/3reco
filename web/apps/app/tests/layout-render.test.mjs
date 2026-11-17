@@ -168,15 +168,11 @@ with sync_playwright() as p:
                             assert abs(box['y'] + box['height'] - (1000 - tab_height)) < 2
                     if route == '/market/store/seller':
                         buttons = page.locator('header [data-slot="button-row"] button, header [data-slot="button-row"] a')
-                        # Sharing, moderation, follow, cart and contact stay together.
-                        expect(buttons).to_have_count(5)
+                        # Contact and follow stay visible; sharing and moderation share a menu.
+                        expect(buttons).to_have_count(3)
                         boxes = [button.bounding_box() for button in buttons.all()]
-                        if width < 768:
-                            for above, below in zip(boxes, boxes[1:]):
-                                assert abs(above['width'] - below['width']) < 1
-                                assert below['y'] >= above['y'] + above['height'] + 7
-                        else:
-                            assert all(abs(box['y'] - boxes[0]['y']) < 1 for box in boxes)
+                        assert all(abs(box['y'] - boxes[0]['y']) < 1 for box in boxes)
+                        assert all(box['height'] >= 44 for box in boxes)
                     if route == '/market/listing/stock':
                         expect(page.get_by_text('Pickup or delivery', exact=True).first).to_be_visible()
                         expect(page.get_by_text('Collection area: ' + listing['pickup_area'], exact=True).first).to_be_visible()

@@ -1,6 +1,6 @@
 import { ModerationActions } from '@/components/moderation-actions';
 import { useEffect, useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
 import {
   BusinessName,
@@ -16,7 +16,7 @@ import { LinkButton } from '@/components/link-button';
 import { ListingCard } from '@/components/listing-card';
 import { PersonAvatar, Stars } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
-import { WhatsAppShare } from '@/components/whatsapp-share';
+import { whatsAppUrl } from '@/lib/share';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewMessageDialog } from '@/components/dialogs/new-message-dialog';
 import type { Listing } from '@/lib/api/types';
@@ -78,7 +78,7 @@ function StorePage() {
             listing={chatListing ?? undefined}
           />
           {user?.id === sellerId && <UnverifiedBanner />}
-          <Panel title="Store details">
+          <Panel>
             <header className="flex flex-wrap items-center gap-4">
               <PersonAvatar
                 name={store.data.name}
@@ -109,27 +109,9 @@ function StorePage() {
                   Member since {formatDate(store.data.created_at)}
                 </p>
               </div>
-              <ButtonRow>
-                <ModerationActions partyId={sellerId} name={store.data.name} />
-                <WhatsAppShare
-                  text={`${store.data.name} on 3REco`}
-                  path={`/market/store/${sellerId}`}
-                />
-                {user?.id !== sellerId &&
-                  user?.active_business_id !== sellerId && (
-                    <FollowButton storeId={sellerId} name={store.data.name} />
-                  )}
+              <ButtonRow className="flex-row flex-wrap items-center justify-start [&>*]:w-auto">
                 {user?.role === 'business' && user.id !== sellerId && (
                   <>
-                    <Button
-                      nativeButton={false}
-                      render={
-                        <Link to="/cart" search={{ seller_id: sellerId }} />
-                      }
-                      variant="outline"
-                    >
-                      Cart
-                    </Button>
                     <Button
                       disabled={
                         !listings.data?.items.some(
@@ -147,6 +129,30 @@ function StorePage() {
                     </Button>
                   </>
                 )}
+                {user?.id !== sellerId &&
+                  user?.active_business_id !== sellerId && (
+                    <FollowButton storeId={sellerId} name={store.data.name} />
+                  )}
+                <div className="flex items-center [&_button]:size-11">
+                  <ModerationActions
+                    partyId={sellerId}
+                    name={store.data.name}
+                    extra={[
+                      {
+                        label: 'Share on WhatsApp',
+                        onSelect: () =>
+                          window.open(
+                            whatsAppUrl(
+                              `${store.data.name} on 3REco`,
+                              `/market/store/${sellerId}`
+                            ),
+                            '_blank',
+                            'noopener,noreferrer'
+                          ),
+                      },
+                    ]}
+                  />
+                </div>
               </ButtonRow>
             </header>
           </Panel>

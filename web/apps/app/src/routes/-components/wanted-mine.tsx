@@ -26,13 +26,14 @@ export function MyWanted() {
   const items = query.data?.items ?? [];
 
   return (
-    <Panel title="Your wanted posts">
+    <Panel>
       <DataState
         query={query}
         isEmpty={!items.length}
+        compact
         icon={Megaphone}
         emptyTitle="No wanted posts yet"
-        emptyText="Post what you want above and sellers can reply."
+        emptyText="Post what you want and sellers can reply."
       >
         <div className="divide-y">
           {items.map((post) => (

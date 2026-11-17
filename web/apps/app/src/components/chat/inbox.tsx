@@ -111,6 +111,7 @@ export function Inbox({
       />
       <FilterTabs
         label="Filter conversations"
+        className="lg:pr-8 lg:[mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]"
         value={filter}
         onChange={setFilter}
         options={[

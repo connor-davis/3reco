@@ -377,7 +377,7 @@ test('Message store chooses available stock for the quantity dialog without crea
   );
   const tree = StorePage();
   nodes(tree)
-    .find((node) => words(node) === 'Message store')
+    .find((node) => node.type === 'Button' && words(node) === 'Message store')
     .props.onClick();
   assert.equal(picked.id, 'available');
   assert.equal(

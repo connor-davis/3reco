@@ -38,6 +38,115 @@ func reportMissing(t *testing.T, response testutil.Response, id string) {
 	}
 }
 
+func TestReportAdminReporterAndPartyHistory(t *testing.T) {
+	w := newTradeWorld(t)
+	admin := tradeNewUser(t, w.app, "admin")
+	outsider := tradeNewUser(t, w.app, "business")
+	tradeExec(
+		t,
+		w.app,
+		`UPDATE businesses SET business_name='Reporter Recycling' WHERE id=$1`,
+		w.buyer.id,
+	)
+
+	first := reportCreate(t, w.buyer, "listing", w.stock, "scam")
+	status(t, admin.c.Do(
+		"POST",
+		"/api/admin/reports/"+first+"/resolve",
+		map[string]any{"action": "dismiss"},
+	), 200)
+	second := reportCreate(t, w.buyer, "listing", w.stock, "wrong_info")
+	status(t, admin.c.Do(
+		"POST",
+		"/api/admin/reports/"+second+"/resolve",
+		map[string]any{"action": "remove_listing"},
+	), 200)
+	third := reportCreate(t, outsider, "party", w.seller.id, "spam")
+	status(t, admin.c.Do(
+		"POST",
+		"/api/admin/reports/"+third+"/resolve",
+		map[string]any{"action": "suspend"},
+	), 200)
+	reportCreate(t, w.buyer, "party", w.seller.id, "other")
+	otherParty := reportCreate(t, w.seller, "party", outsider.id, "other")
+
+	queue := status(t, admin.c.Do("GET", "/api/admin/reports", nil), 200)
+	if len(tradeItems(queue)) != 5 {
+		t.Fatalf("queue=%s", queue.Raw)
+	}
+	states := map[string]bool{}
+	for _, value := range tradeItems(queue) {
+		row := value.(map[string]any)
+		expected := float64(4)
+		if row["id"] == otherParty {
+			expected = 1
+		} else {
+			states[row["status"].(string)] = true
+			if row["suspended"] != true {
+				t.Errorf("missing suspension: %v", row)
+			}
+		}
+		if row["party_report_count"] != expected {
+			t.Errorf("history crosses parties or omits statuses: %v", row)
+		}
+		if row["reporter_id"] == w.buyer.id && row["reporter_name"] != "Reporter Recycling" {
+			t.Errorf("reporter name=%v", row)
+		}
+	}
+	for _, state := range []string{"open", "dismissed", "listing_removed", "suspended"} {
+		if !states[state] {
+			t.Errorf("missing state %s", state)
+		}
+	}
+
+	// Private projections never become part of caller statuses, creation or public pages.
+	for _, person := range []tradeUser{w.buyer, w.seller, outsider} {
+		mine := status(t, person.c.Do("GET", "/api/reports", nil), 200)
+		for _, value := range tradeItems(mine) {
+			row := value.(map[string]any)
+			if len(row) != 2 || row["reporter_name"] != nil || row["party_report_count"] != nil {
+				t.Errorf("private report fields leaked: %v", row)
+			}
+		}
+		tradeWant(t, "queue remains private", person.c.Do("GET", "/api/admin/reports", nil), 403)
+	}
+	for _, response := range []testutil.Response{
+		w.buyer.c.Do("GET", "/api/stores/"+outsider.id, nil),
+		w.buyer.c.Do("GET", "/api/market/listings", nil),
+		w.buyer.c.Do("POST", "/api/reports", reportBody("party", outsider.id, "spam")),
+	} {
+		rows := []map[string]any{response.Body}
+		if items, ok := response.Body["items"].([]any); ok {
+			for _, item := range items {
+				rows = append(rows, item.(map[string]any))
+			}
+		}
+
+		for _, row := range rows {
+			for _, field := range []string{"reporter_name", "party_report_count"} {
+				if _, exists := row[field]; exists {
+					t.Errorf("private field %s leaked: %s", field, response.Raw)
+				}
+			}
+		}
+	}
+
+	// A business reporter may later become a collector; history uses their person's name.
+	tradeExec(
+		t,
+		w.app,
+		`UPDATE users SET role='collector',first_name='Zanele',last_name='Dlamini' WHERE id=$1`,
+		w.buyer.id,
+	)
+	queue = status(t, admin.c.Do("GET", "/api/admin/reports", nil), 200)
+	for _, value := range tradeItems(queue) {
+		row := value.(map[string]any)
+		if row["reporter_id"] == w.buyer.id && row["reporter_name"] != "Zanele Dlamini" {
+			t.Errorf("collector reporter name=%v", row)
+		}
+	}
+}
+
 func TestReportBlockVisibilityAndContact(t *testing.T) {
 	w := newTradeWorld(t)
 	otherStock := tradeStock(t, w.app, w.buyer.id, w.material, "20", "5")

@@ -96,18 +96,20 @@ func (s *Store) Unblock(ctx context.Context, party, target string) error {
 
 // Report is the private admin projection. Reporters receive only ReportStatus.
 type Report struct {
-	ID         string    `json:"id"`
-	ReporterID string    `json:"reporter_id"`
-	PartyID    string    `json:"party_id"`
-	PartyName  string    `json:"party_name"`
-	TargetKind string    `json:"target_kind"`
-	TargetID   string    `json:"target_id"`
-	TargetName string    `json:"target_name"`
-	Reason     string    `json:"reason"`
-	Details    string    `json:"details"`
-	Status     string    `json:"status"`
-	Suspended  bool      `json:"suspended"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID               string    `json:"id"`
+	ReporterID       string    `json:"reporter_id"`
+	PartyID          string    `json:"party_id"`
+	PartyName        string    `json:"party_name"`
+	TargetKind       string    `json:"target_kind"`
+	TargetID         string    `json:"target_id"`
+	TargetName       string    `json:"target_name"`
+	Reason           string    `json:"reason"`
+	Details          string    `json:"details"`
+	Status           string    `json:"status"`
+	Suspended        bool      `json:"suspended"`
+	CreatedAt        time.Time `json:"created_at"`
+	ReporterName     string    `json:"reporter_name"`
+	PartyReportCount int       `json:"party_report_count"`
 }
 
 // ReportStatus exposes only the caller's report id and status.
@@ -172,14 +174,22 @@ func (s *Store) CreateReport(ctx context.Context, id, reporter, actor, kind, tar
 	return err
 }
 
-// Queue lists open reports first and includes suspension state for reversal.
+// Queue lists open reports first with private reporter names, all-status party
+// history counts and suspension state for reversal.
 func (s *Store) Queue(ctx context.Context) ([]Report, error) {
 	rows, err := s.db.Q(ctx).Query(ctx, `SELECT r.id,r.reporter_id,r.party_id,r.target_kind,r.target_id,
 		r.reason,r.details,r.status,b.suspended_at IS NOT NULL,r.created_at,
 		COALESCE(NULLIF(b.business_name,''),'Business'),
 		CASE WHEN r.target_kind='listing' THEN COALESCE(m.name,'Listing no longer available')
-		ELSE COALESCE(NULLIF(b.business_name,''),'Business') END
+		ELSE COALESCE(NULLIF(b.business_name,''),'Business') END,
+		CASE WHEN person.role='collector' THEN
+		COALESCE(NULLIF(btrim(concat_ws(' ',person.first_name,person.last_name)),''),
+		NULLIF(person.name,''),'Unknown')
+		ELSE COALESCE(NULLIF(reporter.business_name,''),`+database.DisplayName("person")+`) END,
+		(SELECT count(*) FROM reports history WHERE history.party_id=r.party_id)
 		FROM reports r JOIN businesses b ON b.id=r.party_id
+		LEFT JOIN businesses reporter ON reporter.id=r.reporter_id
+		LEFT JOIN users person ON person.id=r.reporter_id
 		LEFT JOIN stock s ON s.id=r.listing_id LEFT JOIN materials m ON m.id=s.material_id
 		ORDER BY (r.status='open') DESC,r.created_at DESC,r.id`)
 	if err != nil {
@@ -203,6 +213,8 @@ func (s *Store) Queue(ctx context.Context) ([]Report, error) {
 			&item.CreatedAt,
 			&item.PartyName,
 			&item.TargetName,
+			&item.ReporterName,
+			&item.PartyReportCount,
 		); err != nil {
 			return nil, err
 		}

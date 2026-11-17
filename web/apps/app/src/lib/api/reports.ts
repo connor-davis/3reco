@@ -16,6 +16,8 @@ export interface ReportStatus {
 
 export interface Report extends ReportStatus {
   reporter_id: string;
+  reporter_name: string;
+  party_report_count: number;
   party_id: string;
   party_name: string;
   target_kind: 'listing' | 'party';
