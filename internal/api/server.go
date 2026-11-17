@@ -48,6 +48,7 @@ import (
 	businesssvc "github.com/connor-davis/3reco/internal/services/business"
 	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
 	favouritessvc "github.com/connor-davis/3reco/internal/services/favourites"
+	geocodesvc "github.com/connor-davis/3reco/internal/services/geocode"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
 	moderationsvc "github.com/connor-davis/3reco/internal/services/moderation"
@@ -87,6 +88,7 @@ var Module = fx.Module("api",
 	fx.Provide(
 		crypt.FromConfig,
 		newGeocoder,
+		geocodesvc.New,
 		mail.New,
 		storage.New,
 		authstore.New,
@@ -155,10 +157,10 @@ var Module = fx.Module("api",
 
 // newGeocoder picks the map service. With none set up the distance filter is
 // off, and the server says so once at start instead of failing.
-func newGeocoder(cfg config.Config) geo.Geocoder {
-	geocoder := geo.FromName(cfg.Geocoder, cfg.Dev)
-	if !geo.Enabled(geocoder) {
+func newGeocoder(geocoder *geocodesvc.Service) geo.Geocoder {
+	if !geocoder.Enabled() {
 		slog.Warn("distance filter is off: no map service is set (THREERECO_GEOCODER)")
+		return geo.FromName("off", false)
 	}
 
 	return geocoder
@@ -397,6 +399,7 @@ func background(
 	requests *requestssvc.Service,
 	market *marketsvc.Service,
 	p *privacysvc.Service,
+	geocoder *geocodesvc.Service,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -406,6 +409,7 @@ func background(
 			go purgeLoop(ctx, a)
 			go offerExpiryLoop(ctx, requests, market)
 			go retentionLoop(ctx, p)
+			go geocoder.Backfill(ctx)
 
 			return nil
 		},

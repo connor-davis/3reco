@@ -48,6 +48,17 @@ The server reads every setting from environment variables. Locally the defaults 
 | `THREERECO_S3_REGION` | `us-east-1` | S3 region |
 | `THREERECO_S3_TLS` | `false` | Use HTTPS to reach S3 |
 
+## Address lookup
+
+| Variable | Default | What it does |
+|---|---|---|
+| `THREERECO_GEOCODER` | empty | `nominatim` enables business address lookup; `fake` is offline; `off` disables it. Empty uses fake in dev and off in production. Demo disables lookup. |
+| `THREERECO_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | Nominatim base URL; can point at a self-hosted service |
+
+Address lookup © OpenStreetMap contributors. Addresses are looked up on save,
+cached, and limited to one request per second. Startup backfill runs at most
+four lookups per minute. Failed queries wait a day before retrying.
+
 ## Production
 
 `deploy.sh` writes a `.env` with the production values and makes the database, file store and encryption secrets. See [Deployment](/docs/dev/deployment).

@@ -178,6 +178,9 @@ func TryServer(t testing.TB, tweak ...func(*config.Config)) (*App, error) {
 	cfg.SMTPPort = 1026
 	cfg.ResendAPIKey = ""
 	cfg.Dev = true
+	// Tests never inherit a real provider from the shell environment.
+	cfg.Geocoder = "fake"
+	cfg.GeocoderURL = "http://127.0.0.1:1"
 	cfg.ShutdownTimeout = 2 * time.Second
 	cfg.FieldKey = FieldKey
 

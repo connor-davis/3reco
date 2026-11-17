@@ -402,6 +402,11 @@ export function LocationForm({
         label="Province"
         options={provinces}
       />
+      {business && (
+        <p className="text-muted-foreground text-sm">
+          Address lookup © OpenStreetMap contributors
+        </p>
+      )}
     </FormShell>
   );
 }

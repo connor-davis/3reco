@@ -39,6 +39,8 @@ func (c Config) CheckDemo() error {
 		return errors.New("THREERECO_DEMO must not have THREERECO_SMTP_HOST set")
 	case c.Dev:
 		return errors.New("THREERECO_DEMO cannot run in THREERECO_DEV mode")
+	case strings.EqualFold(strings.TrimSpace(c.Geocoder), "nominatim"):
+		return errors.New("THREERECO_DEMO must not enable Nominatim address lookup")
 	case c.VAPIDPublicKey != "" || c.VAPIDPrivateKey != "":
 		return errors.New("THREERECO_DEMO has phone alerts off: leave the VAPID keys empty")
 	case c.FieldKey == "":

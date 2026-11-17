@@ -37,6 +37,8 @@ ID and bank numbers are stored encrypted. Other people see them only where a tra
 
 We use your details to run your account, match you with trades, send notices about your activity and keep trade records the law requires.
 
+We send business addresses to OpenStreetMap to find a map point.
+
 The app shows price trends built from many deals, never one store's deal.
 
 You can download everything we hold about you, or delete your account, from your profile. Trade records are kept for a limited time after deletion.

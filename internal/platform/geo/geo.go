@@ -1,5 +1,5 @@
 // Package geo turns a street address into a map point. A small interface keeps
-// the map service swappable; no real provider is wired yet.
+// the map service swappable. The geocode service wires the cached real provider.
 package geo
 
 import (

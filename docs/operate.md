@@ -33,10 +33,16 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_S3_SECRET_KEY` | `threereco-secret` | S3 secret key. |
 | `THREERECO_S3_REGION` | `us-east-1` | S3 region. |
 | `THREERECO_S3_TLS` | `false` | Use HTTPS to reach S3. |
-| `THREERECO_GEOCODER` | _(empty)_ | Map service that places business addresses for the distance filter. Empty is the offline fake in dev and off in production (the filter is hidden); `fake` forces the fake; `off` turns the filter off. |
+| `THREERECO_GEOCODER` | _(empty)_ | `nominatim` enables business address lookup; `fake` is offline; `off` disables it. Empty is fake in dev and off in production. Demo always disables lookup. |
+| `THREERECO_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | Nominatim base URL; replace with a self-hosted service when needed. |
 | `THREERECO_VAPID_PUBLIC_KEY` | (empty) | Public VAPID key for phone alerts (web push). Phone alerts are off unless both keys are set. See [Phone alerts](#phone-alerts). |
 | `THREERECO_VAPID_PRIVATE_KEY` | (empty) | Private VAPID key for phone alerts. A secret: keep it out of git. |
 | `THREERECO_VAPID_SUBJECT` | `mailto:admin@localhost` | Contact the push services can reach, as a `mailto:` or `https:` address. |
+
+Business address lookup uses © OpenStreetMap contributors. Lookups run only on
+address save, with a persistent cache and one request per second across the process.
+Startup backfill runs at most four lookups per minute. Failed queries wait a day
+before retrying. Demo mode disables all lookups.
 
 ## Demo site
 

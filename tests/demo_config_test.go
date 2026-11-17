@@ -34,6 +34,7 @@ func TestDemoStartGuards(t *testing.T) {
 		"bad database":    func(c *config.Config) { c.DatabaseURL = "::not a url" },
 		"real bucket":     func(c *config.Config) { c.S3Bucket = "threereco" },
 		"dev mode":        func(c *config.Config) { c.Dev = true },
+		"real geocoder":   func(c *config.Config) { c.Geocoder = "nominatim" },
 		"push key":        func(c *config.Config) { c.VAPIDPublicKey = "key" },
 		"no field key":    func(c *config.Config) { c.FieldKey = "" },
 		"private vapid":   func(c *config.Config) { c.VAPIDPrivateKey = "key" },

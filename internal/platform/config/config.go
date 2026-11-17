@@ -49,6 +49,8 @@ type Config struct {
 	// Geocoder names the map service that places business addresses for the
 	// market distance filter. Empty means the fake in dev and none in production.
 	Geocoder string
+	// GeocoderURL allows a self-hosted Nominatim to replace the public service.
+	GeocoderURL string
 
 	// VAPID keys sign phone alerts (web push). Both must be set for push to
 	// be on; the subject is a mailto: or https: contact for the push services.
@@ -90,7 +92,8 @@ var EnvVars = []EnvVar{
 	{"THREERECO_S3_SECRET_KEY", "threereco-secret", "S3 secret key."},
 	{"THREERECO_S3_REGION", "us-east-1", "S3 region."},
 	{"THREERECO_S3_TLS", "false", "Use HTTPS to reach S3."},
-	{"THREERECO_GEOCODER", "", "Map service that places business addresses for the distance filter. Empty is the offline fake in dev and off in production (the filter is hidden); `fake` forces the fake; `off` turns the filter off."},
+	{"THREERECO_GEOCODER", "", "Map service: nominatim enables address lookup; fake is offline; off disables it. Empty is fake in dev and off in production. Demo always disables lookup."},
+	{"THREERECO_GEOCODER_URL", "https://nominatim.openstreetmap.org", "Nominatim base URL; use a self-hosted service when needed."},
 	{"THREERECO_VAPID_PUBLIC_KEY", "", "Public VAPID key for phone alerts (web push). Phone alerts are off unless both keys are set."},
 	{"THREERECO_VAPID_PRIVATE_KEY", "", "Private VAPID key for phone alerts. A secret: keep it out of git and the browser."},
 	{"THREERECO_VAPID_SUBJECT", "mailto:admin@localhost", "Contact the push services can reach, as a mailto: or https: address."},
@@ -119,6 +122,7 @@ func Load() (Config, error) {
 		S3Region:       Env("THREERECO_S3_REGION", "us-east-1"),
 		S3UseTLS:       envBool("THREERECO_S3_TLS"),
 		Geocoder:       Env("THREERECO_GEOCODER", ""),
+		GeocoderURL:    Env("THREERECO_GEOCODER_URL", "https://nominatim.openstreetmap.org"),
 
 		VAPIDPublicKey:  Env("THREERECO_VAPID_PUBLIC_KEY", ""),
 		VAPIDPrivateKey: Env("THREERECO_VAPID_PRIVATE_KEY", ""),

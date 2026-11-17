@@ -1,5 +1,15 @@
 # Code map
 
+## Business address lookup
+
+| Job | Owner |
+| --- | --- |
+| Nominatim HTTP, private error sentinels and process-wide one-request-per-second limit | `internal/platform/geocode/nominatim.go` |
+| Persistent normalized address cache, successful points and daily failure retry dates | `internal/stores/geocode/geocode.go`, `internal/platform/database/migrations/0043_geocode_cache.sql` |
+| Address normalization, cached lookup, demo/off guard and startup backfill at 15-second intervals | `internal/services/geocode/geocode.go`; startup in `internal/api/server.go` |
+| Post-commit business placement, clearing stale points and conditional address-matching point writes | `internal/services/business/business.go`, `internal/stores/businesses/geocode.go` |
+| Fake HTTP provider, cache reuse/retry, private point writes, caller isolation, startup backfill and off/demo checks | `internal/platform/geocode/nominatim_test.go`, `internal/services/geocode/geocode_test.go`, `tests/geocode_test.go` |
+
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
 
