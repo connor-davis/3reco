@@ -9,10 +9,9 @@ app everywhere else.
 
 ## Run it locally
 
-You need Go, Node 22, [Task](https://taskfile.dev) and Podman (or Docker).
+You need Go, Node 22, [Task](https://taskfile.dev) and Docker.
 
 ```
-podman machine start   # Windows and Mac, if it is not running
 task up                # Postgres, Mailpit (fake email) and MinIO (files)
 task install           # web app packages
 task dev               # API on :8180, web app on http://localhost:5173

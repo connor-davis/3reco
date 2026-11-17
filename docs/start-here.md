@@ -12,7 +12,7 @@ checks who may see what. A React app is the screen.
 
 ## Three commands
 
-Start Podman first (`podman machine start`). Then:
+Start Docker first. Then:
 
 ```
 task up      # Postgres, Mailpit and MinIO

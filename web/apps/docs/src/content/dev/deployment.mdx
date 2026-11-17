@@ -37,7 +37,7 @@ The API runs the database migrations itself when it starts.
 `deployments/Dockerfile` has three stages: Node builds the web app (`npm ci`, `npm run build`), Go builds the binary, and the final distroless image holds the binary plus the web app's `dist/` at `/web/apps/app/dist`. It runs as a non-root user and has a health check (`3reco health`).
 
 ```bash
-podman build -f deployments/Dockerfile -t 3reco --build-arg VERSION=v0.1.0 .
+docker build -f deployments/Dockerfile -t 3reco --build-arg VERSION=v0.1.0 .
 ```
 
 ## Backups

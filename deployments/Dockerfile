@@ -4,7 +4,7 @@
 # distroless, run as non-root. The binary serves the web app next to /api.
 # Build from the repo root:
 #
-#   podman build -f deployments/Dockerfile -t 3reco --build-arg VERSION=v0.1.0 .
+#   docker build -f deployments/Dockerfile -t 3reco --build-arg VERSION=v0.1.0 .
 
 FROM node:22-alpine AS web
 WORKDIR /src/web/apps/app
