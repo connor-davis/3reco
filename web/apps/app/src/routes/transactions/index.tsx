@@ -47,6 +47,7 @@ function AllTransactions() {
       }
       kind={kind}
       actions={business ? <RecyclingRecordButton /> : undefined}
+      actionsBeside
       exportKind={
         business ? (kind === 'mine' ? undefined : kind) : 'transactions'
       }

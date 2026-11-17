@@ -57,6 +57,8 @@ type Props = {
   // Staff pages add a Business-to-business / collector filter.
   typeFilter?: boolean;
   actions?: ReactNode;
+  // A lone "..." menu sits beside the title on a phone instead of on its own row.
+  actionsBeside?: boolean;
   // Collections show a stats row. Other pages skip it.
   stats?: boolean;
   readOnly?: boolean;
@@ -115,6 +117,7 @@ export function RecordList({
   emptyTitle,
   typeFilter = false,
   actions,
+  actionsBeside = false,
   stats = false,
   readOnly = false,
   businessFilter,
@@ -339,7 +342,12 @@ export function RecordList({
 
   return (
     <>
-      <PageHeader title={title} description={description} actions={actions} />
+      <PageHeader
+        title={title}
+        description={description}
+        actions={actions}
+        compactActionsBelow={!actionsBeside}
+      />
       {stats && (
         <div className="mb-8">
           <StatGrid threeUp>
