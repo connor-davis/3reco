@@ -226,7 +226,13 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
       },
     },
     '@/lib/auth/use-auth': {
-      useAuth: () => ({ user: { id: 'buyer', role: 'business' } }),
+      useAuth: () => ({
+        user: {
+          id: 'person-buyer',
+          role: 'business',
+          active_business_id: 'buyer',
+        },
+      }),
     },
     '@/lib/api/messages': {
       useMessageHistory: () => ({
@@ -248,6 +254,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
     '@/components/back-button',
     '@/components/badges',
     '@/components/confirm-dialog',
+    '@/components/moderation-actions',
     '@/components/data-state',
     '@/components/form-fields',
     '@/components/icon-button',
@@ -274,7 +281,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
   messages = [
     {
       id: 'sent',
-      sender_id: 'buyer',
+      sender_id: 'person-buyer',
       content: 'Newest sent message',
       created_at: '2026-11-05T09:00:00Z',
     },
@@ -296,6 +303,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
     'Newest sent message'
   );
   assert.equal(viewport.scrollTop, 1000);
+  assert.match(log.props.children.at(-1).props.className, /bg-outgoing/);
 });
 
 test('expired offers keep the API conflict message and refresh the request', async () => {

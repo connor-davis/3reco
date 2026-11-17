@@ -1,3 +1,4 @@
+import { ModerationActions } from '@/components/moderation-actions';
 import { toast } from 'sonner';
 import {
   useCallback,
@@ -58,6 +59,7 @@ const schema = z.object({
 
 export function Conversation({ request }: { request: TradeRequest }) {
   const { user } = useAuth();
+  const party = user?.active_business_id ?? user?.id;
   const actions = useRequestActions(request);
   const history = useMessageHistory(request.id);
   const read = useReadMessages(request.id);
@@ -68,9 +70,9 @@ export function Conversation({ request }: { request: TradeRequest }) {
   const [offerOpen, setOfferOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
-  const other = counterpartyOf(request, user?.id);
-  const seller = request.seller.id === user?.id;
-  const participant = seller || request.buyer.id === user?.id;
+  const other = counterpartyOf(request, party);
+  const seller = request.seller.id === party;
+  const participant = seller || request.buyer.id === party;
   // An admin may read any chat, but never writes or acts in one.
   const viewer = user?.role === 'admin';
   const canAct = user?.role === 'business' && participant && !isClosed(request);
@@ -187,8 +189,9 @@ export function Conversation({ request }: { request: TradeRequest }) {
               />
             )}
           </h2>
-          <StatusBadge status={requestLabel(request, user?.id)} />
+          <StatusBadge status={requestLabel(request, party)} />
         </div>
+        {!viewer && <ModerationActions partyId={other.id} name={other.name} />}
         <IconButton label="Request details" onClick={() => setInfoOpen(true)}>
           <Info />
         </IconButton>
@@ -204,7 +207,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
                   Waiting for {request.seller.name} to make an offer.
                 </p>
               )}
-              {canMakeOffer(request, user?.id) && (
+              {canMakeOffer(request, party) && (
                 <Button
                   disabled={actions.isPending}
                   onClick={() => setOfferOpen(true)}
@@ -214,16 +217,15 @@ export function Conversation({ request }: { request: TradeRequest }) {
                     : 'Make offer'}
                 </Button>
               )}
-              {request.offer_by === user?.id &&
-                request.status === 'offered' && (
-                  <Button
-                    variant="outline"
-                    disabled={actions.isPending}
-                    onClick={() => setConfirm('withdraw')}
-                  >
-                    Withdraw offer
-                  </Button>
-                )}
+              {request.offer_by === party && request.status === 'offered' && (
+                <Button
+                  variant="outline"
+                  disabled={actions.isPending}
+                  onClick={() => setConfirm('withdraw')}
+                >
+                  Withdraw offer
+                </Button>
+              )}
               <Button
                 variant="outline"
                 disabled={actions.isPending}
@@ -331,7 +333,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
           {request.status === 'offered' && (
             <OfferCard
               request={request}
-              canRespond={canAct && canRespond(request, user?.id)}
+              canRespond={canAct && canRespond(request, party)}
               onAccept={() =>
                 void actions.accept().then((status) => {
                   if (status)
@@ -420,7 +422,7 @@ export function Conversation({ request }: { request: TradeRequest }) {
         title={
           <span className="flex flex-wrap items-center gap-2">
             Request details{' '}
-            <StatusBadge status={requestLabel(request, user?.id)} />
+            <StatusBadge status={requestLabel(request, party)} />
           </span>
         }
         description={`Request ${request.id.slice(-8).toUpperCase()}`}

@@ -41,6 +41,7 @@ import { Route as MarketOutgoingRouteImport } from './routes/market/outgoing'
 import { Route as MarketIncomingRouteImport } from './routes/market/incoming'
 import { Route as MarketRequestIdRouteImport } from './routes/market/$requestId'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminReportsRouteImport } from './routes/admin/reports'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin/duplicates'
 import { Route as AdminActivityRouteImport } from './routes/admin/activity'
 import { Route as MarketStoreSellerIdRouteImport } from './routes/market/store/$sellerId'
@@ -207,6 +208,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDuplicatesRoute = AdminDuplicatesRouteImport.update({
   id: '/admin/duplicates',
   path: '/admin/duplicates',
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -328,6 +336,7 @@ export interface FileRoutesById {
   '/wanted': typeof WantedRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$requestId': typeof MarketRequestIdRoute
   '/market/incoming': typeof MarketIncomingRoute
@@ -368,6 +377,7 @@ export interface FileRouteTypes {
     | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
+    | '/admin/reports'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -406,6 +416,7 @@ export interface FileRouteTypes {
     | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
+    | '/admin/reports'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/wanted'
     | '/admin/activity'
     | '/admin/duplicates'
+    | '/admin/reports'
     | '/admin/users'
     | '/market/$requestId'
     | '/market/incoming'
@@ -483,6 +495,7 @@ export interface RootRouteChildren {
   WantedRoute: typeof WantedRoute
   AdminActivityRoute: typeof AdminActivityRoute
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   MarketRequestIdRoute: typeof MarketRequestIdRoute
   MarketIncomingRoute: typeof MarketIncomingRoute
@@ -725,6 +738,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/duplicates': {
       id: '/admin/duplicates'
       path: '/admin/duplicates'
@@ -779,6 +799,7 @@ const rootRouteChildren: RootRouteChildren = {
   WantedRoute: WantedRoute,
   AdminActivityRoute: AdminActivityRoute,
   AdminDuplicatesRoute: AdminDuplicatesRoute,
+  AdminReportsRoute: AdminReportsRoute,
   AdminUsersRoute: AdminUsersRoute,
   MarketRequestIdRoute: MarketRequestIdRoute,
   MarketIncomingRoute: MarketIncomingRoute,

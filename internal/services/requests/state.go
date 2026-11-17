@@ -10,6 +10,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/pdf"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
+	"github.com/connor-davis/3reco/internal/services/moderation"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
@@ -28,6 +29,10 @@ func (s *Service) MakeOffer(
 	return s.db.InTx(ctx, func(ctx context.Context) error {
 		r, err := s.load(ctx, user, id, true)
 		if err != nil {
+			return err
+		}
+
+		if err := moderation.RequireContact(ctx, s.db, r.Buyer.ID, r.Seller.ID); err != nil {
 			return err
 		}
 
@@ -107,6 +112,10 @@ func (s *Service) Accept(
 
 		r, err := s.load(ctx, user, id, true)
 		if err != nil {
+			return err
+		}
+
+		if err := moderation.RequireContact(ctx, s.db, r.Buyer.ID, r.Seller.ID); err != nil {
 			return err
 		}
 

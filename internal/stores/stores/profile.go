@@ -50,7 +50,7 @@ func (records *Store) Find(ctx context.Context, id, viewer string) (Profile, err
 	err := records.db.Q(ctx).QueryRow(
 		ctx,
 		profileSelect(`SELECT * FROM business_profiles u WHERE u.id=$1 AND u.role='business' AND NOT u.is_removed
-		AND (`+database.Verified("u")+` OR u.id=$2)`),
+		AND (`+database.Verified("u")+` OR u.id=$2) AND contact_allowed($2,u.id)`),
 		id,
 		viewer,
 	).Scan(
@@ -74,7 +74,7 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
-		AND `+database.Verified("u")+`
+		AND `+database.Verified("u")+` AND contact_allowed($1,u.id)
 		AND ($2='' OR u.business_name ILIKE '%'||$2||'%' OR u.name ILIKE '%'||$2||'%')
 		AND ($3='' OR (u.created_at,u.id)<($4,$3))
 		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($5,0)`),
@@ -99,6 +99,7 @@ func (records *Store) Followed(ctx context.Context, userID string, query paging.
 		ctx,
 		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed
 		AND `+database.Verified("u")+`
+		AND person_contact_allowed($1,u.id)
 		AND u.id IN (SELECT store_id FROM follows WHERE user_id=$1)
 		AND ($2='' OR (u.created_at,u.id)<($3,$2))
 		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($4,0)`),

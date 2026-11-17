@@ -2,6 +2,7 @@ import {
   Boxes,
   Building2,
   ClipboardList,
+  Flag,
   History,
   Heart,
   Home,
@@ -101,6 +102,7 @@ function roleNav(role: Role | null): NavGroup[] {
             ...staffWorkspace,
             { label: 'User management', to: '/admin/users', icon: Users },
             { label: 'Activity log', to: '/admin/activity', icon: History },
+            { label: 'Reports', to: '/admin/reports', icon: Flag },
           ],
         },
       ];
@@ -289,6 +291,7 @@ const guardedPairs: Record<string, PageId> = {
   'admin/users': 'users',
   'admin/activity': 'activity',
   'admin/duplicates': 'duplicates',
+  'admin/reports': 'reports',
 };
 const guardedSingles: Record<string, PageId> = {
   '': 'dashboard',
@@ -329,6 +332,7 @@ export function pageTitleFor(pathname: string, role?: Role | null): string {
   if (page && role !== undefined && !canOpen(role, page))
     return 'Not available';
 
+  if (first === 'admin' && second === 'reports') return 'Reports';
   if (first === 'admin' && second === 'activity') return 'Activity log';
   if (first === 'admin' && second === 'duplicates') return 'Duplicates';
   if (first === 'market' && second === 'incoming') return 'Incoming requests';

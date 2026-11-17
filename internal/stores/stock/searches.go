@@ -19,7 +19,7 @@ func (records *Store) TellSearchers(ctx context.Context, id string) error {
 		JOIN business_profiles u ON u.id=s.owner_id
 		JOIN users person ON NOT person.is_removed
 		WHERE s.id=$1 AND s.is_listed AND s.weight>0
-		AND NOT u.is_removed AND u.role='business' AND `+database.Verified("u")+`
+		AND NOT u.is_removed AND u.role='business' AND person_contact_allowed(person.id,u.id) AND `+database.Verified("u")+`
 		AND EXISTS (SELECT 1 FROM saved_searches search
 			WHERE search.user_id=person.id AND search.material_id=s.material_id
 			AND (search.min_price IS NULL OR s.price>=search.min_price)

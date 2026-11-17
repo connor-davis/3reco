@@ -17,6 +17,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
+	"github.com/connor-davis/3reco/internal/services/moderation"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
@@ -195,6 +196,10 @@ func (s *Service) Create(ctx context.Context, user auth.User, in CreateInput) (s
 	id := database.NewID()
 
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
+		if err := moderation.RequireContact(ctx, s.db, auth.PartyID(user), in.SellerID); err != nil {
+			return err
+		}
+
 		if in.FromCart {
 			cart, err := marketstore.New(s.db).Cart(ctx, auth.PartyID(user), in.SellerID)
 			if err != nil {

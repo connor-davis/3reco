@@ -206,7 +206,7 @@ func (records *Store) TellFollowers(ctx context.Context, id string) error {
 		JOIN follows f ON f.store_id=s.owner_id
 		JOIN users person ON person.id=f.user_id AND NOT person.is_removed
 		WHERE s.id=$1 AND s.is_listed AND s.weight>0
-		AND NOT u.is_removed AND u.role='business' AND `+database.Verified("u"),
+		AND NOT u.is_removed AND u.role='business' AND person_contact_allowed(person.id,u.id) AND `+database.Verified("u"),
 		id,
 	)
 

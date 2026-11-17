@@ -17,6 +17,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
+	"github.com/connor-davis/3reco/internal/services/moderation"
 	"github.com/connor-davis/3reco/internal/services/requests"
 	"github.com/connor-davis/3reco/internal/services/transactions"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
@@ -241,6 +242,10 @@ func (s *Service) Reply(
 			}
 
 			return apperr.Conflict("This wanted post has been filled.")
+		}
+
+		if err := moderation.RequireContact(ctx, s.db, auth.PartyID(user), p.BuyerID); err != nil {
+			return err
 		}
 
 		active, err := s.store.BuyerActive(ctx, p.BuyerID)

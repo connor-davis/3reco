@@ -54,7 +54,7 @@ func (records *Store) TellImport(ctx context.Context, owner string, ids []string
 		JOIN users person ON person.id=f.user_id AND NOT person.is_removed
 		CROSS JOIN (SELECT count(*) AS n FROM stock
 			WHERE id=ANY($2) AND owner_id=$1 AND is_listed AND weight>0) c
-		WHERE u.id=$1 AND c.n>0 AND NOT u.is_removed AND u.role='business' AND `+database.Verified("u"),
+		WHERE u.id=$1 AND c.n>0 AND NOT u.is_removed AND u.role='business' AND person_contact_allowed(person.id,u.id) AND `+database.Verified("u"),
 		owner,
 		ids,
 	)
@@ -71,7 +71,7 @@ func (records *Store) TellImport(ctx context.Context, owner string, ids []string
 			'/market/store/'||u.id
 		FROM business_profiles u
 		JOIN users person ON NOT person.is_removed
-		WHERE u.id=$1 AND NOT u.is_removed AND u.role='business' AND `+database.Verified("u")+`
+		WHERE u.id=$1 AND NOT u.is_removed AND u.role='business' AND person_contact_allowed(person.id,u.id) AND `+database.Verified("u")+`
 		AND NOT EXISTS (SELECT 1 FROM follows f WHERE f.store_id=u.id AND f.user_id=person.id)
 		AND EXISTS (SELECT 1 FROM stock s JOIN saved_searches search
 				ON search.material_id=s.material_id

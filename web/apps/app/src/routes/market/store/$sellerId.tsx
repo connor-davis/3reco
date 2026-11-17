@@ -1,3 +1,4 @@
+import { ModerationActions } from '@/components/moderation-actions';
 import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MessageSquare, Store as StoreIcon } from 'lucide-react';
@@ -102,6 +103,7 @@ function StorePage() {
                 </p>
               </div>
               <ButtonRow>
+                <ModerationActions partyId={sellerId} name={store.data.name} />
                 <WhatsAppShare
                   text={`${store.data.name} on 3REco`}
                   path={`/market/store/${sellerId}`}
@@ -283,6 +285,7 @@ function StorePage() {
                 </p>
               )}
               <ButtonRow>
+                <ModerationActions partyId={sellerId} name={store.data.name} />
                 {reviewCursor && (
                   <Button
                     variant="outline"

@@ -9,6 +9,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/paging"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	"github.com/connor-davis/3reco/internal/services/moderation"
 	"github.com/connor-davis/3reco/internal/services/notifications"
 	store "github.com/connor-davis/3reco/internal/stores/requests"
 )
@@ -68,6 +69,10 @@ func (s *Service) Send(
 	err := s.db.InTx(ctx, func(ctx context.Context) error {
 		r, err := s.load(ctx, user, id, true)
 		if err != nil {
+			return err
+		}
+
+		if err := moderation.RequireContact(ctx, s.db, r.Buyer.ID, r.Seller.ID); err != nil {
 			return err
 		}
 

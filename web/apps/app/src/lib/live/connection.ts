@@ -22,6 +22,18 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
       return [['auth'], ['team'], ['businesses', 'mine']];
     case 'notification':
       return [['notifications']];
+    case 'block':
+      return [
+        ['blocks'],
+        ['listings'],
+        ['favourites', 'list'],
+        ['stores'],
+        ['follows', 'list'],
+        ['wanted'],
+        ['requests'],
+        ['messages'],
+        ['cart'],
+      ];
     case 'wanted':
       return [['wanted']];
     case 'saved_search':

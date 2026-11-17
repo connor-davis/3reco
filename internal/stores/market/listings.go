@@ -85,7 +85,7 @@ const kmApart = `6371*2*asin(sqrt(least(1,
 // sellerVisible hides an unverified business's stock from everyone but its owner,
 // whose id is the numbered placeholder.
 func sellerVisible(viewer string) string {
-	return ` AND (` + database.Verified("u") + ` OR u.id=` + viewer + `)`
+	return ` AND (` + database.Verified("u") + ` OR u.id=` + viewer + `) AND contact_allowed(` + viewer + `,u.id)`
 }
 
 // Listings excludes hidden, empty and removed-seller stock at the SQL boundary.

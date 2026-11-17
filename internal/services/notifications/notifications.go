@@ -30,6 +30,8 @@ const (
 	StoreNewListing = "store_new_listing"
 	// SavedSearchMatch is written for a person's matching first publication.
 	SavedSearchMatch = "saved_search_match"
+	// ReportClosed reveals no target or review outcome.
+	ReportClosed = "report_closed"
 )
 
 // Notify tells one user something. Call it in the same transaction as the

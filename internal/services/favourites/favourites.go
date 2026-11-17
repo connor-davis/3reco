@@ -10,6 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
+	"github.com/connor-davis/3reco/internal/platform/database"
+	"github.com/connor-davis/3reco/internal/services/moderation"
 	store "github.com/connor-davis/3reco/internal/stores/favourites"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	storesstore "github.com/connor-davis/3reco/internal/stores/stores"
@@ -17,14 +19,15 @@ import (
 
 // Service is the favourites and follows rules.
 type Service struct {
+	db       *database.DB
 	store    *store.Store
 	listings *marketstore.Store
 	stores   *storesstore.Store
 }
 
 // New builds the service.
-func New(rows *store.Store, listings *marketstore.Store, stores *storesstore.Store) *Service {
-	return &Service{store: rows, listings: listings, stores: stores}
+func New(db *database.DB, rows *store.Store, listings *marketstore.Store, stores *storesstore.Store) *Service {
+	return &Service{db: db, store: rows, listings: listings, stores: stores}
 }
 
 // Favourite saves a listing the caller can currently see on the market. A
@@ -58,6 +61,10 @@ func (s *Service) FavouriteIDs(ctx context.Context, userID string) ([]string, er
 func (s *Service) Follow(ctx context.Context, userID, party, storeID string) error {
 	if storeID == userID || storeID == party {
 		return apperr.BadRequest("You can't follow your own store.", nil)
+	}
+
+	if err := moderation.RequireContact(ctx, s.db, party, storeID); err != nil {
+		return err
 	}
 
 	_, err := s.stores.Find(ctx, storeID, party)

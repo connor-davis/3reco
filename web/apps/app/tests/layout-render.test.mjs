@@ -164,8 +164,8 @@ with sync_playwright() as p:
                             assert abs(box['y'] + box['height'] - (1000 - 52)) < 2
                     if route == '/market/store/seller':
                         buttons = page.locator('header [data-slot="button-row"] button, header [data-slot="button-row"] a')
-                        # Share on WhatsApp, Follow, Cart and Message store.
-                        expect(buttons).to_have_count(4)
+                        # Sharing, moderation, follow, cart and contact stay together.
+                        expect(buttons).to_have_count(5)
                         boxes = [button.bounding_box() for button in buttons.all()]
                         if width < 768:
                             for above, below in zip(boxes, boxes[1:]):

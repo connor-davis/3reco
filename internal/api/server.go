@@ -25,6 +25,7 @@ import (
 	marketapi "github.com/connor-davis/3reco/internal/api/market"
 	materialsapi "github.com/connor-davis/3reco/internal/api/materials"
 	"github.com/connor-davis/3reco/internal/api/middleware"
+	moderationapi "github.com/connor-davis/3reco/internal/api/moderation"
 	privacyapi "github.com/connor-davis/3reco/internal/api/privacy"
 	profileapi "github.com/connor-davis/3reco/internal/api/profile"
 	pushapi "github.com/connor-davis/3reco/internal/api/push"
@@ -49,6 +50,7 @@ import (
 	favouritessvc "github.com/connor-davis/3reco/internal/services/favourites"
 	marketsvc "github.com/connor-davis/3reco/internal/services/market"
 	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
+	moderationsvc "github.com/connor-davis/3reco/internal/services/moderation"
 	privacysvc "github.com/connor-davis/3reco/internal/services/privacy"
 	profilesvc "github.com/connor-davis/3reco/internal/services/profile"
 	pushsvc "github.com/connor-davis/3reco/internal/services/push"
@@ -67,6 +69,7 @@ import (
 	favouritesstore "github.com/connor-davis/3reco/internal/stores/favourites"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
 	materialsstore "github.com/connor-davis/3reco/internal/stores/materials"
+	moderationstore "github.com/connor-davis/3reco/internal/stores/moderation"
 	privacystore "github.com/connor-davis/3reco/internal/stores/privacy"
 	profilestore "github.com/connor-davis/3reco/internal/stores/profile"
 	pushstore "github.com/connor-davis/3reco/internal/stores/push"
@@ -131,6 +134,9 @@ var Module = fx.Module("api",
 		quickrepliesstore.New,
 		quickrepliessvc.New,
 		quickrepliesapi.New,
+		moderationstore.New,
+		moderationsvc.New,
+		moderationapi.New,
 		wantedstore.New,
 		wantedsvc.New,
 		wantedapi.New,
@@ -213,6 +219,7 @@ type routes struct {
 	SavedSearches *savedsearchesapi.Handler
 	Push          *pushapi.Handler
 	QuickReplies  *quickrepliesapi.Handler
+	Moderation    *moderationapi.Handler
 	Wanted        *wantedapi.Handler
 	Team          *teamapi.Handler
 	Business      *businessapi.Handler
@@ -287,6 +294,7 @@ func New(r routes) *fiber.App {
 	r.SavedSearches.Register(api)
 	r.Push.Register(api)
 	r.QuickReplies.Register(api)
+	r.Moderation.Register(api)
 	r.Wanted.Register(api)
 	r.Team.Register(api)
 	r.Business.Register(api)

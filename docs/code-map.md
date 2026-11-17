@@ -3,6 +3,22 @@
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
 
+## Reports and blocks
+
+| Job | Owner |
+| --- | --- |
+| Business blocks, private reports and active uniqueness; suspension columns; shared `contact_allowed` and team alert predicate; party-only block events and audit triggers | `internal/platform/database/migrations/0041_report_block.sql` |
+| Caller-scoped block/report SQL, admin queue, report locks, unlisting, suspension and explicit admin audit lines | `internal/stores/moderation/moderation.go` |
+| Manager/owner block and report rules, fixed reasons, private statuses, admin resolution and generic `report_closed` notices; shared contact guard | `internal/services/moderation/moderation.go`, notification type in `internal/services/notifications/notifications.go` |
+| `/api/blocks`, `/api/reports`, admin queue/resolution and unsuspend endpoints with caller and admin guards | `internal/api/moderation/handler.go`; registration in `internal/api/server.go` |
+| New-contact checks for requests, offers, accepts, messages, wanted replies, cart holds and follows; old history and exits remain readable/available | `internal/services/requests/{requests,state,messages}.go`, `internal/services/wanted/wanted.go`, `internal/services/market/cart.go`, `internal/services/favourites/favourites.go` |
+| Block/suspension discovery filtering and personal alert suppression across business memberships | `internal/stores/market/{listings,cart}.go`, `internal/stores/stores/profile.go`, `internal/stores/wanted/wanted.go`, `internal/stores/stock/{stock,searches,import}.go` |
+| Shared Report and Block/Unblock menus on listing/store/chat, report overlay, block confirmation and typed hooks | `web/apps/app/src/components/moderation-actions.tsx`, `src/components/dialogs/report-dialog.tsx`, `src/lib/api/{blocks,reports}.ts` |
+| Manager/owner Blocked profile tab, confirmed unblock and own report statuses | `web/apps/app/src/routes/profile/index.tsx`, `src/routes/profile/-components/blocked-panel.tsx` |
+| Admin-only reports queue, confirmed dismiss/unlist/suspend/unsuspend and navigation/access guards | `web/apps/app/src/routes/admin/reports.tsx`, `src/lib/{access,nav}.ts` |
+| Block-event cache invalidation for discovery, stores, wanted, requests, chats, cart and blocks; reports never have realtime events | `web/apps/app/src/lib/live/connection.ts` |
+| Block direction/team isolation, contact and history rules, alert filtering, private reports, admin audit/notices, suspension/reversal and id-only live routing; web dialogs, hooks and gating | `tests/report_block_test.go`, `web/apps/app/tests/report-block.test.mjs`; team chat sender regression in `src/components/chat/market.test.mjs`, store action layout in `tests/layout-render.test.mjs` |
+
 ## Price history
 
 | Job | Owner |

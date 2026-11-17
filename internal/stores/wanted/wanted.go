@@ -117,7 +117,7 @@ func (s *Store) Discover(
 		(SELECT r.id FROM transaction_requests r
 			WHERE r.wanted_post_id = p.id AND r.seller_id = $1)`+fromPost+`
 		WHERE p.status = 'open' AND p.expires_at > now() AND NOT b.is_removed
-			AND p.buyer_id <> $1 AND ($2 = '' OR p.material_id = $2)
+			AND p.buyer_id <> $1 AND contact_allowed($1,p.buyer_id) AND ($2 = '' OR p.material_id = $2)
 			AND ($3::timestamptz IS NULL OR (p.created_at, p.id) < ($3, $4))
 		ORDER BY p.created_at DESC, p.id DESC LIMIT $5`,
 		callerID, materialID, cur.At, cur.ID, limit+1)

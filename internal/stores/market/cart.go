@@ -33,8 +33,8 @@ func (records *Store) CartStores(ctx context.Context, buyer string) ([]CartStore
         JOIN business_profiles u ON u.id=c.seller_id
         LEFT JOIN stock_holds h ON h.cart_id=c.id AND h.stock_id=i.stock_id
         AND h.status='active' AND h.expires_at>clock_timestamp()
-        WHERE c.buyer_id=$1 AND NOT u.is_removed
-        AND s.owner_id=u.id AND s.material_id=i.material_id AND s.is_listed
+        WHERE c.buyer_id=$1 AND NOT u.is_removed AND contact_allowed($1,u.id)
+        AND s.owner_id=u.id AND s.material_id=i.material_id AND s.is_listed AND contact_allowed($1,u.id)
         AND stock_available(s.id,s.weight)+COALESCE(h.weight,0)>0
         GROUP BY u.id, `+database.DisplayName("u")+`, `+database.Verified("u")+` ORDER BY 2,1`, buyer)
 	if err != nil {
@@ -68,7 +68,7 @@ func (records *Store) Cart(ctx context.Context, buyer, seller string) (Cart, err
 		LEFT JOIN stock_holds h ON h.cart_id=c.id AND h.stock_id=i.stock_id
 		AND h.status='active' AND h.expires_at>clock_timestamp()
 		WHERE c.buyer_id=$1 AND c.seller_id=$2 AND s.owner_id=c.seller_id
-		AND s.material_id=i.material_id AND s.is_listed
+		AND s.material_id=i.material_id AND s.is_listed AND contact_allowed($1,u.id)
 		AND stock_available(s.id,s.weight)+COALESCE(h.weight,0)>0 AND NOT u.is_removed
 		ORDER BY i.stock_id`,
 		buyer,

@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { isStaffRole } from '@/lib/access';
+import { canSeeTeam, isStaffRole } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useProfile } from '@/lib/api/profile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,7 @@ import { PrivacyPanel } from './-components/privacy-panel';
 import { LocationForm, PayoutForm, PersonalForm } from './-components/forms';
 import { SessionsPanel } from './-components/sessions-panel';
 import { PhoneAlerts } from './-components/phone-alerts';
+import { BlockedPanel } from './-components/blocked-panel';
 
 export const Route = createFileRoute('/profile/')({
   component: () => (
@@ -67,6 +68,9 @@ function ProfilePage() {
             {collector && <TabsTrigger value="bank">Bank & payout</TabsTrigger>}
             {collector && <TabsTrigger value="location">Location</TabsTrigger>}
             <TabsTrigger value="alerts">Alerts</TabsTrigger>
+            {canSeeTeam(user) && (
+              <TabsTrigger value="blocked">Blocked</TabsTrigger>
+            )}
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="privacy">Your data</TabsTrigger>
           </TabsList>
@@ -128,6 +132,16 @@ function ProfilePage() {
               <PhoneAlerts />
             </Section>
           </TabsContent>
+          {canSeeTeam(user) && (
+            <TabsContent value="blocked">
+              <Section
+                title="Blocked"
+                description="People and businesses you blocked."
+              >
+                <BlockedPanel />
+              </Section>
+            </TabsContent>
+          )}
           <TabsContent value="sessions">
             <Section
               title="Sessions"

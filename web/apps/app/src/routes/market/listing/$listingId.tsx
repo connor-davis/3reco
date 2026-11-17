@@ -1,3 +1,4 @@
+import { ModerationActions } from '@/components/moderation-actions';
 import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
@@ -304,6 +305,11 @@ function ListingDetail({ listing }: { listing: Listing }) {
                 {plural(listing.review_count, 'review')}
               </p>
             </div>
+            <ModerationActions
+              partyId={listing.seller_id}
+              name={listing.seller_name}
+              listingId={listing.id}
+            />
             <FavouriteButton
               labelled
               className="min-h-11"
