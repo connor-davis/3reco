@@ -177,7 +177,8 @@ test('receipt remove is restricted and only mutates after confirmation', () => {
     const receipts = tree.find((node) => node.type === 'details');
     assert.equal(receipts.props.open, true);
     const heading = nodes(receipts).find((node) => node.type === 'summary');
-    assert.equal(heading.props.children.join(''), 'Receipts (1)');
+    const label = nodes(heading).find((node) => node.type === 'span');
+    assert.equal(label.props.children.join(''), 'Receipts (1)');
   }
 });
 
