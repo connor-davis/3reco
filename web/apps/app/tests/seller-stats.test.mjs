@@ -90,7 +90,7 @@ test('listing panel has loading, retry and empty states independent of settled t
     assert.ok(html.includes(label));
   assert.match(
     source('routes/index.tsx'),
-    /<\/DataState>[\s\S]*<SellerStatsPanel/
+    /<BusinessActions[\s\S]*<SellerStatsPanel/
   );
 });
 

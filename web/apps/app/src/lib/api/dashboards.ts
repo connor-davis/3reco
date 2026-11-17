@@ -8,11 +8,13 @@ export interface DashboardRange {
 }
 export function useDashboard(
   kind: 'business' | 'collector' | 'admin',
-  range: DashboardRange = {}
+  range: DashboardRange = {},
+  enabled = true
 ) {
   return useResource<T.Dashboard>(
     ['dashboards', kind, range],
     `${kind === 'admin' ? '/admin/dashboard' : `/dashboard/${kind}`}${queryString(range)}`,
-    true
+    true,
+    enabled
   );
 }

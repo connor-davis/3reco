@@ -2,7 +2,6 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { LinkButton } from '@/components/link-button';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Kbd } from '@/components/ui/kbd';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -67,7 +66,6 @@ export function Topbar({ onSearch }: TopbarProps) {
           </span>
           <Kbd>Ctrl K</Kbd>
         </Button>
-        <ThemeToggle />
         {!user ? (
           <LinkButton to="/sign-in">Sign in</LinkButton>
         ) : (

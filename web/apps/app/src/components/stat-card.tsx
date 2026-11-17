@@ -101,6 +101,8 @@ export function StatGrid({
 
 /** The small "up 12%" line under a tile value: mint up, rose down. */
 export function TrendLine({ trend }: { trend: Trend }) {
+  if (trend.dir === 'new' || trend.dir === 'flat') return null;
+
   const Arrow = trend.dir === 'up' ? ArrowUp : ArrowDown;
   const arrow = trend.dir === 'up' || trend.dir === 'down';
 

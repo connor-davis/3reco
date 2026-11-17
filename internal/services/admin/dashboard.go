@@ -31,6 +31,8 @@ type Totals struct {
 // Dashboard is what every dashboard returns; the admin one also has the user
 // counts.
 type Dashboard struct {
+	Actions        *store.BusinessActions `json:"actions,omitempty"`
+	Collects       *bool                  `json:"collects,omitempty"`
 	From           string                 `json:"from"`
 	To             string                 `json:"to"`
 	Totals         Totals                 `json:"totals"`
@@ -153,6 +155,13 @@ func (s *Service) Business(
 	if err != nil {
 		return d, err
 	}
+
+	actions, collects, err := s.store.BusinessWork(ctx, owner)
+	if err != nil {
+		return d, err
+	}
+
+	d.Actions, d.Collects = &actions, &collects
 
 	if err := s.addCollectors(ctx, &d, store.ScopeBusiness, owner, from, to); err != nil {
 		return d, err

@@ -73,9 +73,19 @@ const teamLink: NavLink = { label: 'Team', to: '/team', icon: Users };
 export function navFor(
   role: Role | null,
   businessRole?: BusinessRole | '',
-  activeBusinessId?: string
+  activeBusinessId?: string,
+  collects = false
 ): NavGroup[] {
   const groups = roleNav(role);
+  if (role === 'business' && collects) {
+    groups.push({
+      label: 'Collect',
+      links: [
+        { label: 'Collections', to: '/collections', icon: ClipboardList },
+        { label: 'Collectors', to: '/collectors', icon: Users },
+      ],
+    });
+  }
   const extra: NavLink[] = [];
   if (role && activeBusinessId && businessRole) {
     // Owners and Managers read the Business page; Members do not see it.
@@ -133,8 +143,6 @@ function roleNav(role: Role | null): NavGroup[] {
           label: 'Workspace',
           links: [
             { label: 'Stock', to: '/stock', icon: PackageOpen },
-            { label: 'Collections', to: '/collections', icon: ClipboardList },
-            { label: 'Collectors', to: '/collectors', icon: Users },
             { label: 'Transactions', to: '/transactions', icon: Receipt },
           ],
         },

@@ -70,7 +70,6 @@ test('the removed-account marker shows as words everywhere a message shows', () 
   assert.equal(helpers.messageText('Hello'), 'Hello');
 
   for (const path of [
-    '../src/routes/-dashboard/panels.tsx',
     '../src/components/chat/inbox.tsx',
     '../src/components/chat/conversation.tsx',
   ]) {
