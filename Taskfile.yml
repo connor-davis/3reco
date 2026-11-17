@@ -7,8 +7,9 @@
 version: "3"
 
 vars:
-  # Podman by default. Run `task up COMPOSE="docker compose"` to use docker.
-  COMPOSE: podman compose
+  # Docker Compose v2. Any Docker engine works (Docker Desktop, or a WSL2
+  # engine picked with `docker context use`).
+  COMPOSE: docker compose
   BIN: bin/3reco{{exeExt}}
   VERSION_FLAG: -X github.com/connor-davis/3reco/internal/platform/config.Version=dev
   # The web app has its own node_modules; name the Go roots so go never walks into it.

@@ -60,9 +60,9 @@ and add a line there when you add an owner.
 All commands run through [Task](https://taskfile.dev); `task` lists them.
 
 - `task up` - start Postgres (localhost:5441, threereco/threereco), Mailpit
-  (http://localhost:8026) and MinIO (localhost:9010). Run
-  `podman machine start` first (docker works too). The ports sit next to
-  Viper's so both can run at once.
+  (http://localhost:8026) and MinIO (localhost:9010) in Docker. On this
+  machine Docker is Kiri (WSL2, the `kiri` docker context); no Podman. The
+  ports sit next to Viper's so both can run at once.
 - `task dev` - API on :8180 plus the Vite dev server.
 - `task migrate` - run the SQL migrations.
 - `task test` - Go tests against the real services. It sets
