@@ -27,7 +27,7 @@ test('qa-round7: request status filter reuses the badge labels', () => {
 
 test('qa-round7: the filter bar keeps its controls on the Pending tab', () => {
   const list = source('routes/transactions/-components/record-list.tsx');
-  assert.match(list, /\{exportKind && !readOnly && \(/);
+  assert.match(list, /\{exportKind && canExport && \(/);
   assert.match(list, /disabled=\{status !== 'complete'\}/);
 });
 

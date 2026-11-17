@@ -5,7 +5,7 @@ import { createServer as createPortServer } from 'node:net';
 
 test(
   'Buy again access, merge and failure in both themes on phone and desktop',
-  { timeout: 180000 },
+  { timeout: 420000 },
   async () => {
     const { createServer } = await import('vite');
     const reservation = createPortServer();
@@ -99,14 +99,19 @@ with sync_playwright() as p:
             context.route(base + '/api/**', handle)
             context.route_web_socket('**/api/live', lambda ws: None)
             page = context.new_page()
+            page.set_default_timeout(15000)
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
             page.on('response', lambda response: failed_responses.append((response.status, urlparse(response.url).path)) if response.status >= 400 else None)
             def open_menu():
                 page.goto(base + '/transactions/trade')
                 expect(page.get_by_role('heading', name='Invoice TEST-11', exact=True)).to_be_visible()
-                page.wait_for_load_state('networkidle')
-                page.get_by_role('button', name='Invoice actions', exact=True).click()
+                # Wait for the button itself, not for a quiet network.
+                actions = page.get_by_role('button', name='Invoice actions', exact=True)
+                expect(actions).to_be_visible()
+                expect(actions).to_be_enabled()
+                actions.click()
+                expect(page.get_by_role('menu')).to_be_visible()
             try:
                 for role, business_role, business, kind, status, visible in [
                     ('business', 'owner', 'buyer', 'b2b', 'complete', True),

@@ -9,6 +9,7 @@ import { ButtonRow } from '@/components/button-row';
 import { TextField } from '@/components/form-fields';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
+import { useAppConfig } from '@/lib/api/app-config';
 import {
   usePrivacyNotice,
   useAcceptPrivacyNotice,
@@ -28,6 +29,7 @@ export function PrivacyPanel() {
   const accept = useAcceptPrivacyNotice();
   const download = useDownloadMyData();
   const erase = useDeleteAccount();
+  const { demo } = useAppConfig();
   const [open, setOpen] = useState(false);
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -77,25 +79,27 @@ export function PrivacyPanel() {
           )}
         </DataState>
       </section>
-      <section className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          Download your profile, trades, messages and other account records as a
-          JSON file.
-        </p>
-        <Button
-          className="min-h-11 w-full md:w-auto"
-          variant="outline"
-          disabled={download.isPending}
-          onClick={() => download.mutate()}
-        >
-          {download.isPending ? 'Preparing download…' : 'Download'}
-        </Button>
-        {download.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {download.error.message} Try downloading again.
+      {!demo && (
+        <section className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Download your profile, trades, messages and other account records as
+            a JSON file.
           </p>
-        )}
-      </section>
+          <Button
+            className="min-h-11 w-full md:w-auto"
+            variant="outline"
+            disabled={download.isPending}
+            onClick={() => download.mutate()}
+          >
+            {download.isPending ? 'Preparing download…' : 'Download'}
+          </Button>
+          {download.isError && (
+            <p role="alert" className="text-sm text-destructive">
+              {download.error.message} Try downloading again.
+            </p>
+          )}
+        </section>
+      )}
       <section className="space-y-3">
         <h3 className="font-medium">Delete account</h3>
         <p className="text-sm text-muted-foreground">

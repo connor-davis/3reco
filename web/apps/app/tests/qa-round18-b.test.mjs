@@ -119,6 +119,7 @@ test('A2: phone role menu opens the picker; cancel writes nothing and confirm wr
         useDeleteUser: () => ({}),
         useSetBusinessVerified: () => ({}),
       },
+      '@/lib/api/app-config': { useAppConfig: () => ({ demo: false }) },
       '@/lib/api/exports': { useExport: () => ({}) },
       '@/lib/format': format,
     },

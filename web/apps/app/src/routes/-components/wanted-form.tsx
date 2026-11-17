@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,8 +6,10 @@ import { z } from 'zod';
 import { DecimalField, SelectField, TextField } from '@/components/form-fields';
 import { Panel } from '@/components/panel';
 import { Button } from '@/components/ui/button';
+import { useBusiness } from '@/lib/api/business';
 import { useMaterialCatalog } from '@/lib/api/materials';
 import { useCreateWanted } from '@/lib/api/wanted';
+import { areaToPrefill, roughArea } from '@/lib/wanted-area';
 import {
   priceCounter,
   priceError,
@@ -60,6 +63,28 @@ export function WantedForm() {
     mode: 'onChange',
     defaultValues: empty,
   });
+  const suggested = roughArea(useBusiness().data);
+  // Set only when the person types, so a profile that loads late cannot
+  // overwrite their words.
+  const typed = useRef(false);
+
+  useEffect(() => {
+    const watch = form.watch((_, { name, type }) => {
+      if (name === 'area' && type === 'change') typed.current = true;
+    });
+
+    return () => watch.unsubscribe();
+  }, [form]);
+
+  useEffect(() => {
+    const next = areaToPrefill(
+      form.getValues('area'),
+      typed.current,
+      suggested
+    );
+
+    if (next) form.setValue('area', next, { shouldValidate: true });
+  }, [form, suggested]);
 
   return (
     <Panel
@@ -79,7 +104,8 @@ export function WantedForm() {
               days: Number(values.days),
             });
             toast.success('Your wanted post is live.');
-            form.reset(empty);
+            typed.current = false;
+            form.reset({ ...empty, area: suggested });
           } catch (cause) {
             form.setError('root', {
               message:

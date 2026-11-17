@@ -62,6 +62,16 @@ func TestDemoBlocksSignUpExportsAndDelete(t *testing.T) {
 		{"GET", "/api/business/export"},
 		{"GET", "/api/privacy/export"},
 		{"POST", "/api/privacy/delete"},
+		{"POST", "/api/team/invites"},
+		{"POST", "/api/team/invites/abc/resend"},
+		{"DELETE", "/api/team/invites/abc"},
+		{"GET", "/api/auth/invites/sometoken"},
+		{"POST", "/api/auth/invites/accept"},
+		{"GET", "/api/admin/users"},
+		{"POST", "/api/admin/materials"},
+		{"DELETE", "/api/admin/reviews/abc"},
+		{"GET", "/api/admin/privacy-events"},
+		{"GET", "/api/admin/reports"},
 	}
 
 	for _, route := range blocked {

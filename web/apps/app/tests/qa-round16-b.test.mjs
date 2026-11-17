@@ -261,6 +261,7 @@ test('B5: export success and failure have separate feedback', () => {
         errorText: (error) => error.message,
       },
       '@/lib/use-debounced': { useDebounced: (value) => value },
+      '@/lib/api/app-config': { useAppConfig: () => ({ demo: false }) },
       '@/lib/api/exports': {
         useExport: () => ({
           mutate: (_, options) => {

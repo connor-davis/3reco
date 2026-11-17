@@ -196,6 +196,7 @@ test('admin cannot remove their own account; export audit shows kind and filters
         useDeleteUser: () => ({}),
         useSetBusinessVerified: () => ({}),
       },
+      '@/lib/api/app-config': { useAppConfig: () => ({ demo: false }) },
       '@/lib/api/exports': { useExport: () => ({}) },
       '@/lib/access': { roleLabel: (role) => role },
       '@/lib/format': { plural: () => '' },

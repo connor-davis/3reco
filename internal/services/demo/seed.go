@@ -13,6 +13,7 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/config"
 	"github.com/connor-davis/3reco/internal/services/auth"
+	materialssvc "github.com/connor-davis/3reco/internal/services/materials"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 	store "github.com/connor-davis/3reco/internal/stores/demo"
 )
@@ -23,8 +24,10 @@ type Seeder struct {
 	Config  config.Config
 	BaseURL string
 	Auth    *auth.Service
-	Users   *authstore.Store
-	Store   *store.Store
+	// Materials makes the catalog directly: the demo server refuses the admin routes.
+	Materials *materialssvc.Service
+	Users     *authstore.Store
+	Store     *store.Store
 
 	phones int
 }
@@ -84,6 +87,7 @@ func (s *Seeder) Seed(ctx context.Context) error {
 }
 
 // seedMaterials makes the catalog as an admin whose password is thrown away.
+// It uses the service, not the routes, because the demo refuses /api/admin.
 func (s *Seeder) seedMaterials(ctx context.Context) (map[string]string, error) {
 	raw := make([]byte, 24)
 	if _, err := rand.Read(raw); err != nil {
@@ -96,18 +100,14 @@ func (s *Seeder) seedMaterials(ctx context.Context) (map[string]string, error) {
 		return nil, err
 	}
 
-	admin := newClient(s.BaseURL, s.Config.WebOrigin)
-	login := map[string]string{"email": adminEmail, "password": password}
-
-	if err := admin.call("POST", "/api/auth/sign-in", login, nil); err != nil {
-		return nil, err
-	}
-
+	role := auth.RoleAdmin
+	admin := authstore.User{Role: &role}
 	ids := map[string]string{}
 
 	for _, m := range materials {
-		id, err := admin.created("POST", "/api/admin/materials", map[string]string{
-			"name": m.name, "carbon_factor": m.carbon, "gw_code": m.code, "price": money(m.cents),
+		price := money(m.cents)
+		id, err := s.Materials.Save(ctx, admin, "", materialssvc.Input{
+			Name: &m.name, CarbonFactor: &m.carbon, GWCode: &m.code, Price: &price,
 		})
 		if err != nil {
 			return nil, err

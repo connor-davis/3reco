@@ -54,3 +54,46 @@ test('the wanted api sends exact decimals as strings and one offer line', () => 
   assert.match(form, /value: '7'/);
   assert.match(form, /value: '30'/);
 });
+
+test('the wanted form starts the area from the profile and never overwrites', () => {
+  const { roughArea, areaToPrefill } = load('lib/wanted-area.ts');
+
+  assert.equal(
+    roughArea({ city: 'Pretoria', province: 'Gauteng' }),
+    'Pretoria, Gauteng'
+  );
+  assert.equal(roughArea({ city: 'Pretoria', province: '' }), 'Pretoria');
+  assert.equal(roughArea({ city: ' ', province: 'Gauteng' }), 'Gauteng');
+  assert.equal(roughArea(undefined), '');
+  assert.equal(roughArea({ city: null, province: null }), '');
+
+  // The street address and area code are never used.
+  const profile = {
+    city: 'Pretoria',
+    province: 'Gauteng',
+    street_address: '12 Main Road',
+    area_code: '0002',
+  };
+  assert.equal(roughArea(profile), 'Pretoria, Gauteng');
+  assert.ok(!roughArea(profile).includes('Main Road'));
+  assert.ok(!roughArea(profile).includes('0002'));
+
+  // An empty, untouched box takes it, including when the profile loads late.
+  assert.equal(
+    areaToPrefill('', false, 'Pretoria, Gauteng'),
+    'Pretoria, Gauteng'
+  );
+  // Typed words stay, and so does a box the person cleared on purpose.
+  assert.equal(areaToPrefill('Durban', false, 'Pretoria, Gauteng'), null);
+  assert.equal(areaToPrefill('', true, 'Pretoria, Gauteng'), null);
+  // No profile area: nothing to fill.
+  assert.equal(areaToPrefill('', false, ''), null);
+
+  const form = source('routes/-components/wanted-form.tsx');
+  assert.match(form, /type === 'change'\) typed\.current = true/);
+  assert.match(form, /form\.reset\(\{ \.\.\.empty, area: suggested \}\)/);
+  assert.doesNotMatch(
+    source('routes/-components/wanted-reply.tsx'),
+    /roughArea/
+  );
+});
