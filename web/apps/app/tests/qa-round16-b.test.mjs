@@ -356,9 +356,9 @@ test('S2/S7: listing prices print as one run of text and short titles do not res
 test('S3/S4: local dashboard spacing and readable trade pill override inherited defaults', () => {
   assert.match(
     source('routes/-dashboard/panels.tsx'),
-    /title="Recent activity"/
+    /title="Needs attention"/
   );
-  assert.match(source('routes/-dashboard/panels.tsx'), /py-3 first:pt-0/);
+  assert.match(source('routes/-dashboard/panels.tsx'), /space-y-1 py-3/);
   assert.match(
     source('routes/transactions/-components/record-list.tsx'),
     /h-5 px-2 text-xs/

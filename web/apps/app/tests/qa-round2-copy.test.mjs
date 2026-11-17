@@ -63,10 +63,10 @@ test('the first dashboard visit says Welcome, later ones Welcome back', () => {
   assert.match(text, /localStorage\.getItem\(key\)/);
 });
 
-test('a request with no messages reads "New request" on the dashboard', () => {
-  assert.match(
+test('dashboard keeps one attention panel without a duplicate activity feed', () => {
+  assert.doesNotMatch(
     source('../src/routes/-dashboard/panels.tsx'),
-    /\?\? 'New request'/
+    /Recent activity|RecentThreads/
   );
 });
 

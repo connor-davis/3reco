@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Trend } from '@/lib/format';
@@ -16,6 +16,7 @@ type StatCardProps = {
   label: string;
   value: string;
   hint?: string;
+  action?: ReactNode;
   trend?: Trend;
   icon?: LucideIcon;
   isLoading?: boolean;
@@ -29,6 +30,7 @@ export function StatCard({
   label,
   value,
   hint,
+  action,
   trend,
   icon: Icon,
   isLoading = false,
@@ -70,6 +72,7 @@ export function StatCard({
           {hint}
         </CardContent>
       )}
+      {action && <CardContent className="mt-auto pt-3">{action}</CardContent>}
     </Card>
   );
 }
@@ -101,6 +104,8 @@ export function StatGrid({
 
 /** The small "up 12%" line under a tile value: mint up, rose down. */
 export function TrendLine({ trend }: { trend: Trend }) {
+  if (trend.dir === 'new' || trend.dir === 'flat') return null;
+
   const Arrow = trend.dir === 'up' ? ArrowUp : ArrowDown;
   const arrow = trend.dir === 'up' || trend.dir === 'down';
 

@@ -580,7 +580,7 @@ with sync_playwright() as p:
                 else: body = {'items': [], 'has_more': False, 'next_cursor': None}
             elif path.startswith('/dashboard'):
                 totals = {'count': 1, 'weight': '1000000', 'value': '1000000', 'carbon_savings': '1500000'}
-                body = {'from': '2026-10-10', 'to': '2026-11-08', 'totals': totals, 'previous': totals, 'series': [dict(totals, day='2026-11-08')], 'counterparties': []}
+                body = {'from': '2026-10-10', 'to': '2026-11-08', 'totals': totals, 'previous': totals, 'series': [dict(totals, day=day) for day in ['2026-11-06', '2026-11-07', '2026-11-08']], 'counterparties': []}
             elif path == '/stats': body = {'total_kg': '0', 'co2_kg': '0', 'deals': 0, 'top_stores': []}
             elif path in ('/collectors', '/collectors/collector'):
                 collector = {'id': 'collector', 'name': 'Zanele Both', 'email': 'zanele@example.test', 'phone': '+27820001010', 'street_address': '5 Dump Street', 'city': 'Soweto', 'area_code': 1818, 'province': 'Gauteng', 'payout_method': payout, 'bank_name': 'FNB', 'bank_account_type': 'Cheque', 'bank_account_holder_name': 'Zanele Both', 'bank_account_number': '******1222', 'bank_branch_code': '******0655', 'ewallet_platform_name': 'FNB eWallet', 'ewallet_payment_id': '******1010'}

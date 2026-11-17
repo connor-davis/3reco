@@ -97,7 +97,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
     case 'material':
       return [['materials'], ['listings'], ['stats']];
     case 'collector':
-      return [['collectors']];
+      return [['collectors'], ['dashboards']];
     case 'review':
       return [['reviews']];
     default:

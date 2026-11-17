@@ -41,26 +41,28 @@ export function PhoneHome({
           {week && (
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>Last week {formatKg(week.last_kg)}</span>
-              {trend && !empty && (
-                <span
-                  className={
-                    'flex items-center gap-0.5 font-medium ' +
-                    (trend.dir === 'up'
-                      ? 'text-mint-ink'
-                      : trend.dir === 'down'
-                        ? 'text-rose-ink'
-                        : '')
-                  }
-                >
-                  {trend.dir === 'up' && (
-                    <ArrowUp className="size-3" aria-hidden="true" />
-                  )}
-                  {trend.dir === 'down' && (
-                    <ArrowDown className="size-3" aria-hidden="true" />
-                  )}
-                  {trend.label}
-                </span>
-              )}
+              {trend &&
+                !empty &&
+                (trend.dir === 'up' || trend.dir === 'down') && (
+                  <span
+                    className={
+                      'flex items-center gap-0.5 font-medium ' +
+                      (trend.dir === 'up'
+                        ? 'text-mint-ink'
+                        : trend.dir === 'down'
+                          ? 'text-rose-ink'
+                          : '')
+                    }
+                  >
+                    {trend.dir === 'up' && (
+                      <ArrowUp className="size-3" aria-hidden="true" />
+                    )}
+                    {trend.dir === 'down' && (
+                      <ArrowDown className="size-3" aria-hidden="true" />
+                    )}
+                    {trend.label}
+                  </span>
+                )}
             </p>
           )}
         </CardContent>

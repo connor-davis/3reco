@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { source } from './qa-round2-loader.mjs';
+import { load, source } from './qa-round2-loader.mjs';
 
 test('G17/G20: toasts stay above the composer; role selection promises no total', () => {
   assert.match(
@@ -11,4 +11,34 @@ test('G17/G20: toasts stay above the composer; role selection promises no total'
   assert.match(setup, /step !== 'type' && \(/);
   assert.doesNotMatch(setup, /'Step 1'/);
   assert.doesNotMatch(setup, /detailSteps\.collector\.length \+ 1/);
+});
+
+test('Collect is a separate business group only for collecting businesses; staff retain access', () => {
+  const { navFor } = load('lib/nav.ts', {
+    '@/lib/access': load('lib/access.ts'),
+  });
+  for (const collects of [false, true]) {
+    const groups = navFor('business', 'owner', 'mine', collects);
+    const collect = groups.find((group) => group.label === 'Collect');
+    assert.equal(!!collect, collects);
+    if (collect)
+      assert.deepEqual(
+        Array.from(collect.links, (link) => link.to),
+        ['/collections', '/collectors']
+      );
+    assert.ok(
+      !groups
+        .find((group) => group.label === 'Workspace')
+        .links.some((link) => link.to === '/collections')
+    );
+  }
+  for (const role of ['admin', 'staff']) {
+    const links = navFor(role).flatMap((group) => group.links);
+    for (const path of ['/collections', '/collectors'])
+      assert.ok(links.some((link) => link.to === path));
+  }
+  assert.match(
+    source('components/shell/app-sidebar.tsx'),
+    /dashboard.data\?\.collects/
+  );
 });

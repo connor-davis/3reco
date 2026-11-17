@@ -433,6 +433,14 @@ export interface MaterialWeight {
   weight: Decimal;
 }
 export interface Dashboard {
+  /** Business only: current work, independent of the chart's date range. */
+  actions?: {
+    requests_waiting: number;
+    trades_to_invoice: number;
+    listings: number;
+  };
+  /** Current business-created collectors or any completed collection. */
+  collects?: boolean;
   from: string;
   to: string;
   totals: DashboardTotals;

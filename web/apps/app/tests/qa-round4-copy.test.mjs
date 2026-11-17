@@ -85,23 +85,12 @@ test('confirmation copy names the business still to confirm', () => {
   );
 });
 
-test('staff dashboard explains that trade chats are unavailable', () => {
-  for (const role of ['staff', 'business']) {
-    const { RecentThreads } = compile('routes/-dashboard/panels.tsx', {
-      expose: '\nexports.RecentThreads = RecentThreads;',
-      mocks: {
-        '@/lib/auth/use-auth': { useAuth: () => ({ user: { role } }) },
-        '@/lib/api/messages': { useInbox: () => ({}) },
-      },
-    });
-    const state = nodes(RecentThreads()).find((node) => node.props.emptyTitle);
-    assert.equal(
-      state.props.emptyText,
-      role === 'staff'
-        ? 'Staff do not take part in trade chats.'
-        : 'Ask a seller about a listing to start one.'
-    );
-  }
+test('staff dashboard keeps attention without trade activity', () => {
+  assert.doesNotMatch(source('routes/index.tsx'), /RecentActivity/);
+  assert.match(
+    source('routes/-dashboard/panels.tsx'),
+    /collector \|\| user\?\.role === 'staff'/
+  );
   assert.match(source('components/chat/inbox.tsx'), /!staff &&/);
 });
 

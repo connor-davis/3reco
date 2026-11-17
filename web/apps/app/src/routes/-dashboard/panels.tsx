@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Users, MessageCircle, Receipt } from 'lucide-react';
-import { useInbox } from '@/lib/api/messages';
 import { useTransactions } from '@/lib/api/transactions';
+import { useInbox } from '@/lib/api/messages';
 import { BusinessName } from '@/components/badges';
 import { DataState } from '@/components/data-state';
 import { LinkButton } from '@/components/link-button';
@@ -15,8 +15,6 @@ import {
   toCents,
   plural,
 } from '@/lib/format';
-import { messageText } from '@/components/chat/helpers';
-import { ThreadMaterials } from '@/components/chat/cards';
 import { ImpactChart } from './impact-chart';
 import { useAuth } from '@/lib/auth/use-auth';
 
@@ -29,6 +27,8 @@ export function MaterialsPanel({
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [narrow, setNarrow] = useState(false);
+  const hasSeries =
+    series.filter((day) => Number(day.weight) !== 0).length >= 3;
 
   // Under this width the weekly date labels would touch, so only the ends show.
   useEffect(() => {
@@ -40,7 +40,9 @@ export function MaterialsPanel({
     watch.observe(el);
 
     return () => watch.disconnect();
-  }, []);
+  }, [hasSeries]);
+
+  if (!hasSeries) return null;
 
   return (
     <div className={className}>
@@ -144,55 +146,7 @@ export function QuickLinks({
   );
 }
 
-function RecentThreads() {
-  const { user } = useAuth();
-  const query = useInbox({ limit: 5 });
-  return (
-    <Panel
-      title="Recent activity"
-      action={
-        <LinkButton to="/messages" variant="link">
-          See all
-        </LinkButton>
-      }
-    >
-      <DataState
-        query={query}
-        isEmpty={query.data?.items.length === 0}
-        icon={MessageCircle}
-        emptyTitle="No conversations yet"
-        emptyText={
-          user?.role === 'staff'
-            ? 'Staff do not take part in trade chats.'
-            : 'Ask a seller about a listing to start one.'
-        }
-      >
-        <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
-          {query.data?.items.slice(0, 5).map((thread) => (
-            <li key={thread.request_id} className="py-3 first:pt-0">
-              <LinkButton
-                className="min-h-11 min-w-0 max-w-full justify-start px-0 text-left whitespace-normal text-foreground"
-                to={'/messages/' + thread.request_id}
-                variant="link"
-              >
-                {thread.other.name}
-              </LinkButton>
-              <ThreadMaterials requestId={thread.request_id} />
-              <p className="line-clamp-2 text-sm text-muted-foreground">
-                {messageText(thread.latest_message?.content ?? 'New request')}
-              </p>
-              {thread.unread_count > 0 && (
-                <p className="text-sm">{thread.unread_count} unread</p>
-              )}
-            </li>
-          ))}
-        </ul>
-      </DataState>
-    </Panel>
-  );
-}
-
-function RecentCollections() {
+export function RecentCollections() {
   const query = useTransactions('sales', {
     limit: 5,
     order: 'recorded',
@@ -240,10 +194,6 @@ function RecentCollections() {
       </DataState>
     </Panel>
   );
-}
-
-export function RecentActivity({ collector }: { collector: boolean }) {
-  return collector ? <RecentCollections /> : <RecentThreads />;
 }
 
 export function NeedsAttention({ collector }: { collector: boolean }) {

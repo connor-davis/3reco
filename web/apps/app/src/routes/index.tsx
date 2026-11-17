@@ -23,7 +23,7 @@ import { formatCo2 } from '@/lib/impact';
 import { roleLabel } from '@/lib/access';
 import {
   CounterpartyRows,
-  RecentActivity,
+  RecentCollections,
   NeedsAttention,
   MaterialsPanel,
   QuickLinks,
@@ -31,6 +31,7 @@ import {
 import { PhoneHome } from './-dashboard/phone-home';
 import { StockMix } from './-dashboard/stock-mix';
 import { SellerStatsPanel } from './-dashboard/seller-stats';
+import { BusinessActions } from './-dashboard/business-actions';
 
 export const Route = createFileRoute('/')({
   component: () => (
@@ -67,6 +68,7 @@ function Dashboard() {
   const { user } = useAuth();
   const staff = user?.role === 'admin' || user?.role === 'staff';
   const collector = user?.role === 'collector';
+  const business = user?.role === 'business';
   const kind = staff ? 'admin' : collector ? 'collector' : 'business';
   const query = useDashboard(kind);
   const first = useFirstVisit(user?.id);
@@ -109,11 +111,15 @@ function Dashboard() {
                     label: 'Stock',
                     icon: PackageOpen,
                   },
-                  {
-                    to: '/collections',
-                    label: 'Collect',
-                    icon: ClipboardList,
-                  },
+                  ...(dashboard?.collects
+                    ? [
+                        {
+                          to: '/collections',
+                          label: 'Collect',
+                          icon: ClipboardList,
+                        },
+                      ]
+                    : []),
                 ]
         }
       />
@@ -123,7 +129,11 @@ function Dashboard() {
   return (
     <div className="space-y-4 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
       {/* Business on a phone gets the mint band as its greeting instead. */}
-      <div className={!collector && !staff ? 'max-md:hidden' : undefined}>
+      <div
+        className={
+          business && dashboard?.collects ? 'max-md:hidden' : undefined
+        }
+      >
         <PageHeader
           compactActionsBelow
           title={
@@ -165,7 +175,7 @@ function Dashboard() {
         )}
       <DataState
         query={query}
-        isEmpty={dashboard?.totals.count === 0}
+        isEmpty={!business && dashboard?.totals.count === 0}
         icon={ClipboardList}
         emptyTitle={
           collector ? 'No collections yet' : 'No trades in this period'
@@ -178,7 +188,15 @@ function Dashboard() {
       >
         {dashboard && (
           <>
-            {!collector && !staff && (
+            {business && (
+              <>
+                <BusinessActions actions={dashboard.actions} />
+                {!!user?.active_business_id && !!user.business_role && (
+                  <SellerStatsPanel />
+                )}
+              </>
+            )}
+            {business && dashboard.collects && (
               <PhoneHome
                 name={user?.firstName || user?.name || 'there'}
                 week={dashboard.week}
@@ -249,16 +267,18 @@ function Dashboard() {
                   )}
                   icon={ClipboardList}
                 />
-                <StatCard
-                  tint="sky"
-                  label="Active collectors"
-                  value={String(dashboard.totals.active_collectors ?? 0)}
-                  trend={formatPercent(
-                    dashboard.totals.active_collectors ?? 0,
-                    dashboard.previous.active_collectors ?? 0
-                  )}
-                  icon={Users}
-                />
+                {(staff || dashboard.collects) && (
+                  <StatCard
+                    tint="sky"
+                    label="Active collectors"
+                    value={String(dashboard.totals.active_collectors ?? 0)}
+                    trend={formatPercent(
+                      dashboard.totals.active_collectors ?? 0,
+                      dashboard.previous.active_collectors ?? 0
+                    )}
+                    icon={Users}
+                  />
+                )}
               </StatGrid>
             )}
             {workspace}
@@ -292,7 +312,7 @@ function Dashboard() {
                 </div>
               )}
             </div>
-            <RecentActivity collector={collector} />
+            {collector && <RecentCollections />}
             <CounterpartyRows
               rows={dashboard.counterparties}
               tradesTo={collector ? '/transactions/sales' : '/transactions'}
@@ -317,11 +337,8 @@ function Dashboard() {
           </>
         )}
       </DataState>
-      {!!user?.active_business_id && !!user.business_role && (
-        <SellerStatsPanel />
-      )}
       {(!dashboard ||
-        dashboard.totals.count === 0 ||
+        (!business && dashboard.totals.count === 0) ||
         query.isPending ||
         query.isError) &&
         workspace}

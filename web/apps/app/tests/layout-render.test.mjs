@@ -24,13 +24,10 @@ test(
       const result = await new Promise((resolve) => {
         const child = spawn(
           'python',
-          [
-            '-c',
-            regression,
-            `http://127.0.0.1:${server.httpServer.address().port}`,
-          ],
+          ['-', `http://127.0.0.1:${server.httpServer.address().port}`],
           { windowsHide: true }
         );
+        child.stdin.end(regression);
         let output = '';
         child.stdout.on('data', (data) => {
           output += data;
@@ -61,13 +58,13 @@ from playwright.sync_api import sync_playwright, expect
 base = sys.argv[1]
 sys.stdout.reconfigure(encoding='utf-8')
 listing = {'fulfillment_mode': 'both', 'pickup_area': 'Bellville and surrounding collection areas near Cape Town', 'id': 'stock', 'seller_id': 'seller', 'seller_name': 'Greenloop', 'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '1000', 'held_weight': '0', 'price': '8.00', 'carbon_factor': '1', 'gw_code': 'GL', 'image_url': '', 'seller_avatar_url': '', 'average_rating': None, 'review_count': 0, 'created_at': '2026-11-08T08:00:00Z'}
-routes = ['/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
+routes = ['/?collects=no', '/?collects=no&empty=yes', '/?role=staff', '/?sparse=yes', '/', '/?role=collector', '/?role=admin', '/transactions/trade?from=/transactions/purchases', '/transactions/purchases?open=trade', '/transactions', '/transactions/purchases', '/transactions/sales', '/collections', '/market/incoming', '/market/outgoing', '/stock', '/collectors', '/materials', '/admin/users', '/messages', '/profile', '/market', '/market/store/seller', '/market/listing/stock', '/cart?seller_id=seller']
 party = lambda id, name: {'id': id, 'name': name, 'business_verified': True}
 trade = {'id': 'trade', 'type': 'b2b', 'business_verified': True, 'status': 'complete', 'request_id': None, 'seller': party('seller', 'Greenloop'), 'buyer': party('buyer', 'Layout Buyer'), 'invoice_number': 'INV-2048', 'total_price': '100.00', 'effective_at': '2026-11-08T08:00:00Z', 'created_at': '2026-11-08T08:00:00Z', 'collection_day': None, 'collection_date': None, 'can_remove_receipts': True, 'items': [{'material_id': 'glass', 'material_name': 'Clear glass', 'weight': '12.5', 'price': '8.00'}], 'receipts': [{'id': 'receipt', 'file_name': 'Payment receipt.jpg', 'uploaded_by': 'buyer'}]}
 large_trade = dict(trade, id='large', type='c2b', invoice_number='GLH09G54', seller=party('collector', 'Zanele Both'), buyer=party('buyer', 'Kasi Collect Co'), total_price='2000000.00', items=[{'material_id': 'steel', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'weight': '1000000', 'price': '2.00'}])
 request = {'id': 'request', 'seller': large_trade['seller'], 'buyer': large_trade['buyer'], 'status': 'offered', 'offer_by': 'seller', 'offer_version': 1, 'buyer_confirmed_version': None, 'seller_confirmed_version': 1, 'created_at': trade['created_at'], 'updated_at': trade['created_at'], 'items': [{'material_id': 'glass', 'material_name': 'Steel cans and mixed recyclable metal offcuts', 'stock_id': 'stock', 'offer_price': '2.00', 'offer_weight': '1000000', 'requested_price': '8.00', 'requested_weight': '12.5', 'available_weight': '1000'}]}
 totals = {'count': 7, 'weight': '87.5', 'value': '700.00', 'carbon_savings': '100', 'active_collectors': 3}
-dashboard = {'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'previous': dict(totals, count=5, weight='70', active_collectors=3), 'stock_mix': [{'material_id': 'm' + str(i), 'name': 'Material ' + str(i), 'weight': str(30 - i * 4)} for i in range(6)], 'week': {'this_kg': '120.5', 'last_kg': '100', 'materials': [{'material_id': 'm' + str(i), 'name': 'Material ' + str(i), 'weight': str(40 - i * 5)} for i in range(4)]}, 'series': [dict(totals, day=str(date(2026,10,10)+timedelta(days=i))) for i in range(30)], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
+dashboard = {'actions': {'requests_waiting': 2, 'trades_to_invoice': 4, 'listings': 6}, 'collects': True, 'from': '2026-10-08T08:00:00Z', 'to': trade['created_at'], 'totals': totals, 'previous': dict(totals, count=5, weight='70', active_collectors=3), 'stock_mix': [{'material_id': 'm' + str(i), 'name': 'Material ' + str(i), 'weight': str(30 - i * 4)} for i in range(6)], 'week': {'this_kg': '120.5', 'last_kg': '100', 'materials': [{'material_id': 'm' + str(i), 'name': 'Material ' + str(i), 'weight': str(40 - i * 5)} for i in range(4)]}, 'series': [dict(totals, day=str(date(2026,10,10)+timedelta(days=i))) for i in range(30)], 'counterparties': [dict(party(str(i), 'Partner ' + str(i)), count=1, value='100.00') for i in range(7)], 'collector_linked': True}
 admin_users = [{'id': 'buyer', 'name': 'Layout Buyer', 'email': 'admin@example.test', 'role': 'admin', 'profile_complete': True, 'business_verified': False, 'created_at': trade['created_at']}, {'id': 'business', 'name': 'Naledi Jacobs', 'email': 'naledi@kasicollect.co.za', 'role': 'business', 'profile_complete': True, 'business_verified': True, 'created_at': trade['created_at']}, {'id': 'unverified-business', 'name': 'Thandi Mokoena', 'email': 'thandi@metroscraptraders.co.za', 'role': 'business', 'profile_complete': False, 'business_verified': False, 'created_at': trade['created_at']}]
 measurements = []
 with sync_playwright() as p:
@@ -76,6 +73,7 @@ with sync_playwright() as p:
         for width in [1100, 1280, 1440, 1920, 390, 412, 767, 768, 820]:
             context = browser.new_context(viewport={'width': width, 'height': 1000}, color_scheme=mode)
             role = 'admin'
+            current_route = ''
             errors = []
             def handle(route):
                 path = urlparse(route.request.url).path.removeprefix('/api')
@@ -91,7 +89,10 @@ with sync_playwright() as p:
                 elif path in ['/transactions', '/transactions/', '/transactions/purchases', '/transactions/sales']: body['items'] = [trade, large_trade, dict(large_trade, id='unverified', business_verified=False)] + [dict(trade, id=str(i)) for i in range(4)]
                 elif path in ['/requests', '/requests/incoming', '/requests/outgoing']: body['items'] = [request]
                 elif path == '/requests/request': body = request
-                elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']: body = dashboard
+                elif path in ['/dashboard/business', '/dashboard/collector', '/admin/dashboard']:
+                    body = dict(dashboard, collects='collects=no' not in current_route)
+                    if 'empty=yes' in current_route: body['totals'] = dict(totals, count=0)
+                    if 'sparse=yes' in current_route: body['series'] = [dict(day, weight='0' if i > 1 else '1') for i, day in enumerate(dashboard['series'])]
                 elif path == '/stats': body = {'total_kg': '87.5', 'co2_kg': '100', 'deals': 7, 'top_stores': []}
                 elif path == '/stats/seller': body = {'views': {'days_7': 3, 'days_30': 8, 'lifetime': 10}, 'listings': [], 'replies': {'requests': 6, 'within_day': 4}}
                 elif path == '/market/listings/stock': body = listing
@@ -113,9 +114,11 @@ with sync_playwright() as p:
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.on('console', lambda message: errors.append(message.text) if message.type == 'error' else None)
             for route in routes:
+                current_route = route
+                if route in ['/?collects=no', '/?collects=no&empty=yes', '/?role=staff', '/?sparse=yes'] and width not in [390, 1280]: continue
                 if width in [1100, 1440] and route not in ['/transactions', '/collectors', '/admin/users']: continue
                 if width in [767, 768] and route not in ['/transactions', '/profile', '/market', '/market/store/seller', '/market/listing/stock']: continue
-                role = 'collector' if route == '/?role=collector' else 'admin' if route in ['/?role=admin', '/transactions', '/materials', '/admin/users'] else 'business'
+                role = 'collector' if route == '/?role=collector' else 'staff' if route == '/?role=staff' else 'admin' if route in ['/?role=admin', '/transactions', '/materials', '/admin/users'] else 'business'
                 try:
                     page.goto(base + route)
                     page.wait_for_load_state('networkidle')
@@ -223,17 +226,42 @@ with sync_playwright() as p:
                         assert abs(photo.bounding_box()['width'] - (card.bounding_box()['width'] - 2)) < 1
                         details = card.locator('[data-slot="card-content"]')
                         assert details.bounding_box()['y'] >= photo.bounding_box()['y'] + photo.bounding_box()['height'] - 1
-                    if route in ['/', '/?role=collector', '/?role=admin']:
-                        expect(page.locator('[data-slot="card"]')).to_have_count({'/?role=collector': 3, '/?role=admin': 4}.get(route, 5))
-                        shown = [card for card in page.locator('[data-slot="card"]').all() if card.is_visible()]
-                        # Stat tiles are hidden below 768px; only the business phone-home card may show.
-                        if width < 768:
-                            assert len(shown) <= 1
-                        elif route == '/?role=collector' or width >= 1280:
-                            ys = [card.bounding_box()['y'] for card in shown[:3 if route == '/?role=collector' else 4]]
-                            assert max(ys) - min(ys) < 1
-                        partners = page.get_by_role('heading', name='Trading partners').locator('xpath=ancestor::section[1]').locator('ul > li')
-                        expect(partners).to_have_count(5)
+                    if urlparse(route).path == '/':
+                        priorities = page.get_by_label('Your priorities', exact=True)
+                        expect(priorities).to_have_count(1 if role == 'business' else 0)
+                        if role == 'business':
+                            expect(priorities.locator('[data-slot="card"]')).to_have_count(3)
+                            expect(priorities.get_by_text('Requests waiting for you', exact=True)).to_be_visible()
+                            expect(priorities.get_by_text('Trades without an invoice yet', exact=True)).to_be_visible()
+                            expect(priorities.get_by_text('Your listings', exact=True)).to_be_visible()
+                            expect(priorities.get_by_text('2', exact=True)).to_be_visible()
+                            expect(priorities.get_by_role('button', name='View trades', exact=True)).to_be_visible()
+                            assert priorities.bounding_box()['y'] < page.get_by_role('heading', name='Listing views', exact=True).bounding_box()['y']
+                            collects = 'collects=no' not in route
+                            expect(page.get_by_text('Active collectors', exact=True)).to_have_count(1 if collects else 0)
+                            expect(page.get_by_text("This week's collections", exact=False)).to_have_count(1 if collects else 0)
+                            quick = page.get_by_role('heading', name='Your workspace').locator('xpath=ancestor::section[1]')
+                            expect(quick.get_by_role('button', name='Collect', exact=True)).to_have_count(1 if collects else 0)
+                            if width >= 1024:
+                                sidebar = page.locator('[data-slot="sidebar"]')
+                                expect(sidebar.get_by_text('Collect', exact=True)).to_have_count(1 if collects else 0)
+                                expect(sidebar.get_by_role('link', name='Collections', exact=True)).to_have_count(1 if collects else 0)
+                        expect(page.get_by_role('heading', name='Recent activity', exact=True)).to_have_count(0)
+                        expect(page.get_by_role('heading', name='Needs attention', exact=True)).to_be_visible()
+                        if 'empty=yes' not in route:
+                            partners = page.get_by_role('heading', name='Trading partners').locator('xpath=ancestor::section[1]').locator('ul > li')
+                            expect(partners).to_have_count(5)
+                        expect(page.get_by_role('heading', name='Materials on the move', exact=True)).to_have_count(0 if 'sparse=yes' in route else 1)
+                        expect(page.get_by_role('button', name='Toggle theme', exact=True)).to_have_count(0)
+                        if route == '/?collects=no':
+                            page.get_by_role('button', name='Account menu', exact=True).click()
+                            page.get_by_role('menuitemradio', name='Dark' if mode == 'light' else 'Light', exact=True).click()
+                            expect(page.locator('html')).to_have_class(re.compile('dark') if mode == 'light' else re.compile('light'))
+                            page.keyboard.press('Escape')
+                            expect(page.get_by_role('menu')).to_have_count(0)
+                            page.get_by_role('button', name='Account menu', exact=True).click()
+                            page.get_by_role('menuitemradio', name='System', exact=True).click()
+                            page.keyboard.press('Escape')
                         if role == 'collector':
                             recent = page.get_by_role('heading', name='Your recent collections').locator('xpath=ancestor::section[1]').locator('ul > li')
                             expect(recent).to_have_count(5)

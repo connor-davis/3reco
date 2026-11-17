@@ -195,7 +195,7 @@ test('trade detail is a guarded route, with allowlisted return lists and legacy 
   assert.equal(pageTitleFor('/transactions/trade', 'guest'), 'Not available');
 });
 
-test('profile Save and Cancel share ButtonRow, and the dashboard has exactly three top stat tiles', () => {
+test('profile Save and Cancel share ButtonRow, and dashboard priorities come first', () => {
   const forms = source('routes/profile/-components/forms.tsx');
   assert.match(
     forms,
@@ -207,13 +207,31 @@ test('profile Save and Cancel share ButtonRow, and the dashboard has exactly thr
     page.indexOf('</StatGrid>')
   );
   assert.equal((stats.match(/<StatCard/g) ?? []).length, 3);
-  // Business and admin get four tiles, the last one Active collectors.
+  // Platform keeps four tiles; business collection tiles need collection presence.
   const four = page.slice(
     page.indexOf('<StatGrid>'),
     page.indexOf('</StatGrid>', page.indexOf('<StatGrid>'))
   );
   assert.equal((four.match(/<StatCard/g) ?? []).length, 4);
   assert.match(four, /Active collectors/);
+  assert.match(four, /staff \|\| dashboard.collects/);
+  const priorities = source('routes/-dashboard/business-actions.tsx');
+  assert.equal((priorities.match(/<StatCard/g) ?? []).length, 3);
+  for (const label of [
+    'Requests waiting for you',
+    'Trades without an invoice yet',
+    'Your listings',
+  ])
+    assert.ok(priorities.includes(label));
+  assert.ok(
+    page.indexOf('<BusinessActions') < page.indexOf('<SellerStatsPanel')
+  );
+  assert.ok(page.indexOf('<BusinessActions') < page.indexOf('<PhoneHome'));
+  assert.match(
+    page,
+    /isEmpty=\{!business && dashboard\?\.totals.count === 0\}/
+  );
+  assert.doesNotMatch(page, /RecentActivity/);
   assert.match(
     source('components/stat-card.tsx'),
     /grid grid-cols-3[^'`]*max-md:hidden/
@@ -223,4 +241,41 @@ test('profile Save and Cancel share ButtonRow, and the dashboard has exactly thr
     source('routes/-dashboard/panels.tsx'),
     /import \{ Panel \} from '@\/components\/panel'/
   );
+});
+
+test('chart stays hidden until three non-zero days, then appears', () => {
+  const { MaterialsPanel } = load('routes/-dashboard/panels.tsx', {
+    react: {
+      useRef: () => ({ current: null }),
+      useState: () => [false, () => {}],
+      useEffect: () => {},
+    },
+    '@/lib/api/messages': {},
+    '@/lib/api/transactions': {},
+    '@/components/badges': {},
+    '@/components/data-state': {},
+    '@/components/link-button': {},
+    '@/components/panel': { Panel: 'section' },
+    '@/lib/format': load('lib/format.ts'),
+    './impact-chart': { ImpactChart: 'chart' },
+    '@/lib/auth/use-auth': {},
+  });
+  for (const count of [0, 1, 2, 3, 4]) {
+    const series = Array.from({ length: 30 }, (_, i) => ({
+      day: String(i),
+      weight: i < count ? '0.001' : '0.000',
+    }));
+    assert.equal(MaterialsPanel({ series }) !== null, count >= 3);
+  }
+});
+
+test('New and No change trends are omitted while directional trends remain', () => {
+  const { TrendLine } = load('components/stat-card.tsx', {
+    '@/components/ui/card': { CardContent: 'div' },
+    '@/components/ui/skeleton': {},
+  });
+  for (const dir of ['new', 'flat'])
+    assert.equal(TrendLine({ trend: { dir, label: 'Hidden' } }), null);
+  for (const dir of ['up', 'down'])
+    assert.notEqual(TrendLine({ trend: { dir, label: '12%' } }), null);
 });

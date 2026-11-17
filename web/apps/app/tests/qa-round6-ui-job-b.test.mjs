@@ -81,10 +81,7 @@ test('qa-round6-ui: material summaries use cached request items in inbox and das
     ),
     /Aluminium cans · 12.75 kg/
   );
-  for (const path of [
-    'components/chat/inbox.tsx',
-    'routes/-dashboard/panels.tsx',
-  ]) {
+  for (const path of ['components/chat/inbox.tsx']) {
     assert.match(
       source(path),
       /<ThreadMaterials requestId=\{thread.request_id\}/

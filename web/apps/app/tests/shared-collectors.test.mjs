@@ -27,6 +27,9 @@ test('a refused payout change shows the API message in the dialog', () => {
 });
 
 test('collector changes reach every open page over the live socket', () => {
-  assert.match(live, /case 'collector':\s*return \[\['collectors'\]\]/);
+  assert.match(
+    live,
+    /case 'collector':\s*return \[\['collectors'\], \['dashboards'\]\]/
+  );
   assert.match(live, /\['business'\],\s*\['collectors'\]/);
 });

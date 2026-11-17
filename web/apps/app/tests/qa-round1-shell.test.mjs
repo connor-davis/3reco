@@ -163,3 +163,13 @@ test('F36: a 401 re-checks the session before signing out', () => {
   assert.match(src, /readMe\(/);
   assert.match(src, /endSession\(/);
 });
+
+test('theme controls live in the account menu alone', () => {
+  assert.doesNotMatch(
+    text('../src/components/shell/topbar.tsx'),
+    /ThemeToggle/
+  );
+  const account = text('../src/components/shell/account-menu.tsx');
+  for (const value of ['light', 'dark', 'system'])
+    assert.ok(account.includes(`value="${value}"`));
+});
