@@ -260,6 +260,7 @@ test('conversation renders incoming and sent messages at the tail and scrolls th
     '@/components/icon-button',
     '@/components/dialogs/offer-dialog',
     '@/components/responsive-overlay',
+    '@/components/row-actions',
     '@/components/visuals',
     '@/components/ui/button',
     '@/components/ui/scroll-area',

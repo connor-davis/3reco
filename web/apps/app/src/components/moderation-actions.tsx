@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ReportDialog } from '@/components/dialogs/report-dialog';
-import { RowActions } from '@/components/row-actions';
+import { RowActions, type RowAction } from '@/components/row-actions';
 import { canSeeTeam } from '@/lib/access';
 import { useBlocks, useBlock, useUnblock } from '@/lib/api/blocks';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -11,10 +11,13 @@ export function ModerationActions({
   partyId,
   name,
   listingId,
+  extra = [],
 }: {
   partyId: string;
   name: string;
   listingId?: string;
+  /** Items the page adds ahead of Report and Block, in the same menu. */
+  extra?: RowAction[];
 }) {
   const { user } = useAuth();
   const blocks = useBlocks();
@@ -26,15 +29,20 @@ export function ModerationActions({
     blocks.data?.items.some((item) => item.party_id === partyId) ?? false;
   const change = blocked ? unblock : block;
 
-  if (!canSeeTeam(user) || user?.active_business_id === partyId) return null;
+  const moderate = canSeeTeam(user) && user?.active_business_id !== partyId;
+
+  if (!moderate && extra.length === 0) return null;
 
   return (
     <>
       <RowActions
         name={name}
         actions={[
-          { label: 'Report', onSelect: () => setReportOpen(true) },
-          ...(!listingId
+          ...extra,
+          ...(moderate
+            ? [{ label: 'Report', onSelect: () => setReportOpen(true) }]
+            : []),
+          ...(moderate && !listingId
             ? [
                 {
                   label: blocked ? 'Unblock' : 'Block',

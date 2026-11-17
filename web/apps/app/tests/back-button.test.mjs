@@ -35,6 +35,6 @@ test('detail pages use the shared back button', () => {
     'src/routes/transactions/$transactionId.tsx',
     'src/components/chat/conversation.tsx',
   ]) {
-    assert.match(read(file), /<BackButton fallback=/, file);
+    assert.match(read(file), /<BackButton\s+fallback=/, file);
   }
 });

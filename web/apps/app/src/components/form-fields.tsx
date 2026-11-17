@@ -67,12 +67,14 @@ type ControlProps = {
 function FieldFrame({
   ids,
   label,
+  hideLabel,
   description,
   state,
   children,
 }: {
   ids: Ids;
   label: string;
+  hideLabel?: boolean;
   description?: string;
   state: ControllerFieldState;
   children: (props: ControlProps) => ReactNode;
@@ -86,7 +88,12 @@ function FieldFrame({
 
   return (
     <Field data-invalid={state.invalid}>
-      <FieldLabel htmlFor={ids.id}>{label}</FieldLabel>
+      <FieldLabel
+        htmlFor={ids.id}
+        className={hideLabel ? 'sr-only' : undefined}
+      >
+        {label}
+      </FieldLabel>
       {children({
         id: ids.id,
         'aria-invalid': state.invalid,
@@ -108,8 +115,9 @@ export function TextField<T extends FieldValues>({
   label,
   description,
   personName,
+  hideLabel,
   ...inputProps
-}: TextFieldProps<T> & { personName?: boolean }) {
+}: TextFieldProps<T> & { personName?: boolean; hideLabel?: boolean }) {
   const ids = useFieldIds();
 
   return (
@@ -120,6 +128,7 @@ export function TextField<T extends FieldValues>({
         <FieldFrame
           ids={ids}
           label={label}
+          hideLabel={hideLabel}
           description={description}
           state={fieldState}
         >

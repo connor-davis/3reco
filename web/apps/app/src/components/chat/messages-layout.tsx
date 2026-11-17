@@ -19,6 +19,7 @@ import { useIsMobile, useIsWide } from '@/hooks/use-mobile';
 import { ApiError } from '@/lib/api/client';
 import { useRequest } from '@/lib/api/requests';
 import { useAuth } from '@/lib/auth/use-auth';
+import { cn } from '@/lib/utils';
 import { Conversation } from './conversation';
 import { DealAside } from './deal-aside';
 import { Inbox } from './inbox';
@@ -94,7 +95,13 @@ export function MessagesLayout({ requestId }: { requestId?: string }) {
   return (
     <>
       {isMobile ? (
-        <div className="h-[calc(100dvh-6.75rem)] min-h-[32rem] overflow-hidden">
+        <div
+          className={cn(
+            // The thread hides the bottom tabs, so it only loses the top bar.
+            requestId ? 'h-[calc(100dvh-3.5rem)]' : 'h-[calc(100dvh-6.75rem)]',
+            'min-h-[32rem] overflow-hidden'
+          )}
+        >
           {requestId ? (
             thread
           ) : (
