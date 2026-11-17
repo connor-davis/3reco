@@ -299,6 +299,7 @@ test('A7: removed sign-in has no trade tagline or unsupported contact instructio
           useNavigate: () => () => {},
         },
         '@/lib/api/auth': { useSignIn: () => ({}) },
+        '@/lib/api/app-config': { useAppConfig: () => ({ demo: false }) },
         'react-hook-form': {
           useForm: () => ({ formState: {}, handleSubmit: () => () => {} }),
         },

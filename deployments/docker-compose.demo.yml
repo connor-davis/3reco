@@ -1,0 +1,73 @@
+# =============================================================================
+#  3REco - demo site (demo.3reco.co.za)
+#
+#  Same image as production, run with THREERECO_DEMO=true. It has its own
+#  Postgres database and its own MinIO, no email key and no push keys, so it
+#  cannot touch live data or send anything. deployments/demo/reset.sh wipes and
+#  refills it every night.
+#
+#  Copy deployments/.env.demo.example to .env.demo in the repo root, then, from
+#  the repo root:
+#    docker compose -f deployments/docker-compose.demo.yml --env-file .env.demo up -d --build
+#
+#  Put the reverse proxy (Caddy, nginx) in front for HTTPS: demo.<domain> goes
+#  to 127.0.0.1:8181.
+# =============================================================================
+
+name: threereco-demo
+
+services:
+  api-demo:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    environment:
+      THREERECO_DEMO: "true"
+      THREERECO_ADDR: ":8180"
+      THREERECO_DATABASE_URL: postgres://threereco:${DEMO_POSTGRES_PASSWORD}@postgres-demo:5432/threereco_demo?sslmode=disable
+      THREERECO_WEB_ORIGIN: ${THREERECO_WEB_ORIGIN}
+      THREERECO_COOKIE_SECURE: "true"
+      THREERECO_TRUSTED_PROXIES: ${THREERECO_TRUSTED_PROXIES:-}
+      THREERECO_FIELD_KEY: ${THREERECO_FIELD_KEY}
+      THREERECO_S3_ENDPOINT: minio-demo:9000
+      THREERECO_S3_BUCKET: threereco-demo
+      THREERECO_S3_ACCESS_KEY: ${DEMO_MINIO_ROOT_USER}
+      THREERECO_S3_SECRET_KEY: ${DEMO_MINIO_ROOT_PASSWORD}
+    depends_on:
+      postgres-demo:
+        condition: service_healthy
+      minio-demo:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8181:8180"
+    restart: unless-stopped
+
+  postgres-demo:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_USER: threereco
+      POSTGRES_PASSWORD: ${DEMO_POSTGRES_PASSWORD}
+      POSTGRES_DB: threereco_demo
+    volumes:
+      - postgres-demo-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U threereco -d threereco_demo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio-demo:
+    image: docker.io/chainguard/minio:latest
+    user: "0"
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${DEMO_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${DEMO_MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-demo-data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres-demo-data:
+  minio-demo-data:

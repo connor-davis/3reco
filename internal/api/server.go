@@ -250,6 +250,10 @@ func New(r routes) *fiber.App {
 	app.Use(requestid.New())
 	app.Use(securityHeaders)
 
+	if cfg.Demo {
+		demoRobots(app)
+	}
+
 	api := app.Group("/api")
 
 	api.Use(compress.New(compress.Config{Next: skipCompression}))
@@ -269,6 +273,12 @@ func New(r routes) *fiber.App {
 
 		return c.JSON(fiber.Map{"status": "ok", "version": config.Version})
 	})
+
+	demoRoutes(api, cfg)
+
+	if cfg.Demo {
+		api.Use(demoGuard)
+	}
 
 	// Every /api request may carry a cookie; this loads who it belongs to, once.
 	api.Use(middleware.Authenticate(r.Auth, cfg))
@@ -302,7 +312,7 @@ func New(r routes) *fiber.App {
 	// Unknown /api paths get a JSON 404.
 	api.Use(func(c fiber.Ctx) error { return apperr.NotFound("No such API endpoint.") })
 
-	serveWeb(app, cfg.WebDist)
+	serveWeb(app, cfg.WebDist, cfg.Demo)
 
 	return app
 }

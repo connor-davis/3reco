@@ -3,6 +3,20 @@
 Which file owns which job. Read this before you write a new helper, and add a
 line when you add an owner.
 
+## Demo site
+
+| Job | Owner |
+| --- | --- |
+| `THREERECO_DEMO` flag and the start-up guards (database name ends `_demo`, bucket has `demo`, no mail, push or dev settings) | `internal/platform/config/demo.go` (`CheckDemo`), called by `withDB` in `cmd/3reco/main.go` |
+| Public `GET /api/config`, blocked routes (sign-up, password reset, exports, privacy), `noindex` header, meta tag and `robots.txt` | `internal/api/demo.go`; wired in `internal/api/server.go` and `internal/api/web.go` |
+| Mail logs the subject only; push stays off | `internal/platform/mail/mail.go`, `internal/services/push/push.go` |
+| Fictional data and the seed order (materials, people, stock, trades, collections, extras), run through the routes of a private local server | `internal/services/demo/{data,seed,seed_trade,client}.go` |
+| Counts, verify and schema wipe | `internal/stores/demo/demo.go`; bucket emptying in `internal/platform/storage/storage.go` (`Clear`) |
+| `3reco demo seed` and `3reco demo reset --yes` | `cmd/3reco/demo.go` |
+| Compose file, env example and nightly reset | `deployments/docker-compose.demo.yml`, `deployments/.env.demo.example`, `deployments/demo/reset.sh` |
+| Banner on every page, one-click sign-ins, hidden sign-up and Alerts tab, runtime config query | `web/apps/app/src/components/{demo-banner,demo-logins}.tsx`, `src/lib/demo-logins.ts`, `src/lib/api/app-config.ts`, `src/routes/{__root,sign-in}.tsx`, `src/routes/profile/index.tsx` |
+| Guards, config route, blocks, robots, seed counts and logins; web banner and buttons | `tests/demo_{config,routes,seed}_test.go`, `web/apps/app/tests/demo-site.test.mjs` |
+
 ## Reports and blocks
 
 | Job | Owner |

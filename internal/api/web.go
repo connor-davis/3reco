@@ -14,8 +14,8 @@ import (
 // serveWeb serves the built web app from dist, after every /api route. A file
 // that exists is sent as is; any other page path gets index.html so the
 // router in the browser can take over. If dist has no index.html the API
-// still runs and the gap is logged once.
-func serveWeb(app *fiber.App, dist string) {
+// still runs and the gap is logged once. The demo adds a noindex tag.
+func serveWeb(app *fiber.App, dist string, demo bool) {
 	root := os.DirFS(dist)
 
 	index, err := fs.ReadFile(root, "index.html")
@@ -23,6 +23,10 @@ func serveWeb(app *fiber.App, dist string) {
 		slog.Warn("web app not served: no index.html", "dist", dist, "err", err)
 
 		return
+	}
+
+	if demo {
+		index = noIndex(index)
 	}
 
 	app.Use(compress.New())

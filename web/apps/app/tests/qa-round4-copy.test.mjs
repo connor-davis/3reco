@@ -154,6 +154,7 @@ test('removed and changed accounts receive different sign-in feedback', () => {
           useNavigate: () => () => {},
         },
         '@/lib/api/auth': { useSignIn: () => ({}) },
+        '@/lib/api/app-config': { useAppConfig: () => ({ demo: false }) },
         '@hookform/resolvers/zod': { zodResolver: () => () => {} },
         'react-hook-form': {
           useForm: () => ({ handleSubmit: () => () => {}, formState: {} }),

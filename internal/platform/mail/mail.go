@@ -60,6 +60,14 @@ func New(cfg config.Config) *Mailer {
 
 // Send delivers the message and waits for the answer.
 func (m *Mailer) Send(ctx context.Context, msg Message) error {
+	// The demo never mails anyone. Only the subject is logged: the address
+	// belongs to a person and logs are kept.
+	if m.cfg.Demo {
+		slog.Info("demo: email not sent", "subject", msg.Subject)
+
+		return nil
+	}
+
 	switch {
 	case m.cfg.ResendAPIKey != "":
 		return m.sendResend(ctx, msg)

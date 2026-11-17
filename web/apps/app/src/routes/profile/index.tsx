@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { canSeeTeam, isStaffRole } from '@/lib/access';
 import { useAuth } from '@/lib/auth/use-auth';
+import { useAppConfig } from '@/lib/api/app-config';
 import { useProfile } from '@/lib/api/profile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { initials } from '@/lib/format';
@@ -32,6 +33,8 @@ export const Route = createFileRoute('/profile/')({
 function ProfilePage() {
   const { user } = useAuth();
   const role = user?.role;
+  // Phone alerts are off in the demo, so their tab is hidden.
+  const { demo } = useAppConfig();
   // Only collectors keep bank and location here. A business keeps its own on
   // the Business page; admin and staff have none.
   const collector = role === 'collector';
@@ -67,7 +70,7 @@ function ProfilePage() {
             <TabsTrigger value="personal">Personal</TabsTrigger>
             {collector && <TabsTrigger value="bank">Bank & payout</TabsTrigger>}
             {collector && <TabsTrigger value="location">Location</TabsTrigger>}
-            <TabsTrigger value="alerts">Alerts</TabsTrigger>
+            {!demo && <TabsTrigger value="alerts">Alerts</TabsTrigger>}
             {canSeeTeam(user) && (
               <TabsTrigger value="blocked">Blocked</TabsTrigger>
             )}
@@ -124,14 +127,16 @@ function ProfilePage() {
               <PrivacyPanel />
             </Section>
           </TabsContent>
-          <TabsContent value="alerts">
-            <Section
-              title="Alerts"
-              description="Get 3REco alerts on this phone or computer."
-            >
-              <PhoneAlerts />
-            </Section>
-          </TabsContent>
+          {!demo && (
+            <TabsContent value="alerts">
+              <Section
+                title="Alerts"
+                description="Get 3REco alerts on this phone or computer."
+              >
+                <PhoneAlerts />
+              </Section>
+            </TabsContent>
+          )}
           {canSeeTeam(user) && (
             <TabsContent value="blocked">
               <Section

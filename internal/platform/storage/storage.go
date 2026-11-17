@@ -121,3 +121,33 @@ func (c *Client) PresignGet(ctx context.Context, key string, ttl time.Duration) 
 
 	return u.String(), nil
 }
+
+// Clear deletes every object in the bucket and keeps the bucket. The demo
+// reset uses it; nothing else should.
+func (c *Client) Clear(ctx context.Context) error {
+	keys := make(chan minio.ObjectInfo)
+
+	go func() {
+		defer close(keys)
+
+		for object := range c.mc.ListObjects(ctx, c.bucket, minio.ListObjectsOptions{Recursive: true}) {
+			if object.Err != nil {
+				return
+			}
+
+			select {
+			case keys <- object:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	for failure := range c.mc.RemoveObjects(ctx, c.bucket, keys, minio.RemoveObjectsOptions{}) {
+		if failure.Err != nil {
+			return failure.Err
+		}
+	}
+
+	return nil
+}

@@ -15,11 +15,14 @@ var Version = "dev"
 
 // Config holds the settings for one run of the server.
 type Config struct {
-	Addr            string
-	DatabaseURL     string
-	WebOrigin       string
-	WebDist         string
-	Dev             bool
+	Addr        string
+	DatabaseURL string
+	WebOrigin   string
+	WebDist     string
+	Dev         bool
+	// Demo turns this run into the demo site: dummy data, no real email, no
+	// sign-up, no exports. CheckDemo refuses it against real settings.
+	Demo            bool
 	CookieSecure    bool
 	TrustedProxies  []string
 	AuthRateLimit   int
@@ -68,6 +71,7 @@ var EnvVars = []EnvVar{
 	{"THREERECO_WEB_ORIGIN", "http://localhost:5173", "Origin of the web app. Used for CORS, CSRF, WebSockets and email links."},
 	{"THREERECO_WEB_DIST", "web/apps/app/dist", "Folder with the built web app. The server serves it next to /api; if it is missing, only the API runs."},
 	{"THREERECO_DEV", "false", "Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set."},
+	{"THREERECO_DEMO", "false", "Demo site: dummy data, a banner, no real email, no sign-up, no exports. Refused unless the database name ends in _demo and the bucket name has demo in it."},
 	{"THREERECO_COOKIE_SECURE", "false", "Set true in production so session cookies are HTTPS only."},
 	{"THREERECO_TRUSTED_PROXIES", "", "Comma-separated proxy addresses whose X-Forwarded-For is believed."},
 	{"THREERECO_AUTH_RATE_LIMIT", "20", "Requests per minute, per address, on each auth route."},
@@ -100,6 +104,7 @@ func Load() (Config, error) {
 		WebOrigin:      strings.TrimRight(Env("THREERECO_WEB_ORIGIN", "http://localhost:5173"), "/"),
 		WebDist:        Env("THREERECO_WEB_DIST", "web/apps/app/dist"),
 		Dev:            envBool("THREERECO_DEV"),
+		Demo:           envBool("THREERECO_DEMO"),
 		CookieSecure:   envBool("THREERECO_COOKIE_SECURE"),
 		TrustedProxies: envList("THREERECO_TRUSTED_PROXIES"),
 		FieldKey:       Env("THREERECO_FIELD_KEY", ""),

@@ -14,6 +14,7 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_WEB_ORIGIN` | `http://localhost:5173` | Origin of the web app. Used for CORS, CSRF, WebSockets and email links. |
 | `THREERECO_WEB_DIST` | `web/apps/app/dist` | Folder with the built web app. The server serves it next to `/api`; if it is missing, only the API runs. See [Web app](#web-app). |
 | `THREERECO_DEV` | `false` | Dev mode: coloured logs, and mail goes to Mailpit when no Resend key is set. |
+| `THREERECO_DEMO` | `false` | Demo site: dummy data, a banner, no real email, no sign-up, no exports. Refused unless the database name ends in `_demo` and the bucket name has `demo` in it. See [Demo site](#demo-site). |
 | `THREERECO_COOKIE_SECURE` | `false` | Set true in production so session cookies are HTTPS only. |
 | `THREERECO_TRUSTED_PROXIES` | (empty) | Comma-separated proxy addresses whose X-Forwarded-For is believed. |
 | `THREERECO_FIELD_KEY` | (none, **required**) | Base64 of 32 random bytes. Encrypts ID numbers, bank account numbers and e-wallet ids. The server will not start without it. See [Field key](#field-key). |
@@ -36,6 +37,38 @@ Every setting is an environment variable. The list below is built from
 | `THREERECO_VAPID_PUBLIC_KEY` | (empty) | Public VAPID key for phone alerts (web push). Phone alerts are off unless both keys are set. See [Phone alerts](#phone-alerts). |
 | `THREERECO_VAPID_PRIVATE_KEY` | (empty) | Private VAPID key for phone alerts. A secret: keep it out of git. |
 | `THREERECO_VAPID_SUBJECT` | `mailto:admin@localhost` | Contact the push services can reach, as a `mailto:` or `https:` address. |
+
+## Demo site
+
+`demo.3reco.co.za` runs the same image with `THREERECO_DEMO=true`. It holds made-up
+people and trades, shows a "Demo: nothing here is real" banner, never sends email,
+has no sign-up, no phone alerts, no exports and no privacy-delete, and tells search
+engines to stay away. Sign-in has three one-click buttons (Buyer, Seller, Collector);
+their password is public on purpose.
+
+It will not start unless the database name ends in `_demo`, the bucket name has
+`demo` in it, and there is no Resend key, SMTP host, push key or dev mode. Seeding
+needs the flag and an empty database.
+
+Files: `deployments/docker-compose.demo.yml` (own Postgres and MinIO, API on
+`127.0.0.1:8181`), `deployments/.env.demo.example`, `deployments/demo/reset.sh`.
+
+Set up once (you do these):
+
+1. DNS: point `demo.3reco.co.za` at the server.
+2. Proxy and TLS: send `demo.3reco.co.za` to `127.0.0.1:8181`.
+3. Copy `deployments/.env.demo.example` to `.env.demo` in the repo root and fill in
+   new secrets. Do not reuse the live ones.
+4. Start it:
+   `docker compose -f deployments/docker-compose.demo.yml --env-file .env.demo up -d --build`
+5. Fill it the first time: `deployments/demo/reset.sh`.
+6. Nightly reset (01:00 UTC is 03:00 in South Africa), in `crontab -e`:
+   `0 1 * * * cd /path/to/3reco && deployments/demo/reset.sh >> /var/log/3reco-demo-reset.log 2>&1`
+
+`reset.sh` stops the demo API, wipes the demo database and bucket, migrates, seeds
+and starts the API. If it fails, the API stays stopped and the exit code is not 0.
+By hand, outside Docker: `THREERECO_DEMO=true 3reco demo seed` (empty database only)
+or `3reco demo reset --yes`.
 
 ## Phone alerts
 

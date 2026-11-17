@@ -52,9 +52,10 @@ func (s *Service) SetSender(sender Sender) {
 	s.mu.Unlock()
 }
 
-// Enabled is true when both VAPID keys are set.
+// Enabled is true when both VAPID keys are set. The demo site never sends
+// phone alerts, whatever the keys say.
 func (s *Service) Enabled() bool {
-	return s.cfg.VAPIDPublicKey != "" && s.cfg.VAPIDPrivateKey != ""
+	return !s.cfg.Demo && s.cfg.VAPIDPublicKey != "" && s.cfg.VAPIDPrivateKey != ""
 }
 
 // PublicKey is the key a browser needs to subscribe. It is empty when push is off.
