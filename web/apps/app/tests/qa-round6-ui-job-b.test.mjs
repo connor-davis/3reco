@@ -148,15 +148,17 @@ test('qa-round6-ui: route titles override the shell fallback after cached naviga
   );
 });
 
-test('qa-round6-ui: transaction tabs precede the shared one-row toolbar', () => {
+test('qa-round6-ui: one transaction tab row precedes status in the Filters sheet', () => {
   const records = source('routes/transactions/-components/record-list.tsx');
   const start = records.indexOf('<div className="mb-6 space-y-4">');
   const status = records.indexOf('label="Transaction status"');
   const search = records.indexOf('label="Search records"');
   const dates = records.indexOf('placeholder="From – to date"');
-  assert.ok(start >= 0 && status > start && search > status && dates > search);
+  assert.ok(start >= 0 && search > start && status > search && dates > status);
+  assert.equal((records.match(/<FilterTabs/g) ?? []).length, 1);
+  assert.match(records, /<Toolbar\s+sheetOnDesktop/);
   assert.match(
-    records.slice(start, search),
+    records.slice(search, dates),
     /value=\{status\}\s*onChange=\{setStatus\}/
   );
   assert.match(records, /<ListRow/);

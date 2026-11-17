@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { FileText, MoreHorizontal, Upload } from 'lucide-react';
+import { Download, FileText, MoreHorizontal, Upload } from 'lucide-react';
 import { BusinessName, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -157,7 +157,7 @@ export function TradeDetail({ record }: Props) {
     <>
       {shown && (
         <>
-          <header className="mb-6 flex items-start justify-between gap-4">
+          <header className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row">
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-[26px] font-semibold tracking-tight break-all lg:text-4xl">
@@ -185,67 +185,122 @@ export function TradeDetail({ record }: Props) {
                 {formatDate(shown.collection_day ?? shown.effective_at)}
               </p>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Invoice actions"
-                  />
+            <div className="flex w-full shrink-0 items-center gap-2 md:w-auto">
+              <Button
+                className="min-h-11 flex-1 md:flex-none"
+                disabled={invoice.isPending}
+                onClick={() =>
+                  invoice.mutate(shown, {
+                    onError: (error) => toast.error(errorText(error)),
+                  })
                 }
               >
-                <MoreHorizontal />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canBuyAgain && (
-                  <DropdownMenuItem
-                    disabled={buyingAgain}
-                    onClick={() => void buyAgain()}
-                  >
-                    {buyingAgain ? 'Adding to cart…' : 'Buy again'}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  disabled={invoice.isPending}
-                  onClick={() =>
-                    invoice.mutate(shown, {
-                      onError: (error) => toast.error(errorText(error)),
-                    })
+                <Download aria-hidden="true" />
+                Download invoice
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Invoice actions"
+                    />
                   }
                 >
-                  Download invoice
-                </DropdownMenuItem>
-                {shown.status === 'complete' && (
-                  <DropdownMenuItem
-                    disabled={recyclingRecord.isPending}
-                    onClick={() =>
-                      recyclingRecord.mutate(shown, {
-                        onError: (error) => toast.error(errorText(error)),
-                      })
-                    }
-                  >
-                    Recycling record
-                  </DropdownMenuItem>
-                )}
-                {shown.request_id && (
-                  <DropdownMenuItem
-                    render={
-                      <LinkButton
-                        variant="ghost"
-                        to="/messages/$requestId"
-                        params={{ requestId: shown.request_id }}
+                  <MoreHorizontal />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canBuyAgain && (
+                    <DropdownMenuItem
+                      disabled={buyingAgain}
+                      onClick={() => void buyAgain()}
+                    >
+                      {buyingAgain ? 'Adding to cart…' : 'Buy again'}
+                    </DropdownMenuItem>
+                  )}
+                  {shown.status === 'complete' && (
+                    <DropdownMenuItem
+                      disabled={recyclingRecord.isPending}
+                      onClick={() =>
+                        recyclingRecord.mutate(shown, {
+                          onError: (error) => toast.error(errorText(error)),
+                        })
+                      }
+                    >
+                      Recycling record
+                    </DropdownMenuItem>
+                  )}
+                  {shown.request_id && (
+                    <DropdownMenuItem
+                      render={
+                        <LinkButton
+                          variant="ghost"
+                          to="/messages/$requestId"
+                          params={{ requestId: shown.request_id }}
+                        />
+                      }
+                    >
+                      View request
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+            <aside className="min-w-0 space-y-4">
+              <Panel title="Summary">
+                <dl className="space-y-3">
+                  <Line label="Invoice" value={shown.invoice_number} />
+                  <Line
+                    label="Date"
+                    value={formatDate(
+                      shown.collection_day ?? shown.effective_at
+                    )}
+                  />
+                  <div className="border-t pt-3">
+                    <Line
+                      label="Total"
+                      value={formatRand(toCents(shown.total_price))}
+                    />
+                  </div>
+                </dl>
+              </Panel>
+              <Panel title="Parties">
+                <dl className="space-y-4">
+                  <Line
+                    label="Seller"
+                    value={
+                      <BusinessName
+                        name={shown.seller.name}
+                        verified={shown.seller.business_verified}
                       />
                     }
+                  />
+                  <Line
+                    label="Buyer"
+                    value={
+                      <BusinessName
+                        name={shown.buyer.name}
+                        verified={shown.buyer.business_verified}
+                      />
+                    }
+                  />
+                </dl>
+                {storeParty.name !== 'Removed account' && (
+                  <LinkButton
+                    className="mt-4 w-full"
+                    variant="secondary"
+                    to="/market/store/$sellerId"
+                    params={{ sellerId: storeParty.id }}
                   >
-                    View request
-                  </DropdownMenuItem>
+                    Visit store
+                  </LinkButton>
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </header>
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <div className="order-2 min-w-0 space-y-4 lg:order-1">
+              </Panel>
+            </aside>
+            <div className="min-w-0 space-y-4">
               <Panel title="Items">
                 <ul className="divide-y text-sm">
                   {shown.items.map((item) => (
@@ -276,9 +331,14 @@ export function TradeDetail({ record }: Props) {
                   />
                 </dl>
               </Panel>
-              <Panel
-                title={`Receipts (${shown.receipts.length} of ${maxReceipts} allowed)`}
-              >
+            </div>
+          </div>
+          <div className="mt-4">
+            <Panel>
+              <details key={shown.id} open={shown.receipts.length > 0}>
+                <summary className="min-h-11 cursor-pointer content-center rounded-sm text-base font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                  Receipts ({shown.receipts.length})
+                </summary>
                 <section aria-label="Receipts" className="space-y-3">
                   {shown.receipts.length === 0 && (
                     <p className="text-sm text-muted-foreground">
@@ -381,59 +441,8 @@ export function TradeDetail({ record }: Props) {
                     </Field>
                   )}
                 </section>
-              </Panel>
-            </div>
-            <aside className="order-1 min-w-0 space-y-4 lg:order-2">
-              <Panel title="Summary">
-                <dl className="space-y-3">
-                  <Line label="Invoice" value={shown.invoice_number} />
-                  <Line
-                    label="Date"
-                    value={formatDate(
-                      shown.collection_day ?? shown.effective_at
-                    )}
-                  />
-                  <div className="border-t pt-3">
-                    <Line
-                      label="Total"
-                      value={formatRand(toCents(shown.total_price))}
-                    />
-                  </div>
-                </dl>
-              </Panel>
-              <Panel title="Parties">
-                <dl className="space-y-4">
-                  <Line
-                    label="Seller"
-                    value={
-                      <BusinessName
-                        name={shown.seller.name}
-                        verified={shown.seller.business_verified}
-                      />
-                    }
-                  />
-                  <Line
-                    label="Buyer"
-                    value={
-                      <BusinessName
-                        name={shown.buyer.name}
-                        verified={shown.buyer.business_verified}
-                      />
-                    }
-                  />
-                </dl>
-                {storeParty.name !== 'Removed account' && (
-                  <LinkButton
-                    className="mt-4 w-full"
-                    variant="secondary"
-                    to="/market/store/$sellerId"
-                    params={{ sellerId: storeParty.id }}
-                  >
-                    Visit store
-                  </LinkButton>
-                )}
-              </Panel>
-            </aside>
+              </details>
+            </Panel>
           </div>
         </>
       )}

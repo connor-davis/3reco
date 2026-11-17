@@ -174,13 +174,10 @@ test('receipt remove is restricted and only mutates after confirmation', () => {
       tree.find((node) => node.type === 'ConfirmDialog').props.onConfirm();
       assert.deepEqual(calls, ['r']);
     }
-    const heading = tree.find(
-      (node) =>
-        node.type === 'Panel' &&
-        typeof node.props.title === 'string' &&
-        node.props.title.startsWith('Receipts')
-    );
-    assert.match(heading.props.title, /Receipts \(1 of 5 allowed\)/);
+    const receipts = tree.find((node) => node.type === 'details');
+    assert.equal(receipts.props.open, true);
+    const heading = nodes(receipts).find((node) => node.type === 'summary');
+    assert.equal(heading.props.children.join(''), 'Receipts (1)');
   }
 });
 

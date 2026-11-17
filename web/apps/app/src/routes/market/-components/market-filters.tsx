@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ChoiceSelect } from '@/components/filters';
+import { FilterField } from '@/components/toolbar';
 import { Input } from '@/components/ui/input';
 import { useDistanceStatus } from '@/lib/api/listings';
 import { useMaterialCatalog } from '@/lib/api/materials';
@@ -12,22 +13,6 @@ import {
 } from './market-search';
 
 const ANY = 'any';
-
-/** A small visible heading over one group in the Filters sheet. */
-export function FilterField({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-    </div>
-  );
-}
 
 /** A price box. It writes to the URL only once the text is a whole amount. */
 function PriceField({

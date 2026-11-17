@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ResponsiveOverlay } from '@/components/responsive-overlay';
+import { RowActions } from '@/components/row-actions';
 import { errorText } from '@/components/transactions/pager-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,15 +17,16 @@ const choices: { value: Choice; label: string }[] = [
   { value: 'custom', label: 'Custom dates' },
 ];
 
-/** A page-header action: opens a small dialog to download a recycling record. */
+/** A page-header menu for downloading a batch recycling record. */
 export function RecyclingRecordButton() {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)}>
-        Recycling record
-      </Button>
+      <RowActions
+        name="transactions"
+        actions={[{ label: 'Recycling record', onSelect: () => setOpen(true) }]}
+      />
       <RecyclingRecordDialog open={open} onOpenChange={setOpen} />
     </>
   );

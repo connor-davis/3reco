@@ -364,6 +364,7 @@ with sync_playwright() as p:
                         assert '/transactions/trade' in page.url and 'open=' not in page.url
                         expect(page.get_by_role('heading', name='Items', exact=True)).to_be_visible()
                         expect(page.get_by_role('heading', name='Summary', exact=True)).to_be_visible()
+                        expect(page.locator('summary', has_text='Receipts (1)')).to_be_visible()
                         expect(page.get_by_label('Receipts', exact=True)).to_be_visible()
                     if route == '/transactions/purchases':
                         if width >= 1024:

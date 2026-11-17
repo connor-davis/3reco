@@ -79,10 +79,7 @@ test('validated transaction filters select their list and export without changin
     assert.equal(props.kind, kind);
     assert.equal(props.exportKind, exportKind);
     assert.equal(props.businessFilter, filter);
-    assert.equal(
-      props.exportHint,
-      filter === 'all' ? 'Pick Bought or Sold to export' : undefined
-    );
+    assert.equal(props.exportHint, undefined);
     assert.equal(props.typeFilter, false);
     assert.equal(props.actions.type, 'RecyclingRecordButton');
   }
@@ -130,7 +127,8 @@ test('unified rows label direction on both desktop and phone and reset cursor sc
   assert.match(page, /direction\(row\)/);
   assert.match(page, /label="Bought or sold"/);
   assert.match(page, /usePager\(\{ \.\.\.filters, kind \}\)/);
-  assert.match(page, /!!exportHint/);
+  assert.doesNotMatch(page, /exportHint/);
+  assert.match(page, /kind !== 'mine'/);
 });
 
 test('chat transaction links use the business party and retain staff and collector destinations', () => {

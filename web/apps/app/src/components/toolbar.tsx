@@ -99,3 +99,19 @@ export function FilterSheet({
     </ResponsiveOverlay>
   );
 }
+
+/** A small visible heading over one group in the Filters sheet. */
+export function FilterField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium">{label}</span>
+      {children}
+    </div>
+  );
+}

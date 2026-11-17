@@ -50,11 +50,6 @@ function AllTransactions() {
       exportKind={
         business ? (kind === 'mine' ? undefined : kind) : 'transactions'
       }
-      exportHint={
-        business && kind === 'mine'
-          ? 'Pick Bought or Sold to export'
-          : undefined
-      }
       emptyTitle="No transactions yet"
       typeFilter={!business}
       businessFilter={business ? filter : undefined}

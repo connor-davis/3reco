@@ -172,7 +172,7 @@ test('export client forwards all filters and uses descriptive SAST filenames', a
   );
 });
 
-test('transaction export passes current search and disables empty or stale-filter downloads', () => {
+test('transaction export passes current search and hides empty or stale-filter downloads', () => {
   const text = source('routes/transactions/-components/record-list.tsx');
   assert.match(text, /type: filters.type,\s*q,/);
   assert.match(text, /!totals.data\?\.count/);
