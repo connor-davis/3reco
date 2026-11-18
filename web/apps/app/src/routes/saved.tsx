@@ -91,7 +91,7 @@ function SavedPage() {
           })
         }
         options={[
-          { value: 'all', label: label('All', total) },
+          { value: 'all', label: label('All', counts && total) },
           { value: 'listings', label: label('Listings', counts?.listing) },
           { value: 'searches', label: label('Searches', counts?.search) },
           { value: 'stores', label: label('Stores', counts?.store) },
