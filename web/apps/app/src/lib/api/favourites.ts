@@ -29,7 +29,7 @@ export function useSaveListing() {
   return useWrite<string, T.Ok>(
     (id) => `/favourites/${idPath(id)}`,
     'PUT',
-    [['favourites']],
+    [['favourites'], ['saved']],
     () => undefined
   );
 }
@@ -37,7 +37,7 @@ export function useUnsaveListing() {
   return useWrite<string, T.Ok>(
     (id) => `/favourites/${idPath(id)}`,
     'DELETE',
-    [['favourites']],
+    [['favourites'], ['saved']],
     () => undefined
   );
 }
@@ -62,7 +62,7 @@ export function useFollowStore() {
   return useWrite<string, T.Ok>(
     (id) => `/follows/${idPath(id)}`,
     'PUT',
-    [['follows']],
+    [['follows'], ['saved']],
     () => undefined
   );
 }
@@ -70,7 +70,7 @@ export function useUnfollowStore() {
   return useWrite<string, T.Ok>(
     (id) => `/follows/${idPath(id)}`,
     'DELETE',
-    [['follows']],
+    [['follows'], ['saved']],
     () => undefined
   );
 }

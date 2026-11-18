@@ -59,6 +59,8 @@ type Filter struct {
 	OriginLng *float64
 	// FavouriteOf is a person's id; only that person's saved listings match.
 	FavouriteOf string
+	// IDs keeps only these listings. Empty means no limit.
+	IDs []string
 }
 
 var listingColumns = `s.id,s.owner_id,` + database.DisplayName("u") + `,
@@ -100,6 +102,7 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 		AND ($9='' OR s.price>=NULLIF($9,'')::numeric) AND ($10='' OR s.price<=NULLIF($10,'')::numeric)
 		AND ($13::int=0 OR (b.latitude IS NOT NULL AND `+kmApart+`<=$13::int))
 		AND ($14='' OR s.id IN (SELECT stock_id FROM favourites WHERE user_id=$14))
+		AND (cardinality($15::text[])=0 OR s.id=ANY($15::text[]))
 		AND ($3='' OR m.name ILIKE '%'||$3||'%' OR u.business_name ILIKE '%'||$3||'%')
 		AND ($4='' OR s.owner_id<>$4) AND ($5='' OR (s.created_at,s.id)<($6,$5))
 		ORDER BY s.created_at DESC,s.id DESC LIMIT NULLIF($7,0)`,
@@ -117,6 +120,7 @@ func (records *Store) Listings(ctx context.Context, filter Filter, query paging.
 		filter.OriginLng,
 		filter.MaxKm,
 		filter.FavouriteOf,
+		append([]string{}, filter.IDs...),
 	)
 	if err != nil {
 		return nil, err

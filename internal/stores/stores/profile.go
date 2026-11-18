@@ -117,6 +117,27 @@ func (records *Store) Followed(ctx context.Context, userID string, query paging.
 	return scanProfiles(rows)
 }
 
+// FollowedIn reads the named stores the person follows, under the same
+// visibility rules as Followed. The caller pages by the ids it passes in.
+func (records *Store) FollowedIn(ctx context.Context, userID string, ids []string) ([]Profile, error) {
+	rows, err := records.db.Q(ctx).Query(
+		ctx,
+		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed
+		AND `+database.Verified("u")+`
+		AND person_contact_allowed($1,u.id)
+		AND u.id IN (SELECT store_id FROM follows WHERE user_id=$1)
+		AND u.id = ANY($2::text[])`),
+		userID,
+		ids,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanProfiles(rows)
+}
+
 func scanProfiles(rows pgx.Rows) ([]Profile, error) {
 	items := []Profile{}
 	for rows.Next() {

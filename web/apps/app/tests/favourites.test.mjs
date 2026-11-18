@@ -35,6 +35,9 @@ test('a market change refreshes saved listings and followed stores', () => {
   const keys = keysFor('listing', 'abc').map((key) => key.join('/'));
   assert.ok(keys.includes('favourites/list'));
   assert.ok(keys.includes('follows/list'));
+  // The one mixed Saved list refreshes with them.
+  assert.ok(keys.includes('saved'));
+  assert.ok(keysFor('block').some((key) => key.join('/') === 'saved'));
 });
 
 test('the client saves and follows by id, as the signed-in person', () => {
@@ -48,6 +51,8 @@ test('the client saves and follows by id, as the signed-in person', () => {
   assert.equal((api.match(/\n {4}true,/g) ?? []).length, 4);
   // Never sent from the page: no owner id in any body.
   assert.doesNotMatch(api, /user_id|owner/);
+  // A heart or Follow tap also refreshes the mixed Saved list.
+  assert.equal((api.match(/\['saved'\]/g) ?? []).length, 4);
 });
 
 test('hearts and the Follow button sit where the map puts them', () => {
@@ -78,12 +83,33 @@ test('the buttons say what they do and what state they are in', () => {
   assert.equal((button.match(/if \(!canSave\) return null/g) ?? []).length, 2);
 });
 
-test('the Saved page has loading, empty and error states in both lists', () => {
+test('the Saved page is one mixed list with filter chips and its own empty states', () => {
   const page = source('routes/saved.tsx');
+  const row = source('routes/-components/saved-row.tsx');
 
-  assert.equal((page.match(/<DataState/g) ?? []).length, 2);
-  assert.match(page, /Nothing saved yet/);
-  assert.match(page, /You don't follow any stores/);
+  // One list, one DataState: no tabs and no old pager.
+  assert.equal((page.match(/<DataState/g) ?? []).length, 1);
+  assert.doesNotMatch(page, /<Tabs|Pager/);
   assert.match(page, /createFileRoute\('\/saved'\)/);
   assert.match(page, /<Guarded page="saved">/);
+  // The chip lives in ?show= and the list loads more on request.
+  assert.match(page, /validateSearch/);
+  assert.match(page, /Load more/);
+  for (const text of [
+    'Nothing saved yet',
+    'No saved listings',
+    'No saved searches',
+    "You don't follow any stores",
+    'On the market page, set filters and tap Save search.',
+    'Open a store and tap Follow.',
+  ]) {
+    assert.ok(page.includes(text), text);
+  }
+  // Each row names its kind and keeps its own action.
+  for (const badge of ['Listing', 'Search', 'Store']) {
+    assert.match(row, new RegExp(`<Badge variant="\\w+">${badge}</Badge>`));
+  }
+  assert.match(row, /<FavouriteButton/);
+  assert.match(row, /<FollowButton/);
+  assert.match(row, /Delete saved search for/);
 });

@@ -68,19 +68,20 @@ with sync_playwright() as p:
                     body = {'user': {'id': 'buyer', 'name': 'Buyer', 'email': 'buyer@example.test', 'role': 'business', 'emailVerified': True, 'profileComplete': True, 'agreedToTerms': True, 'business_verified': True, 'active_business_id': 'buyer', 'business_role': 'owner'}}
                 elif path == '/auth/sessions':
                     body = {'sessions': []}
-                elif path == '/saved-searches':
-                    if route.request.method == 'POST':
-                        data = route.request.post_data_json
-                        writes.append(data)
-                        searches.append(dict(data, id='search', material_name='Glass', created_at='2026-11-16T08:00:00Z'))
-                        body, code = {'id': 'search'}, 201
-                    elif state['fail_next']:
+                elif path == '/saved-searches' and route.request.method == 'POST':
+                    data = route.request.post_data_json
+                    writes.append(data)
+                    searches.append(dict(data, id='search', material_name='Glass', created_at='2026-11-16T08:00:00Z'))
+                    body, code = {'id': 'search'}, 201
+                elif path == '/saved':
+                    if state['fail_next']:
                         expect(page.locator('[aria-busy="true"]').first).to_be_visible()
                         state['saw_loading'] = True
                         state['fail_next'] = False
                         body, code = {'message': 'Searches are unavailable.'}, 400
                     else:
-                        body = {'items': searches}
+                        rows = [dict(kind='search', id=s['id'], saved_at=s['created_at'], search=s) for s in searches]
+                        body = {'items': rows, 'has_more': False, 'next_cursor': None, 'counts': {'listing': 0, 'search': len(rows), 'store': 0}}
                 elif path == '/saved-searches/search':
                     searches.clear()
                     body = {'ok': True}
@@ -119,8 +120,8 @@ with sync_playwright() as p:
             assert writes == [{'material_id': 'glass', 'min_price': '7.0100', 'max_price': '9.9900'}], writes
             page.goto(base + '/saved')
             page.wait_for_load_state('networkidle')
-            page.get_by_role('tab', name='Searches', exact=True).click()
-            link = page.get_by_role('link', name='Glass R 7.0100 – R 9.9900 per kg', exact=True)
+            link = page.get_by_role('link').filter(has_text='R 7.0100 – R 9.9900 per kg')
+            expect(page.get_by_text('Alerts on', exact=False)).to_be_visible()
             expect(link).to_be_visible()
             assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth'), (mode, width, 'saved overflow')
             delete = page.get_by_role('button', name='Delete saved search for Glass', exact=True)
@@ -133,9 +134,10 @@ with sync_playwright() as p:
             expect(page.get_by_role('textbox', name='Lowest R / kg', exact=True)).to_have_value('7.0100')
             expect(page.get_by_role('textbox', name='Highest R / kg', exact=True)).to_have_value('9.9900')
             page.goto(base + '/saved')
-            page.get_by_role('tab', name='Searches', exact=True).click()
             page.get_by_role('button', name='Delete saved search for Glass', exact=True).click()
-            expect(page.get_by_text('No saved searches yet', exact=True)).to_be_visible()
+            expect(page.get_by_text('Nothing saved yet', exact=True)).to_be_visible()
+            page.get_by_role('button', name='Searches (0)', exact=True).click()
+            assert 'show=searches' in page.url
             page.goto(base + '/market')
             if width < 1024:
                 page.get_by_role('button', name='Filters', exact=True).click()
@@ -147,11 +149,10 @@ with sync_playwright() as p:
             # Observe loading before the response arrives, then fail it and retry.
             state['fail_next'] = True
             page.goto(base + '/saved', wait_until='domcontentloaded')
-            page.get_by_role('tab', name='Searches', exact=True).click()
             expect(page.get_by_text('Searches are unavailable.', exact=True)).to_be_visible()
             assert state['saw_loading']
             page.get_by_role('button', name='Try again', exact=True).click()
-            expect(page.get_by_text('No saved searches yet', exact=True)).to_be_visible()
+            expect(page.get_by_text('Nothing saved yet', exact=True)).to_be_visible()
             context.close()
     browser.close()
 `;

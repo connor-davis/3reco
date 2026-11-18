@@ -79,6 +79,44 @@ func (s *Store) List(ctx context.Context, userID string) ([]Search, error) {
 	return items, rows.Err()
 }
 
+// ByIDs returns the named searches, only if they belong to the person.
+func (s *Store) ByIDs(ctx context.Context, userID string, ids []string) ([]Search, error) {
+	rows, err := s.db.Q(ctx).Query(
+		ctx,
+		`
+		SELECT s.id,s.material_id,m.name,COALESCE(s.min_price::text,''),
+			COALESCE(s.max_price::text,''),s.created_at
+		FROM saved_searches s JOIN materials m ON m.id=s.material_id
+		WHERE s.user_id=$1 AND s.id=ANY($2::text[])`,
+		userID,
+		ids,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []Search{}
+	for rows.Next() {
+		var search Search
+		err := rows.Scan(
+			&search.ID,
+			&search.MaterialID,
+			&search.MaterialName,
+			&search.MinPrice,
+			&search.MaxPrice,
+			&search.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, search)
+	}
+
+	return items, rows.Err()
+}
+
 // Delete removes only the person's own row. Missing and other people's ids are harmless.
 func (s *Store) Delete(ctx context.Context, userID, id string) error {
 	_, err := s.db.Q(ctx).Exec(ctx, `DELETE FROM saved_searches WHERE user_id=$1 AND id=$2`, userID, id)

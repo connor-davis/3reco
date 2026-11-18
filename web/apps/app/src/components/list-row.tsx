@@ -32,6 +32,8 @@ type ListRowProps = {
   onOpen?: () => void;
   to?: LinkProps['to'];
   params?: LinkProps['params'];
+  /** Search-string filters for the link, such as a market material and price. */
+  search?: LinkProps['search'];
   'aria-label'?: string;
   trailing?: ReactNode;
   actions?: { label: string; onSelect: () => void; destructive?: boolean }[];
@@ -51,6 +53,7 @@ export function ListRow({
   onOpen,
   to,
   params,
+  search,
   'aria-label': ariaLabel,
   trailing,
   actions = [],
@@ -64,7 +67,12 @@ export function ListRow({
         )}
         render={
           to ? (
-            <Link to={to} params={params} aria-label={ariaLabel} />
+            <Link
+              to={to}
+              params={params}
+              search={search}
+              aria-label={ariaLabel}
+            />
           ) : onOpen ? (
             <button
               type="button"

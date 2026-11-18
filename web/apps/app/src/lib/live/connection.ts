@@ -29,6 +29,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
         ['favourites', 'list'],
         ['stores'],
         ['follows', 'list'],
+        ['saved'],
         ['wanted'],
         ['requests'],
         ['messages'],
@@ -37,7 +38,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
     case 'wanted':
       return [['wanted']];
     case 'saved_search':
-      return [['saved-searches']];
+      return [['saved-searches'], ['saved']];
     case 'stock':
       return [['stock'], ['dashboards'], ['seller-stats']];
     case 'listing':
@@ -46,6 +47,7 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
         ['favourites', 'list'],
         ['stores'],
         ['follows', 'list'],
+        ['saved'],
         ['reviews'],
         ['cart'],
         ...(id ? [['stock', id]] : []),
