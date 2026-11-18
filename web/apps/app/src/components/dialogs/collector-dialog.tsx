@@ -34,6 +34,7 @@ const banks = [
   'ABSA',
   'Nedbank',
   'African Bank',
+  'TymeBank',
 ];
 const accountTypes = ['Cheque', 'Savings', 'Transmission'];
 const walletProviders = [
