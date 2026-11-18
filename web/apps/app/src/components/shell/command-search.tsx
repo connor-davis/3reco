@@ -12,7 +12,6 @@ import { BusinessName } from '@/components/badges';
 import { useListings } from '@/lib/api/listings';
 import { useStores } from '@/lib/api/stores';
 import { useAuth } from '@/lib/auth/use-auth';
-import { useDashboard } from '@/lib/api/dashboards';
 import { formatRate } from '@/lib/format';
 import { navFor } from '@/lib/nav';
 
@@ -40,7 +39,6 @@ function useDebounced(value: string, ms = 250) {
 export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const dashboard = useDashboard('business', {}, user?.role === 'business');
   const [text, setText] = useState('');
   const q = useDebounced(text.trim());
 
@@ -49,8 +47,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
     ...navFor(
       user?.role ?? null,
       user?.business_role,
-      user?.active_business_id,
-      dashboard.data?.collects
+      user?.active_business_id
     ).flatMap((group) => group.links),
     ...(user ? [{ label: 'Profile', to: '/profile', icon: undefined }] : []),
     { label: 'About 3REco', to: '/about', icon: undefined },

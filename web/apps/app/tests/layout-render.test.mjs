@@ -240,8 +240,8 @@ with sync_playwright() as p:
                             expect(quick.get_by_role('button', name='Collect', exact=True)).to_have_count(1 if collects else 0)
                             if width >= 1024:
                                 sidebar = page.locator('[data-slot="sidebar"]')
-                                expect(sidebar.get_by_text('Collect', exact=True)).to_have_count(1 if collects else 0)
-                                expect(sidebar.get_by_role('link', name='Collections', exact=True)).to_have_count(1 if collects else 0)
+                                expect(sidebar.get_by_text('Collect', exact=True)).to_have_count(1)
+                                expect(sidebar.get_by_role('link', name='Collections', exact=True)).to_have_count(1)
                         expect(page.get_by_role('heading', name='Recent activity', exact=True)).to_have_count(0)
                         expect(page.get_by_role('heading', name='Needs attention', exact=True)).to_be_visible()
                         if 'empty=yes' not in route:

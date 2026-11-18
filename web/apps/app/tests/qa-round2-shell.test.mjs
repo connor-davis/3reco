@@ -13,31 +13,28 @@ test('G17/G20: toasts stay above the composer; role selection promises no total'
   assert.doesNotMatch(setup, /detailSteps\.collector\.length \+ 1/);
 });
 
-test('Collect is a separate business group only for collecting businesses; staff retain access', () => {
+test('Collect is a separate business group for every business; staff retain access', () => {
   const { navFor } = load('lib/nav.ts', {
     '@/lib/access': load('lib/access.ts'),
   });
-  for (const collects of [false, true]) {
-    const groups = navFor('business', 'owner', 'mine', collects);
-    const collect = groups.find((group) => group.label === 'Collect');
-    assert.equal(!!collect, collects);
-    if (collect)
-      assert.deepEqual(
-        Array.from(collect.links, (link) => link.to),
-        ['/collections', '/collectors']
-      );
-    assert.ok(
-      !groups
-        .find((group) => group.label === 'Workspace')
-        .links.some((link) => link.to === '/collections')
-    );
-  }
+  // A business with no collectors yet still needs the way in to add one.
+  const groups = navFor('business', 'owner', 'mine');
+  const collect = groups.find((group) => group.label === 'Collect');
+  assert.deepEqual(
+    Array.from(collect.links, (link) => link.to),
+    ['/collections', '/collectors']
+  );
+  assert.ok(
+    !groups
+      .find((group) => group.label === 'Workspace')
+      .links.some((link) => link.to === '/collections')
+  );
   for (const role of ['admin', 'staff']) {
     const links = navFor(role).flatMap((group) => group.links);
     for (const path of ['/collections', '/collectors'])
       assert.ok(links.some((link) => link.to === path));
   }
-  assert.match(
+  assert.doesNotMatch(
     source('components/shell/app-sidebar.tsx'),
     /dashboard.data\?\.collects/
   );

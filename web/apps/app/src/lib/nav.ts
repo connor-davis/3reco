@@ -73,11 +73,11 @@ const teamLink: NavLink = { label: 'Team', to: '/team', icon: Users };
 export function navFor(
   role: Role | null,
   businessRole?: BusinessRole | '',
-  activeBusinessId?: string,
-  collects = false
+  activeBusinessId?: string
 ): NavGroup[] {
   const groups = roleNav(role);
-  if (role === 'business' && collects) {
+  // Always shown: a business needs the link to add its first collector.
+  if (role === 'business') {
     groups.push({
       label: 'Collect',
       links: [
