@@ -93,44 +93,45 @@
 }
 
 .dark {
-  --background: oklch(0.17 0.008 190);
+  /* Plain greys, no green tint: black in dark mode, as light mode is white. */
+  --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.01 190);
+  --card: oklch(0.18 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
+  --popover: oklch(0.2 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.723936 0.093738 158.594);
   --primary-hover: oklch(0.774137 0.092832 158.93);
   --primary-foreground: oklch(0.240363 0.030566 166.158);
-  --secondary: oklch(0.274 0.006 286.033);
+  --secondary: oklch(0.26 0 0);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.75 0.015 286.067);
+  --muted: oklch(0.26 0 0);
+  --muted-foreground: oklch(0.75 0 0);
   --accent: oklch(0.329746 0.040576 164.828);
   --accent-foreground: oklch(0.932425 0.024883 156.712);
   --destructive: oklch(0.86 0.15 22.216);
   --link: var(--primary);
-  --border: oklch(0.3 0.012 190);
-  --input: oklch(0.36 0.014 190);
+  --border: oklch(0.28 0 0);
+  --input: oklch(0.35 0 0);
   --ring: var(--primary);
   --chart-1: oklch(0.767028 0.132932 134.839);
   --chart-2: oklch(0.71693 0.111599 148.46);
   --chart-3: oklch(0.67404 0.091035 160.829);
   --chart-4: oklch(0.633036 0.085478 171.923);
   --chart-5: oklch(0.589728 0.080981 176.792);
-  --sidebar: oklch(0.141 0.005 285.823);
+  --sidebar: oklch(0.145 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
   --sidebar-accent: var(--accent);
   --sidebar-accent-foreground: var(--accent-foreground);
-  --sidebar-border: oklch(0.3 0.012 190);
+  --sidebar-border: oklch(0.28 0 0);
   --sidebar-ring: var(--ring);
   --outgoing: oklch(0.26 0.025 165);
   --map-land: oklch(0.24 0.02 155);
-  --map-water: oklch(0.27 0.006 285);
-  --inner: oklch(0.245 0.012 190);
-  --line-strong: oklch(0.36 0.014 190);
+  --map-water: oklch(0.27 0 0);
+  --inner: oklch(0.22 0 0);
+  --line-strong: oklch(0.35 0 0);
   --shadow: none;
   --mint: oklch(0.3 0.04 170);
   --mint-ink: oklch(0.88 0.07 165);
