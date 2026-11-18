@@ -120,7 +120,8 @@ func TestTenantTransactionsExportsReviewsAndDashboard(t *testing.T) {
 	status(t, manager.c.Do("POST", "/api/transactions/"+foreign+"/review", map[string]any{"rating": 5}), 404)
 	status(t, manager.c.Do("POST", "/api/transactions/"+purchase+"/review", map[string]any{"rating": 5}), 200)
 
-	export := status(t, manager.c.Do("GET", "/api/exports/sales?business_id="+w.buyer.id, nil), 200)
+	status(t, manager.c.Do("GET", "/api/exports/sales?business_id="+w.buyer.id, nil), 403)
+	export := status(t, manager.c.Do("GET", "/api/exports/sales", nil), 200)
 	if !bytes.Contains(export.Raw, []byte(own)) || bytes.Contains(export.Raw, []byte(foreign)) {
 		t.Fatalf("export escaped active business: %s", export.Raw)
 	}

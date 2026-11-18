@@ -80,6 +80,8 @@ with sync_playwright() as p:
                 if path == '/auth/me': body = {'user': user}
                 elif path == '/auth/sessions': body = {'sessions': []}
                 elif path == '/businesses/mine': body = []
+                elif path == '/collectors/selection': body = []
+                elif path == '/stores': body = {'items': [{'id': 'business-a', 'name': 'Faith and Hope Recycling', 'business_verified': True}], 'has_more': False}
                 elif path == '/transactions/totals': body = {'count': total_count, 'weight': '4', 'value': '32', 'carbon_savings': '1'}
                 elif path.startswith('/transactions/') and path.split('/')[-1] in ['Bought-invoice', 'Sold-invoice']: body = bought if path.endswith('Bought-invoice') else sold
                 elif path.startswith('/transactions'):
@@ -114,6 +116,7 @@ with sync_playwright() as p:
                 page.keyboard.press('Escape')
                 page.get_by_role('button', name='Filters', exact=True).click()
                 status = page.get_by_role('combobox', name='Transaction status', exact=True)
+                expect(page.get_by_role('combobox', name='Business', exact=True)).to_have_count(0)
                 expect(status).to_contain_text('Complete')
                 status.click()
                 page.get_by_role('option', name='Pending', exact=True).click()
@@ -254,6 +257,38 @@ with sync_playwright() as p:
                 page.get_by_role('button', name='Filters', exact=True).click()
                 expect(page.get_by_role('combobox', name='Transaction type', exact=True)).to_be_visible()
                 page.get_by_role('button', name='Show results', exact=True).click()
+                for role, record_path, export_path in [('staff', '/transactions', '/admin/exports/transactions'), ('admin', '/collections', '/exports/collections')]:
+                    user['role'] = role
+                    page.goto(base + record_path)
+                    page.wait_for_load_state('networkidle')
+                    expect(page.get_by_role('button', name='Export', exact=True)).to_be_enabled()
+                    page.get_by_role('button', name='Filters', exact=True).click()
+                    business_pick = page.get_by_role('combobox', name='Business', exact=True)
+                    expect(business_pick).to_have_value('All businesses')
+                    business_pick.fill('Faith')
+                    page.get_by_role('option', name='Faith and Hope Recycling', exact=False).click()
+                    page.get_by_role('button', name='Show results', exact=True).click()
+                    page.wait_for_load_state('networkidle')
+                    assert any(path == '/transactions/' and query.get('business_id') == ['business-a'] for path, query in requests)
+                    assert any(path == '/transactions/totals' and query.get('business_id') == ['business-a'] for path, query in requests)
+                    page.get_by_role('button', name='Filters (1)', exact=True).click()
+                    expect(business_pick).to_have_value('Faith and Hope Recycling')
+                    if width in [390, 1280]:
+                        os.makedirs('../../../mystuff/checks/staff-business-shots', exist_ok=True)
+                        page.screenshot(path='../../../mystuff/checks/staff-business-shots/' + role + '-' + mode + '-' + str(width) + '.png', full_page=True)
+                    page.get_by_role('combobox', name='Export format', exact=True).click()
+                    page.get_by_role('option', name='One row per material', exact=True).click()
+                    page.get_by_role('button', name='Show results', exact=True).click()
+                    with page.expect_download() as downloaded:
+                        page.get_by_role('button', name='Export', exact=True).click()
+                    assert '-business-business-a-by-material' in downloaded.value.suggested_filename
+                    assert any(path == export_path and query.get('business_id') == ['business-a'] and query.get('itemised') == ['true'] for path, query in requests)
+                    page.get_by_role('button', name='Filters (2)', exact=True).click()
+                    page.get_by_role('button', name='Clear', exact=True).click()
+                    expect(business_pick).to_have_value('All businesses')
+                    page.get_by_role('button', name='Show results', exact=True).click()
+                    page.wait_for_load_state('networkidle')
+                    assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
                 user['role'] = 'collector'
                 page.goto(base + '/transactions/sales')
                 page.wait_for_load_state('networkidle')
@@ -261,6 +296,9 @@ with sync_playwright() as p:
                 assert urlparse(page.url).path == '/transactions/sales'
                 expect(page.get_by_role('button', name='Export', exact=True)).to_have_count(0)
                 assert not errors, errors
+            except Exception:
+                print('Browser errors:', errors, 'URL:', page.url, 'Role:', user['role'])
+                raise
             finally:
                 context.close()
     browser.close()

@@ -9,6 +9,10 @@ import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { TradeParties, StatusBadge, TradeTypeLabel } from '@/components/badges';
 import { ListRow } from '@/components/list-row';
+import {
+  BusinessPicker,
+  type BusinessOption,
+} from '@/components/business-picker';
 import { RowActions } from '@/components/row-actions';
 import { ChoiceSelect, FilterTabs } from '@/components/filters';
 import { Toolbar } from '@/components/toolbar';
@@ -56,6 +60,7 @@ type Props = {
   emptyTitle: string;
   // Staff pages add a Business-to-business / collector filter.
   typeFilter?: boolean;
+  businessPicker?: boolean;
   actions?: ReactNode;
   // A lone "..." menu sits beside the title on a phone instead of on its own row.
   actionsBeside?: boolean;
@@ -116,6 +121,7 @@ export function RecordList({
   collectionsOnly = false,
   emptyTitle,
   typeFilter = false,
+  businessPicker = false,
   actions,
   actionsBeside = false,
   stats = false,
@@ -124,6 +130,10 @@ export function RecordList({
   onBusinessFilterChange,
 }: Props) {
   const { user } = useAuth();
+  const staff = user?.role === 'admin' || user?.role === 'staff';
+  const chooseBusiness = businessPicker && staff;
+  const [selectedBusiness, setSelectedBusiness] =
+    useState<BusinessOption | null>(null);
   const direction = (row: Transaction) =>
     row.buyer.id === user?.active_business_id ? 'Bought' : 'Sold';
   const [status, setStatus] = useState('complete');
@@ -286,6 +296,7 @@ export function RecordList({
   // The server does the searching, so the filters ride along with every page.
   const q = useDebounced(query.trim());
   const filters = {
+    business_id: chooseBusiness ? selectedBusiness?.value : undefined,
     status: collectionsOnly ? 'complete' : status,
     q,
     // Collections are always c2b; the server filters, not this page.
@@ -304,7 +315,7 @@ export function RecordList({
   // so the button doesn't blink in and out as you type.
   const canExport =
     !!exportKind &&
-    (collectionsOnly || kind !== 'mine') &&
+    (collectionsOnly || kind !== 'mine' || staff) &&
     !readOnly &&
     !demo &&
     status === 'complete' &&
@@ -313,10 +324,15 @@ export function RecordList({
     download.isPending || totals.isFetching || query.trim() !== q;
 
   const shown = list.data?.items ?? [];
-  const filtered = !!(q || range?.from || (!collectionsOnly && type !== 'all'));
+  const filtered = !!(
+    q ||
+    filters.business_id ||
+    range?.from ||
+    (!collectionsOnly && type !== 'all')
+  );
   const caption = !filtered
     ? 'All time'
-    : range?.from && !q && type === 'all'
+    : range?.from && !q && !filters.business_id && type === 'all'
       ? `${format(range.from, 'dd MMM')} – ${format(range.to ?? range.from, 'dd MMM yyyy')}`
       : 'Matching your filters';
 
@@ -330,6 +346,7 @@ export function RecordList({
         from: range?.from?.toISOString(),
         to: to?.toISOString(),
         itemised: csv === 'material',
+        business_id: filters.business_id,
         type: filters.type,
         q,
       },
@@ -401,12 +418,14 @@ export function RecordList({
           onChange={setQuery}
           activeFilters={
             Number(!!range?.from) +
+            Number(!!filters.business_id) +
             Number(type !== 'all') +
             Number(csv !== 'transaction') +
             Number(!collectionsOnly && status !== 'complete')
           }
           onClear={() => {
             setRange(undefined);
+            setSelectedBusiness(null);
             setType('all');
             setCsv('transaction');
             setStatus('complete');
@@ -443,6 +462,14 @@ export function RecordList({
                     value={type}
                     options={typeOptions}
                     onChange={setType}
+                  />
+                </FilterField>
+              )}
+              {chooseBusiness && (
+                <FilterField label="Business">
+                  <BusinessPicker
+                    value={selectedBusiness}
+                    onChange={setSelectedBusiness}
                   />
                 </FilterField>
               )}

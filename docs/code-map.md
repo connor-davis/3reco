@@ -384,6 +384,8 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 
 ## Web API client and public statistics
 
+`web/apps/app/src/components/business-picker.tsx` owns the searchable staff business picker. The record list shares its `business_id` filter across list, totals and CSV downloads; transaction stores use the buyer-or-b2b-seller predicate.
+
 `web/apps/app/src/lib/reorder.ts` owns exact-weight Buy again cart merging and skipped materials; the buyer owner/manager action lives in `src/components/dialogs/record-dialogs.tsx`. `web/apps/app/tests/buy-again.test.mjs` and `buy-again-render.test.mjs` cover merge rules, access, failures and responsive themes.
 
 | Job | Owner |

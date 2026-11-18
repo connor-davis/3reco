@@ -6,7 +6,7 @@ import { api, download, json } from './client';
 
 export function useTransactions(
   kind: 'mine' | 'purchases' | 'sales' = 'mine',
-  params: Paging & { order?: 'recorded' } = {}
+  params: Paging & { order?: 'recorded'; business_id?: string } = {}
 ) {
   return useResource<Page<T.Transaction>>(
     ['transactions', kind, params],
@@ -17,7 +17,7 @@ export function useTransactions(
 /** Count, kg and value of a whole filtered list, not just one page of it. */
 export function useTransactionTotals(
   kind: 'mine' | 'purchases' | 'sales' = 'mine',
-  filters: Omit<Paging, 'cursor' | 'limit'> = {},
+  filters: Omit<Paging, 'cursor' | 'limit'> & { business_id?: string } = {},
   enabled = true
 ) {
   return useResource<T.TransactionTotals>(
