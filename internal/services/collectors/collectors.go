@@ -17,6 +17,7 @@ import (
 	"github.com/connor-davis/3reco/internal/services/auth"
 	"github.com/connor-davis/3reco/internal/services/privacy"
 	profile "github.com/connor-davis/3reco/internal/services/profile"
+	changes "github.com/connor-davis/3reco/internal/stores/collectorchanges"
 	store "github.com/connor-davis/3reco/internal/stores/collectors"
 	pstore "github.com/connor-davis/3reco/internal/stores/privacy"
 )
@@ -29,35 +30,19 @@ const (
 
 // Service owns collector rules and transactions.
 type Service struct {
-	db    *database.DB
-	store *store.Store
-	audit *pstore.Store
+	db      *database.DB
+	store   *store.Store
+	audit   *pstore.Store
+	waiting *changes.Store
 }
 
 // New builds the service.
-func New(db *database.DB, rows *store.Store, audit *pstore.Store) *Service {
-	return &Service{db: db, store: rows, audit: audit}
+func New(db *database.DB, rows *store.Store, audit *pstore.Store, waiting *changes.Store) *Service {
+	return &Service{db: db, store: rows, audit: audit, waiting: waiting}
 }
 
 // Input preserves omitted collector fields on PATCH.
-type Input struct {
-	Name                  *string `json:"name"`
-	Email                 *string `json:"email"`
-	Phone                 *string `json:"phone"`
-	Image                 *string `json:"image"`
-	BankAccountHolderName *string `json:"bank_account_holder_name"`
-	BankName              *string `json:"bank_name"`
-	BankAccountNumber     *string `json:"bank_account_number"`
-	BankBranchCode        *string `json:"bank_branch_code"`
-	BankAccountType       *string `json:"bank_account_type"`
-	PayoutMethod          *string `json:"payout_method"`
-	EwalletPlatformName   *string `json:"ewallet_platform_name"`
-	EwalletPaymentID      *string `json:"ewallet_payment_id"`
-	StreetAddress         *string `json:"street_address"`
-	City                  *string `json:"city"`
-	Province              *string `json:"province"`
-	AreaCode              *int    `json:"area_code"`
-}
+type Input = changes.Fields
 
 // own tells whether the collector record is the caller's own login: the two
 // share a normalized phone number.
@@ -82,25 +67,13 @@ func verifiedBusiness(user auth.User) bool {
 	return auth.HasRole(user, "business") && user.BusinessVerified
 }
 
-// canEdit is who may change a collector's name, phone, address and every other
-// field that is not a payout field: staff, admins, and any Owner or Manager of
-// any business. A Member reads only.
+// canEdit is who may change any collector field, payout fields included:
+// staff, admins, and any Owner or Manager of any business. A Member reads
+// only. Whether the edit applies at once or waits for staff is decided in
+// Save: only the business that created the collector, or staff, applies it.
 func canEdit(user auth.User) bool {
 	return auth.HasRole(user, "admin", "staff") ||
 		(auth.HasRole(user, "business") && auth.BusinessAtLeast(user, "manager"))
-}
-
-// canEditPayout is who may change the bank account or e-wallet: staff, admins,
-// and an Owner or Manager of the business that created the record. A verified
-// business that did not create it may not. The collector's own login never
-// reaches this route, which is for staff and businesses.
-func canEditPayout(user auth.User, item store.Collector) bool {
-	if auth.HasRole(user, "admin", "staff") {
-		return true
-	}
-
-	return auth.HasRole(user, "business") && auth.BusinessAtLeast(user, "manager") &&
-		item.CreatedByBusinessID != nil && *item.CreatedByBusinessID == auth.PartyID(user)
 }
 
 // full is who may read the whole account number and e-wallet id. Staff may
@@ -136,7 +109,8 @@ func (service *Service) viewer(ctx context.Context, user auth.User) (store.Viewe
 // already decided in SQL (see store.columnList), so nothing is blanked here.
 func redact(user auth.User, item store.Collector, own bool) store.Collector {
 	item.CanEdit = canEdit(user)
-	item.CanEditPayout = canEditPayout(user, item)
+	item.CanEditPayout = item.CanEdit
+	item.NeedsApproval = item.CanEdit && proposes(user, item)
 	item.CanViewPayout = full(user, item, own)
 
 	return item
@@ -173,7 +147,14 @@ func (service *Service) Find(ctx context.Context, user auth.User, id string) (st
 		err = service.audit.Record(ctx, user.ID, item.ID, privacy.KindAdminFullView)
 	}
 
-	return redact(user, item, own), err
+	if err != nil {
+		return item, err
+	}
+
+	// The same flag the list carries, so one row opened alone agrees with it.
+	flagged := []store.Collector{redact(user, item, own)}
+
+	return flagged[0], service.markPending(ctx, user, flagged)
 }
 
 // disclosed is true when an admin is handed someone else's identifier in full:
@@ -211,6 +192,10 @@ func (service *Service) List(ctx context.Context, user auth.User, query paging.Q
 		}
 
 		items[i] = redact(user, items[i], own)
+	}
+
+	if err := service.markPending(ctx, user, items); err != nil {
+		return nil, err
 	}
 
 	if selection {
@@ -286,20 +271,24 @@ func ParseCursor(raw string) (*store.After, error) {
 	return &store.After{Name: name, ID: id}, nil
 }
 
-// Save scopes changes to the creator business or staff and validates the merged record.
-func (service *Service) Save(ctx context.Context, user auth.User, id string, in Input) (string, error) {
+// Save changes or creates a collector and returns its id. An edit by a
+// business that did not create the collector is not applied: it is kept for
+// staff to review, and pending comes back true so the handler can say so.
+func (service *Service) Save(ctx context.Context, user auth.User, id string, in Input) (string, bool, error) {
 	if !auth.HasRole(user, "admin", "staff", "business") {
-		return "", apperr.Forbidden("You cannot manage collectors.")
+		return "", false, apperr.Forbidden("You cannot manage collectors.")
 	}
 
 	if auth.HasRole(user, "business") && !auth.BusinessAtLeast(user, "manager") {
-		return "", apperr.Forbidden("Only managers can change collectors.")
+		return "", false, apperr.Forbidden("Only managers can change collectors.")
 	}
 
 	creating := id == ""
 	if creating {
 		id = database.NewID()
 	}
+
+	pending := false
 
 	err := service.db.InTx(
 		ctx,
@@ -320,189 +309,171 @@ func (service *Service) Save(ctx context.Context, user auth.User, id string, in 
 				if errors.Is(err, pgx.ErrNoRows) {
 					return apperr.NotFound("No such collector.")
 				}
-
-				// Anyone who may edit may change the ordinary fields; the payout
-				// fields are refused, not dropped, unless they may change those.
-				if !canEditPayout(user, item) {
-					if in.PayoutMethod != nil && strings.TrimSpace(*in.PayoutMethod) != "" &&
-						strings.TrimSpace(*in.PayoutMethod) != item.PayoutMethod {
-						return apperr.Forbidden("You cannot change private payout identifiers.")
-					}
-
-					// The plain payout fields: a different value is a change.
-					for _, field := range []struct {
-						sent    *string
-						current string
-					}{
-						{in.BankAccountHolderName, item.BankAccountHolderName},
-						{in.BankName, item.BankName},
-						{in.BankAccountType, item.BankAccountType},
-						{in.EwalletPlatformName, item.EwalletPlatformName},
-					} {
-						if field.sent != nil && strings.TrimSpace(*field.sent) != field.current {
-							return apperr.Forbidden("You cannot change payout details.")
-						}
-					}
-
-					for _, field := range []struct {
-						sent    *string
-						current string
-					}{
-						{in.BankAccountNumber, item.BankAccountNumber},
-						{in.BankBranchCode, item.BankBranchCode},
-						{in.EwalletPaymentID, item.EwalletPaymentID},
-					} {
-						if field.sent != nil && !isMask(*field.sent, field.current) &&
-							strings.TrimSpace(*field.sent) != field.current {
-							return apperr.Forbidden("You cannot change private payout identifiers.")
-						}
-					}
-				}
 			}
 
-			replacePayout := in.PayoutMethod != nil &&
-				strings.TrimSpace(*in.PayoutMethod) != "" &&
-				strings.TrimSpace(*in.PayoutMethod) != item.PayoutMethod
-
-			if in.Name != nil {
-				item.Name = strings.TrimSpace(*in.Name)
-			}
-
-			if in.Email != nil {
-				item.Email = strings.TrimSpace(*in.Email)
-			}
-
-			if in.Phone != nil {
-				item.Phone = strings.TrimSpace(*in.Phone)
-			}
-
-			if in.Image != nil {
-				item.Image = strings.TrimSpace(*in.Image)
-			}
-
-			if in.BankAccountHolderName != nil {
-				item.BankAccountHolderName = strings.TrimSpace(*in.BankAccountHolderName)
-			}
-
-			if in.BankName != nil {
-				item.BankName = strings.TrimSpace(*in.BankName)
-			}
-
-			// A masked value sent back from a form means "unchanged".
-			if in.BankAccountNumber != nil && !isMask(*in.BankAccountNumber, item.BankAccountNumber) {
-				item.BankAccountNumber = strings.TrimSpace(*in.BankAccountNumber)
-			}
-
-			if in.BankBranchCode != nil && !isMask(*in.BankBranchCode, item.BankBranchCode) {
-				item.BankBranchCode = strings.TrimSpace(*in.BankBranchCode)
-			}
-
-			if in.BankAccountType != nil {
-				item.BankAccountType = strings.TrimSpace(*in.BankAccountType)
-			}
-
-			if in.PayoutMethod != nil && strings.TrimSpace(*in.PayoutMethod) != "" {
-				method := strings.TrimSpace(*in.PayoutMethod)
-				if method != "bank" && method != "ewallet" && method != "none" {
-					return apperr.Field("payout_method", "Choose bank or ewallet.")
-				}
-
-				item.PayoutMethod = method
-			}
-
-			if in.EwalletPlatformName != nil {
-				item.EwalletPlatformName = strings.TrimSpace(*in.EwalletPlatformName)
-			}
-
-			if in.EwalletPaymentID != nil && !isMask(*in.EwalletPaymentID, item.EwalletPaymentID) {
-				item.EwalletPaymentID = strings.TrimSpace(*in.EwalletPaymentID)
-			}
-
-			if in.StreetAddress != nil {
-				item.StreetAddress = strings.TrimSpace(*in.StreetAddress)
-			}
-
-			if in.City != nil {
-				item.City = strings.TrimSpace(*in.City)
-			}
-
-			if in.Province != nil {
-				item.Province = strings.TrimSpace(*in.Province)
-			}
-
-			if in.AreaCode != nil {
-				item.AreaCode = in.AreaCode
-			}
-
-			// Only an explicit choice removes saved payout details.
-			if item.PayoutMethod == "none" || (replacePayout && item.PayoutMethod == "ewallet") {
-				item.BankAccountHolderName = ""
-				item.BankName = ""
-				item.BankAccountNumber = ""
-				item.BankBranchCode = ""
-				item.BankAccountType = ""
-			}
-
-			if item.PayoutMethod == "none" || (replacePayout && item.PayoutMethod == "bank") {
-				item.EwalletPlatformName = ""
-				item.EwalletPaymentID = ""
-			}
-
-			if item.PayoutMethod == "none" {
-				item.PayoutMethod = ""
-			}
-
-			if err := validate(&item); err != nil {
+			merged, err := service.merge(ctx, id, item, in)
+			if err != nil {
 				return err
 			}
 
-			if item.Phone != "" {
-				phone, err := profile.Phone(item.Phone)
-				if err != nil {
-					return err
-				}
-
-				item.Phone = phone
-				conflict, err := service.store.PhoneConflict(ctx, phone)
-				if err != nil {
-					return err
-				}
-
-				if conflict {
-					return apperr.Conflict("That phone number belongs to a business.")
-				}
-			}
-
-			// ponytail: a check, not a unique index, because old data may hold
-			// duplicates. Two saves at the very same moment could both pass.
-			if item.Email != "" {
-				conflict, err := service.store.EmailConflict(ctx, item.Email, item.CreatedByBusinessID, id)
-				if err != nil {
-					return err
-				}
-
-				if conflict {
-					return &apperr.Error{
-						Status:  http.StatusConflict,
-						Code:    "conflict",
-						Message: emailTaken,
-						Data:    map[string]string{"email": emailTaken},
-					}
-				}
-			}
-
 			if creating {
-				return service.store.Create(ctx, item)
+				return service.store.Create(ctx, merged)
 			}
 
-			return service.store.Save(ctx, item)
+			// The edit was checked in full above, so staff approve exactly what
+			// was checked; it is only kept, not written.
+			if proposes(user, item) {
+				pending, err = service.propose(ctx, user, item, merged)
+
+				return err
+			}
+
+			return service.store.Save(ctx, merged)
 		},
 	)
 	if _, duplicate := database.IsUnique(err); duplicate {
 		err = apperr.Conflict(phoneTaken)
 	}
 
-	return id, err
+	return id, pending, err
+}
+
+// merge lays the sent fields over the collector and checks the result: the
+// same rules for a new collector, a direct edit, a proposal and an approval.
+// It works on a copy, so the caller still holds the collector as it was.
+func (service *Service) merge(ctx context.Context, id string, item store.Collector, in Input) (store.Collector, error) {
+	replacePayout := in.PayoutMethod != nil &&
+		strings.TrimSpace(*in.PayoutMethod) != "" &&
+		strings.TrimSpace(*in.PayoutMethod) != item.PayoutMethod
+
+	if in.Name != nil {
+		item.Name = strings.TrimSpace(*in.Name)
+	}
+
+	if in.Email != nil {
+		item.Email = strings.TrimSpace(*in.Email)
+	}
+
+	if in.Phone != nil {
+		item.Phone = strings.TrimSpace(*in.Phone)
+	}
+
+	if in.Image != nil {
+		item.Image = strings.TrimSpace(*in.Image)
+	}
+
+	if in.BankAccountHolderName != nil {
+		item.BankAccountHolderName = strings.TrimSpace(*in.BankAccountHolderName)
+	}
+
+	if in.BankName != nil {
+		item.BankName = strings.TrimSpace(*in.BankName)
+	}
+
+	// A masked value sent back from a form means "unchanged".
+	if in.BankAccountNumber != nil && !isMask(*in.BankAccountNumber, item.BankAccountNumber) {
+		item.BankAccountNumber = strings.TrimSpace(*in.BankAccountNumber)
+	}
+
+	if in.BankBranchCode != nil && !isMask(*in.BankBranchCode, item.BankBranchCode) {
+		item.BankBranchCode = strings.TrimSpace(*in.BankBranchCode)
+	}
+
+	if in.BankAccountType != nil {
+		item.BankAccountType = strings.TrimSpace(*in.BankAccountType)
+	}
+
+	if in.PayoutMethod != nil && strings.TrimSpace(*in.PayoutMethod) != "" {
+		method := strings.TrimSpace(*in.PayoutMethod)
+		if method != "bank" && method != "ewallet" && method != "none" {
+			return item, apperr.Field("payout_method", "Choose bank or ewallet.")
+		}
+
+		item.PayoutMethod = method
+	}
+
+	if in.EwalletPlatformName != nil {
+		item.EwalletPlatformName = strings.TrimSpace(*in.EwalletPlatformName)
+	}
+
+	if in.EwalletPaymentID != nil && !isMask(*in.EwalletPaymentID, item.EwalletPaymentID) {
+		item.EwalletPaymentID = strings.TrimSpace(*in.EwalletPaymentID)
+	}
+
+	if in.StreetAddress != nil {
+		item.StreetAddress = strings.TrimSpace(*in.StreetAddress)
+	}
+
+	if in.City != nil {
+		item.City = strings.TrimSpace(*in.City)
+	}
+
+	if in.Province != nil {
+		item.Province = strings.TrimSpace(*in.Province)
+	}
+
+	if in.AreaCode != nil {
+		item.AreaCode = in.AreaCode
+	}
+
+	// Only an explicit choice removes saved payout details.
+	if item.PayoutMethod == "none" || (replacePayout && item.PayoutMethod == "ewallet") {
+		item.BankAccountHolderName = ""
+		item.BankName = ""
+		item.BankAccountNumber = ""
+		item.BankBranchCode = ""
+		item.BankAccountType = ""
+	}
+
+	if item.PayoutMethod == "none" || (replacePayout && item.PayoutMethod == "bank") {
+		item.EwalletPlatformName = ""
+		item.EwalletPaymentID = ""
+	}
+
+	if item.PayoutMethod == "none" {
+		item.PayoutMethod = ""
+	}
+
+	if err := validate(&item); err != nil {
+		return item, err
+	}
+
+	if item.Phone != "" {
+		phone, err := profile.Phone(item.Phone)
+		if err != nil {
+			return item, err
+		}
+
+		item.Phone = phone
+		conflict, err := service.store.PhoneConflict(ctx, phone)
+		if err != nil {
+			return item, err
+		}
+
+		if conflict {
+			return item, apperr.Conflict("That phone number belongs to a business.")
+		}
+	}
+
+	// ponytail: a check, not a unique index, because old data may hold
+	// duplicates. Two saves at the very same moment could both pass.
+	if item.Email != "" {
+		conflict, err := service.store.EmailConflict(ctx, item.Email, item.CreatedByBusinessID, id)
+		if err != nil {
+			return item, err
+		}
+
+		if conflict {
+			return item, &apperr.Error{
+				Status:  http.StatusConflict,
+				Code:    "conflict",
+				Message: emailTaken,
+				Data:    map[string]string{"email": emailTaken},
+			}
+		}
+	}
+
+	return item, nil
 }
 
 // Delete requires a confirmation value and staff authority.

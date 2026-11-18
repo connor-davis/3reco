@@ -32,6 +32,8 @@ const (
 	SavedSearchMatch = "saved_search_match"
 	// ReportClosed reveals no target or review outcome.
 	ReportClosed = "report_closed"
+	// CollectorChange tells a business what staff decided about its edit.
+	CollectorChange = "collector_change"
 )
 
 // Notify tells one user something. Call it in the same transaction as the

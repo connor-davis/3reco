@@ -21,6 +21,8 @@ type Collector struct {
 	CanEdit               bool      `json:"can_edit"`
 	CanViewPayout         bool      `json:"can_view_payout"`
 	CanEditPayout         bool      `json:"can_edit_payout"`
+	PendingChange         bool      `json:"pending_change"`
+	NeedsApproval         bool      `json:"needs_approval"`
 	Name                  string    `json:"name"`
 	Email                 string    `json:"email,omitempty"`
 	Phone                 string    `json:"phone,omitempty"`

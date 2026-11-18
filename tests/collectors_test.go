@@ -68,7 +68,7 @@ func TestCollectorBlankPayout(t *testing.T) {
 				partial["email"] = "partial@example.test"
 				status(t, owner.Do("POST", "/api/collectors", partial), 400)
 				status(t, owner.Do("PATCH", path, partial), 400)
-				status(t, other.Do("PATCH", path, partial), 403)
+				status(t, other.Do("PATCH", path, partial), 400)
 			}
 
 			// Every creator must complete a chosen payout method.
@@ -100,8 +100,9 @@ func TestCollectorOptionalContacts(t *testing.T) {
 		}
 
 		status(t, creator.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Email only"}), 200)
-		status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Shared edit"}), 200)
-		status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_name": "Forged"}), 403)
+		// Another business's edit waits for staff: accepted, not applied.
+		status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Shared edit"}), 202)
+		status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_name": "Forged"}), 202)
 		missing := status(t, creator.Do("PATCH", "/api/collectors/"+id, map[string]any{"email": ""}), 400)
 		fields := missing.Body["fields"].(map[string]any)
 		for _, field := range []string{"email", "phone"} {
@@ -187,7 +188,7 @@ func TestCollectorDetailsRedactPayout(t *testing.T) {
 	status(t, anonymous.Do("GET", "/api/collectors/"+id, nil), 401)
 	// Another business's Owner sees the contact fields they may edit, with the payout masked.
 	seen := status(t, other.Do("GET", "/api/collectors/"+id, nil), 200)
-	if seen.Body["bank_account_number"] != "•••• 6789" || seen.Body["can_edit"] != true || seen.Body["can_edit_payout"] != false {
+	if seen.Body["bank_account_number"] != "•••• 6789" || seen.Body["can_edit"] != true || seen.Body["can_edit_payout"] != true {
 		t.Fatalf("another business's view: %s", seen.Raw)
 	}
 
@@ -239,7 +240,7 @@ func TestCollectorDetailsRedactPayout(t *testing.T) {
 		)
 	}
 
-	status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Shared edit"}), 200)
+	status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Shared edit"}), 202)
 	status(
 		t,
 		other.Do(
@@ -459,7 +460,7 @@ func TestCollectorEditScopeAndBranchPrivacy(t *testing.T) {
 		}
 	}
 
-	status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_branch_code": "654321"}), 403)
+	status(t, other.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_branch_code": "654321"}), 202)
 	status(t, staff.Do("PATCH", "/api/collectors/"+id, map[string]any{
 		"bank_branch_code": "•••• 3456", "bank_account_number": "•••• 6789", "city": "Durban",
 	}), 200)

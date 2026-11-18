@@ -20,6 +20,7 @@ import (
 
 	authapi "github.com/connor-davis/3reco/internal/api/auth"
 	businessapi "github.com/connor-davis/3reco/internal/api/business"
+	collectorchangesapi "github.com/connor-davis/3reco/internal/api/collectorchanges"
 	collectorsapi "github.com/connor-davis/3reco/internal/api/collectors"
 	favouritesapi "github.com/connor-davis/3reco/internal/api/favourites"
 	marketapi "github.com/connor-davis/3reco/internal/api/market"
@@ -47,6 +48,7 @@ import (
 	"github.com/connor-davis/3reco/internal/platform/storage"
 	"github.com/connor-davis/3reco/internal/services/auth"
 	businesssvc "github.com/connor-davis/3reco/internal/services/business"
+	collectorchangessvc "github.com/connor-davis/3reco/internal/services/collectorchanges"
 	collectorssvc "github.com/connor-davis/3reco/internal/services/collectors"
 	favouritessvc "github.com/connor-davis/3reco/internal/services/favourites"
 	geocodesvc "github.com/connor-davis/3reco/internal/services/geocode"
@@ -68,6 +70,7 @@ import (
 	wantedsvc "github.com/connor-davis/3reco/internal/services/wanted"
 	authstore "github.com/connor-davis/3reco/internal/stores/auth"
 	"github.com/connor-davis/3reco/internal/stores/businesses"
+	collectorchangesstore "github.com/connor-davis/3reco/internal/stores/collectorchanges"
 	collectorsstore "github.com/connor-davis/3reco/internal/stores/collectors"
 	favouritesstore "github.com/connor-davis/3reco/internal/stores/favourites"
 	marketstore "github.com/connor-davis/3reco/internal/stores/market"
@@ -103,9 +106,12 @@ var Module = fx.Module("api",
 		businessapi.New,
 		teamsvc.New,
 		teamapi.New,
+		collectorchangesstore.New,
 		collectorsstore.New,
 		collectorssvc.New,
 		collectorsapi.New,
+		collectorchangessvc.New,
+		collectorchangesapi.New,
 		marketstore.New,
 		marketsvc.New,
 		marketapi.New,
@@ -210,29 +216,30 @@ func backfillProfileLast4(lc fx.Lifecycle, records *profilestore.Store) {
 type routes struct {
 	fx.In
 
-	Config        config.Config
-	DB            *database.DB
-	Auth          *auth.Service
-	AuthH         *authapi.Handler
-	Socket        *sockets.Handler
-	Collectors    *collectorsapi.Handler
-	Market        *marketapi.Handler
-	Stats         *statsapi.Handler
-	Materials     *materialsapi.Handler
-	Privacy       *privacyapi.Handler
-	Profile       *profileapi.Handler
-	Stock         *stockapi.Handler
-	Stores        *storesapi.Handler
-	Favourites    *favouritesapi.Handler
-	SavedSearches *savedsearchesapi.Handler
-	Saved         *savedapi.Handler
-	Push          *pushapi.Handler
-	QuickReplies  *quickrepliesapi.Handler
-	Moderation    *moderationapi.Handler
-	Wanted        *wantedapi.Handler
-	Team          *teamapi.Handler
-	Business      *businessapi.Handler
-	Trade         tradeRoutes
+	Config           config.Config
+	DB               *database.DB
+	Auth             *auth.Service
+	AuthH            *authapi.Handler
+	Socket           *sockets.Handler
+	Collectors       *collectorsapi.Handler
+	CollectorChanges *collectorchangesapi.Handler
+	Market           *marketapi.Handler
+	Stats            *statsapi.Handler
+	Materials        *materialsapi.Handler
+	Privacy          *privacyapi.Handler
+	Profile          *profileapi.Handler
+	Stock            *stockapi.Handler
+	Stores           *storesapi.Handler
+	Favourites       *favouritesapi.Handler
+	SavedSearches    *savedsearchesapi.Handler
+	Saved            *savedapi.Handler
+	Push             *pushapi.Handler
+	QuickReplies     *quickrepliesapi.Handler
+	Moderation       *moderationapi.Handler
+	Wanted           *wantedapi.Handler
+	Team             *teamapi.Handler
+	Business         *businessapi.Handler
+	Trade            tradeRoutes
 }
 
 // New builds the Fiber app with every route.
@@ -302,6 +309,7 @@ func New(r routes) *fiber.App {
 	r.Socket.Register(api)
 	r.Trade.register(api)
 	r.Collectors.Register(api)
+	r.CollectorChanges.Register(api)
 	r.Market.Register(api)
 	r.Materials.Register(api)
 	r.Stats.Register(api)
