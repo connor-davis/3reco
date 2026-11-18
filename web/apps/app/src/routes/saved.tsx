@@ -81,22 +81,26 @@ function SavedPage() {
         title="Saved"
         description="Your saved listings, searches and followed stores. Get alerts for new listings."
       />
-      <ChipGroup
-        label="Show saved"
-        value={show}
-        onChange={(next) =>
-          void navigate({
-            to: '/saved',
-            search: { show: next === 'all' ? undefined : (next as Show) },
-          })
-        }
-        options={[
-          { value: 'all', label: label('All', counts && total) },
-          { value: 'listings', label: label('Listings', counts?.listing) },
-          { value: 'searches', label: label('Searches', counts?.search) },
-          { value: 'stores', label: label('Stores', counts?.store) },
-        ]}
-      />
+      {/* One swipeable row on phones, so the chips never stack. */}
+      <div className="overflow-x-auto [scrollbar-width:none]">
+        <ChipGroup
+          className="max-sm:w-max max-sm:flex-nowrap"
+          label="Show saved"
+          value={show}
+          onChange={(next) =>
+            void navigate({
+              to: '/saved',
+              search: { show: next === 'all' ? undefined : (next as Show) },
+            })
+          }
+          options={[
+            { value: 'all', label: label('All', counts && total) },
+            { value: 'listings', label: label('Listings', counts?.listing) },
+            { value: 'searches', label: label('Searches', counts?.search) },
+            { value: 'stores', label: label('Stores', counts?.store) },
+          ]}
+        />
+      </div>
       <div className="mt-4">
         <Panel>
           <DataState

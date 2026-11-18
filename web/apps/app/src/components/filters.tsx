@@ -130,6 +130,7 @@ type ChipGroupProps = {
   value: string;
   options: (string | Option)[];
   onChange: (value: string) => void;
+  className?: string;
 };
 
 /** Single-choice chips (categories, inbox filters). One is always active. */
@@ -139,13 +140,14 @@ export function ChipGroup({
   value,
   options,
   onChange,
+  className,
 }: ChipGroupProps) {
   return (
     <ToggleGroup
       aria-label={label}
       variant="default"
       spacing={2}
-      className="flex-wrap"
+      className={cn('flex-wrap', className)}
       value={[value]}
       onValueChange={(next) => next[0] && onChange(next[0])}
     >

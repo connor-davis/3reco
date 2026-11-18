@@ -44,7 +44,8 @@ function SearchRow({ search }: { search: SavedSearch }) {
         </Tile>
       }
       title={search.material_name}
-      subtitle={`${priceText(search)} · Alerts on`}
+      subtitle={priceText(search)}
+      meta="Alerts on"
       status={<Badge variant="lilac">Search</Badge>}
       trailing={
         <Button
@@ -115,7 +116,14 @@ export function SavedRow({ item }: { item: SavedItem }) {
         title={store.name}
         subtitle={[store.city, store.province].filter(Boolean).join(', ')}
         status={<Badge variant="sky">Store</Badge>}
-        trailing={<FollowButton storeId={store.id} name={store.name} />}
+        trailing={
+          // Just the bell on phones, so the store name and town have room.
+          <FollowButton
+            storeId={store.id}
+            name={store.name}
+            className="max-sm:size-11 max-sm:px-0 max-sm:[&_[data-slot=follow-text]]:sr-only"
+          />
+        }
       />
     );
   }

@@ -111,7 +111,7 @@ export function FollowButton({
       }
     >
       <Icon aria-hidden="true" />
-      {following ? 'Following' : 'Follow'}
+      <span data-slot="follow-text">{following ? 'Following' : 'Follow'}</span>
     </Button>
   );
 }
