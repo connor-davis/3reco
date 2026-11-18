@@ -1,21 +1,30 @@
-import { useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
-import { Heart, Store as StoreIcon } from 'lucide-react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Bell, Heart, Package, Store as StoreIcon } from 'lucide-react';
 import { Guarded } from '@/components/access-guard';
-import { ButtonRow } from '@/components/button-row';
-import { CardsSkeleton, DataState } from '@/components/data-state';
-import { FollowButton } from '@/components/favourite-button';
-import { ListRow } from '@/components/list-row';
-import { ListingCard } from '@/components/listing-card';
+import { DataState } from '@/components/data-state';
+import { ChipGroup } from '@/components/filters';
+import { LinkButton } from '@/components/link-button';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
-import { PersonAvatar } from '@/components/visuals';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFavouriteListings, useFollowedStores } from '@/lib/api/favourites';
-import { SavedSearches } from './-components/saved-searches';
+import { useSaved, type SavedFilter } from '@/lib/api/saved';
+import { SavedRow } from './-components/saved-row';
+
+const shows = ['all', 'listings', 'searches', 'stores'] as const;
+type Show = (typeof shows)[number];
+
+// The chip lives in the address (?show=) so back and forward move between them.
+const filterFor: Record<Show, SavedFilter> = {
+  all: 'all',
+  listings: 'listing',
+  searches: 'search',
+  stores: 'store',
+};
 
 export const Route = createFileRoute('/saved')({
+  validateSearch: (raw: Record<string, unknown>): { show?: Show } => ({
+    show: shows.find((show) => show === raw.show && show !== 'all'),
+  }),
   component: () => (
     <Guarded page="saved">
       <SavedPage />
@@ -23,131 +32,99 @@ export const Route = createFileRoute('/saved')({
   ),
 });
 
+const browse = <LinkButton to="/market">Browse materials</LinkButton>;
+
+// What an empty list says: first when nothing at all is saved, then per chip.
+const empties = {
+  none: {
+    icon: Heart,
+    title: 'Nothing saved yet',
+    text: 'Tap the heart on a listing to keep it. Save a search to hear about new matches, or follow a store to hear about its new listings.',
+    action: browse,
+  },
+  listings: {
+    icon: Package,
+    title: 'No saved listings',
+    text: 'Tap the heart on a listing to keep it here.',
+    action: browse,
+  },
+  searches: {
+    icon: Bell,
+    title: 'No saved searches',
+    text: 'On the market page, set filters and tap Save search.',
+    action: <LinkButton to="/market">Go to the market</LinkButton>,
+  },
+  stores: {
+    icon: StoreIcon,
+    title: "You don't follow any stores",
+    text: 'Open a store and tap Follow.',
+    action: browse,
+  },
+};
+
 function SavedPage() {
+  const show = Route.useSearch().show ?? 'all';
+  const navigate = useNavigate();
+  const query = useSaved(filterFor[show]);
+
+  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const counts = query.data?.pages.at(-1)?.counts;
+  const total = counts ? counts.listing + counts.search + counts.store : 0;
+  const empty = empties[total === 0 || show === 'all' ? 'none' : show];
+
+  const label = (name: string, count?: number) =>
+    count === undefined ? name : `${name} (${count})`;
+
   return (
     <>
       <PageHeader
         title="Saved"
         description="Your saved listings, searches and followed stores. Get alerts for new listings."
       />
-      <Tabs defaultValue="listings">
-        <TabsList aria-label="Saved items">
-          <TabsTrigger value="listings">Listings</TabsTrigger>
-          <TabsTrigger value="searches">Searches</TabsTrigger>
-          <TabsTrigger value="stores">Stores</TabsTrigger>
-        </TabsList>
-        <TabsContent value="listings" keepMounted>
-          <SavedListings />
-        </TabsContent>
-        <TabsContent value="searches" keepMounted>
-          <SavedSearches />
-        </TabsContent>
-        <TabsContent value="stores" keepMounted>
-          <FollowedStores />
-        </TabsContent>
-      </Tabs>
-    </>
-  );
-}
-
-function Pager({
-  cursor,
-  next,
-  onChange,
-}: {
-  cursor?: string;
-  next?: string | null;
-  onChange: (cursor?: string) => void;
-}) {
-  if (!cursor && !next) return null;
-  return (
-    <ButtonRow className="mt-4">
-      {cursor && (
-        <Button variant="outline" onClick={() => onChange(undefined)}>
-          First page
-        </Button>
-      )}
-      {next && (
-        <Button variant="outline" onClick={() => onChange(next)}>
-          Next page
-        </Button>
-      )}
-    </ButtonRow>
-  );
-}
-
-function SavedListings() {
-  const [cursor, setCursor] = useState<string>();
-  const query = useFavouriteListings({ cursor });
-  const items = query.data?.items ?? [];
-
-  return (
-    <Panel>
-      <DataState
-        query={query}
-        isEmpty={!items.length}
-        compact
-        icon={Heart}
-        emptyTitle="Nothing saved yet"
-        emptyText="Tap the heart on a listing to keep it here."
-        skeleton={<CardsSkeleton cards={3} />}
-      >
-        <div className="grid grid-cols-1 gap-x-3 gap-y-5 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {items.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
-        </div>
-        <Pager
-          cursor={cursor}
-          next={query.data?.has_more ? query.data.next_cursor : null}
-          onChange={setCursor}
-        />
-      </DataState>
-    </Panel>
-  );
-}
-
-function FollowedStores() {
-  const [cursor, setCursor] = useState<string>();
-  const query = useFollowedStores({ cursor });
-  const items = query.data?.items ?? [];
-
-  return (
-    <Panel>
-      <DataState
-        query={query}
-        isEmpty={!items.length}
-        compact
-        icon={StoreIcon}
-        emptyTitle="You don't follow any stores"
-        emptyText="Open a store and tap Follow to hear about its new listings."
-      >
-        <div className="divide-y">
-          {items.map((store) => (
-            <div key={store.id} className="flex items-center gap-2">
-              <div className="min-w-0 flex-1">
-                <ListRow
-                  to="/market/store/$sellerId"
-                  params={{ sellerId: store.id }}
-                  media={
-                    <PersonAvatar name={store.name} image={store.avatar_url} />
-                  }
-                  title={store.name}
-                  subtitle={[store.city, store.province]
-                    .filter(Boolean)
-                    .join(', ')}
-                />
-              </div>
-              <FollowButton storeId={store.id} name={store.name} />
+      <ChipGroup
+        label="Show saved"
+        value={show}
+        onChange={(next) =>
+          void navigate({
+            to: '/saved',
+            search: { show: next === 'all' ? undefined : (next as Show) },
+          })
+        }
+        options={[
+          { value: 'all', label: label('All', total) },
+          { value: 'listings', label: label('Listings', counts?.listing) },
+          { value: 'searches', label: label('Searches', counts?.search) },
+          { value: 'stores', label: label('Stores', counts?.store) },
+        ]}
+      />
+      <div className="mt-4">
+        <Panel>
+          <DataState
+            query={query}
+            isEmpty={!items.length}
+            icon={empty.icon}
+            emptyTitle={empty.title}
+            emptyText={empty.text}
+            emptyAction={empty.action}
+          >
+            <div className="divide-y">
+              {items.map((item) => (
+                <SavedRow key={`${item.kind}:${item.id}`} item={item} />
+              ))}
             </div>
-          ))}
-        </div>
-        <Pager
-          cursor={cursor}
-          next={query.data?.has_more ? query.data.next_cursor : null}
-          onChange={setCursor}
-        />
-      </DataState>
-    </Panel>
+            {query.hasNextPage && (
+              <Button
+                variant="outline"
+                className="mt-4 min-h-11 w-full sm:w-auto"
+                disabled={query.isFetchingNextPage}
+                onClick={() => void query.fetchNextPage()}
+              >
+                {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
+              </Button>
+            )}
+          </DataState>
+        </Panel>
+      </div>
+    </>
   );
 }

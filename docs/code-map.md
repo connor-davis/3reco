@@ -42,7 +42,7 @@ line when you add an owner.
 | Admin-only reports queue, confirmed dismiss/unlist/suspend/unsuspend and navigation/access guards | `web/apps/app/src/routes/admin/reports.tsx`, `src/lib/{access,nav}.ts` |
 | Block-event cache invalidation for discovery, stores, wanted, requests, chats, cart and blocks; reports never have realtime events | `web/apps/app/src/lib/live/connection.ts` |
 | Block direction/team isolation, contact and history rules, alert filtering, private reports, admin audit/notices, suspension/reversal and id-only live routing; web dialogs, hooks and gating | `tests/report_block_test.go`, `web/apps/app/tests/report-block.test.mjs`; team chat sender regression in `src/components/chat/market.test.mjs`, store action layout in `tests/layout-render.test.mjs` |
-| Quiet listing/store actions, Wanted draft retention, Saved tabs and paging, blank report reasons, visible admin actions, mobile setup and desktop inbox tab hints across roles and light/dark | `web/apps/app/tests/ux5-quiet-actions.test.mjs` |
+| Quiet listing/store actions, Wanted draft retention, the one mixed Saved list with its filter chips and Load more, blank report reasons, visible admin actions, mobile setup and desktop inbox tab hints across roles and light/dark | `web/apps/app/tests/ux5-quiet-actions.test.mjs` |
 
 ## Seller stats
 
@@ -74,15 +74,18 @@ line when you add an owner.
 | Menu in the chat footer: tap fills the message box, never sends; add, edit and delete from the same menu; client hooks (loads on open and after a change, no live events) | `web/apps/app/src/components/chat/quick-replies-menu.tsx`, `src/lib/api/quick-replies.ts` |
 | CRUD, other-person isolation, empty and long text, the 21st reply, guest blocked; web fill-not-send, empty state, client | `tests/quick_replies_test.go`, `web/apps/app/tests/quick-replies.test.mjs` |
 
-## Saved searches
+## Saved page and saved searches
 
 | Job | Owner |
 | --- | --- |
 | Personal material and exact price ranges, indexes and person-only live changes | `internal/platform/database/migrations/0037_saved_searches.sql` |
 | Caller-scoped create/list/delete and filter validation | `internal/stores/savedsearches/savedsearches.go`, `internal/services/savedsearches/savedsearches.go`, `internal/api/savedsearches/handler.go`; registration in `internal/api/server.go` |
 | First-publication matching in the stock transaction, one alert per person with follower deduplication | `internal/stores/stock/searches.go`, `internal/services/stock/stock.go` |
-| Save current market filters and manage personal searches on Saved | `web/apps/app/src/lib/api/saved-searches.ts`, `src/routes/market/-components/save-search.tsx`, `src/routes/-components/saved-searches.tsx`; live keys in `src/lib/live/connection.ts` |
+| Save current market filters; delete a saved search | `web/apps/app/src/lib/api/saved-searches.ts`, `src/routes/market/-components/save-search.tsx`; live keys in `src/lib/live/connection.ts` |
+| One newest-first list of saved listings, saved searches and followed stores (`GET /api/saved?type=&cursor=&limit=`): ids, kinds, visibility and chip counts in SQL; rows filled from the market, saved-search and store owners | `internal/stores/saved/saved.go`, `internal/services/saved/saved.go`, `internal/api/saved/handler.go`; registration in `internal/api/server.go`; id filters in `internal/stores/market/listings.go` (`Filter.IDs`), `internal/stores/stores/profile.go` (`FollowedIn`), `internal/stores/savedsearches/savedsearches.go` (`ByIDs`) |
+| Saved page: filter chips kept in `?show=`, mixed rows with kind badges and their own action, Load more, empty states; refreshed by the favourite, follow and saved-search hooks and the `saved_search`, `listing` and `block` live topics | `web/apps/app/src/routes/saved.tsx`, `src/routes/-components/saved-row.tsx`, `src/lib/api/saved.ts`, `src/lib/live/connection.ts` |
 | Keep copied market price filters as exact text before route validation | `web/apps/app/src/main.tsx` (`parseSearch`) |
+| Mixed order, paging across kinds, type filter, counts, hidden rows, signed-out and other-person isolation | `tests/saved_test.go` |
 | Ownership, matching, first publication and live recipient regression | `tests/saved_searches_test.go`, `web/apps/app/tests/saved-searches.test.mjs`, `web/apps/app/tests/saved-searches-render.test.mjs` |
 
 ## Wanted posts
@@ -354,7 +357,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Favourites and follows: a person (`users.id`) saves visible listings and follows stores; routes under `/api/favourites` and `/api/follows` (list, `ids`, `PUT`/`DELETE :id`), all scoped to the caller | `internal/stores/favourites/favourites.go`, `internal/services/favourites/favourites.go`, `internal/api/favourites/handler.go`; saved listings reuse `Filter.FavouriteOf` in `internal/stores/market/listings.go`, followed stores reuse `Followed` in `internal/stores/stores/profile.go` |
 | First publish alert: `Create`/`Update` report the first time a row is listed (`first_listed_at`), then `TellFollowers` writes one person-only `store_new_listing` notice per follower in the same transaction (never `InsertBusiness`) | `internal/stores/stock/stock.go`, `save` in `internal/services/stock/stock.go` |
 | Favourites and follows tests (CRUD, other-person isolation, hidden listing, alert once, followers only, unfollow, live) | `tests/favourites_test.go`, `web/apps/app/tests/favourites.test.mjs` |
-| Heart on cards and the listing page, Follow button on the store page, `/saved` page, client hooks | `web/apps/app/src/components/favourite-button.tsx`, `src/routes/saved.tsx`, `src/lib/api/favourites.ts` |
+| Heart on cards and the listing page, Follow button on the store page, `/saved` page, client hooks | `web/apps/app/src/components/favourite-button.tsx`, `src/routes/saved.tsx`, `src/lib/api/{favourites,saved}.ts` |
 | Active store visibility and composition with the review service | `internal/services/stores/profile.go` |
 | Store service construction and review dependency | `internal/services/stores/stores.go` |
 | Collector records, creator scope and phone conflict SQL | `internal/stores/collectors/collectors.go` |

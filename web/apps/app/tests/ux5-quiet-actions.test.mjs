@@ -21,8 +21,9 @@ test('quiet actions preserve shared state, role gates and scrolling contracts', 
     /form\.reset\(\{ \.\.\.empty, area: suggested \}\)/
   );
   const saved = source('routes/saved.tsx');
-  assert.equal((saved.match(/keepMounted/g) ?? []).length, 3);
-  assert.equal((saved.match(/<Pager/g) ?? []).length, 2);
+  // One mixed list: no tabs, no old pager, a Load more button instead.
+  assert.doesNotMatch(saved, /keepMounted|<Tabs|<Pager/);
+  assert.match(saved, /Load more/);
   assert.match(
     source('components/filters.tsx'),
     /<TabsList aria-label=\{label\} className=\{className\}/
@@ -76,7 +77,7 @@ test(
 const regression = String.raw`
 import sys, json, re
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 from playwright.sync_api import sync_playwright, expect
 
 base = sys.argv[1]
@@ -119,11 +120,17 @@ with sync_playwright() as p:
                     elif path == '/admin/reports': body['items'] = reports
                     elif path == '/wanted' and route.request.method == 'POST':
                         writes.append((path, route.request.post_data_json)); body = {'id':'post'}
-                    elif path == '/favourites':
-                        body['items'] = saved['listings']
-                        if saved['listings'] and not urlparse(route.request.url).query: body.update(has_more=True,next_cursor='second')
-                    elif path == '/follows': body['items'] = saved['stores']
-                    elif path == '/saved-searches': body['items'] = saved['searches']
+                    elif path == '/saved':
+                        query = parse_qs(urlparse(route.request.url).query)
+                        kind = query.get('type', ['all'])[0]
+                        rows = [dict(kind='listing', id=x['id'], saved_at=stamp, listing=x) for x in saved['listings']]
+                        rows += [dict(kind='search', id=x['id'], saved_at=stamp, search=x) for x in saved['searches']]
+                        rows += [dict(kind='store', id=x['id'], saved_at=stamp, store=x) for x in saved['stores']]
+                        body['items'] = [row for row in rows if kind in ['all', row['kind']]]
+                        if 'cursor' in query: body['items'] = []
+                        body['counts'] = dict(listing=len(saved['listings']), search=len(saved['searches']), store=len(saved['stores']))
+                        # The first page of everything says there is more; the second does not.
+                        if kind == 'all' and body['items'] and 'cursor' not in query: body.update(has_more=True, next_cursor='second')
                     elif path == '/saved-searches/search' and route.request.method == 'DELETE':
                         saved['searches'] = []; body = {'ok':True}
                     route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
@@ -213,27 +220,32 @@ with sync_playwright() as p:
                     expect(page.get_by_role('tab',name='Buyers want these',exact=True)).to_have_count(0)
                 if role in ['business','collector'] and not owner and team != 'manager':
                     visit('/saved')
-                    for tab, text in [('Listings','Nothing saved yet'),('Searches','No saved searches yet'),('Stores',"You don't follow any stores")]:
-                        page.get_by_role('tab',name=tab,exact=True).click()
-                        empty = page.get_by_text(text,exact=True)
-                        expect(empty).to_be_visible()
-                        assert empty.bounding_box()['height'] < 80
+                    expect(page.get_by_text('Nothing saved yet',exact=True)).to_be_visible()
+                    expect(page.get_by_role('button',name='Browse materials',exact=True)).to_be_visible()
+                    for chip in ['Listings (0)','Searches (0)','Stores (0)']:
+                        page.get_by_role('button',name=chip,exact=True).click()
+                        expect(page.get_by_text('Nothing saved yet',exact=True)).to_be_visible()
                     expect(page.get_by_role('switch')).to_have_count(0)
                     saved['listings'] = [listing]
                     saved['stores'] = [store]
                     saved['searches'] = [dict(id='search',material_id='glass',material_name='Clear glass',min_price='1',max_price='9',created_at=stamp)]
                     visit('/saved')
-                    page.get_by_role('button',name='Next page',exact=True).click()
-                    expect(page.get_by_role('button',name='First page',exact=True)).to_be_visible()
+                    expect(page.get_by_role('button',name='All (3)',exact=True)).to_be_visible()
+                    for badge in ['Listing','Search','Store']:
+                        expect(page.locator('[data-slot="badge"]').get_by_text(badge,exact=True)).to_have_count(1)
+                    page.get_by_role('button',name='Load more',exact=True).click()
                     assert any('cursor=second' in url for url in reads)
-                    page.get_by_role('tab',name='Stores',exact=True).click()
+                    page.get_by_role('button',name='Stores (1)',exact=True).click()
+                    assert 'show=stores' in page.url
                     expect(page.get_by_role('button',name='Follow Greenloop',exact=True)).to_be_visible()
-                    page.get_by_role('tab',name='Listings',exact=True).click()
-                    expect(page.get_by_role('button',name='First page',exact=True)).to_be_visible()
-                    page.get_by_role('tab',name='Searches',exact=True).click()
-                    expect(page.get_by_text('Get one alert when a new listing matches a material and price range.',exact=True)).to_be_visible()
+                    page.go_back()
+                    expect(page.get_by_role('button',name='All (3)',exact=True)).to_have_attribute('aria-pressed','true')
+                    expect(page.get_by_text('Alerts on',exact=False).first).to_be_visible()
                     page.get_by_role('button',name='Delete saved search for Clear glass',exact=True).click()
-                    expect(page.get_by_text('No saved searches yet',exact=True)).to_be_visible()
+                    page.get_by_role('button',name='Searches (0)',exact=True).click()
+                    expect(page.get_by_text('No saved searches',exact=True)).to_be_visible()
+                    expect(page.get_by_text('On the market page, set filters and tap Save search.',exact=True)).to_be_visible()
+                    expect(page.get_by_role('button',name='Go to the market',exact=True)).to_be_visible()
                 if role == 'admin':
                     visit('/admin/reports')
                     expect(page.get_by_text('Reported by Reporter Recycling',exact=True)).to_have_count(4)

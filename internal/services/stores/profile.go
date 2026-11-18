@@ -60,6 +60,19 @@ func (service *Service) Followed(ctx context.Context, userID string, query pagin
 	return service.page(ctx, items, query)
 }
 
+// FollowedIn returns the named stores the caller follows, with the same
+// summaries as Followed. Stores the caller can't see are left out.
+func (service *Service) FollowedIn(ctx context.Context, userID string, ids []string) ([]store.Profile, error) {
+	items, err := service.store.FollowedIn(ctx, userID, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	page, err := service.page(ctx, items, paging.Query{Limit: len(ids)})
+
+	return page.Items, err
+}
+
 func (service *Service) page(ctx context.Context, items []store.Profile, query paging.Query) (paging.Page[store.Profile], error) {
 	// One query for the whole page, not one per store.
 	sellerIDs := make([]string, len(items))

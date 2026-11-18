@@ -1,5 +1,4 @@
-import { useCanSave } from './favourites';
-import { idPath, useResource, useWrite } from './resource';
+import { idPath, useWrite } from './resource';
 import type { Created, Ok } from './types';
 
 export interface SavedSearchInput {
@@ -14,18 +13,10 @@ export interface SavedSearch extends SavedSearchInput {
   created_at: string;
 }
 
-export function useSavedSearches() {
-  return useResource<{ items: SavedSearch[] }>(
-    ['saved-searches'],
-    '/saved-searches',
-    true,
-    useCanSave()
-  );
-}
-
 export function useSaveSearch() {
   return useWrite<SavedSearchInput, Created>('/saved-searches', 'POST', [
     ['saved-searches'],
+    ['saved'],
   ]);
 }
 
@@ -33,7 +24,7 @@ export function useDeleteSearch() {
   return useWrite<string, Ok>(
     (id) => `/saved-searches/${idPath(id)}`,
     'DELETE',
-    [['saved-searches']],
+    [['saved-searches'], ['saved']],
     () => undefined
   );
 }

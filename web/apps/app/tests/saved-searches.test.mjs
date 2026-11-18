@@ -15,24 +15,17 @@ test('saved-search client scopes reads and invalidates writes without sending an
       idPath: encodeURIComponent,
     },
   });
-  api.useSavedSearches();
-  assert.deepEqual(plain(calls.pop()), [
-    ['saved-searches'],
-    '/saved-searches',
-    true,
-    true,
-  ]);
   api.useSaveSearch();
   assert.deepEqual(plain(calls.pop()), [
     '/saved-searches',
     'POST',
-    [['saved-searches']],
+    [['saved-searches'], ['saved']],
   ]);
   api.useDeleteSearch();
   const [path, method, keys, body] = calls.pop();
   assert.equal(path('id/with space'), '/saved-searches/id%2Fwith%20space');
   assert.equal(method, 'DELETE');
-  assert.deepEqual(plain(keys), [['saved-searches']]);
+  assert.deepEqual(plain(keys), [['saved-searches'], ['saved']]);
   assert.equal(body('id'), undefined);
 });
 
@@ -81,8 +74,11 @@ test('save button sends exact current material and price filters, omitting text 
   assert.equal(SaveSearch({ search }), null);
 });
 
-test('saved-search live changes invalidate the personal searches cache', () => {
+test('saved-search live changes invalidate the personal searches and Saved caches', () => {
   const { keysFor } = load('lib/live/connection.ts');
-  assert.deepEqual(plain(keysFor('saved_search', 'id')), [['saved-searches']]);
+  assert.deepEqual(plain(keysFor('saved_search', 'id')), [
+    ['saved-searches'],
+    ['saved'],
+  ]);
   assert.deepEqual(plain(keysFor('notification', 'id')), [['notifications']]);
 });
