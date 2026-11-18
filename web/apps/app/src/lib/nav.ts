@@ -105,7 +105,7 @@ function roleNav(role: Role | null): NavGroup[] {
   switch (role) {
     case 'admin':
       return [
-        { links: [dashboard, messages, browse] },
+        { links: [dashboard, messages, browse, saved] },
         {
           label: 'Workspace',
           links: [
@@ -118,7 +118,7 @@ function roleNav(role: Role | null): NavGroup[] {
       ];
     case 'staff':
       return [
-        { links: [dashboard, messages, browse] },
+        { links: [dashboard, messages, browse, saved] },
         { label: 'Workspace', links: staffWorkspace },
       ];
     case 'business':
