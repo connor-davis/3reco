@@ -57,7 +57,8 @@ export type PageId =
   | 'users'
   | 'activity'
   | 'duplicates'
-  | 'reports';
+  | 'reports'
+  | 'collectorChanges';
 
 // Pages that are not listed here (market, store, listing, about, auth) are
 // open to everyone, signed in or not. The old app's permissions decide this.
@@ -81,6 +82,7 @@ const allowed: Record<PageId, Role[]> = {
   activity: ['admin'],
   duplicates: ['admin'],
   reports: ['admin'],
+  collectorChanges: ['admin', 'staff'],
 };
 
 /** A guest (no role yet) opens nothing but their profile and the setup. */

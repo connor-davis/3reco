@@ -38,7 +38,7 @@ export function useCreateCollector() {
   ]);
 }
 export function useUpdateCollector(id: string) {
-  return useWrite<T.CollectorInput, T.Ok>(
+  return useWrite<T.CollectorInput, T.Ok & { pending?: boolean }>(
     `/collectors/${idPath(id)}`,
     'PATCH',
     [['collectors']]

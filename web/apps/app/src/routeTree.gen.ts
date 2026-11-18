@@ -23,6 +23,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CollectorsRouteImport } from './routes/collectors'
+import { Route as CollectorChangesRouteImport } from './routes/collector-changes'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as BusinessRouteImport } from './routes/business'
@@ -115,6 +116,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const CollectorsRoute = CollectorsRouteImport.update({
   id: '/collectors',
   path: '/collectors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectorChangesRoute = CollectorChangesRouteImport.update({
+  id: '/collector-changes',
+  path: '/collector-changes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollectionsRoute = CollectionsRouteImport.update({
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/business': typeof BusinessRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
+  '/collector-changes': typeof CollectorChangesRoute
   '/collectors': typeof CollectorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/materials': typeof MaterialsRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/business': typeof BusinessRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
+  '/collector-changes': typeof CollectorChangesRoute
   '/collectors': typeof CollectorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/materials': typeof MaterialsRoute
@@ -320,6 +328,7 @@ export interface FileRoutesById {
   '/business': typeof BusinessRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
+  '/collector-changes': typeof CollectorChangesRoute
   '/collectors': typeof CollectorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/materials': typeof MaterialsRoute
@@ -361,6 +370,7 @@ export interface FileRouteTypes {
     | '/business'
     | '/cart'
     | '/collections'
+    | '/collector-changes'
     | '/collectors'
     | '/forgot-password'
     | '/materials'
@@ -400,6 +410,7 @@ export interface FileRouteTypes {
     | '/business'
     | '/cart'
     | '/collections'
+    | '/collector-changes'
     | '/collectors'
     | '/forgot-password'
     | '/materials'
@@ -439,6 +450,7 @@ export interface FileRouteTypes {
     | '/business'
     | '/cart'
     | '/collections'
+    | '/collector-changes'
     | '/collectors'
     | '/forgot-password'
     | '/materials'
@@ -479,6 +491,7 @@ export interface RootRouteChildren {
   BusinessRoute: typeof BusinessRoute
   CartRoute: typeof CartRoute
   CollectionsRoute: typeof CollectionsRoute
+  CollectorChangesRoute: typeof CollectorChangesRoute
   CollectorsRoute: typeof CollectorsRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   MaterialsRoute: typeof MaterialsRoute
@@ -610,6 +623,13 @@ declare module '@tanstack/react-router' {
       path: '/collectors'
       fullPath: '/collectors'
       preLoaderRoute: typeof CollectorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collector-changes': {
+      id: '/collector-changes'
+      path: '/collector-changes'
+      fullPath: '/collector-changes'
+      preLoaderRoute: typeof CollectorChangesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collections': {
@@ -783,6 +803,7 @@ const rootRouteChildren: RootRouteChildren = {
   BusinessRoute: BusinessRoute,
   CartRoute: CartRoute,
   CollectionsRoute: CollectionsRoute,
+  CollectorChangesRoute: CollectorChangesRoute,
   CollectorsRoute: CollectorsRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   MaterialsRoute: MaterialsRoute,

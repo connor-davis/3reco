@@ -35,6 +35,8 @@ export function keysFor(kind: string, id?: string): QueryKey[] {
         ['messages'],
         ['cart'],
       ];
+    case 'collector_change':
+      return [['collector-changes'], ['collectors']];
     case 'wanted':
       return [['wanted']];
     case 'saved_search':

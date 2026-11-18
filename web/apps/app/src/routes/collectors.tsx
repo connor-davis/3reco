@@ -151,6 +151,11 @@ function CollectorsPage() {
           <span className="min-w-0">
             <span className="block truncate font-medium">
               {row.original.name}
+              {row.original.pending_change && (
+                <Badge variant="secondary" className="ml-2">
+                  Change pending
+                </Badge>
+              )}
             </span>
             <span className="block truncate text-xs text-muted-foreground">
               {row.original.email || 'No email'}
@@ -210,10 +215,10 @@ function CollectorsPage() {
           directory
             ? 'Every collector on 3REco, and how they are paid.'
             : verified
-              ? 'Every collector on 3REco. Your business is verified, so you can see and edit them all.'
-              : 'A shared directory of collectors. You can edit the ones you added.' +
+              ? 'Every collector on 3REco. Your business is verified, so you can see them all. Edits to ones you did not add go to 3REco staff for approval.'
+              : 'A shared directory of collectors. Your edits to ones you added save at once. Edits to others go to 3REco staff for approval.' +
                 (isBusiness
-                  ? ' Ask an admin to verify your business to see and edit every collector.'
+                  ? ' Ask an admin to verify your business to see every collector.'
                   : '')
         }
       />
@@ -268,7 +273,9 @@ function CollectorsPage() {
                   .filter(Boolean)
                   .join(' · ') || 'Not shared'
               }
-              meta={`Payout: ${payoutText(collector)}`}
+              meta={`Payout: ${payoutText(collector)}${
+                collector.pending_change ? ' · Change pending' : ''
+              }`}
               onOpen={
                 collector.can_edit ? () => openForm(collector) : undefined
               }

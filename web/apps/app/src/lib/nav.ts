@@ -16,6 +16,7 @@ import {
   Send,
   Store,
   TrendingUp,
+  UserCheck,
   UserCircle,
   UserPlus,
   Users,
@@ -58,6 +59,7 @@ const setup: NavLink = { label: 'Finish setup', to: '/setup', icon: UserPlus };
 const staffWorkspace: NavLink[] = [
   { label: 'Collections', to: '/collections', icon: ClipboardList },
   { label: 'Collectors', to: '/collectors', icon: Users },
+  { label: 'Collector changes', to: '/collector-changes', icon: UserCheck },
   { label: 'All transactions', to: '/transactions', icon: Receipt },
   { label: 'Materials', to: '/materials', icon: Boxes },
 ];
@@ -312,6 +314,7 @@ const guardedSingles: Record<string, PageId> = {
   materials: 'materials',
   stock: 'stock',
   collectors: 'collectors',
+  'collector-changes': 'collectorChanges',
   collections: 'collections',
   transactions: 'transactions',
   cart: 'cart',
@@ -345,6 +348,7 @@ export function pageTitleFor(pathname: string, role?: Role | null): string {
   if (page && role !== undefined && !canOpen(role, page))
     return 'Not available';
 
+  if (first === 'collector-changes') return 'Collector changes';
   if (first === 'admin' && second === 'reports') return 'Reports';
   if (first === 'admin' && second === 'activity') return 'Activity log';
   if (first === 'admin' && second === 'duplicates') return 'Duplicates';
