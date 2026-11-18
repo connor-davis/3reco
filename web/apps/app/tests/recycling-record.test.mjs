@@ -100,7 +100,8 @@ function dialog(initial = []) {
         useDownloadPeriodRecord: () => ({ mutate, isPending: false }),
       },
       '@/lib/format': {
-        monthRange: format.monthRange,
+        // Pin the day in both, or the test only passes on 17 November.
+        monthRange: (which) => format.monthRange(which, '2026-11-17'),
         today: () => '2026-11-17',
       },
     }

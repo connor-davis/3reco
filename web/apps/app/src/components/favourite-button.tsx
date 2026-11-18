@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { useNavigate } from '@tanstack/react-router';
 import { Bell, BellRing, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { errorText } from '@/components/transactions/pager-state';
@@ -32,6 +33,7 @@ export function FavouriteButton({
   const ids = useFavouriteIds();
   const save = useSaveListing();
   const unsave = useUnsaveListing();
+  const navigate = useNavigate();
   if (!canSave) return null;
 
   const saved = ids.data?.ids.includes(listingId) ?? false;
@@ -52,6 +54,16 @@ export function FavouriteButton({
       )}
       onClick={() =>
         (saved ? unsave : save).mutate(listingId, {
+          // Point to the Saved page, so a new saver learns where it went.
+          onSuccess: () => {
+            if (saved) return;
+            toast.success('Saved', {
+              action: {
+                label: 'View',
+                onClick: () => void navigate({ to: '/saved' }),
+              },
+            });
+          },
           onError: (error) => toast.error(errorText(error)),
         })
       }

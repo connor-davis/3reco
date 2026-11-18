@@ -11,9 +11,10 @@ const { keysFor } = load('lib/live/connection.ts');
 const links = (role) =>
   navFor(role, '', '').flatMap((group) => group.links.map((link) => link.to));
 
-test('buyers get a Saved link, guests and visitors do not', () => {
-  assert.ok(links('business').includes('/saved'));
-  assert.ok(links('collector').includes('/saved'));
+test('every role that can save gets a Saved link, guests and visitors do not', () => {
+  for (const role of ['admin', 'staff', 'business', 'collector']) {
+    assert.ok(links(role).includes('/saved'), role);
+  }
   assert.ok(!links('guest').includes('/saved'));
   assert.ok(!links(null).includes('/saved'));
 });
@@ -69,6 +70,9 @@ test('the buttons say what they do and what state they are in', () => {
   assert.match(button, /aria-pressed=\{saved\}/);
   assert.match(button, /aria-pressed=\{following\}/);
   assert.match(button, /Remove \$\{name\} from saved/);
+  // Saving points to the Saved page; unsaving stays quiet.
+  assert.match(button, /if \(saved\) return;\s*toast\.success\('Saved'/);
+  assert.match(button, /navigate\(\{ to: '\/saved' \}\)/);
   assert.match(button, /Unfollow \$\{name\}/);
   // Guests and visitors see neither.
   assert.equal((button.match(/if \(!canSave\) return null/g) ?? []).length, 2);
