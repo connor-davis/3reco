@@ -205,6 +205,10 @@ export interface Collector {
   can_edit: boolean;
   can_view_payout: boolean;
   can_edit_payout: boolean;
+  // True when your edits wait for 3REco staff to approve.
+  needs_approval: boolean;
+  // True while a change from your business is waiting for staff.
+  pending_change: boolean;
   name: string;
   email?: string;
   phone?: string;
@@ -226,7 +230,13 @@ export interface Collector {
 export type CollectorInput = Partial<
   Omit<
     Collector,
-    'id' | 'created_at' | 'can_edit' | 'can_view_payout' | 'can_edit_payout'
+    | 'id'
+    | 'created_at'
+    | 'can_edit'
+    | 'can_view_payout'
+    | 'can_edit_payout'
+    | 'needs_approval'
+    | 'pending_change'
   >
 >;
 export interface CollectorStats {

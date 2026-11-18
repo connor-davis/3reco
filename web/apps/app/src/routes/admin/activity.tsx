@@ -34,6 +34,7 @@ export const Route = createFileRoute('/admin/activity')({
 const tableNames: Record<string, string> = {
   users: 'User',
   collectors: 'Collector',
+  collector_changes: 'Collector change',
   materials: 'Material',
   stock: 'Stock',
   transactions: 'Transaction',

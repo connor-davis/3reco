@@ -25,9 +25,18 @@ func (handler *Handler) save(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	id, err := handler.svc.Save(c.Context(), user, c.Params("id"), in)
+	id, pending, err := handler.svc.Save(c.Context(), user, c.Params("id"), in)
 	if err != nil {
 		return err
+	}
+
+	// An edit to someone else's collector waits for staff: accepted, not done.
+	if pending {
+		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+			"ok":      true,
+			"pending": true,
+			"message": "Sent to 3REco staff for approval. The collector keeps its current details until then.",
+		})
 	}
 
 	if c.Method() == "POST" {

@@ -240,8 +240,10 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
           return;
         }
 
-        await update.mutateAsync(input);
-        toast.success('Collector updated.');
+        const result = await update.mutateAsync(input);
+        toast.success(
+          result.pending ? 'Sent for approval.' : 'Collector updated.'
+        );
       } else {
         await create.mutateAsync(toInput(values));
         toast.success('Collector added.');
@@ -298,6 +300,11 @@ function CollectorForm({ open, onOpenChange, collector }: Props) {
         className="grid gap-4 sm:grid-cols-2"
         noValidate
       >
+        {collector?.needs_approval && (
+          <p className="text-sm text-muted-foreground sm:col-span-2">
+            Changes go to 3REco staff for approval.
+          </p>
+        )}
         <TextField control={control} name="name" label="Full name" personName />
         <TextField control={control} name="email" label="Email" type="email" />
         <TextField control={control} name="phone" label="Phone" type="tel" />

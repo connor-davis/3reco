@@ -41,11 +41,11 @@ test('collectors page words differ for verified and unverified businesses', () =
 
   assert.match(
     page,
-    /Every collector on 3REco\. Your business is verified, so you can see and edit them all\./
+    /Every collector on 3REco\. Your business is verified, so you can see them all\./
   );
   assert.match(
     page,
-    /Ask an admin to verify your business to see and edit every collector\./
+    /Ask an admin to verify your business to see every collector\./
   );
   assert.match(page, /Verified business/);
   assert.match(read('../src/lib/api/types.ts'), /business_verified: boolean/);

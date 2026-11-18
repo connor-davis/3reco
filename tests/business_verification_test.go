@@ -54,13 +54,13 @@ func TestUnverifiedBusinessNeverGetsWholePayoutOfOthers(t *testing.T) {
 
 	for name, id := range map[string]string{"business": w.byBusiness, "staff": w.byStaff} {
 		got := status(t, w.bizB.c.Do("GET", "/api/collectors/"+id, nil), 200).Body
-		// Any business Owner sees contact and edits ordinary fields, never a whole payout.
+		// Any business Owner may propose edits, never reads a whole payout.
 		if got["bank_account_number"] == "123456789" || got["can_edit"] != true ||
-			got["can_edit_payout"] == true || got["can_view_payout"] == true {
+			got["can_edit_payout"] != true || got["can_view_payout"] == true {
 			t.Errorf("%s collector: wrong rights for another business: %v", name, got)
 		}
 
-		tradeWant(t, name+" payout edit", w.bizB.c.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_name": "Taken"}), 403)
+		tradeWant(t, name+" payout edit", w.bizB.c.Do("PATCH", "/api/collectors/"+id, map[string]any{"bank_name": "Taken"}), 202)
 	}
 }
 
@@ -75,7 +75,8 @@ func TestVerifiedBusinessSeesAndEditsEveryCollector(t *testing.T) {
 			t.Errorf("%s collector not full for a verified business: %v", name, got)
 		}
 
-		tradeWant(t, name+" edit", w.bizB.c.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Renamed"}), 200)
+		// Verified or not, only the creating business applies an edit at once.
+		tradeWant(t, name+" edit", w.bizB.c.Do("PATCH", "/api/collectors/"+id, map[string]any{"name": "Renamed"}), 202)
 		tradeWant(t, name+" delete", w.bizB.c.Do("DELETE", "/api/collectors/"+id, map[string]any{}), 403)
 	}
 
@@ -119,17 +120,17 @@ func TestVerificationRouteIsAdminOnly(t *testing.T) {
 func TestUnverifyTakesAccessAwayAtOnce(t *testing.T) {
 	w := newVerifyWorld(t)
 	w.setVerified(t, w.bizB.id, true)
-	status(t, w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"name": "Mine now"}), 200)
+	status(t, w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"name": "Mine now"}), 202)
 
 	w.setVerified(t, w.bizB.id, false)
 
 	got := status(t, w.bizB.c.Do("GET", "/api/collectors/"+w.byStaff, nil), 200).Body
-	// Verification only ever widened payout rights; contact editing is for every business.
-	if got["bank_account_number"] == "123456789" || got["can_view_payout"] == true || got["can_edit_payout"] == true {
+	// Verification only ever widened what a business reads, never what it applies.
+	if got["bank_account_number"] == "123456789" || got["can_view_payout"] == true {
 		t.Errorf("payout access stayed after unverify: %v", got)
 	}
 
-	tradeWant(t, "payout edit", w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"bank_name": "Again"}), 403)
+	tradeWant(t, "payout edit", w.bizB.c.Do("PATCH", "/api/collectors/"+w.byStaff, map[string]any{"bank_name": "Again"}), 202)
 
 	// The admin list shows the state.
 	for _, row := range pageItems(t, status(t, w.admin.c.Do("GET", "/api/admin/users?role=business&limit=50", nil), 200)) {
