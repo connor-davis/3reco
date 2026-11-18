@@ -37,6 +37,7 @@ function CollectionsPage() {
         kind="mine"
         exportKind="collections"
         collectionsOnly
+        businessPicker={user?.role === 'admin' || user?.role === 'staff'}
         emptyTitle="No collections yet"
         stats
         actions={

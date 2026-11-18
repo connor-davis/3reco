@@ -70,7 +70,7 @@ func (s *Service) List(
 		return empty, err
 	}
 
-	filter, err := in.parse()
+	filter, err := in.parse(user, kind)
 	if err != nil {
 		return empty, err
 	}

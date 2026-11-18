@@ -114,14 +114,15 @@ const fromJoins = `
 // From is inclusive and To exclusive, both on the effective day. Recorded
 // orders a list by when rows were recorded instead of their effective day.
 type Filter struct {
-	Status   string
-	Like     string
-	Type     string
-	From, To *time.Time
-	Recorded bool
+	BusinessID string
+	Status     string
+	Like       string
+	Type       string
+	From, To   *time.Time
+	Recorded   bool
 }
 
-// filterSQL is the shared WHERE tail for $2..$5 (Like, Type, From, To). It
+// filterSQL is the shared WHERE tail for $2..$7 (Like, Type, From, To, Status, BusinessID). It
 // only ever narrows the scope clause it follows.
 // ponytail: substring ILIKE scans the caller's scoped rows; upgrade path is a
 // pg_trgm index on the names if a scope grows large.
@@ -134,7 +135,8 @@ var filterSQL = `
 	AND ($3 = '' OR t.type = $3)
 	AND t.status=COALESCE(NULLIF($6,''),'complete')
 	AND ($4::timestamptz IS NULL OR ` + database.EffectiveDate("t") + ` >= $4)
-	AND ($5::timestamptz IS NULL OR ` + database.EffectiveDate("t") + ` < $5)`
+	AND ($5::timestamptz IS NULL OR ` + database.EffectiveDate("t") + ` < $5)
+	AND ($7='' OR t.buyer_id=$7 OR (t.type='b2b' AND t.seller_id=$7))`
 
 // Totals sums a whole filtered list, not one page of it. Weight and Value are
 // exact decimal strings.
@@ -157,7 +159,7 @@ func (s *Store) Totals(
 		WITH f AS (SELECT t.id, t.total_price`+fromJoins+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`)
 		SELECT count(*), COALESCE(sum(f.total_price), 0)::text,
 			COALESCE((SELECT sum(i.weight) FROM transaction_items i JOIN f ON f.id = i.transaction_id), 0)::text
-		FROM f`, userID, f.Like, f.Type, f.From, f.To, f.Status).Scan(&out.Count, &out.Value, &out.Weight)
+		FROM f`, userID, f.Like, f.Type, f.From, f.To, f.Status, f.BusinessID).Scan(&out.Count, &out.Value, &out.Weight)
 
 	return out, err
 }
@@ -216,10 +218,10 @@ func (s *Store) List(
 	}
 
 	rows, err := s.db.Q(ctx).Query(ctx, selectTransaction+` WHERE (`+scopeSQL[scope]+`)`+filterSQL+`
-		AND ($7::timestamptz IS NULL OR (`+orderDate+`, t.created_at, t.id) <
-			($7, (SELECT created_at FROM transactions WHERE id=$8), $8))
+		AND ($8::timestamptz IS NULL OR (`+orderDate+`, t.created_at, t.id) <
+			($8, (SELECT created_at FROM transactions WHERE id=$9), $9))
 		ORDER BY `+orderDate+` DESC, t.created_at DESC, t.id DESC
-		LIMIT $9`, userID, f.Like, f.Type, f.From, f.To, f.Status, cur.At, cur.ID, limit+1)
+		LIMIT $10`, userID, f.Like, f.Type, f.From, f.To, f.Status, f.BusinessID, cur.At, cur.ID, limit+1)
 	if err != nil {
 		return nil, err
 	}

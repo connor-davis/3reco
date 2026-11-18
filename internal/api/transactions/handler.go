@@ -92,7 +92,8 @@ func (h *Handler) list(kind string) fiber.Handler {
 
 func filterOf(c fiber.Ctx) svc.ListFilter {
 	return svc.ListFilter{
-		Status: c.Query("status"), Q: c.Query("q"), Type: c.Query("type"),
+		BusinessID: c.Query("business_id"),
+		Status:     c.Query("status"), Q: c.Query("q"), Type: c.Query("type"),
 		From: c.Query("from"), To: c.Query("to"), Order: c.Query("order"),
 	}
 }

@@ -3,7 +3,7 @@ import { queryString, type Page, type Paging } from './paging';
 import type * as T from './types';
 
 export function useStores(
-  params: Paging & { q?: string } = {},
+  params: Paging & { q?: string; all?: boolean } = {},
   enabled = true
 ) {
   return useResource<Page<T.Store>>(

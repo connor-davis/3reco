@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { download } from './client';
 
 export interface ExportFilters {
+  business_id?: string;
   from?: string;
   to?: string;
   itemised?: boolean;
@@ -15,8 +16,10 @@ export type ExportKind =
 export function exportPath(kind: ExportKind, params: ExportFilters = {}) {
   return `${kind === 'users' || kind === 'transactions' ? '/admin' : ''}/exports/${kind}${queryString(params)}`;
 }
-function exportFilename(kind: ExportKind, params: ExportFilters) {
+export function exportFilename(kind: ExportKind, params: ExportFilters) {
   const parts: string[] = ['3REco', kind];
+  if (params.business_id)
+    parts.push('business', params.business_id.replace(/[^a-zA-Z0-9_-]/g, '_'));
   if (params.type && kind !== 'collections') parts.push(params.type);
   if (params.itemised) parts.push('by-material');
   for (const bound of [params.from, params.to]) {

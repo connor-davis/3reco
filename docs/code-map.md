@@ -358,7 +358,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | First publish alert: `Create`/`Update` report the first time a row is listed (`first_listed_at`), then `TellFollowers` writes one person-only `store_new_listing` notice per follower in the same transaction (never `InsertBusiness`) | `internal/stores/stock/stock.go`, `save` in `internal/services/stock/stock.go` |
 | Favourites and follows tests (CRUD, other-person isolation, hidden listing, alert once, followers only, unfollow, live) | `tests/favourites_test.go`, `web/apps/app/tests/favourites.test.mjs` |
 | Heart on cards and the listing page, Follow button on the store page, `/saved` page, client hooks | `web/apps/app/src/components/favourite-button.tsx`, `src/routes/saved.tsx`, `src/lib/api/{favourites,saved}.ts` |
-| Active store visibility and composition with the review service | `internal/services/stores/profile.go` |
+| Active store visibility, staff-only `all=true` directory access and composition with the review service | `internal/services/stores/profile.go` |
 | Store service construction and review dependency | `internal/services/stores/stores.go` |
 | Collector records, creator scope and phone conflict SQL | `internal/stores/collectors/collectors.go` |
 | Exact collector collection totals and recent transaction SQL | `internal/stores/collectors/stats.go` |
@@ -383,6 +383,8 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | Store profiles, listed inventory summaries and public reviews integration tests | `tests/stores_test.go` |
 
 ## Web API client and public statistics
+
+`web/apps/app/src/components/business-picker.tsx` owns the searchable staff business picker. The record list shares its `business_id` filter across list, totals and CSV downloads; transaction stores use the buyer-or-b2b-seller predicate.
 
 `web/apps/app/src/lib/reorder.ts` owns exact-weight Buy again cart merging and skipped materials; the buyer owner/manager action lives in `src/components/dialogs/record-dialogs.tsx`. `web/apps/app/tests/buy-again.test.mjs` and `buy-again-render.test.mjs` cover merge rules, access, failures and responsive themes.
 

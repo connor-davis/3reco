@@ -43,11 +43,15 @@ type Export struct {
 func (s *Service) PrepareExport(
 	user auth.User,
 	kind, rawFrom, rawTo, rawItemised string,
-	tradeFilter, role, search string,
+	tradeFilter, role, search, businessID string,
 ) (Export, error) {
 	var empty Export
 	scope, owner, tradeType := tstore.ScopeAll, auth.PartyID(user), ""
 	denied := apperr.Forbidden("You are not allowed to export these records.")
+	if businessID != "" && (!auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) ||
+		(kind != "transactions" && kind != "collections")) {
+		return empty, denied
+	}
 
 	switch kind {
 	case "users":
@@ -120,6 +124,9 @@ func (s *Service) PrepareExport(
 	}
 
 	filename := "3REco-" + kind
+	if businessID != "" {
+		filename += "-business-" + exportBusinessName.ReplaceAllString(businessID, "_")
+	}
 	if tradeType != "" {
 		filename += "-" + tradeType
 	}
@@ -138,7 +145,7 @@ func (s *Service) PrepareExport(
 	return Export{Filename: filename + ".csv", Write: func(ctx context.Context, output io.Writer) error {
 		if err := s.audit.RecordExport(ctx, user.ID, "", kind, map[string]string{
 			"from": rawFrom, "to": rawTo, "itemised": rawItemised,
-			"type": tradeType, "role": role, "q": search,
+			"type": tradeType, "role": role, "q": search, "business_id": businessID,
 		}); err != nil {
 			return err
 		}
@@ -188,7 +195,7 @@ func (s *Service) PrepareExport(
 		}
 
 		audited := false
-		return s.trades.ExportIDs(ctx, scope, owner, tradeType, paging.SearchPattern(search), from, to, func(id string) error {
+		visit := func(id string) error {
 			document, whole, err := s.invoices.Document(ctx, user, id)
 			if err != nil {
 				return err
@@ -209,11 +216,25 @@ func (s *Service) PrepareExport(
 			}
 
 			return nil
-		})
+		}
+
+		return s.trades.ExportIDs(
+			ctx,
+			scope,
+			owner,
+			tradeType,
+			paging.SearchPattern(search),
+			businessID,
+			from,
+			to,
+			visit,
+		)
 	}}, nil
 }
 
 var csvPhone = regexp.MustCompile(`^\+[0-9]{7,15}$`)
+
+var exportBusinessName = regexp.MustCompile(`[^a-zA-Z0-9_-]`)
 
 func exportRows(document tstore.Document, itemised bool) [][]string {
 	trade, seller, buyer := document.Trade, document.Seller, document.Buyer

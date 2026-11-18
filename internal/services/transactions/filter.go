@@ -14,6 +14,7 @@ import (
 // an inclusive YYYY-MM-DD day range in South African time. Order "recorded"
 // sorts by when rows were recorded; empty sorts by the effective day.
 type ListFilter struct {
+	BusinessID                       string
 	Q, Type, From, To, Status, Order string
 }
 
@@ -21,8 +22,14 @@ type ListFilter struct {
 var sast = time.FixedZone("SAST", 2*60*60)
 
 // parse checks the type and the days, so a bad value is a 400.
-func (f ListFilter) parse() (store.Filter, error) {
-	out := store.Filter{Like: paging.SearchPattern(f.Q), Type: f.Type, Status: f.Status}
+func (f ListFilter) parse(user auth.User, kind string) (store.Filter, error) {
+	out := store.Filter{
+		Like: paging.SearchPattern(f.Q), Type: f.Type, Status: f.Status, BusinessID: f.BusinessID,
+	}
+	if f.BusinessID != "" && (kind != KindMine ||
+		!auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff)) {
+		return out, apperr.Forbidden("Only staff can filter transactions by business.")
+	}
 
 	if f.Order != "" && f.Order != "recorded" {
 		return out, apperr.BadRequest("Use recorded for order.", nil)
@@ -69,7 +76,7 @@ func (s *Service) Totals(
 	kind string,
 	in ListFilter,
 ) (store.Totals, error) {
-	filter, err := in.parse()
+	filter, err := in.parse(user, kind)
 	if err != nil {
 		return store.Totals{}, err
 	}

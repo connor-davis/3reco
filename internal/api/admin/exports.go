@@ -19,6 +19,7 @@ func (h *Handler) export(kind string) fiber.Handler {
 			c.Query("type"),
 			c.Query("role"),
 			c.Query("q"),
+			c.Query("business_id"),
 		)
 		if err != nil {
 			return err

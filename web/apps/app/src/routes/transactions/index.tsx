@@ -53,6 +53,7 @@ function AllTransactions() {
       }
       emptyTitle="No transactions yet"
       typeFilter={!business}
+      businessPicker={user?.role === 'admin' || user?.role === 'staff'}
       businessFilter={business ? filter : undefined}
       onBusinessFilterChange={(filter) => {
         void navigate({
