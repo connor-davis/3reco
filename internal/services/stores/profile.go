@@ -9,6 +9,7 @@ import (
 
 	"github.com/connor-davis/3reco/internal/platform/apperr"
 	"github.com/connor-davis/3reco/internal/platform/paging"
+	"github.com/connor-davis/3reco/internal/services/auth"
 	store "github.com/connor-davis/3reco/internal/stores/stores"
 )
 
@@ -40,9 +41,20 @@ func (service *Service) Find(ctx context.Context, id, viewer string) (store.Prof
 	return item, err
 }
 
-// List excludes the caller's own business before paging.
-func (service *Service) List(ctx context.Context, search, exclude string, query paging.Query) (paging.Page[store.Profile], error) {
-	items, err := service.store.List(ctx, search, exclude, query)
+// List excludes the caller's own business before paging. Only staff may include
+// unverified businesses in the directory.
+func (service *Service) List(
+	ctx context.Context,
+	user auth.User,
+	search string,
+	query paging.Query,
+	all bool,
+) (paging.Page[store.Profile], error) {
+	if all && !auth.HasRole(user, auth.RoleAdmin, auth.RoleStaff) {
+		return paging.Page[store.Profile]{}, apperr.Forbidden("Only staff can list all businesses.")
+	}
+
+	items, err := service.store.List(ctx, search, auth.PartyID(user), query, all)
 	if err != nil {
 		return paging.Page[store.Profile]{}, err
 	}

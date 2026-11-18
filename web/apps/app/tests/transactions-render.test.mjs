@@ -81,7 +81,7 @@ with sync_playwright() as p:
                 elif path == '/auth/sessions': body = {'sessions': []}
                 elif path == '/businesses/mine': body = []
                 elif path == '/collectors/selection': body = []
-                elif path == '/stores': body = {'items': [{'id': 'business-a', 'name': 'Faith and Hope Recycling', 'business_verified': True}], 'has_more': False}
+                elif path == '/stores': body = {'items': [{'id': 'business-a', 'name': 'Faith and Hope Recycling', 'business_verified': False}] if query.get('all') == ['true'] else [], 'has_more': False}
                 elif path == '/transactions/totals': body = {'count': total_count, 'weight': '4', 'value': '32', 'carbon_savings': '1'}
                 elif path.startswith('/transactions/') and path.split('/')[-1] in ['Bought-invoice', 'Sold-invoice']: body = bought if path.endswith('Bought-invoice') else sold
                 elif path.startswith('/transactions'):
@@ -266,6 +266,7 @@ with sync_playwright() as p:
                     business_pick = page.get_by_role('combobox', name='Business', exact=True)
                     expect(business_pick).to_have_value('All businesses')
                     business_pick.fill('Faith')
+                    expect(page.get_by_role('option', name='Faith and Hope Recycling', exact=False)).to_contain_text('Unverified')
                     page.get_by_role('option', name='Faith and Hope Recycling', exact=False).click()
                     page.get_by_role('button', name='Show results', exact=True).click()
                     page.wait_for_load_state('networkidle')
@@ -289,6 +290,16 @@ with sync_playwright() as p:
                     page.get_by_role('button', name='Show results', exact=True).click()
                     page.wait_for_load_state('networkidle')
                     assert page.locator('html').evaluate('(el) => el.scrollWidth <= innerWidth')
+                    if role == 'admin':
+                        user['role'] = 'staff'
+                        page.reload()
+                        page.wait_for_load_state('networkidle')
+                        page.get_by_role('button', name='Record collection', exact=True).click()
+                        record_dialog = page.get_by_role('dialog', name='Record collection', exact=True)
+                        record_dialog.get_by_role('combobox', name='Business', exact=True).fill('Faith')
+                        expect(page.get_by_role('option', name='Faith and Hope Recycling', exact=False)).to_contain_text('Unverified')
+                        page.keyboard.press('Escape')
+                        page.keyboard.press('Escape')
                 user['role'] = 'collector'
                 page.goto(base + '/transactions/sales')
                 page.wait_for_load_state('networkidle')

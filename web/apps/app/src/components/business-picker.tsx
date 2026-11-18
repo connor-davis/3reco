@@ -32,7 +32,7 @@ export function BusinessPicker({
 }) {
   const [query, setQuery] = useState('');
   const q = useDebounced(query.trim());
-  const stores = useStores({ limit: 50, q: q || undefined });
+  const stores = useStores({ limit: 50, q: q || undefined, all: true });
   const options = [
     allBusinesses,
     ...(stores.data?.items ?? []).map((store) => ({
@@ -73,6 +73,11 @@ export function BusinessPicker({
               <ComboboxItem key={item.value} value={item}>
                 {item.label}
                 <VerifiedMark verified={item.verified} />
+                {item.value && !item.verified && (
+                  <span className="text-xs text-muted-foreground">
+                    Unverified
+                  </span>
+                )}
               </ComboboxItem>
             )}
           </ComboboxList>

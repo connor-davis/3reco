@@ -257,7 +257,11 @@ export function ComboboxField<T extends FieldValues>({
   options,
   placeholder = 'Search…',
   onSearch,
-}: SelectFieldProps<T> & { onSearch?: (text: string) => void }) {
+  showUnverified = false,
+}: SelectFieldProps<T> & {
+  onSearch?: (text: string) => void;
+  showUnverified?: boolean;
+}) {
   const ids = useFieldIds();
   const items = options.map((option) =>
     typeof option === 'string' ? { value: option, label: option } : option
@@ -289,6 +293,11 @@ export function ComboboxField<T extends FieldValues>({
                     <ComboboxItem key={item.value} value={item}>
                       {item.label}
                       <VerifiedMark verified={item.verified} />
+                      {showUnverified && item.verified === false && (
+                        <span className="text-xs text-muted-foreground">
+                          Unverified
+                        </span>
+                      )}
                     </ComboboxItem>
                   )}
                 </ComboboxList>

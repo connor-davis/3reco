@@ -15,7 +15,7 @@ func (handler *Handler) list(c fiber.Ctx) error {
 	}
 
 	user, _ := middleware.CurrentUser(c)
-	items, err := handler.svc.List(c.Context(), c.Query("q"), auth.PartyID(user), query)
+	items, err := handler.svc.List(c.Context(), user, c.Query("q"), query, c.Query("all") == "true")
 	if err != nil {
 		return err
 	}

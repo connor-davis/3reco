@@ -358,7 +358,7 @@ is the store logo, with businesses.image retaining legacy URL logos copied once.
 | First publish alert: `Create`/`Update` report the first time a row is listed (`first_listed_at`), then `TellFollowers` writes one person-only `store_new_listing` notice per follower in the same transaction (never `InsertBusiness`) | `internal/stores/stock/stock.go`, `save` in `internal/services/stock/stock.go` |
 | Favourites and follows tests (CRUD, other-person isolation, hidden listing, alert once, followers only, unfollow, live) | `tests/favourites_test.go`, `web/apps/app/tests/favourites.test.mjs` |
 | Heart on cards and the listing page, Follow button on the store page, `/saved` page, client hooks | `web/apps/app/src/components/favourite-button.tsx`, `src/routes/saved.tsx`, `src/lib/api/{favourites,saved}.ts` |
-| Active store visibility and composition with the review service | `internal/services/stores/profile.go` |
+| Active store visibility, staff-only `all=true` directory access and composition with the review service | `internal/services/stores/profile.go` |
 | Store service construction and review dependency | `internal/services/stores/stores.go` |
 | Collector records, creator scope and phone conflict SQL | `internal/stores/collectors/collectors.go` |
 | Exact collector collection totals and recent transaction SQL | `internal/stores/collectors/stats.go` |

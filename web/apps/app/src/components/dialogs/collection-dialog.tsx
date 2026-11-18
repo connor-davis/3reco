@@ -170,14 +170,14 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const [dateOpen, setDateOpen] = useState(false);
   const [businessQuery, setBusinessQuery] = useState('');
   // Searching swaps the list, so remember every business seen to keep the pick.
-  const seen = useRef(new Map<string, string>());
+  const seen = useRef(new Map<string, { name: string; verified: boolean }>());
   const collectionKey = useRef('');
   const saving = useRef(false);
   useEffect(() => {
     if (open) collectionKey.current = crypto.randomUUID();
   }, [open]);
   const businesses = useStores(
-    { limit: 50, q: businessQuery.trim() || undefined },
+    { limit: 50, q: businessQuery.trim() || undefined, all: true },
     // ponytail: one request per keystroke; add a debounce if it gets chatty.
     chooseBusiness && open
   );
@@ -196,7 +196,10 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
 
   for (const store of businesses.data?.items ?? []) {
-    seen.current.set(store.id, store.name);
+    seen.current.set(store.id, {
+      name: store.name,
+      verified: store.business_verified,
+    });
   }
   const picked = watch('business_id');
   const businessOptions = (businesses.data?.items ?? []).map((store) => ({
@@ -211,8 +214,8 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
   ) {
     businessOptions.push({
       value: picked,
-      label: seen.current.get(picked) ?? '',
-      verified: false,
+      label: seen.current.get(picked)?.name ?? '',
+      verified: seen.current.get(picked)?.verified ?? false,
     });
   }
 
@@ -366,6 +369,7 @@ export function CollectionDialog({ open, onOpenChange }: Props) {
             description="The business that bought these materials."
             onSearch={setBusinessQuery}
             options={businessOptions}
+            showUnverified
           />
         )}
         <div className="grid gap-4 sm:grid-cols-2">

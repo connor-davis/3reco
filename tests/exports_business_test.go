@@ -150,15 +150,44 @@ func TestExportsBusinessPickerDirectoryVisibility(t *testing.T) {
 	w := newTradeWorld(t)
 	staff := tradeNewUser(t, w.app, "staff")
 	unverified := tradeNewUnverified(t, w.app)
-	rows := pageItems(t, status(t, staff.c.Do("GET", "/api/stores?limit=50", nil), 200))
-	found := false
-	for _, row := range rows {
-		if row["id"] == unverified.id {
-			t.Fatal("directory visibility changed: unverified business is visible")
+	admin := tradeNewUser(t, w.app, "admin")
+	removed := tradeNewUnverified(t, w.app)
+	tradeExec(t, w.app, `UPDATE businesses SET is_removed=true WHERE id=$1`, removed.id)
+	anonymous := w.app.NewClient(t)
+
+	for _, client := range []*testutil.Client{staff.c, admin.c, w.buyer.c, anonymous} {
+		rows := pageItems(t, status(t, client.Do("GET", "/api/stores?limit=50", nil), 200))
+		found := false
+		for _, row := range rows {
+			if row["id"] == unverified.id || row["id"] == removed.id {
+				t.Fatal("default directory exposed an unverified or removed business")
+			}
+			found = found || row["id"] == w.seller.id
 		}
-		found = found || row["id"] == w.seller.id
+		if !found {
+			t.Fatal("default directory omitted verified business")
+		}
 	}
-	if !found {
-		t.Fatal("staff directory omitted verified business")
+	for _, client := range []*testutil.Client{staff.c, admin.c} {
+		rows := pageItems(t, status(t, client.Do("GET", "/api/stores?all=true&limit=50", nil), 200))
+		found := false
+		for _, row := range rows {
+			if row["id"] == removed.id || row["id"] == staff.id || row["id"] == admin.id {
+				t.Fatal("all-business directory exposed a removed business or non-business")
+			}
+			noPrivateKeys(t, row)
+			if row["id"] == unverified.id {
+				found = true
+				if row["business_verified"] != false {
+					t.Fatal("unverified business has verified badge")
+				}
+			}
+		}
+		if !found {
+			t.Fatal("staff all-business directory omitted unverified business")
+		}
+	}
+	for _, client := range []*testutil.Client{w.buyer.c, anonymous} {
+		status(t, client.Do("GET", "/api/stores?all=true", nil), 403)
 	}
 }

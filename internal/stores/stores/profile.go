@@ -71,11 +71,17 @@ func (records *Store) Find(ctx context.Context, id, viewer string) (Profile, err
 }
 
 // List includes active business profiles, including businesses with no listed stock.
-func (records *Store) List(ctx context.Context, search, exclude string, query paging.Query) ([]Profile, error) {
+// All includes unverified businesses after the service has checked staff access.
+func (records *Store) List(
+	ctx context.Context,
+	search, exclude string,
+	query paging.Query,
+	all bool,
+) ([]Profile, error) {
 	rows, err := records.db.Q(ctx).Query(
 		ctx,
 		profileSelect(`SELECT * FROM business_profiles u WHERE u.role='business' AND NOT u.is_removed AND u.id<>$1
-		AND `+database.Verified("u")+` AND contact_allowed($1,u.id)
+		AND ($6::boolean OR `+database.Verified("u")+`) AND contact_allowed($1,u.id)
 		AND ($2='' OR u.business_name ILIKE '%'||$2||'%' OR u.name ILIKE '%'||$2||'%')
 		AND ($3='' OR (u.created_at,u.id)<($4,$3))
 		ORDER BY u.created_at DESC,u.id DESC LIMIT NULLIF($5,0)`),
@@ -84,6 +90,7 @@ func (records *Store) List(ctx context.Context, search, exclude string, query pa
 		query.ID,
 		query.At,
 		query.Size(),
+		all,
 	)
 	if err != nil {
 		return nil, err

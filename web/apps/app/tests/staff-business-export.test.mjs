@@ -187,10 +187,26 @@ test('picker retains its chosen name across remounts and uses server search', ()
     verified: true,
   };
   let change;
+  let storeParams;
   const combo = new Proxy({}, { get: (_, key) => key });
   const { BusinessPicker } = load('components/business-picker.tsx', {
     react: { useState: () => ['', () => {}] },
-    '@/lib/api/stores': { useStores: () => ({ data: { items: [] } }) },
+    '@/lib/api/stores': {
+      useStores: (params) => {
+        storeParams = params;
+        return {
+          data: {
+            items: [
+              {
+                id: 'unverified',
+                name: 'New business',
+                business_verified: false,
+              },
+            ],
+          },
+        };
+      },
+    },
     '@/lib/use-debounced': { useDebounced: (value) => value },
     '@/components/badges': { VerifiedMark: 'VerifiedMark' },
     '@/components/ui/combobox': combo,
@@ -204,7 +220,23 @@ test('picker retains its chosen name across remounts and uses server search', ()
   const picker = find(tree, 'Combobox');
   assert.equal(picker.props.value, selected);
   assert.equal(picker.props.items[0].label, 'All businesses');
-  assert.equal(picker.props.items[1], selected);
+  assert.equal(
+    picker.props.items.find((item) => item.value === selected.value),
+    selected
+  );
+  assert.equal(storeParams.all, true);
+  const list = find(tree, 'ComboboxList');
+  const unverified = picker.props.items.find(
+    (item) => item.value === 'unverified'
+  );
+  assert.equal(
+    find(list.props.children(unverified), 'span').props.children,
+    'Unverified'
+  );
+  assert.equal(
+    find(list.props.children(picker.props.items[0]), 'span'),
+    undefined
+  );
   assert.equal(picker.props.filter, null);
   picker.props.onValueChange(picker.props.items[0]);
   assert.equal(change, null);
