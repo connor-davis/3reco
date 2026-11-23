@@ -105,6 +105,11 @@ function CollectorsPage() {
 
   // Only admin and staff may remove a collector. Businesses add and edit.
   const canRemove = user?.role === 'admin' || user?.role === 'staff';
+  // Same rule as the server: admin, staff, and a business's Owners and Managers.
+  const canAdd =
+    directory ||
+    (isBusiness &&
+      (user?.business_role === 'owner' || user?.business_role === 'manager'));
   const shown = list.data?.items ?? [];
   const searching = query.trim() !== '';
   // The API adds `total`; until it does, no total is shown rather than a guess.
@@ -204,7 +209,7 @@ function CollectorsPage() {
           )
         }
         actions={
-          !directory && (
+          canAdd && (
             <Button aria-label="Add collector" onClick={() => openForm()}>
               <Plus data-icon="inline-start" />
               Add collector
@@ -249,9 +254,7 @@ function CollectorsPage() {
               Clear search
             </Button>
           ) : (
-            !directory && (
-              <Button onClick={() => openForm()}>Add collector</Button>
-            )
+            canAdd && <Button onClick={() => openForm()}>Add collector</Button>
           )
         }
         skeleton={<RowsSkeleton />}
