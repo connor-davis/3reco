@@ -115,10 +115,10 @@ test('qa-round6-ui: seller reviews, staff collector actions and shell controls m
   assert.match(store, /user\?\.id === sellerId &&/);
   assert.match(store, /Buyers review your store after a completed trade\./);
   assert.doesNotMatch(store, /You have reviewed all eligible trades/);
-  assert.equal(
-    source('routes/collectors.tsx').match(/!directory &&/g).length,
-    2
-  );
+  // Admin, staff and business Owners/Managers add collectors, as the server allows.
+  const collectors = source('routes/collectors.tsx');
+  assert.equal(collectors.match(/canAdd && [(<]/g).length, 2);
+  assert.match(collectors, /directory \|\|\s*\(isBusiness &&/);
   assert.doesNotMatch(source('components/shell/topbar.tsx'), /Breadcrumb/);
   assert.match(source('components/shell/topbar.tsx'), /!user \? \(/);
   assert.match(source('components/shell/topbar.tsx'), /hasWorkspace &&/);
